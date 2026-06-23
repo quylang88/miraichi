@@ -8,7 +8,7 @@ This document defines the conditions that must be satisfied to mark Phase 2 (App
 
 - [ ] **Dependency Linking**: Packages (`shared`, `config`, `ui`, `agent-protocol`) can be compiled and linked successfully without errors.
 - [ ] **Cross-Import Verification**: `apps/web`, `apps/api`, `apps/local-ai`, and `apps/worker` successfully import components and definitions from their respective `packages/` dependencies using relative imports or monorepo workspace resolution.
-- [ ] **Unified Dev Entry**: A single script (e.g. `npm run dev` or a package-manager workspace equivalent run script) launches all apps concurrently in development mode.
+- [ ] **Unified Dev Entry**: A single script (e.g., `pnpm dev` at the workspace root) launches all apps concurrently in development mode.
 
 ---
 
@@ -33,7 +33,7 @@ This document defines the conditions that must be satisfied to mark Phase 2 (App
 
 ## 4. Test Verification Suite
 
-- [ ] **Mock Test Suite**: A unified command (e.g. `npm run test` or `npm test`) runs simple test stubs for each app and package.
+- [ ] **Mock Test Suite**: A unified command (e.g., `pnpm test` at the workspace root) runs simple test stubs for each app and package.
 - [ ] **Scope Enforcement tests**: Tests exist to confirm:
   - API chatbot stubs refuse non-sports queries (ADR-0007 verification).
   - Config loader rejects payloads containing hardcoded "World Cup" strings or invalid config keys.

@@ -23,6 +23,7 @@ Index list of records.
 - [ADR-0009-competition-configuration-registry-boundary-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0009-competition-configuration-registry-boundary-draft.md) - Competition configuration and registry boundary. (Status: Accepted)
 - [ADR-0010-testing-competition-agnostic-verification-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0010-testing-competition-agnostic-verification-draft.md) - Testing and competition-agnostic verification strategy. (Status: Accepted)
 - [ADR-0011-agent-workflow-handoff-governance-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0011-agent-workflow-handoff-governance-draft.md) - Agent workflow and handoff governance. (Status: Accepted)
+- [ADR-0012-monorepo-tooling-and-package-manager.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0012-monorepo-tooling-and-package-manager.md) - Monorepo package manager selection. (Status: Accepted)
 
 ## Reports & Summaries
 - [PHASE-0-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-0-COMPLETION-REPORT.md) - Completion report for Phase 0 (Repo Bootstrap and Documentation Setup).
