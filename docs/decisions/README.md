@@ -27,6 +27,8 @@ Index list of records.
 ## Reports & Summaries
 - [PHASE-0-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-0-COMPLETION-REPORT.md) - Completion report for Phase 0 (Repo Bootstrap and Documentation Setup).
 - [ADR-ACCEPTANCE-SUMMARY-PHASE-1.md](file:///c:/CODE/miraichi/docs/decisions/ADR-ACCEPTANCE-SUMMARY-PHASE-1.md) - Acceptance summary for Phase 1 architecture planning decisions.
+- [PHASE-1-COMPLETION-REVIEW.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REVIEW.md) - Completion review for Phase 1 (Architecture Planning).
+- [PHASE-1-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REPORT.md) - Completion report for Phase 1 (Architecture Planning).
 
 ## TODO / Next Steps
 - [ ] Add future logs as design decisions are made.
