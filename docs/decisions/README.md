@@ -49,6 +49,9 @@ Index list of records.
 - [PHASE-3-3-MOCK-INGESTION-REVIEW.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-3-MOCK-INGESTION-REVIEW.md) - Gateway review checklist and authorizations for Phase 3.3.
 - [PHASE-3-4-DATA-INGESTION-INTEGRATION-PLAN.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-4-DATA-INGESTION-INTEGRATION-PLAN.md) - Integration plan for worker/API boundaries and Local AI snapshots in Phase 3.4.
 - [PHASE-3-4-DATA-INGESTION-INTEGRATION-REVIEW.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-4-DATA-INGESTION-INTEGRATION-REVIEW.md) - Gateway review checklist and authorizations for Phase 3.4.
+- [PHASE-3-COMPLETION-REVIEW.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-COMPLETION-REVIEW.md) - Completion review and gateway closure for Phase 3.
+- [PHASE-3-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-COMPLETION-REPORT.md) - Final completion report for Phase 3 (Data Ingestion Planning and Mock Ingestion Skeleton).
 
 ## TODO / Next Steps
 - [ ] Add future logs as design decisions are made.
+
