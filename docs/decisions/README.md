@@ -65,6 +65,9 @@ Index list of records.
 - [PHASE-4-2-MOCK-PREDICTION-PIPELINE-REVIEW.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-2-MOCK-PREDICTION-PIPELINE-REVIEW.md) - Verification check evaluation for Phase 4.2 mock pipeline planning.
 - [PHASE-4-3-MOCK-PREDICTION-SCAFFOLD-REPORT.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-3-MOCK-PREDICTION-SCAFFOLD-REPORT.md) - Implementation report for Phase 4.3 mock prediction scaffold.
 - [PHASE-4-3-MOCK-PREDICTION-SCAFFOLD-REVIEW.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-3-MOCK-PREDICTION-SCAFFOLD-REVIEW.md) - Compliance review audit validating the Phase 4.3 mock prediction scaffold.
+- [PHASE-4-4-MOCK-PIPELINE-INTEGRATION-PLAN.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-4-MOCK-PIPELINE-INTEGRATION-PLAN.md) - Mock pipeline integration plan for API gateway and Web UI.
+- [PHASE-4-4-MOCK-PIPELINE-INTEGRATION-REVIEW.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-4-MOCK-PIPELINE-INTEGRATION-REVIEW.md) - Verification check evaluation for Phase 4.4 mock integration planning.
+
 
 
 
