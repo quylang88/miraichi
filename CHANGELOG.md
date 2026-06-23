@@ -21,6 +21,7 @@ Includes all directories and apps under this monorepo.
 - Created monorepo directory layout (`apps/`, `packages/`, `docs/`, `ops/`).
 - Initialized configuration defaults (`.gitignore`, `.editorconfig`, `.gitattributes`, `.env.example`).
 - Added root and module-level architectural guidelines and documentation drafts.
+- Added Phase 0 Completion Report ([PHASE-0-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-0-COMPLETION-REPORT.md)).
 
 ## TODO / Next Steps
 - [ ] Version and release the application skeleton (Milestone 2).
