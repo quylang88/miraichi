@@ -22,6 +22,7 @@ Includes all directories and apps under this monorepo.
 - Initialized configuration defaults (`.gitignore`, `.editorconfig`, `.gitattributes`, `.env.example`).
 - Added root and module-level architectural guidelines and documentation drafts.
 - Added Phase 0 Completion Report ([PHASE-0-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-0-COMPLETION-REPORT.md)).
+- Added Phase 1 architecture planning package and ADR-0002 for architecture discovery.
 
 ## TODO / Next Steps
 - [ ] Version and release the application skeleton (Milestone 2).

@@ -72,8 +72,8 @@ To strictly adhere to Phase 0 constraints:
 3. **No Betting Calculation Logic**: Confirmed that no bankroll management calculators, bet simulators, or payout formula implementations exist.
 4. **No Production Database Schema**: Confirmed that no production database tables, migration scripts, or schema setups have been created.
 5. **No Secrets Added**: Confirmed that no real secrets, credentials, API keys, or security assets have been introduced. All configuration values utilize placeholder defaults in `.env.example`.
-6. **Competition-Agnostic Architecture**: Confirmed that the design maps all sports data schemas dynamically. The codebase treats the FIFA World Cup merely as an initial verification use case and does not hard-code logic specific to any tournament or league.
+6. **Competition-Agnostic Architecture**: Confirmed that the design maps sports data concepts dynamically. The codebase treats the initial tournament scenario as a verification use case and does not hard-code logic specific to any tournament or league.
 
 ## 7. Next Recommended Phase
 - **Recommended Phase**: [Phase 1: Architecture Planning](file:///c:/CODE/miraichi/PROJECT_PLAN.md#phase-1-architecture-planning)
-  - **Focus**: Finalize concrete database structures, API contracts, local AI prompt-routing specifications, and shared design system tokens.
+  - **Focus**: Explore open architecture questions, candidate options, draft system boundaries, data flow, local AI and LLM responsibilities, and competition-agnostic risks before final implementation decisions.
