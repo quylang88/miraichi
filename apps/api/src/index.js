@@ -5,6 +5,8 @@ import { handlePredictions } from './routes/predictions.mock.js';
 import { handleExplanations } from './routes/explanations.mock.js';
 import { handleBetHistory } from './routes/bet-history.mock.js';
 import { handleIngestionStatus } from './routes/ingestion-status.mock.js';
+import { handleMockPredict } from './routes/mock-prediction.js';
+import { handleMockExplain } from './routes/mock-explanation.js';
 import { MOCK_MATCHES } from '@miraichi/shared';
 
 const PORT = 3001;
@@ -39,6 +41,10 @@ const server = http.createServer((req, res) => {
     handleBetHistory(req, res);
   } else if (pathname === '/api/v1/ingestion/status') {
     handleIngestionStatus(req, res);
+  } else if (pathname === '/api/v1/mock/predict') {
+    handleMockPredict(req, res);
+  } else if (pathname === '/api/v1/mock/explain') {
+    handleMockExplain(req, res);
   } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: `Not Found: ${pathname}` }));

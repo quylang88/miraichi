@@ -99,3 +99,59 @@ export async function getBetHistory() {
     ];
   }
 }
+
+export async function getMockPrediction(inputCandidate) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/mock/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(inputCandidate)
+    });
+    if (!res.ok) throw new Error(`HTTP status ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn('[Mock Client] API Gateway offline. Using mock predict fallback.', err);
+    return {
+      predictionId: "pred-fallback-offline",
+      matchId: inputCandidate.matchId || "match-alpha-001",
+      competitionId: inputCandidate.competitionId || "competition-alpha",
+      seasonId: inputCandidate.seasonId || "season-alpha-2026",
+      generatedAt: new Date().toISOString(),
+      engineMode: "mock",
+      predictionAvailable: false,
+      confidenceLabel: "not_available",
+      outputSummary: "No owner-approved prediction algorithm is active.",
+      trace: {
+        inputCandidateId: inputCandidate.inputCandidateId || "input-candidate-alpha-001",
+        workerRunId: "run-alpha-001",
+        sourceProviderId: "provider-mock-alpha",
+        engineVersion: "1.0.0-mock"
+      },
+      warnings: ["api_gateway_offline_fallback"]
+    };
+  }
+}
+
+export async function getMockExplanation(envelope) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/mock/explain`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(envelope)
+    });
+    if (!res.ok) throw new Error(`HTTP status ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn('[Mock Client] API Gateway offline. Using mock explain fallback.', err);
+    return {
+      explanationAvailable: false,
+      reason: "No owner-approved prediction algorithm is active.",
+      references: {
+        predictionId: envelope.predictionId || "unknown-prediction",
+        traceId: envelope.trace ? envelope.trace.inputCandidateId : "unknown-trace"
+      },
+      text: `No prediction data is available for match ${envelope.matchId} because the client fallback is active. (Trace: client-offline)`
+    };
+  }
+}
+

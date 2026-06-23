@@ -99,6 +99,8 @@ function getIndexHtml() {
     <a id="link-predictions" class="nav-link active">Dashboard</a>
     <a id="link-explanation" class="nav-link">AI Explanations</a>
     <a id="link-history" class="nav-link">Betting History</a>
+    <a id="link-mock-predict" class="nav-link">Mock Predictions</a>
+    <a id="link-mock-explain" class="nav-link">Mock Explanations</a>
   </nav>
 
   <main class="main-container" id="view-root"></main>
@@ -107,12 +109,16 @@ function getIndexHtml() {
     import { renderPredictionsView } from '/apps/web/src/views/predictions-view.js';
     import { renderExplanationView } from '/apps/web/src/views/explanation-view.js';
     import { renderBetHistoryPlaceholderView } from '/apps/web/src/views/bet-history-placeholder-view.js';
+    import { renderPredictionEnvelopeView } from '/apps/web/src/views/prediction-envelope-view.js';
+    import { renderMockExplanationRefusalView } from '/apps/web/src/views/mock-explanation-refusal-view.js';
 
     const root = document.getElementById('view-root');
     const links = {
       predictions: document.getElementById('link-predictions'),
       explanation: document.getElementById('link-explanation'),
-      history: document.getElementById('link-history')
+      history: document.getElementById('link-history'),
+      mockPredict: document.getElementById('link-mock-predict'),
+      mockExplain: document.getElementById('link-mock-explain')
     };
 
     function setTabActive(activeKey) {
@@ -134,12 +140,18 @@ function getIndexHtml() {
         renderExplanationView(root);
       } else if (tab === 'history') {
         await renderBetHistoryPlaceholderView(root);
+      } else if (tab === 'mock-predict') {
+        await renderPredictionEnvelopeView(root);
+      } else if (tab === 'mock-explain') {
+        await renderMockExplanationRefusalView(root);
       }
     }
 
     links.predictions.addEventListener('click', (e) => { e.preventDefault(); navigate('predictions'); });
     links.explanation.addEventListener('click', (e) => { e.preventDefault(); navigate('explanation'); });
     links.history.addEventListener('click', (e) => { e.preventDefault(); navigate('history'); });
+    links.mockPredict.addEventListener('click', (e) => { e.preventDefault(); navigate('mock-predict'); });
+    links.mockExplain.addEventListener('click', (e) => { e.preventDefault(); navigate('mock-explain'); });
 
     // Initial Load
     navigate('predictions');
