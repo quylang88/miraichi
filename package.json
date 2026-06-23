@@ -1,0 +1,20 @@
+{
+  "name": "miraichi",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+
+  "description": "Miraichi monorepo scaffold",
+  "scripts": {
+    "dev": "pnpm --filter \"./apps/*\" --parallel run dev",
+    "dev:web": "pnpm --filter web run dev",
+    "dev:api": "pnpm --filter api run dev",
+    "dev:local-ai": "pnpm --filter local-ai run dev",
+    "dev:worker": "pnpm --filter worker run dev",
+    "check": "node scripts/check-files.js",
+    "phase2:verify": "node scripts/phase2-verify.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

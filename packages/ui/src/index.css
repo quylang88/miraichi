@@ -1,0 +1,53 @@
+:root {
+  --miraichi-bg: #0b0f19;
+  --miraichi-text: #f8fafc;
+  --miraichi-text-muted: #94a3b8;
+  --miraichi-primary: #3b82f6;
+  --miraichi-primary-hover: #2563eb;
+  --miraichi-secondary: #1e293b;
+  --miraichi-border: #334155;
+  --miraichi-accent: #10b981;
+  --miraichi-danger: #ef4444;
+  --font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--miraichi-bg);
+  color: var(--miraichi-text);
+  font-family: var(--font-family);
+  margin: 0;
+  padding: 0;
+}
+
+.miraichi-btn {
+  background-color: var(--miraichi-primary);
+  color: var(--miraichi-text);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.miraichi-btn:hover {
+  background-color: var(--miraichi-primary-hover);
+}
+
+.miraichi-card {
+  background-color: var(--miraichi-secondary);
+  border: 1px solid var(--miraichi-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.miraichi-card-title {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: var(--miraichi-text);
+}
+
+.miraichi-card-body {
+  color: var(--miraichi-text-muted);
+}

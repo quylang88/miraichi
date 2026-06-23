@@ -1,0 +1,53 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  apps/api:
+    dependencies:
+      '@miraichi/agent-protocol':
+        specifier: workspace:*
+        version: link:../../packages/agent-protocol
+      '@miraichi/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@miraichi/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+
+  apps/local-ai:
+    dependencies:
+      '@miraichi/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@miraichi/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+
+  apps/web:
+    dependencies:
+      '@miraichi/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@miraichi/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+
+  apps/worker:
+    dependencies:
+      '@miraichi/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+
+  packages/agent-protocol: {}
+
+  packages/config: {}
+
+  packages/shared: {}
+
+  packages/ui: {}

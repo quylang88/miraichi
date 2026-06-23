@@ -1,0 +1,14 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/index.js"
+  },
+  "dependencies": {
+    "@miraichi/shared": "workspace:*",
+    "@miraichi/config": "workspace:*",
+    "@miraichi/agent-protocol": "workspace:*"
+  }
+}

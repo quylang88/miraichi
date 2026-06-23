@@ -1,0 +1,47 @@
+import http from 'http';
+import url from 'url';
+import { handleHealth } from './routes/health.js';
+import { handlePredictions } from './routes/predictions.mock.js';
+import { handleExplanations } from './routes/explanations.mock.js';
+import { handleBetHistory } from './routes/bet-history.mock.js';
+import { MOCK_MATCHES } from '@miraichi/shared';
+
+const PORT = 3001;
+
+const server = http.createServer((req, res) => {
+  const parsedUrl = url.parse(req.url, true);
+  const pathname = parsedUrl.pathname;
+
+  // Global CORS headers for dev frontend communication
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  console.log(`[API Gateway] Received ${req.method} ${req.url}`);
+
+  if (pathname === '/api/v1/health') {
+    handleHealth(req, res);
+  } else if (pathname === '/api/v1/matches') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(MOCK_MATCHES));
+  } else if (pathname === '/api/v1/predictions') {
+    handlePredictions(req, res);
+  } else if (pathname === '/api/v1/chat') {
+    handleExplanations(req, res);
+  } else if (pathname === '/api/v1/bets') {
+    handleBetHistory(req, res);
+  } else {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: `Not Found: ${pathname}` }));
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`[API Mediation Gateway] Running at http://localhost:${PORT}`);
+});

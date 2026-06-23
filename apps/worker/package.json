@@ -1,0 +1,12 @@
+{
+  "name": "worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/index.js"
+  },
+  "dependencies": {
+    "@miraichi/shared": "workspace:*"
+  }
+}
