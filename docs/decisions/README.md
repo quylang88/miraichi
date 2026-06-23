@@ -29,6 +29,8 @@ Index list of records.
 - [ADR-0014-data-provider-abstraction-and-source-selection-criteria.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0014-data-provider-abstraction-and-source-selection-criteria.md) - Data Provider Abstraction and Source Selection Criteria. (Status: Accepted)
 - [ADR-0015-generic-football-data-contract.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0015-generic-football-data-contract.md) - Generic Football Data Contract. (Status: Accepted)
 - [ADR-0016-ingestion-quality-freshness-and-traceability-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0016-ingestion-quality-freshness-and-traceability-boundary.md) - Ingestion Quality, Freshness, and Traceability Boundary. (Status: Accepted)
+- [ADR-CANDIDATES-PHASE-4.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-4.md) - Candidate decisions for local AI input, prediction output envelope, runtime selection, LLM explanations, and evaluation in Phase 4. (Status: Candidate)
+
 
 ## Reports & Summaries
 - [PHASE-0-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-0-COMPLETION-REPORT.md) - Completion report for Phase 0 (Repo Bootstrap and Documentation Setup).
@@ -51,6 +53,9 @@ Index list of records.
 - [PHASE-3-4-DATA-INGESTION-INTEGRATION-REVIEW.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-4-DATA-INGESTION-INTEGRATION-REVIEW.md) - Gateway review checklist and authorizations for Phase 3.4.
 - [PHASE-3-COMPLETION-REVIEW.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-COMPLETION-REVIEW.md) - Completion review and gateway closure for Phase 3.
 - [PHASE-3-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-COMPLETION-REPORT.md) - Final completion report for Phase 3 (Data Ingestion Planning and Mock Ingestion Skeleton).
+- [PHASE-4-OPENING-REPORT.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-OPENING-REPORT.md) - Opening report and governance limits for Phase 4 (Local AI Input Pipeline and Prediction Engine Planning).
+- [PHASE-4-OPENING-REVIEW.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-OPENING-REVIEW.md) - Opening review checklists and validation checks for Phase 4.
+
 
 ## TODO / Next Steps
 - [ ] Add future logs as design decisions are made.

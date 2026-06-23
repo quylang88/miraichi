@@ -41,7 +41,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 ### Phase 4: Local AI Skeleton
 - **Goal**: Hook up LLMs and local AI pipelines to digest generic football statistics.
 - **Deliverables**: Inference endpoints, local prediction pipeline tests, and prompt routing logs.
-- **Status**: Ready for Planning.
+- **Status**: Active Planning.
 
 ### Phase 5: Betting/History/Bankroll Modules
 - **Goal**: Implement betting rules, audit logs, and bankroll tracking logic.
@@ -61,4 +61,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Begin Phase 3 Data Ingestion Planning.
 - [x] Review and approve Phase 3 Candidate ADRs (ADR-0013 to ADR-0016).
 - [x] Implement provider-agnostic parser interfaces and local mock data ingestion in worker.
-- [ ] Begin Phase 4 Local AI Skeleton planning.
+- [x] Begin Phase 4 Local AI Skeleton planning.
+- [ ] Approve Phase 4 candidate ADRs (ADR-0017 to ADR-0021) and mock-up local-ai service.
+

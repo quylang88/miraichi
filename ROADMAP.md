@@ -49,4 +49,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Begin Phase 3 data ingestion planning.
 - [x] Approve Phase 3 candidate ADRs.
 - [x] Build parser stubs and mock ingestion worker flow.
+- [x] Open Phase 4 planning and draft candidate ADRs.
+- [ ] Review Phase 4 candidate ADRs (ADR-0017 to ADR-0021).
+
 
