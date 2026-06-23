@@ -6,7 +6,7 @@ Validations and integrity rules for sports data fields.
 Prevents incorrect match results or bad odds formats from corrupting prediction models.
 
 ## Status
-- **Status**: Draft
+- **Status**: Draft / Active Planning
 
 ## Scope
 Validation thresholds for teams, matches, scores, and odds.
@@ -17,4 +17,5 @@ Validation thresholds for teams, matches, scores, and odds.
 - Match score integers must not be negative.
 
 ## TODO / Next Steps
-- [ ] Implement database-level constraints checking these rules.
+- [ ] Implement in-memory validation rules within parser adapters (no DB constraints).
+- [ ] Define shared validation schema helper functions in `packages/shared`.

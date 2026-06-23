@@ -34,9 +34,9 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Status**: Completed.
 
 ### Phase 3: Data Ingestion Planning
-- **Goal**: Ingest external football matches and odds feeds dynamically.
-- **Deliverables**: Workers to poll, transform, and store generic sports data.
-- **Status**: Ready for Planning.
+- **Goal**: Plan and architect data ingestion adapters, quality rules, and abstraction interfaces before live integrations.
+- **Deliverables**: Phase 3 planning docs, data guardrails, candidate ADRs, and generic mock ingestion schemas.
+- **Status**: In Progress.
 
 ### Phase 4: Local AI Skeleton
 - **Goal**: Hook up LLMs and local AI pipelines to digest generic football statistics.
@@ -58,4 +58,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Convert approved Phase 1 recommendations into accepted/proposed ADRs.
 - [x] Complete Phase 1 completion review.
 - [x] Complete Phase 2 App Skeleton and Scaffold.
-- [ ] Begin Phase 3 Data Ingestion Planning.
+- [x] Begin Phase 3 Data Ingestion Planning.
+- [ ] Review and approve Phase 3 Candidate ADRs (ADR-0013 to ADR-0016).
+- [ ] Implement provider-agnostic parser interfaces and local mock data ingestion in worker.

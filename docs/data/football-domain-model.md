@@ -3,13 +3,13 @@
 Logical schemas and relationships for football matches.
 
 ## Purpose
-Establishes database entities and relationships.
+Establishes logical data structures and relationships.
 
 ## Status
-- **Status**: Draft
+- **Status**: Draft / Active Planning
 
 ## Scope
-Directly maps to shared types in packages/shared.
+Describes document-level contracts and TypeScript interfaces implemented in `packages/shared`. This represents logical constraints only; no database tables or ORM schemas are created.
 
 ## Domain Model
 - **Competition** (1) <----> (N) **Season**
@@ -18,4 +18,5 @@ Directly maps to shared types in packages/shared.
 - **Match** (1) <----> (N) **Prediction**
 
 ## TODO / Next Steps
-- [ ] Align model schemas with ORM schemas.
+- [ ] Refine core TypeScript type definitions in `packages/shared`.
+- [ ] Verify parser schemas map correctly to these logical entities.

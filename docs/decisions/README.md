@@ -24,6 +24,7 @@ Index list of records.
 - [ADR-0010-testing-competition-agnostic-verification-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0010-testing-competition-agnostic-verification-draft.md) - Testing and competition-agnostic verification strategy. (Status: Accepted)
 - [ADR-0011-agent-workflow-handoff-governance-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0011-agent-workflow-handoff-governance-draft.md) - Agent workflow and handoff governance. (Status: Accepted)
 - [ADR-0012-monorepo-tooling-and-package-manager.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0012-monorepo-tooling-and-package-manager.md) - Monorepo package manager selection. (Status: Accepted)
+- [ADR-CANDIDATES-PHASE-3.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-3.md) - Candidate decisions for data storage, provider selection, contracts, and quality in Phase 3. (Status: Candidate)
 
 ## Reports & Summaries
 - [PHASE-0-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-0-COMPLETION-REPORT.md) - Completion report for Phase 0 (Repo Bootstrap and Documentation Setup).
@@ -33,6 +34,7 @@ Index list of records.
 - [PHASE-1-DECISION-BACKLOG.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-DECISION-BACKLOG.md) - Decision backlog for unresolved Phase 1 candidates.
 - [ADR-0003-PHASE-2-OWNER-REVIEW.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0003-PHASE-2-OWNER-REVIEW.md) - Product boundary Phase 2 owner review gateway.
 - [PHASE-2-DECISION-BACKLOG.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-2-DECISION-BACKLOG.md) - Decision backlog for Phase 2.
+- [PHASE-3-OPENING-REPORT.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-OPENING-REPORT.md) - Opening report and cleanup validation for Phase 3 (Data Ingestion Planning).
 
 ## TODO / Next Steps
 - [ ] Add future logs as design decisions are made.

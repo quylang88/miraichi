@@ -1,28 +1,28 @@
 # Competition Registry
 
-Data registry details for mapping tournaments in the database.
+Data registry details for registering tournaments in the system.
 
 ## Purpose
-Explains how to register new football tournaments in the system without changing code.
+Explains how to configure new football tournaments dynamically without changing core application code.
 
 ## Status
-- **Status**: Draft
+- **Status**: Draft / Active Planning
 
 ## Scope
-Defines the dynamic records shape in the competition configuration repository.
+Defines the dynamic records shape in the configuration layer. Storage of this registry is restricted to local configuration files during Phase 3; database tables are deferred.
 
 ## Registry Rules
-1. **Dynamic Metadata Registration**: The registry is stored in a database table or a registry config. Adding a tournament simply requires inserting a row:
+1. **Dynamic Configuration Metadata**: Adding a tournament simply requires defining a registry config record:
    ```json
    {
-     "id": "wc-2026",
-     "name": "World Cup 2026",
-     "country": "International",
+     "id": "competition-alpha",
+     "name": "Competition Alpha",
+     "country": "Region Alpha",
      "type": "tournament",
      "isActive": true
    }
    ```
-2. **Support Multiple Tournaments**: The code must handle queries listing multiple competitions simultaneously.
+2. **Support Multiple Tournaments**: Code must support processing records from multiple competitions concurrently.
 
 ## TODO / Next Steps
-- [ ] Create initial competition registry JSON records for testing.
+- [ ] Draft initial mock registry records for `packages/config` testing.

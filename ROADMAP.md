@@ -33,9 +33,10 @@ Outlines high-level roadmap milestones across multiple phases.
 - Establish basic API, Web, Worker, and local-ai connectivity.
 - Verify communication paths via mock endpoints.
 
-### Milestone 4: Real Sports Data Ingestion Planning
-- Implement basic generic sports feed adapters.
-- Save ingestion results in database (to be modeled).
+### Milestone 4: Sports Data Ingestion Planning (In Progress)
+- Establish provider-agnostic parser interfaces and mock feed adapters.
+- Define data quality rules and generic schema validation contracts.
+- Implement mock-only ingestion processing in apps/worker (database storage deferred).
 
 ### Milestone 5: Predictive Inference & Agent Handoffs
 - Integrate local AI model predictions.
@@ -45,4 +46,5 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Complete Phase 1 architecture planning milestones.
 - [x] Align on specific target dates for Milestones 3 through 5.
 - [x] Complete Phase 2 app skeleton planning and scaffolding.
-- [ ] Begin Phase 3 data ingestion planning.
+- [x] Begin Phase 3 data ingestion planning.
+- [ ] Approve Phase 3 candidate ADRs and build parser stubs.
