@@ -45,6 +45,8 @@ Index list of records.
 - [OWNER-DECISION-GATES.md](file:///c:/CODE/miraichi/docs/governance/OWNER-DECISION-GATES.md) - Owner decision gates governance for business logic and algorithms.
 - [PHASE-3-2-DATA-CONTRACT-PLAN.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-2-DATA-CONTRACT-PLAN.md) - Implementation roadmap for mock contracts in Phase 3.2.
 - [PHASE-3-2-DATA-CONTRACT-REVIEW.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-2-DATA-CONTRACT-REVIEW.md) - Gateway review checklist and authorizations for Phase 3.2.
+- [PHASE-3-3-MOCK-INGESTION-REPORT.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-3-MOCK-INGESTION-REPORT.md) - Implementation report and test outputs for Phase 3.3 mock ingestion skeleton.
+- [PHASE-3-3-MOCK-INGESTION-REVIEW.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-3-MOCK-INGESTION-REVIEW.md) - Gateway review checklist and authorizations for Phase 3.3.
 
 ## TODO / Next Steps
 - [ ] Add future logs as design decisions are made.

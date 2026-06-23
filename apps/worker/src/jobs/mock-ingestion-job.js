@@ -1,35 +1,118 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { MockProviderAdapter } from '../adapters/mock-provider-adapter.js';
+import { validateMatch, validateMarket } from '../validators/ingestion-validator.js';
+import { memoryIngestionRepository } from '../repositories/memory-ingestion-repository.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/**
- * Executes a simulated ingestion cron job.
- * Reads local mock fixtures and prints parsed data to logs.
- */
-export function runIngestionJob() {
-  console.log(`[Worker Ingestion Job] Tick: Starting ingestion runner at ${new Date().toISOString()}...`);
+export async function runMockIngestionJob() {
+  const startTime = new Date().toISOString();
+  const runId = `run-${Math.random().toString(36).substr(2, 9)}`;
+  const adapter = new MockProviderAdapter();
+  const providerId = adapter.providerId;
+
+  let processedCount = 0;
+  let successCount = 0;
+  let skippedCount = 0;
+
+  console.log(`[Ingestion Job] Starting mock ingestion run ${runId} for provider ${providerId}...`);
 
   try {
-    const fixturePath = path.resolve(__dirname, '../fixtures/generic-matches.mock.json');
-    if (!fs.existsSync(fixturePath)) {
-      throw new Error(`Mock fixture not found at path: ${fixturePath}`);
+    const fixturesPath = path.join(__dirname, '../fixtures/provider-mock-alpha-fixtures.json');
+    const marketsPath = path.join(__dirname, '../fixtures/provider-mock-alpha-markets.json');
+
+    // 1. Read Raw Mock Files
+    const rawMatchesData = await fs.readFile(fixturesPath, 'utf-8');
+    const rawMarketsData = await fs.readFile(marketsPath, 'utf-8');
+
+    const rawMatches = JSON.parse(rawMatchesData);
+    const rawMarkets = JSON.parse(rawMarketsData);
+
+    // 2. Adapter Normalization mapping
+    const normalizedMatches = adapter.parseMatches(rawMatches);
+    const normalizedMarkets = adapter.parseMarkets(rawMarkets);
+
+    const ingestedAt = new Date().toISOString();
+
+    // 3. Process & Validate Matches
+    for (const match of normalizedMatches) {
+      processedCount++;
+      // Inject trace metadata
+      match.ingestedAt = ingestedAt;
+      match.sourceProviderId = providerId;
+
+      const validation = validateMatch(match);
+      if (validation.valid) {
+        memoryIngestionRepository.saveMatch(match);
+        successCount++;
+      } else {
+        console.warn(`[Ingestion Job] Validation failed for match ${match.id || 'unknown'}:`, validation.errors);
+        skippedCount++;
+      }
     }
 
-    const fileContent = fs.readFileSync(fixturePath, 'utf8');
-    const feed = JSON.parse(fileContent);
+    // 4. Process & Validate Markets
+    for (const market of normalizedMarkets) {
+      processedCount++;
+      // Inject trace metadata
+      market.ingestedAt = ingestedAt;
+      market.sourceProviderId = providerId;
 
-    console.log(`[Worker Ingestion Job] Feed timestamp: ${feed.feedTimestamp}`);
-    console.log(`[Worker Ingestion Job] Ingesting ${feed.data.length} matches:`);
-    
-    feed.data.forEach(fixture => {
-      console.log(`  * Ingested ID: ${fixture.provider_fixture_id} | ${fixture.competitor_1} vs ${fixture.competitor_2} [${fixture.league_generic_name}]`);
-    });
+      const validation = validateMarket(market);
+      if (validation.valid) {
+        memoryIngestionRepository.saveMarket(market);
+        successCount++;
+      } else {
+        console.warn(`[Ingestion Job] Validation failed for market ${market.id || 'unknown'}:`, validation.errors);
+        skippedCount++;
+      }
+    }
 
-    console.log(`[Worker Ingestion Job] Ingestion transaction complete.`);
-  } catch (err) {
-    console.error(`[Worker Ingestion Job] Ingestion failed: ${err.message}`);
+    // 5. Ingestion Run Status Summary
+    const endTime = new Date().toISOString();
+    const runStatus = skippedCount > 0 ? 'partial_failure' : 'success';
+
+    const runReport = {
+      id: runId,
+      providerId,
+      status: runStatus,
+      startTime,
+      endTime,
+      metrics: {
+        processedCount,
+        successCount,
+        skippedCount
+      }
+    };
+
+    memoryIngestionRepository.saveRun(runReport);
+
+    console.log(`[Ingestion Job] Completed run ${runId} successfully with status ${runStatus}. Metrics:`, runReport.metrics);
+
+  } catch (error) {
+    const endTime = new Date().toISOString();
+    console.error(`[Ingestion Job] Critical failure in run ${runId}:`, error.message);
+
+    const runReport = {
+      id: runId,
+      providerId,
+      status: 'failed',
+      startTime,
+      endTime,
+      metrics: {
+        processedCount,
+        successCount,
+        skippedCount
+      },
+      errorMessage: error.message
+    };
+
+    memoryIngestionRepository.saveRun(runReport);
   }
 }
+
+export const runIngestionJob = runMockIngestionJob;
+

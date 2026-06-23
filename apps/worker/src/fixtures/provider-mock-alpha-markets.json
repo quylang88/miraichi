@@ -1,0 +1,24 @@
+[
+  {
+    "market_id": "raw-market-001",
+    "fixture_ref": "raw-match-001",
+    "name_type": "1X2",
+    "timestamp_utc": "2026-06-23T22:23:56Z",
+    "selections": [
+      { "id": "sel-home", "label": "home", "odds_value": 1.85 },
+      { "id": "sel-draw", "label": "draw", "odds_value": 3.40 },
+      { "id": "sel-away", "label": "away", "odds_value": 4.20 }
+    ]
+  },
+  {
+    "market_id": "raw-market-002",
+    "fixture_ref": "raw-match-002",
+    "name_type": "1X2",
+    "timestamp_utc": "2026-06-23T22:23:56Z",
+    "selections": [
+      { "id": "sel-home", "label": "home", "odds_value": 2.10 },
+      { "id": "sel-draw", "label": "draw", "odds_value": 3.10 },
+      { "id": "sel-away", "label": "away", "odds_value": 3.60 }
+    ]
+  }
+]

@@ -17,7 +17,8 @@
     "test:e2e": "node scripts/test-endpoints.js",
     "audit": "node scripts/audit-rules.js",
     "phase2:check-rules": "node scripts/phase2-verify.js",
-    "phase2:verify": "pnpm run check && pnpm run audit && pnpm run phase2:check-rules && pnpm run test:e2e"
+    "phase2:verify": "pnpm run check && pnpm run audit && pnpm run phase2:check-rules && pnpm run test:e2e",
+    "phase3:verify": "node scripts/phase3-verify.js"
   },
   "engines": {
     "node": ">=18.0.0"

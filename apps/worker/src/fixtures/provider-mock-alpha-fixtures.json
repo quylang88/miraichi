@@ -1,0 +1,26 @@
+[
+  {
+    "fixture_id": "raw-match-001",
+    "comp_name": "competition-alpha",
+    "season_year": "season-alpha-2026",
+    "home_team_tag": "team-alpha",
+    "away_team_tag": "team-beta",
+    "match_status": "completed",
+    "start_utc": "2026-06-23T20:00:00Z",
+    "score_result": {
+      "home": 2,
+      "away": 1
+    },
+    "venue": "Stadium Alpha"
+  },
+  {
+    "fixture_id": "raw-match-002",
+    "comp_name": "competition-alpha",
+    "season_year": "season-alpha-2026",
+    "home_team_tag": "team-gamma",
+    "away_team_tag": "team-delta",
+    "match_status": "scheduled",
+    "start_utc": "2026-06-25T18:00:00Z",
+    "venue": "Stadium Beta"
+  }
+]
