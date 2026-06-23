@@ -28,12 +28,12 @@ Outlines high-level roadmap milestones across multiple phases.
 - Draft system boundaries, data flow, and LLM/local AI responsibilities.
 - Review competition-agnostic risks before implementation.
 
-### Milestone 3: Skeletal Connectivity & Scaffold Planning
+### Milestone 3: Skeletal Connectivity & Scaffold (Completed)
 - Define app boundaries, package boundaries, mock contracts, and exit criteria.
 - Establish basic API, Web, Worker, and local-ai connectivity.
 - Verify communication paths via mock endpoints.
 
-### Milestone 4: Real Sports Data Ingestion
+### Milestone 4: Real Sports Data Ingestion Planning
 - Implement basic generic sports feed adapters.
 - Save ingestion results in database (to be modeled).
 
@@ -44,4 +44,5 @@ Outlines high-level roadmap milestones across multiple phases.
 ## TODO / Next Steps
 - [x] Complete Phase 1 architecture planning milestones.
 - [x] Align on specific target dates for Milestones 3 through 5.
-- [ ] Complete Phase 2 app skeleton planning and scaffolding.
+- [x] Complete Phase 2 app skeleton planning and scaffolding.
+- [ ] Begin Phase 3 data ingestion planning.

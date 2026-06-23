@@ -28,15 +28,15 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Deliverables**: Phase 1 planning package, open architecture questions, candidate options, draft system boundaries, draft data flow, LLM/local AI boundary notes, competition-agnostic review, and ADR-0002.
 - **Status**: Completed.
 
-### Phase 2: App Skeleton and Scaffold Planning
+### Phase 2: App Skeleton and Scaffold
 - **Goal**: Define boundaries, mock contracts, and deploy running skeleton code for all major applications and packages.
 - **Deliverables**: Minimal app skeletons, frontend setup with UI package integration, local AI boundary stub, and worker boundary stub using technology choices accepted in later ADRs.
-- **Status**: Ready for Planning.
+- **Status**: Completed.
 
-### Phase 3: Data Ingestion Skeleton
+### Phase 3: Data Ingestion Planning
 - **Goal**: Ingest external football matches and odds feeds dynamically.
 - **Deliverables**: Workers to poll, transform, and store generic sports data.
-- **Status**: TODO.
+- **Status**: Ready for Planning.
 
 ### Phase 4: Local AI Skeleton
 - **Goal**: Hook up LLMs and local AI pipelines to digest generic football statistics.
@@ -57,4 +57,5 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Review Phase 1 architecture planning package.
 - [x] Convert approved Phase 1 recommendations into accepted/proposed ADRs.
 - [x] Complete Phase 1 completion review.
-- [ ] Complete Phase 2 App Skeleton and Scaffold Planning.
+- [x] Complete Phase 2 App Skeleton and Scaffold.
+- [ ] Begin Phase 3 Data Ingestion Planning.
