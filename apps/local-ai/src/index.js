@@ -2,6 +2,8 @@ import http from 'http';
 import url from 'url';
 import { handleHealth } from './routes/health.js';
 import { handlePredict, handleExplain } from './routes/prediction-candidates.mock.js';
+import { handleMockPredict } from './routes/mock-prediction.js';
+import { handleMockExplain } from './routes/mock-explanation.js';
 
 const PORT = 3002;
 
@@ -17,6 +19,10 @@ const server = http.createServer((req, res) => {
     handlePredict(req, res);
   } else if (pathname === '/ai/v1/explain') {
     handleExplain(req, res);
+  } else if (pathname === '/ai/v1/mock/predict') {
+    handleMockPredict(req, res);
+  } else if (pathname === '/ai/v1/mock/explain') {
+    handleMockExplain(req, res);
   } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: `Not Found: ${pathname}` }));
