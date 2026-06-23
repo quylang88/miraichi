@@ -41,7 +41,7 @@ Miraichi requires a plan for persisting ingested fixtures, odds, predictions, an
 * **Date**: 2026-06-23
 
 ### Problem
-Miraichi must ingest match fixtures and odds feeds from external sports providers. Direct coupling to a specific provider's API structure (e.g., Sportmonks, API-Football) makes it difficult to change vendors or support multiple data sources.
+Miraichi must ingest match fixtures and odds feeds from external sports providers. Direct coupling to a specific provider's API structure (e.g., hypothetical vendors Provider Alpha or Provider Beta, used as examples only) makes it difficult to change vendors or support multiple data sources.
 
 ### Options
 * **Option A**: Implement direct provider-specific API route integration within the worker daemon.
@@ -49,7 +49,7 @@ Miraichi must ingest match fixtures and odds feeds from external sports provider
 * **Option C**: Set up a decoupled caching proxy service to fetch, normalize, and serve the feeds.
 
 ### Recommended Direction
-**Option B**. Define a strict `SportsDataProvider` parser adapter interface in `packages/shared` or `apps/worker`. Individual parsers map incoming feed payloads (e.g., `SportmonksAdapter`, `MockProviderAdapter`) into the internal generic model.
+**Option B**. Define a provider parser adapter interface in `packages/shared` or `apps/worker`. Individual parsers map incoming feed payloads (e.g., `MockProviderAdapter`, `ProviderAlphaAdapter`, `ProviderBetaAdapter`) into the internal generic model. No specific provider is selected during Phase 3 planning.
 
 ### Risks
 * Over-engineering the abstraction layer if only one vendor is ever used.
@@ -75,11 +75,11 @@ External sports feeds represent concepts (tournaments, matches, odds) differentl
 
 ### Options
 * **Option A**: Use loose ad-hoc JSON structures passed between components without schema validation.
-* **Option B**: Define strict, generic TypeScript interface contracts in `packages/shared` and compile-time types.
+* **Option B**: Define documentation-first contracts (markdown schemas) and JavaScript mock contract objects, deferring TypeScript interfaces.
 * **Option C**: Deploy a centralized JSON Schema registry service with runtime validation at service boundaries.
 
 ### Recommended Direction
-**Option B**. Maintain centralized, generic types in `packages/shared`. Data objects passed across boundaries (e.g. between `apps/worker` and `apps/api`) conform strictly to these types, using generic parameters (`competitionId`, `seasonId`).
+**Option B**. Establish documentation-first generic schemas and JavaScript mock contract objects in `packages/shared`. Data objects passed across boundaries (e.g. between `apps/worker` and `apps/api`) conform conceptually to these markdown schemas, using generic parameters (`competitionId`, `seasonId`). The adoption of compile-time TypeScript interfaces is deferred to a separate future ADR.
 
 ### Risks
 * Defining a model that is too rigid may require refactoring when new, unexpected markets or stats types are introduced.
@@ -90,6 +90,7 @@ External sports feeds represent concepts (tournaments, matches, odds) differentl
 
 ### What It Must Not Decide Yet
 * DB-level tables, columns, indexes, or specific SQL schema dialects.
+* Adoption of a TypeScript compiler or TypeScript type enforcement within the codebase.
 
 ---
 
