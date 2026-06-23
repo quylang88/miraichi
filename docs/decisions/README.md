@@ -30,6 +30,12 @@ Index list of records.
 - [ADR-0015-generic-football-data-contract.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0015-generic-football-data-contract.md) - Generic Football Data Contract. (Status: Accepted)
 - [ADR-0016-ingestion-quality-freshness-and-traceability-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0016-ingestion-quality-freshness-and-traceability-boundary.md) - Ingestion Quality, Freshness, and Traceability Boundary. (Status: Accepted)
 - [ADR-CANDIDATES-PHASE-4.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-4.md) - Candidate decisions for local AI input, prediction output envelope, runtime selection, LLM explanations, and evaluation in Phase 4. (Status: Candidate)
+- [ADR-0017-local-ai-input-candidate-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0017-local-ai-input-candidate-boundary.md) - Local AI Input Candidate Boundary. (Status: Draft)
+- [ADR-0018-prediction-output-envelope-and-trace-contract.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0018-prediction-output-envelope-and-trace-contract.md) - Prediction Output Envelope and Trace Contract. (Status: Draft)
+- [ADR-0019-prediction-engine-runtime-and-algorithm-selection-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0019-prediction-engine-runtime-and-algorithm-selection-boundary.md) - Prediction Engine Runtime and Algorithm Selection Boundary. (Status: Draft)
+- [ADR-0020-llm-explanation-role-and-prediction-refusal-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0020-llm-explanation-role-and-prediction-refusal-boundary.md) - LLM Explanation Role and Prediction Refusal Boundary. (Status: Draft)
+- [ADR-0021-prediction-evaluation-and-backtesting-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0021-prediction-evaluation-and-backtesting-boundary.md) - Prediction Evaluation and Backtesting Boundary. (Status: Draft)
+
 
 
 ## Reports & Summaries

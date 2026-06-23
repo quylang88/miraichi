@@ -20,6 +20,8 @@ This document compiles the candidate Architectural Decision Records (ADRs) for P
 ### Recommended Direction
 **Option B**. The local AI boundary consumes generic `inputCandidate` objects (defined in the handoff contract) that filter out provider details, ensuring the prediction engine remains competition-agnostic and decoupled from raw sports feed formats. No prediction algorithm is selected in this step.
 
+Note: Input candidates are not predictions and must not contain owner-undecided model features, weights, betting signals, or strategy decisions.
+
 ### Risks
 * Abstraction might hide granular features (e.g. detailed card stats) if not declared in the shared contracts.
 
@@ -52,6 +54,8 @@ Predictions must be consumable by the API gateway and the frontend UI, while rem
 `predictionId`, `matchId`, `competitionId`, `seasonId`, `generatedAt`, `engineMode`, `predictionAvailable`, `confidenceLabel`, `outputSummary`, `trace`, and `warnings`.
 No probability calculation formulas or decimal ratios are defined in this candidate.
 
+Note: Outcome labels, recommended bets, stake fields, confidence percentages, or probability fields require later owner-approved ADR.
+
 ### Risks
 * Slightly increased data transfer size due to trace telemetry.
 
@@ -80,7 +84,7 @@ Selecting a prediction runtime (e.g. ONNX, TensorFlow, PyTorch) too early can lo
 * **Option C (Recommended)**: Defer final runtime and algorithm selection. Implement a mock prediction engine only.
 
 ### Recommended Direction
-**Option C**. Runtime, model, and algorithm selections remain deferred. Phase 4 will implement a static **mock prediction engine** in `apps/local-ai` returning static outcomes. Real prediction logic is completely frozen until the owner signs off on a baseline evaluation report.
+**Option C**. Runtime, model, and algorithm selections remain deferred. Phase 4 may implement a mock prediction engine that returns traceable mock envelopes only. It must not return real outcome predictions, betting picks, probability percentages, or confidence scores. The safest default is `predictionAvailable: false` or `engineMode: mock`. Real prediction logic is completely frozen until the owner signs off on a baseline evaluation report.
 
 ### Risks
 * Postpones the discovery of potential hardware performance issues or model loading errors.
@@ -112,6 +116,8 @@ LLMs are prone to hallucinating facts or guessing sports match outcomes. In a be
 ### Recommended Direction
 **Option B**. The LLM operates strictly as an explainer of traceable local-ai predictions. If the prediction is missing or `predictionAvailable` is `false`, the LLM must refuse or clarify the lack of data. It must never speculate or invent outcomes.
 
+Note: Explanations should reference `predictionId` or `traceId` when available.
+
 ### Risks
 * Users may find a refusal message frustrating if they expect general chatbot capabilities.
 
@@ -140,7 +146,7 @@ To evaluate if a prediction model is viable, we must test it against historical 
 * **Option C**: Postpone evaluation planning entirely until Phase 5.
 
 ### Recommended Direction
-**Option B**. Define the metrics shape and harness layout for backtesting evaluation. Success metrics remain candidates (e.g. simple accuracy ratio) and no ROI, bankroll logic, or betting rules are coded.
+**Option B**. Define the metrics shape and harness layout for backtesting evaluation. Candidate metrics may be listed for discussion only, such as accuracy-like counts, coverage, calibration notes, or trace completeness. No metric is final, no threshold is accepted, and no betting ROI, bankroll, or stake-based evaluation is authorized in Phase 4. Success metrics remain candidates (e.g. simple accuracy ratio) and no ROI, bankroll logic, or betting rules are coded.
 
 ### Risks
 * Early metric definitions might not align with the needs of more complex prediction engines.
