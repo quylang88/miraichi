@@ -1,0 +1,42 @@
+# ADR-0010: Testing and Competition-Agnostic Verification Strategy
+
+## Status
+- **Status**: Draft
+- **Source candidate**: Candidate 012
+- **Date**: 2026-06-23
+
+## Context
+Miraichi needs verification practices that prevent architecture, data, local AI, LLM, and betting concepts from becoming competition-specific or untraceable. Phase 1 can define verification expectations without implementing test suites yet.
+
+## Decision to Be Made
+Decide what verification strategy should govern competition-agnostic architecture, boundary contracts, traceability, and refusal behavior before implementation begins.
+
+## Options Considered
+- Use manual documentation review only during Phase 1.
+- Add automated checks for competition-specific naming and final-decision language.
+- Plan future boundary contract tests for API, ingestion, local AI, and LLM refusal behavior.
+- Use a combined manual and automated verification strategy.
+
+## Draft Recommendation
+Use manual review during Phase 1 and define future automated checks before implementation broadens. Separate documentation guardrails from later code-level tests.
+
+## Consequences
+- Supports Phase 1 guardrails without introducing production code.
+- Creates a path for later automated checks and boundary tests.
+- Requires careful handling of false positives from keyword-based checks.
+
+## Risks
+- Manual-only review may miss repeated coupling patterns.
+- Automated keyword checks may produce false positives without context.
+- Missing boundary tests can allow later implementation to drift from planning docs.
+
+## Open Questions
+- Which competition-specific patterns should be blocked automatically?
+- Which boundary contracts need tests before Phase 2 or Phase 3?
+- How should false positives be reviewed without weakening the guardrail?
+
+## Owner Approval Required
+Project owner approval is required before this ADR can become Accepted or authorize implementation planning.
+
+## Implementation Status
+- **Implementation status**: Not started

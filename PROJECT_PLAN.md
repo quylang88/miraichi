@@ -12,7 +12,7 @@ This document provides the roadmap and scope boundaries for all engineering phas
 Defines the sequential milestones and execution rules for developers and autonomous agents working on Miraichi.
 
 ## Execution Guidelines
-1. No implementation of business logic, prediction algorithms, or database schemas during Phase 0.
+1. No implementation of business logic, prediction algorithms, betting calculations, or production database schemas during Phase 0 or Phase 1.
 2. Maintain strict competition-agnostic architecture throughout all phases.
 3. Every phase must pass verification guidelines defined in the workflow files.
 
@@ -21,16 +21,16 @@ Defines the sequential milestones and execution rules for developers and autonom
 ### Phase 0: Repo Bootstrap and Docs
 - **Goal**: Establish monorepo workspace and initial docs.
 - **Deliverables**: Directory trees, placeholder config files, agent rules, work-flow definitions, and ADRs.
-- **Status**: In Progress.
+- **Status**: Completed.
 
 ### Phase 1: Architecture Planning
-- **Goal**: Create concrete technical plans, route maps, design system definition, and API schemas.
-- **Deliverables**: Finalized API schemas, database schemas plans, design patterns, and local AI interface models.
-- **Status**: TODO.
+- **Goal**: Explore architecture questions, trade-offs, draft boundaries, and planning options before implementation.
+- **Deliverables**: Phase 1 planning package, open architecture questions, candidate options, draft system boundaries, draft data flow, LLM/local AI boundary notes, competition-agnostic review, and ADR-0002.
+- **Status**: In Progress.
 
 ### Phase 2: App Skeleton
 - **Goal**: Deploy running skeleton code for all major applications and packages.
-- **Deliverables**: Hello-world servers, frontend setup with UI packages, local AI server with mock responses, and worker stub with Redis setup.
+- **Deliverables**: Minimal app skeletons, frontend setup with UI package integration, local AI boundary stub, and worker boundary stub using technology choices accepted in later ADRs.
 - **Status**: TODO.
 
 ### Phase 3: Data Ingestion Skeleton
@@ -50,8 +50,9 @@ Defines the sequential milestones and execution rules for developers and autonom
 
 ### Phase 6: Testing/Deployment
 - **Goal**: Perform end-to-end integration, security audits, and production deployments.
-- **Deliverables**: GitHub Actions, Docker images, and monitoring dashboards.
+- **Deliverables**: Accepted CI/CD workflows, deployment artifacts, and monitoring dashboards.
 - **Status**: TODO.
 
 ## TODO / Next Steps
-- [ ] Transition project status to Phase 1 upon approval of bootstrap deliverables.
+- [ ] Review Phase 1 architecture planning package.
+- [ ] Convert accepted Phase 1 recommendations into future ADRs before implementation.

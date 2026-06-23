@@ -14,6 +14,7 @@ Defines the coordination framework for all subagents active in development.
 ## Agent System Guidelines
 - All agent interactions must follow the communication schema in packages/agent-protocol.
 - Subagents must not exceed their designated boundaries without handoff to the appropriate specialist.
+- All agents must read, load, and utilize the skills defined in the [.agent/skills](file:///c:/CODE/miraichi/.agent/skills/) directory. This ensures consistent execution of workflows, code reviews, plans, and developer behaviors.
 
 ## Subagent Directory
 

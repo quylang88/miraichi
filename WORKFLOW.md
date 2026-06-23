@@ -48,5 +48,12 @@ Covers git branching, commit message formatting, code review procedures, agent e
 - Any architectural change must update relevant docs and ADRs.
 - Docs must not contain hard-coded competition references.
 
+### 9. Phase 1 Architecture Planning Workflow
+- Phase 1 changes are limited to Markdown documentation and decision records.
+- Phase 1 must prefer Draft, Candidate, Option, and Open Question language.
+- Phase 1 must not implement business logic, prediction algorithms, betting calculations, production schemas, secrets, or final technology choices.
+- Architecture planning updates must run project guardrails, docs-maintainer review, and competition-agnostic review before completion.
+- Later implementation work must be backed by accepted ADRs or explicitly approved planning decisions.
+
 ## TODO / Next Steps
 - [ ] Implement automated linting checks for branch names and commit messages.

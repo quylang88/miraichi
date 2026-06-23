@@ -7,14 +7,14 @@ Miraichi provides an extensible platform for AI football prediction, betting man
 
 ## Status
 - **Status**: Draft
-- **Current Phase**: Phase 0 - Repository Bootstrap & Documentation Only
+- **Current Phase**: Phase 1 - Architecture Planning
 
 ## Scope
 This repository houses the entire monorepo system, including frontend, backend API, local AI modules, worker queues, and operational files. 
 
 > [!IMPORTANT]
-> **No business logic, database schemas, prediction algorithms, or real app code is implemented in this bootstrap phase.**
-> All code directories contain only placeholder structures and guides.
+> **No business logic, production database schemas, prediction algorithms, betting calculations, or real app code is implemented in Phase 1.**
+> Current work is limited to architecture discovery, open questions, candidate options, draft boundaries, and planning documents.
 
 ## Main Folder Structure
 The repository keeps a clean root structure with exactly 4 main folders:
@@ -24,13 +24,12 @@ The repository keeps a clean root structure with exactly 4 main folders:
 - **`ops/`**: Operational, deployment, docker, CI/CD pipelines, scripts, and monitoring infrastructure.
 
 ## Competition-Agnostic Principle
-While the initial launch targets World Cup use cases, the domain model, database contracts, predictions pipeline, and backend services must remain **strictly competition-agnostic**.
+While the initial launch targets World Cup use cases, the domain language, data contracts, predictions pipeline, and backend services must remain **strictly competition-agnostic**.
 - Do not hard-code World Cup logic, rules, or identifiers anywhere in the codebase.
 - Treat football competition metadata as dynamic, configurable registry data.
 - Football domain concepts (competitions, seasons, teams, matches, markets, bets, bankrolls) are modeled abstractly.
 
 ## TODO / Next Steps
-- [ ] Implement packages/config competition registry schema
-- [ ] Initialize apps/api server skeleton
-- [ ] Set up apps/web client skeleton
-- [ ] Build data ingestion pipelines under apps/worker
+- [ ] Review the Phase 1 architecture planning package.
+- [ ] Decide which architecture options need follow-up ADRs.
+- [ ] Approve implementation boundaries before starting app skeleton work.
