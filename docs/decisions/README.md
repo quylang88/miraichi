@@ -30,6 +30,8 @@ Index list of records.
 - [PHASE-1-COMPLETION-REVIEW.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REVIEW.md) - Completion review for Phase 1 (Architecture Planning).
 - [PHASE-1-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REPORT.md) - Completion report for Phase 1 (Architecture Planning).
 - [PHASE-1-DECISION-BACKLOG.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-DECISION-BACKLOG.md) - Decision backlog for unresolved Phase 1 candidates.
+- [ADR-0003-PHASE-2-OWNER-REVIEW.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0003-PHASE-2-OWNER-REVIEW.md) - Product boundary Phase 2 owner review gateway.
+- [PHASE-2-DECISION-BACKLOG.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-2-DECISION-BACKLOG.md) - Decision backlog for Phase 2.
 
 ## TODO / Next Steps
 - [ ] Add future logs as design decisions are made.

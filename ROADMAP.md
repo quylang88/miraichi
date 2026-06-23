@@ -22,13 +22,14 @@ Outlines high-level roadmap milestones across multiple phases.
 - Define agent roles and protocol interfaces.
 - Create initial architecture and deployment planning drafts.
 
-### Milestone 2: Phase 1 Architecture Planning (Completed - Acceptance Pending)
+### Milestone 2: Phase 1 Architecture Planning (Completed)
 - Explore open architecture questions.
 - Compare candidate architecture options.
 - Draft system boundaries, data flow, and LLM/local AI responsibilities.
 - Review competition-agnostic risks before implementation.
 
-### Milestone 3: Skeletal Connectivity
+### Milestone 3: Skeletal Connectivity & Scaffold Planning
+- Define app boundaries, package boundaries, mock contracts, and exit criteria.
 - Establish basic API, Web, Worker, and local-ai connectivity.
 - Verify communication paths via mock endpoints.
 
@@ -42,4 +43,5 @@ Outlines high-level roadmap milestones across multiple phases.
 
 ## TODO / Next Steps
 - [x] Complete Phase 1 architecture planning milestones.
-- [ ] Align on specific target dates for Milestones 3 through 5.
+- [x] Align on specific target dates for Milestones 3 through 5.
+- [ ] Complete Phase 2 app skeleton planning and scaffolding.
