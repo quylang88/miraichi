@@ -4,35 +4,37 @@
 Review ADR-0003 through ADR-0011 before any draft is promoted to Proposed or Accepted status.
 
 ## Status
-- **Status**: Draft
+- **Status**: Completed
 - **Review date**: 2026-06-23
+- **Owner Approval Date**: 2026-06-23
+- **Owner Decision**: Approved ADR-0002, 0004-0011 as Accepted. Retained ADR-0003 as Proposed.
 
 ## Scope
-This review covers ADR-0003 through ADR-0011 only. It classifies review readiness and does not accept, reject, or implement any ADR.
+This review covers ADR-0003 through ADR-0011. It records the final decisions made by the project owner and does not implement any business logic or code.
 
 ## Summary
-ADR-0003 through ADR-0011 are all currently marked Draft, explicitly require owner approval before Accepted, and state that implementation has not started. None of the reviewed ADRs hard-code single-competition logic, introduce business logic, define prediction algorithms, create betting calculations, create production database schemas, add secrets, or start implementation.
+On 2026-06-23, the project owner approved the promotion of the Phase 1 ADRs. Based on this approval:
+- **ADR-0002, ADR-0004, ADR-0005, ADR-0006, ADR-0007, ADR-0008, ADR-0009, ADR-0010, ADR-0011** are promoted to **Accepted** status.
+- **ADR-0003** is promoted to **Proposed** status (kept as Proposed pending owner confirmation of first milestone product scope).
 
-Post-fix update: ADR-0006 was narrowed to local AI prediction availability and traceable output expectations, with invocation timing deferred. ADR-0007 was narrowed to LLM role and refusal behavior, with chat persistence/privacy deferred. ADR-0003 through ADR-0011 are now review-ready for owner consideration as Proposed, but none have been promoted or accepted by this review.
-
-No ADR was marked Accepted by this review. No implementation should start from this review.
+None of the approved ADRs hard-code single-competition logic, introduce business logic, define prediction algorithms, create betting calculations, create production database schemas, add secrets, or start implementation.
 
 ## ADR Review Table
 
-| ADR | Topic | Current status | Recommended status | Review result | Required fixes | Owner approval required |
+| ADR | Topic | Previous status | Final Decision | Review result / Constraints | Required fixes | Owner approval |
 | --- | --- | --- | --- | --- | --- | --- |
-| ADR-0003 | Product boundary for first planning target | Draft | Proposed | Title, context, scope, options, trade-offs, consequences, risks, and open questions are clear. Avoids implementation and preserves competition-agnostic design. | None before Proposed. Before Accepted, owner must confirm first milestone workflow and read-only betting boundary. | Yes |
-| ADR-0004 | App and service boundary model | Draft | Proposed | Clear source-boundary decision. Options are fair and consequences are realistic. Avoids runtime and deployment lock-in. | None before Proposed. Before Accepted, owner must confirm source-only versus runtime boundary expectations for Phase 2. | Yes |
-| ADR-0005 | API mediation boundary | Draft | Proposed | Clear mediation decision with realistic risks. Avoids protocol, route, and schema details. Preserves controlled access between web, LLM, local AI, worker, and storage boundaries. | None before Proposed. Before Accepted, owner must confirm whether any early read-only paths may bypass API. | Yes |
-| ADR-0006 | Local AI prediction availability and traceable output contract | Draft | Proposed | Revised to focus on traceability and prediction availability. Invocation timing, runtime, algorithms, and exact trace schemas remain deferred. | None before Proposed. Before Accepted, owner must confirm availability wording and trace-evidence categories. | Yes |
-| ADR-0007 | LLM role and refusal behavior boundary | Draft | Proposed | Revised to focus on LLM role and refusal behavior. Chat persistence, retention, and privacy are explicitly deferred to a future storage/privacy ADR. | None before Proposed. Before Accepted, owner must confirm refusal expectations and evidence requirements. | Yes |
-| ADR-0008 | Worker-based data ingestion boundary | Draft | Proposed | Clear worker ownership decision. Options are fair, risks are documented, and queue/scheduler/provider/schema choices remain deferred. | None before Proposed. Before Accepted, owner must confirm whether manual curated data is allowed before worker ingestion exists. | Yes |
-| ADR-0009 | Competition configuration and registry boundary | Draft | Proposed | Clear competition-agnostic architecture decision. Options are fair and risks are realistic. Keeps core concepts generic and defers final storage/validation shape. | None before Proposed. Before Accepted, owner must confirm where competition metadata may live during early phases. | Yes |
-| ADR-0010 | Testing and competition-agnostic verification strategy | Draft | Proposed | Clear verification strategy. Options are fair, consequences are realistic, and it avoids implementing tests while planning future checks. | None before Proposed. Before Accepted, owner must confirm whether automated checks are required before Phase 2 or deferred. | Yes |
-| ADR-0011 | Agent workflow and handoff governance | Draft | Proposed | Clear governance decision. Options are fair and risks are documented. Preserves owner approval and avoids implementation governance creep. | None before Proposed. Before Accepted, owner must confirm who can promote candidates and what evidence is required. | Yes |
+| ADR-0003 | Product boundary for first planning target | Draft | Proposed | Title, context, scope, options, and trade-offs are clear. Kept as Proposed pending owner confirmation of first milestone product scope. | None. | Yes |
+| ADR-0004 | App and service boundary model | Draft | Accepted | Clear source-boundary decision. Defer final runtime/deployment. | None. | Yes (Approved) |
+| ADR-0005 | API mediation boundary | Draft | Accepted | API acts as the controlled mediation boundary. Defer exact route contracts. | None. | Yes (Approved) |
+| ADR-0006 | Local AI prediction availability and traceable output contract | Draft | Accepted | Focuses on traceability and prediction availability. Defer invocation timing/runtime. | None. | Yes (Approved) |
+| ADR-0007 | LLM role and refusal behavior boundary | Draft | Accepted | LLM acts as orchestration/explanation layer. Refusal behavior defined. Defer chat persistence/privacy. | None. | Yes (Approved) |
+| ADR-0008 | Worker-based data ingestion boundary | Draft | Accepted | Worker owns ingestion/normalization. Defer queue/scheduler/provider choices. | None. | Yes (Approved) |
+| ADR-0009 | Competition configuration and registry boundary | Draft | Accepted | Keep core concepts generic. Defer final storage/validation shape. | None. | Yes (Approved) |
+| ADR-0010 | Testing and competition-agnostic verification strategy | Draft | Accepted | Testing strategy defined. Defer implementation of test suites. | None. | Yes (Approved) |
+| ADR-0011 | Agent workflow and handoff governance | Draft | Accepted | Governance and handoff flow defined. Defer implementation governance details. | None. | Yes (Approved) |
 
-## ADRs Ready for Proposed
-- **ADR-0003**: Product boundary for first planning target.
+## ADRs Promoted to Accepted
+- **ADR-0002**: Architecture planning approach.
 - **ADR-0004**: App and service boundary model.
 - **ADR-0005**: API mediation boundary.
 - **ADR-0006**: Local AI prediction availability and traceable output contract.
@@ -42,8 +44,8 @@ No ADR was marked Accepted by this review. No implementation should start from t
 - **ADR-0010**: Testing and competition-agnostic verification strategy.
 - **ADR-0011**: Agent workflow and handoff governance.
 
-## ADRs Needing Revision
-- None after the post-fix update.
+## ADRs Promoted to Proposed
+- **ADR-0003**: Product boundary for first planning target (kept as Proposed pending owner confirmation).
 
 ## ADRs Recommended for Deferred
 - None among ADR-0003 through ADR-0011. Storage and deployment decisions remain deferred outside this reviewed range because their candidates were not converted to Draft ADRs.
@@ -67,15 +69,14 @@ No ADR was marked Accepted by this review. No implementation should start from t
 - **Chat persistence and privacy**: ADR-0007 now explicitly defers this decision to a future storage/privacy ADR.
 
 ## Recommended Next Actions
-- Move ADR-0003 through ADR-0011 to Proposed only if the project owner approves Proposed status.
+- Proceed to Phase 1 Completion Review and plan the Phase 2 app skeleton packages.
 - Track local AI invocation timing as a future ADR if operational planning requires it.
 - Track chat persistence, retention, and privacy as a future storage/privacy ADR.
-- Keep all ADRs out of Accepted status until explicit owner approval is given.
 - Keep implementation blocked until an Accepted ADR or explicit owner instruction authorizes implementation planning.
-- Continue competition-agnostic review before any status promotion.
+- Continue competition-agnostic review checks during Phase 2 planning.
 
 ## Explicit Non-Acceptance Confirmation
-No ADR was marked Accepted by this review. Accepted status requires explicit owner approval after review.
+Only the project owner-approved ADRs (ADR-0002, 0004-0011) have been marked as Accepted. ADR-0003 remains in Proposed status pending confirmation of the first milestone product scope.
 
 ## Explicit No-Implementation Confirmation
 No implementation was started by this review. This review does not authorize business logic, frontend/backend/AI production code, prediction algorithms, betting calculation logic, production database schemas, secrets, or competition-specific core behavior.

@@ -1,7 +1,9 @@
 # ADR-0008: Worker-Based Data Ingestion Boundary
 
 ## Status
-- **Status**: Draft
+- **Status**: Accepted
+- **Accepted Date**: 2026-06-23
+- **Owner Approval**: Approved by project owner
 - **Source candidate**: Candidate 006
 - **Date**: 2026-06-23
 
@@ -35,8 +37,8 @@ Plan a worker boundary for provider-specific ingestion and normalization while d
 - Which failures should block predictions versus mark data as stale?
 - What ingestion history must be audit-visible?
 
-## Owner Approval Required
-Project owner approval is required before this ADR can become Accepted or authorize implementation planning.
+## Owner Approval
+Approved by project owner. This decision guides future implementation plans but does not authorize or implement any code by itself.
 
 ## Implementation Status
 - **Implementation status**: Not started

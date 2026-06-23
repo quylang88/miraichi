@@ -1,7 +1,9 @@
 # ADR-0005: API Mediation Boundary
 
 ## Status
-- **Status**: Draft
+- **Status**: Accepted
+- **Accepted Date**: 2026-06-23
+- **Owner Approval**: Approved by project owner
 - **Source candidate**: Candidate 003
 - **Date**: 2026-06-23
 
@@ -34,8 +36,8 @@ Use the API as the controlled boundary for user-facing access while deferring ex
 - Should prediction status be exposed separately from prediction results?
 - What audit metadata should API-mediated actions preserve?
 
-## Owner Approval Required
-Project owner approval is required before this ADR can become Accepted or authorize implementation planning.
+## Owner Approval
+Approved by project owner. This decision guides future implementation plans but does not authorize or implement any code by itself.
 
 ## Implementation Status
 - **Implementation status**: Not started

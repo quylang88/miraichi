@@ -1,7 +1,9 @@
 # ADR-0010: Testing and Competition-Agnostic Verification Strategy
 
 ## Status
-- **Status**: Draft
+- **Status**: Accepted
+- **Accepted Date**: 2026-06-23
+- **Owner Approval**: Approved by project owner
 - **Source candidate**: Candidate 012
 - **Date**: 2026-06-23
 
@@ -35,8 +37,8 @@ Use manual review during Phase 1 and define future automated checks before imple
 - Which boundary contracts need tests before Phase 2 or Phase 3?
 - How should false positives be reviewed without weakening the guardrail?
 
-## Owner Approval Required
-Project owner approval is required before this ADR can become Accepted or authorize implementation planning.
+## Owner Approval
+Approved by project owner. This decision guides future implementation plans but does not authorize or implement any code by itself.
 
 ## Implementation Status
 - **Implementation status**: Not started

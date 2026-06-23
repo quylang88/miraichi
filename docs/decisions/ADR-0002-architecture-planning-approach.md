@@ -4,7 +4,9 @@
 Record the decision to treat Phase 1 as architecture discovery rather than final architecture locking.
 
 ## Status
-- **Status**: Draft
+- **Status**: Accepted
+- **Accepted Date**: 2026-06-23
+- **Owner Approval**: Approved by project owner
 - **Date**: 2026-06-23
 - **Author**: Codex
 
@@ -37,3 +39,9 @@ Phase 1 will not finalize production schemas, API contracts, infrastructure choi
 - What minimum data and prediction traceability requirements must exist before local AI implementation?
 - Which storage and deployment choices can remain deferred without blocking Phase 2?
 - What competition-agnostic review checks should be automated later?
+
+## Owner Approval
+Approved by project owner. This decision guides future implementation plans but does not authorize or implement any code by itself.
+
+## Implementation Status
+- **Implementation status**: Not started

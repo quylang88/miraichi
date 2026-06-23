@@ -1,7 +1,9 @@
 # ADR-0004: App and Service Boundary Model
 
 ## Status
-- **Status**: Draft
+- **Status**: Accepted
+- **Accepted Date**: 2026-06-23
+- **Owner Approval**: Approved by project owner
 - **Source candidate**: Candidate 002
 - **Date**: 2026-06-23
 
@@ -34,8 +36,8 @@ Preserve source-level boundaries for web, API, local AI, and worker responsibili
 - Which boundaries can be source-only during Phase 2?
 - What dependency rules should prevent direct cross-boundary calls?
 
-## Owner Approval Required
-Project owner approval is required before this ADR can become Accepted or authorize implementation planning.
+## Owner Approval
+Approved by project owner. This decision guides future implementation plans but does not authorize or implement any code by itself.
 
 ## Implementation Status
 - **Implementation status**: Not started

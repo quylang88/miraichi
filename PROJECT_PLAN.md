@@ -26,7 +26,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 ### Phase 1: Architecture Planning
 - **Goal**: Explore architecture questions, trade-offs, draft boundaries, and planning options before implementation.
 - **Deliverables**: Phase 1 planning package, open architecture questions, candidate options, draft system boundaries, draft data flow, LLM/local AI boundary notes, competition-agnostic review, and ADR-0002.
-- **Status**: In Progress.
+- **Status**: Completed (Pending Phase 1 Completion Review).
 
 ### Phase 2: App Skeleton
 - **Goal**: Deploy running skeleton code for all major applications and packages.
@@ -54,5 +54,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Status**: TODO.
 
 ## TODO / Next Steps
-- [ ] Review Phase 1 architecture planning package.
-- [ ] Convert accepted Phase 1 recommendations into future ADRs before implementation.
+- [x] Review Phase 1 architecture planning package.
+- [x] Convert approved Phase 1 recommendations into accepted/proposed ADRs.
+- [ ] Complete Phase 1 completion review.

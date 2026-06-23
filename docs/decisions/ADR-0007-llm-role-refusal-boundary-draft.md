@@ -1,7 +1,9 @@
 # ADR-0007: LLM Role and Refusal Behavior Boundary
 
 ## Status
-- **Status**: Draft
+- **Status**: Accepted
+- **Accepted Date**: 2026-06-23
+- **Owner Approval**: Approved by project owner
 - **Source candidate**: Candidate 005
 - **Date**: 2026-06-23
 
@@ -40,8 +42,8 @@ Use the LLM as an orchestration and explanation layer only, with explicit refusa
 - Which future ADR should decide whether chat content is persisted, summarized, or discarded?
 - How should the LLM distinguish unavailable predictions from available but uncertain analysis?
 
-## Owner Approval Required
-Project owner approval is required before this ADR can become Accepted or authorize implementation planning.
+## Owner Approval
+Approved by project owner. This decision guides future implementation plans but does not authorize or implement any code by itself.
 
 ## Implementation Status
 - **Implementation status**: Not started

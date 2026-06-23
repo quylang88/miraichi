@@ -61,5 +61,6 @@ graph TD
 - **`agent-protocol/`**: Definitions and standards for subagent-to-subagent coordination.
 
 ## TODO / Next Steps
-- [ ] Use the Phase 1 planning package to answer open architecture questions.
-- [ ] Record final architecture choices in later ADRs before implementation.
+- [x] Use the Phase 1 planning package to answer open architecture questions (recorded in ADR-0002 through ADR-0011).
+- [ ] Execute Phase 1 completion review.
+- [ ] Record future technology implementation decisions in later ADRs before Phase 2 skeleton coding begins.

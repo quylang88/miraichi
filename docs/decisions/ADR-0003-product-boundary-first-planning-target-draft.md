@@ -1,7 +1,8 @@
 # ADR-0003: Product Boundary for the First Miraichi Planning Target
 
 ## Status
-- **Status**: Draft
+- **Status**: Proposed
+- **Note**: Pending owner confirmation of first milestone product scope.
 - **Source candidate**: Candidate 001
 - **Date**: 2026-06-23
 

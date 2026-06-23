@@ -22,7 +22,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Define agent roles and protocol interfaces.
 - Create initial architecture and deployment planning drafts.
 
-### Milestone 2: Phase 1 Architecture Planning (Current)
+### Milestone 2: Phase 1 Architecture Planning (Completed - Acceptance Pending)
 - Explore open architecture questions.
 - Compare candidate architecture options.
 - Draft system boundaries, data flow, and LLM/local AI responsibilities.
@@ -41,4 +41,5 @@ Outlines high-level roadmap milestones across multiple phases.
 - Run basic agent coordination scenarios.
 
 ## TODO / Next Steps
-- [ ] Align on specific target dates for Milestones 2 through 5.
+- [x] Complete Phase 1 architecture planning milestones.
+- [ ] Align on specific target dates for Milestones 3 through 5.

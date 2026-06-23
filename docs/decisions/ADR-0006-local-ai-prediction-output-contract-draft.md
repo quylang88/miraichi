@@ -1,7 +1,9 @@
 # ADR-0006: Local AI Prediction Availability and Traceable Output Contract
 
 ## Status
-- **Status**: Draft
+- **Status**: Accepted
+- **Accepted Date**: 2026-06-23
+- **Owner Approval**: Approved by project owner
 - **Source candidate**: Candidate 004
 - **Date**: 2026-06-23
 
@@ -39,8 +41,8 @@ Define minimum prediction availability and traceability expectations now, while 
 - What distinguishes unavailable output from low-confidence output?
 - Which later ADR should decide on-demand, scheduled, batch, or hybrid invocation timing?
 
-## Owner Approval Required
-Project owner approval is required before this ADR can become Accepted or authorize implementation planning.
+## Owner Approval
+Approved by project owner. This decision guides future implementation plans but does not authorize or implement any code by itself.
 
 ## Implementation Status
 - **Implementation status**: Not started

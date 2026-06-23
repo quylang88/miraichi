@@ -1,7 +1,9 @@
 # ADR-0009: Competition Configuration and Registry Boundary
 
 ## Status
-- **Status**: Draft
+- **Status**: Accepted
+- **Accepted Date**: 2026-06-23
+- **Owner Approval**: Approved by project owner
 - **Source candidate**: Candidate 008
 - **Date**: 2026-06-23
 
@@ -35,8 +37,8 @@ Keep core concepts generic and place competition-specific metadata in configurat
 - What generic vocabulary is mandatory across app and package boundaries?
 - What review checks should block hard-coded competition assumptions?
 
-## Owner Approval Required
-Project owner approval is required before this ADR can become Accepted or authorize implementation planning.
+## Owner Approval
+Approved by project owner. This decision guides future implementation plans but does not authorize or implement any code by itself.
 
 ## Implementation Status
 - **Implementation status**: Not started

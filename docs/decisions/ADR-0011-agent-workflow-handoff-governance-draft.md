@@ -1,7 +1,9 @@
 # ADR-0011: Agent Workflow and Handoff Governance
 
 ## Status
-- **Status**: Draft
+- **Status**: Accepted
+- **Accepted Date**: 2026-06-23
+- **Owner Approval**: Approved by project owner
 - **Source candidate**: Candidate 013
 - **Date**: 2026-06-23
 
@@ -35,8 +37,8 @@ Use Planner Agent coordination with specialist-owner review before any ADR is ac
 - What evidence is required before an ADR candidate can become Draft or Accepted?
 - How should accepted decisions be propagated to root docs and specialist docs?
 
-## Owner Approval Required
-Project owner approval is required before this ADR can become Accepted or authorize implementation planning.
+## Owner Approval
+Approved by project owner. This decision guides future implementation plans but does not authorize or implement any code by itself.
 
 ## Implementation Status
 - **Implementation status**: Not started
