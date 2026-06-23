@@ -1,9 +1,11 @@
 # ADR-0014: Data Provider Abstraction and Source Selection Criteria
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-23
-* **Owner Approval Required**: Yes
+* **Accepted Date**: 2026-06-23
+* **Owner Approval**: Approved by project owner
 * **Implementation Status**: Not started
+* **Note**: This ADR guides Phase 3 mock ingestion planning and does not authorize production ingestion, database integration, provider integration, prediction logic, or betting logic.
 
 ---
 

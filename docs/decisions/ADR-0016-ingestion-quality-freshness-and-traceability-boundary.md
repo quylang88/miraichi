@@ -1,9 +1,11 @@
 # ADR-0016: Ingestion Quality, Freshness, and Traceability Boundary
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-23
-* **Owner Approval Required**: Yes
+* **Accepted Date**: 2026-06-23
+* **Owner Approval**: Approved by project owner
 * **Implementation Status**: Not started
+* **Note**: This ADR guides Phase 3 mock ingestion planning and does not authorize production ingestion, database integration, provider integration, prediction logic, or betting logic.
 
 ---
 
@@ -16,10 +18,10 @@ Corrupted or stale odds feeds can lead to bad prediction outputs, which compromi
 * **Option C**: Set up a secondary offline data validation and reconciliation process.
 
 ## 3. Decision & Recommendation
-Recommend **Option B**. The ingestion parser filters out invalid records (e.g., negative scores, zero odds, matches outside league dates) before normalization. Stamped metadata fields (`ingestedAt`, `sourceProviderId`) are appended for audit tracking.
+Recommend **Option B**. The ingestion parser filters out invalid records (e.g., negative scores, zero odds, matches outside configured competition or season windows) before normalization. Stamped metadata fields (`ingestedAt`, `sourceProviderId`) are appended for audit tracking.
 
 ## 4. Consequences
-* Prevents malformed odds or negative match scores from reaching downstream statistics databases and local AI models.
+* Prevents malformed odds or negative match scores from reaching downstream mock repositories, API consumers, and future local AI input candidates.
 * Simplifies auditing by keeping a clear trail of ingestion time and origin provider.
 * Increases memory utilization slightly to track metadata.
 

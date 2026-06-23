@@ -59,5 +59,5 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete Phase 1 completion review.
 - [x] Complete Phase 2 App Skeleton and Scaffold.
 - [x] Begin Phase 3 Data Ingestion Planning.
-- [ ] Review and approve Phase 3 Candidate ADRs (ADR-0013 to ADR-0016).
+- [x] Review and approve Phase 3 Candidate ADRs (ADR-0013 to ADR-0016).
 - [ ] Implement provider-agnostic parser interfaces and local mock data ingestion in worker.

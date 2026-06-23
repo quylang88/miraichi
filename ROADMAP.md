@@ -47,4 +47,5 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Align on specific target dates for Milestones 3 through 5.
 - [x] Complete Phase 2 app skeleton planning and scaffolding.
 - [x] Begin Phase 3 data ingestion planning.
-- [ ] Approve Phase 3 candidate ADRs and build parser stubs.
+- [x] Approve Phase 3 candidate ADRs.
+- [ ] Build parser stubs and mock ingestion worker flow.
