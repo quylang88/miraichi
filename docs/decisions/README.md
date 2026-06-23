@@ -14,7 +14,7 @@ Index list of records.
 ## ADR Log
 - [ADR-0001-monorepo-structure.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0001-monorepo-structure.md) - Monorepo selection and directories layout. (Status: Accepted)
 - [ADR-0002-architecture-planning-approach.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0002-architecture-planning-approach.md) - Phase 1 architecture discovery approach. (Status: Accepted)
-- [ADR-0003-product-boundary-first-planning-target-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0003-product-boundary-first-planning-target-draft.md) - Product boundary for the first planning target. (Status: Proposed)
+- [ADR-0003-product-boundary-first-planning-target-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0003-product-boundary-first-planning-target-draft.md) - Product boundary for the first planning target. (Status: Accepted)
 - [ADR-0004-app-service-boundary-model-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0004-app-service-boundary-model-draft.md) - App and service boundary model. (Status: Accepted)
 - [ADR-0005-api-mediation-boundary-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0005-api-mediation-boundary-draft.md) - API mediation boundary. (Status: Accepted)
 - [ADR-0006-local-ai-prediction-output-contract-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0006-local-ai-prediction-output-contract-draft.md) - Local AI prediction availability and traceable output contract. (Status: Accepted)

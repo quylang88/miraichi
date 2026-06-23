@@ -25,9 +25,12 @@ Decide on the scope of the first product milestone to determine which routes, UI
 
 ---
 
-## Technical Recommendation
+## Technical Recommendation & Owner Decision
 
-We recommend **Option B (Prediction review, explanation, and read-only bet history placeholders)**.
+**Option B (Prediction review, explanation, and read-only bet history placeholders)** is **Approved by Project Owner** on 2026-06-23. 
+
+* **Option A**: Superseded by Option B.
+* **Option C**: **Rejected** for Phase 2. No live betting calculations, risk management, or active bet slips will be scaffolded.
 
 ### Rationale
 1. **Scaffold Completeness**: It allows the developer to construct a realistic client-server skeleton that covers the entire main user journey (view prediction -> request explanation -> log simulated bet/history).
@@ -36,6 +39,6 @@ We recommend **Option B (Prediction review, explanation, and read-only bet histo
 
 ---
 
-## Owner Decision Request
+## Scaffolding Boundary Note
 
-Please review this recommendation. Until approved, ADR-0003 remains in `Proposed` status. Scaffold code created in Phase 2 will be structured to support **Option B** by default, but all betting-related elements will remain strictly placeholder-only and mock-driven.
+All betting-related components, models, and endpoints created in Phase 2 are strictly placeholder-only, mock-driven, and client-side stubs. No real bet persistence, active bet placement, bankroll tracking, or risk math is authorized or implemented.

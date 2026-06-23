@@ -1,10 +1,10 @@
 # ADR-0003: Product Boundary for the First Miraichi Planning Target
 
 ## Status
-- **Status**: Proposed
-- **Note**: Pending owner confirmation of first milestone product scope.
+- **Status**: Accepted
+- **Accepted Date**: 2026-06-23
+- **Owner Approval**: Approved by project owner
 - **Source candidate**: Candidate 001
-- **Date**: 2026-06-23
 
 ## Context
 Miraichi needs a first planning target that is useful without expanding into full betting management too early. Candidate workflows include prediction browsing, chat explanation, bet history, bankroll review, and responsible-use guidance.
@@ -19,8 +19,17 @@ Decide which user workflows belong in the first Miraichi planning target and whi
 - Include bet history and bankroll review as planning surfaces without calculations.
 - Include the full prediction, chat, bet history, bankroll, and responsible-use workflow.
 
-## Draft Recommendation
-Start with a narrow read-only planning boundary focused on prediction review and explanation, then expand through later ADRs once responsible-use, bet history, bankroll, and risk-rule boundaries are clearer.
+## Decision & Recommendation
+Phase 2 will scaffold prediction review, LLM explanation, and read-only bet history placeholders.
+
+## Explicit Exclusions
+The following workflows and features are strictly excluded from the Phase 2 target:
+- No active bet placement (no bet slips or active submission mechanisms).
+- No bankroll logic (no simulated account balances or currency math).
+- No risk-limit logic (no wagering ceiling validations or budget enforcement).
+- No betting calculations (no payout projections or odds multipliers).
+- No production database schema (no relational or document schema definition for betting records).
+- No real bet persistence (all bet logs are read-only and ephemeral in-memory placeholders).
 
 ## Consequences
 - Keeps Phase 1 and early Phase 2 scope easier to review.
@@ -33,12 +42,9 @@ Start with a narrow read-only planning boundary focused on prediction review and
 - Ambiguous scope could still destabilize API and app boundary decisions if not documented clearly.
 
 ## Open Questions
-- Which user workflow is required for the first usable milestone?
-- Which workflows must remain read-only until betting and bankroll decisions are accepted?
-- What user outcome defines success for the first planning target?
-
-## Owner Approval Required
-Project owner approval is required before this ADR can become Accepted or authorize implementation planning.
+- Which user outcome defines success for the first planning target?
+- When should the bankroll and risk-limit rules be promoted to ADR candidates?
 
 ## Implementation Status
 - **Implementation status**: Not started
+- **Note**: This ADR guides Phase 2 scaffolding only and does not authorize business logic implementation.
