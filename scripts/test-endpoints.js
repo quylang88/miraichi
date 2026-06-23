@@ -21,7 +21,10 @@ function cleanupAndExit(exitCode) {
     console.error('Failed to kill Local AI:', e);
   }
   
-  process.exit(exitCode);
+  // Delay exit slightly to let libuv clean up handles on Windows
+  setTimeout(() => {
+    process.exit(exitCode);
+  }, 200);
 }
 
 process.on('SIGINT', () => cleanupAndExit(1));

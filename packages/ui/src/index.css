@@ -11,6 +11,11 @@
   --font-family: system-ui, -apple-system, sans-serif;
 }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--miraichi-bg);
   color: var(--miraichi-text);

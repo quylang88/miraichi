@@ -20,7 +20,8 @@
     "phase2:verify": "pnpm run check && pnpm run audit && pnpm run phase2:check-rules && pnpm run test:e2e",
     "phase3:verify": "node scripts/phase3-verify.js",
     "phase4:verify": "node scripts/phase4-verify.js",
-    "phase4:integration": "node scripts/phase4-integration-verify.js"
+    "phase4:integration": "node scripts/phase4-integration-verify.js",
+    "pwa:verify": "node scripts/pwa-verify.js"
   },
   "engines": {
     "node": ">=18.0.0"

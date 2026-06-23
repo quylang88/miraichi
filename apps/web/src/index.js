@@ -23,8 +23,24 @@ const server = http.createServer((req, res) => {
   let filePath = null;
   let contentType = 'text/plain';
 
+  // PWA Routes
+  if (url === '/manifest.webmanifest') {
+    filePath = pathModule.join(ROOT_DIR, 'apps/web/public/manifest.webmanifest');
+    contentType = 'application/manifest+json';
+  } else if (url === '/service-worker.js') {
+    filePath = pathModule.join(ROOT_DIR, 'apps/web/public/service-worker.js');
+    contentType = 'application/javascript';
+  } else if (
+    url === '/icons/icon.svg' ||
+    url === '/icons/icon-180.png' ||
+    url === '/icons/icon-192.png' ||
+    url === '/icons/icon-512.png'
+  ) {
+    filePath = pathModule.join(ROOT_DIR, 'apps/web/public/icons/icon.svg');
+    contentType = 'image/svg+xml';
+  }
   // Static File Routing for Packages and Web Client Code
-  if (url.startsWith('/apps/web/src/')) {
+  else if (url.startsWith('/apps/web/src/')) {
     filePath = pathModule.join(ROOT_DIR, url);
     contentType = 'application/javascript';
   } else if (url.startsWith('/packages/ui/src/')) {
@@ -57,17 +73,32 @@ function getIndexHtml() {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Miraichi Dashboard</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Miraichi">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
   <link rel="stylesheet" href="/packages/ui/src/index.css">
+  <script type="module" src="/apps/web/src/pwa/register-service-worker.js"></script>
   <style>
     .nav-bar {
       display: flex;
       gap: 1.5rem;
       background-color: var(--miraichi-secondary);
       border-bottom: 1px solid var(--miraichi-border);
-      padding: 1rem 2rem;
+      padding: calc(1rem + env(safe-area-inset-top)) 2rem 1rem 2rem;
       align-items: center;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .nav-bar::-webkit-scrollbar {
+      display: none;
     }
     .logo {
       font-weight: bold;
@@ -75,6 +106,7 @@ function getIndexHtml() {
       font-size: 1.25rem;
       margin-right: 2rem;
       text-decoration: none;
+      flex-shrink: 0;
     }
     .nav-link {
       color: var(--miraichi-text-muted);
@@ -82,6 +114,7 @@ function getIndexHtml() {
       font-weight: 500;
       cursor: pointer;
       transition: color 0.2s ease;
+      flex-shrink: 0;
     }
     .nav-link:hover, .nav-link.active {
       color: var(--miraichi-text);
@@ -90,6 +123,24 @@ function getIndexHtml() {
       padding: 2rem;
       max-width: 1000px;
       margin: 0 auto;
+      padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+      padding-left: calc(2rem + env(safe-area-inset-left));
+      padding-right: calc(2rem + env(safe-area-inset-right));
+    }
+    @media (max-width: 768px) {
+      .nav-bar {
+        padding: calc(0.75rem + env(safe-area-inset-top)) 1rem 0.75rem 1rem;
+        gap: 1rem;
+      }
+      .logo {
+        margin-right: 1rem;
+      }
+      .main-container {
+        padding: 1rem;
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+        padding-left: calc(1rem + env(safe-area-inset-left));
+        padding-right: calc(1rem + env(safe-area-inset-right));
+      }
     }
   </style>
 </head>
