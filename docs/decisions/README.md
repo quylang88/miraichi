@@ -61,6 +61,9 @@ Index list of records.
 - [PHASE-3-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-COMPLETION-REPORT.md) - Final completion report for Phase 3 (Data Ingestion Planning and Mock Ingestion Skeleton).
 - [PHASE-4-OPENING-REPORT.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-OPENING-REPORT.md) - Opening report and governance limits for Phase 4 (Local AI Input Pipeline and Prediction Engine Planning).
 - [PHASE-4-OPENING-REVIEW.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-OPENING-REVIEW.md) - Opening review checklists and validation checks for Phase 4.
+- [PHASE-4-2-MOCK-PREDICTION-PIPELINE-PLAN.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-2-MOCK-PREDICTION-PIPELINE-PLAN.md) - Mock prediction pipeline design and flow specifications for Phase 4.2.
+- [PHASE-4-2-MOCK-PREDICTION-PIPELINE-REVIEW.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-2-MOCK-PREDICTION-PIPELINE-REVIEW.md) - Verification check evaluation for Phase 4.2 mock pipeline planning.
+
 
 
 ## TODO / Next Steps
