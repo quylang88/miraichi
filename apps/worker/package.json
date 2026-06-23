@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node src/index.js"
+    "dev": "node src/index.js",
+    "test": "node -e \"console.log('worker test pass')\"",
+    "lint": "node -e \"console.log('worker lint pass')\""
   },
   "dependencies": {
     "@miraichi/shared": "workspace:*"

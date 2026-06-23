@@ -12,7 +12,12 @@
     "dev:local-ai": "pnpm --filter local-ai run dev",
     "dev:worker": "pnpm --filter worker run dev",
     "check": "node scripts/check-files.js",
-    "phase2:verify": "node scripts/phase2-verify.js"
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "test:e2e": "node scripts/test-endpoints.js",
+    "audit": "node scripts/audit-rules.js",
+    "phase2:check-rules": "node scripts/phase2-verify.js",
+    "phase2:verify": "pnpm run check && pnpm run audit && pnpm run phase2:check-rules && pnpm run test:e2e"
   },
   "engines": {
     "node": ">=18.0.0"
