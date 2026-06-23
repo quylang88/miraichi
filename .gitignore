@@ -88,3 +88,7 @@ models/
 checkpoint-*/
 cache/
 .huggingface/
+
+# Agent customizations and workflows
+.agent/
+.agents/
