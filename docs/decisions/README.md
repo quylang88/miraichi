@@ -42,6 +42,9 @@ Index list of records.
 - [PHASE-3-OPENING-REVIEW.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-OPENING-REVIEW.md) - Opening review checklists for Phase 3 (Data Ingestion Planning).
 - [ADR-CANDIDATE-REVIEW-PHASE-3.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATE-REVIEW-PHASE-3.md) - Candidate review evaluation and classifications for Phase 3 decisions.
 - [ADR-ACCEPTANCE-SUMMARY-PHASE-3.md](file:///c:/CODE/miraichi/docs/decisions/ADR-ACCEPTANCE-SUMMARY-PHASE-3.md) - Acceptance summary for Phase 3 planning decisions.
+- [OWNER-DECISION-GATES.md](file:///c:/CODE/miraichi/docs/governance/OWNER-DECISION-GATES.md) - Owner decision gates governance for business logic and algorithms.
+- [PHASE-3-2-DATA-CONTRACT-PLAN.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-2-DATA-CONTRACT-PLAN.md) - Implementation roadmap for mock contracts in Phase 3.2.
+- [PHASE-3-2-DATA-CONTRACT-REVIEW.md](file:///c:/CODE/miraichi/docs/data/PHASE-3-2-DATA-CONTRACT-REVIEW.md) - Gateway review checklist and authorizations for Phase 3.2.
 
 ## TODO / Next Steps
 - [ ] Add future logs as design decisions are made.
