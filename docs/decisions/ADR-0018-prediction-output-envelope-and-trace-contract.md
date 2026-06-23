@@ -1,10 +1,11 @@
 # ADR-0018: Prediction Output Envelope and Trace Contract
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-23
-* **Owner Approval Required**: Yes
+* **Accepted Date**: 2026-06-23
+* **Owner Approval**: Approved by project owner
 * **Implementation Status**: Not started
-* **Note**: This ADR standardizes the prediction output envelope schema and trace metadata. It does not authorize the implementation of prediction scoring formulas, probability mathematics, or betting recommendations.
+* **Note**: This ADR guides Phase 4 mock local-ai planning and does not authorize real prediction algorithms, probability formulas, betting recommendations, bankroll logic, risk logic, model runtimes, or LLM provider integration.
 
 ---
 

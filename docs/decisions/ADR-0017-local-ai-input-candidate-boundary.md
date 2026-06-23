@@ -1,10 +1,11 @@
 # ADR-0017: Local AI Input Candidate Boundary
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-23
-* **Owner Approval Required**: Yes
+* **Accepted Date**: 2026-06-23
+* **Owner Approval**: Approved by project owner
 * **Implementation Status**: Not started
-* **Note**: This ADR defines the input boundary for the local AI prediction service and does not authorize prediction models, algorithm implementation, or betting calculations.
+* **Note**: This ADR guides Phase 4 mock local-ai planning and does not authorize real prediction algorithms, probability formulas, betting recommendations, bankroll logic, risk logic, model runtimes, or LLM provider integration.
 
 ---
 

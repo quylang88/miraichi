@@ -1,10 +1,11 @@
 # ADR-0019: Prediction Engine Runtime and Algorithm Selection Boundary
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-23
-* **Owner Approval Required**: Yes
+* **Accepted Date**: 2026-06-23
+* **Owner Approval**: Approved by project owner
 * **Implementation Status**: Not started
-* **Note**: This ADR defer selection of production runtimes and model weights. It does not authorize the implementation of machine learning models or active statistical algorithms.
+* **Note**: This ADR guides Phase 4 mock local-ai planning and does not authorize real prediction algorithms, probability formulas, betting recommendations, bankroll logic, risk logic, model runtimes, or LLM provider integration. (Note: This ADR defers selection of production runtimes and model weights.)
 
 ---
 

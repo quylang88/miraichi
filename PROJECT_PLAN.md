@@ -62,5 +62,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Review and approve Phase 3 Candidate ADRs (ADR-0013 to ADR-0016).
 - [x] Implement provider-agnostic parser interfaces and local mock data ingestion in worker.
 - [x] Begin Phase 4 Local AI Skeleton planning.
-- [ ] Approve Phase 4 candidate ADRs (ADR-0017 to ADR-0021) and mock-up local-ai service.
+- [x] Approve Phase 4 candidate ADRs (ADR-0017 to ADR-0021).
+- [ ] Mock-up local-ai service and verify trace metadata pipeline.
+
 

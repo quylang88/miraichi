@@ -1,10 +1,11 @@
 # ADR-0021: Prediction Evaluation and Backtesting Boundary
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-23
-* **Owner Approval Required**: Yes
+* **Accepted Date**: 2026-06-23
+* **Owner Approval**: Approved by project owner
 * **Implementation Status**: Not started
-* **Note**: This ADR governs backtesting harness design and metric planning. It does not authorize betting wagers, bankroll adjustments, or risk/ROI calculations.
+* **Note**: This ADR guides Phase 4 mock local-ai planning and does not authorize real prediction algorithms, probability formulas, betting recommendations, bankroll logic, risk logic, model runtimes, or LLM provider integration.
 
 ---
 

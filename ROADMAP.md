@@ -50,6 +50,8 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Approve Phase 3 candidate ADRs.
 - [x] Build parser stubs and mock ingestion worker flow.
 - [x] Open Phase 4 planning and draft candidate ADRs.
-- [ ] Review Phase 4 candidate ADRs (ADR-0017 to ADR-0021).
+- [x] Review Phase 4 candidate ADRs (ADR-0017 to ADR-0021).
+- [ ] Implement Phase 4 local-ai mock inference endpoints.
+
 
 
