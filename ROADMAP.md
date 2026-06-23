@@ -38,9 +38,14 @@ Outlines high-level roadmap milestones across multiple phases.
 - Define data quality rules and generic schema validation contracts.
 - Implement mock-only ingestion processing in apps/worker (database storage deferred).
 
-### Milestone 5: Predictive Inference & Agent Handoffs
-- Integrate local AI model predictions.
+### Milestone 5: Predictive Inference, Agent Handoffs & PWA Client (Completed)
+- Integrate local AI mock model predictions and mediation proxies.
+- Establish PWA shell caching and mobile-first responsive layout.
 - Run basic agent coordination scenarios.
+
+### Milestone 6: Betting Accounts & Bankroll Strategy Planning
+- Establish specifications for simulated user wagers, history, and limits.
+- Formulate adapter contracts for owner-controlled betting logic.
 
 ## TODO / Next Steps
 - [x] Complete Phase 1 architecture planning milestones.
@@ -51,7 +56,9 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Build parser stubs and mock ingestion worker flow.
 - [x] Open Phase 4 planning and draft candidate ADRs.
 - [x] Review Phase 4 candidate ADRs (ADR-0017 to ADR-0021).
-- [ ] Implement Phase 4 local-ai mock inference endpoints.
+- [x] Implement Phase 4 local-ai mock inference endpoints and client proxy.
+- [x] Align client app as PWA-first and defer native iOS.
+- [ ] Begin Phase 5 planning for betting rules, history tracking, and risk limits.
 
 
 

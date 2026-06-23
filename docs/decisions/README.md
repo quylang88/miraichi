@@ -35,10 +35,11 @@ Index list of records.
 - [ADR-0019-prediction-engine-runtime-and-algorithm-selection-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0019-prediction-engine-runtime-and-algorithm-selection-boundary.md) - Prediction Engine Runtime and Algorithm Selection Boundary. (Status: Accepted)
 - [ADR-0020-llm-explanation-role-and-prediction-refusal-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0020-llm-explanation-role-and-prediction-refusal-boundary.md) - LLM Explanation Role and Prediction Refusal Boundary. (Status: Accepted)
 - [ADR-0021-prediction-evaluation-and-backtesting-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0021-prediction-evaluation-and-backtesting-boundary.md) - Prediction Evaluation and Backtesting Boundary. (Status: Accepted)
-
-
-
-## Reports & Summaries
+- [ADR-0022-client-delivery-strategy-pwa-first-native-ios-deferred.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0022-client-delivery-strategy-pwa-first-native-ios-deferred.md) - Client Delivery Strategy (PWA-First, Native iOS Deferred). (Status: Accepted)
+ 
+ 
+ 
+ ## Reports & Summaries
 - [PHASE-0-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-0-COMPLETION-REPORT.md) - Completion report for Phase 0 (Repo Bootstrap and Documentation Setup).
 - [ADR-ACCEPTANCE-SUMMARY-PHASE-1.md](file:///c:/CODE/miraichi/docs/decisions/ADR-ACCEPTANCE-SUMMARY-PHASE-1.md) - Acceptance summary for Phase 1 architecture planning decisions.
 - [PHASE-1-COMPLETION-REVIEW.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REVIEW.md) - Completion review for Phase 1 (Architecture Planning).
@@ -67,6 +68,16 @@ Index list of records.
 - [PHASE-4-3-MOCK-PREDICTION-SCAFFOLD-REVIEW.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-3-MOCK-PREDICTION-SCAFFOLD-REVIEW.md) - Compliance review audit validating the Phase 4.3 mock prediction scaffold.
 - [PHASE-4-4-MOCK-PIPELINE-INTEGRATION-PLAN.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-4-MOCK-PIPELINE-INTEGRATION-PLAN.md) - Mock pipeline integration plan for API gateway and Web UI.
 - [PHASE-4-4-MOCK-PIPELINE-INTEGRATION-REVIEW.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-4-MOCK-PIPELINE-INTEGRATION-REVIEW.md) - Verification check evaluation for Phase 4.4 mock integration planning.
+- [PHASE-4-5-MOCK-INTEGRATION-REPORT.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-5-MOCK-INTEGRATION-REPORT.md) - Implementation report for Phase 4.5 mock integration of local AI with API/Web.
+- [PHASE-4-6-PWA-FIRST-CLIENT-ALIGNMENT-REPORT.md](file:///c:/CODE/miraichi/docs/web/PHASE-4-6-PWA-FIRST-CLIENT-ALIGNMENT-REPORT.md) - Implementation report for Phase 4.6 PWA-first client delivery alignment.
+- [PHASE-4-6-PWA-FIRST-CLIENT-ALIGNMENT-REVIEW.md](file:///c:/CODE/miraichi/docs/web/PHASE-4-6-PWA-FIRST-CLIENT-ALIGNMENT-REVIEW.md) - Verification review checking mobile usability and PWA setup.
+- [PHASE-4-COMPLETION-REVIEW.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-COMPLETION-REVIEW.md) - Verification check evaluation for closing Phase 4.
+- [PHASE-4-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/local-ai/PHASE-4-COMPLETION-REPORT.md) - Final completion report summarizing deliverables and guardrail results.
+ 
+ 
+ 
+ ## TODO / Next Steps
+ - [ ] Add future logs as design decisions are made.
 
 
 
