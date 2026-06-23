@@ -1,0 +1,18 @@
+# Architectural Decisions Log
+
+Index of all ADR files for Miraichi.
+
+## Purpose
+Catalogues and maps design records chronologically.
+
+## Status
+- **Status**: Draft
+
+## Scope
+Index list of records.
+
+## ADR Log
+- [ADR-0001-monorepo-structure.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0001-monorepo-structure.md) - Monorepo selection and directories layout.
+
+## TODO / Next Steps
+- [ ] Add future logs as design decisions are made.

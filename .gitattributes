@@ -1,0 +1,27 @@
+# Set the default behavior to handle all files as text and normalize line endings to LF on checkin.
+* text=auto eol=lf
+
+# Explicitly declare text files you want to always be normalized and native line endings on checkout.
+*.js text
+*.ts text
+*.tsx text
+*.jsx text
+*.json text
+*.css text
+*.html text
+*.md text
+*.py text
+*.sh text
+*.yaml text
+*.yml text
+*.editorconfig text
+*.gitignore text
+*.gitattributes text
+
+# Denote files that are binary and should not be modified.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
