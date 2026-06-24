@@ -15,7 +15,7 @@ This document maps out the owner-applied mobile-first presentational layouts and
 * **Future Extension**: Autocomplete team and competition names using previously saved entries.
 
 ### V1 Navigation
-* **Tabs**: Today, Add, Matches, Reports, AI.
+* **Tabs**: Today, Matches, Bets, Bankroll, Miraichi.
 * **Primary action**: Add Bet should be the fastest primary action.
 * **Theme**: Dark mode is the default.
 
