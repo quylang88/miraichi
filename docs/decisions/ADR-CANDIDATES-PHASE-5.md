@@ -1,283 +1,501 @@
 # Architectural Decision Record Candidates: Phase 5 Betting Journal and Business Logic
 
-This document compiles the candidate Architectural Decision Records (ADRs) proposed to open Phase 5. Under `docs/governance/OWNER-DECISION-GATES.md`, all candidates require explicit owner approval before implementation begins. Any recommendation in this file is an AI proposal only, not an owner decision and not an ADR status.
+This document compiles the candidate Architectural Decision Records (ADRs) proposed for Phase 5. Under `docs/governance/OWNER-DECISION-GATES.md`, all candidates require explicit owner approval before implementation begins.
+
+The owner responses from `docs/betting/PHASE-5-OWNER-DECISION-SUMMARY.md` have been applied to candidate wording. This file still does not accept ADRs, mark ADRs ready, create final ADR files, or authorize implementation.
 
 ---
 
 ## ADR-0023: User-Entered Real Bet Record Boundary (Candidate)
 
 ### 1. Problem
-Users need a structured format to log wagers they have placed or want to track. Loose json files make validations and reports unreliable.
+Users need a structured format to log wagers they have placed or want to track. Loose JSON files make validation, reporting, export/import, and traceability unreliable.
 
-### 2. Owner Requirement
-The app must allow users to manually record real bets they have placed or want to track.
+### 2. Owner-Applied Requirement
+Use a structured `BetRecordEnvelope` for v1.
 
-### 3. Options Considered
-* **Option A**: Log wagers as free-text fields (no schema validation).
-* **Option B (AI Proposal)**: Define a strict candidate data contract `BetRecordEnvelope` enclosing identifiers, trace keys, and stakes.
-* **Option C**: Create database models directly.
+Core fields:
+- `betId`
+- `matchGroupId`
+- `createdAt`
+- `betTimeType`
+- `homeTeamName`
+- `awayTeamName`
+- `marketType`
+- `selectionLabel`
+- `oddsFormat`
+- `oddsValue`
+- `stakePoints`
+- `status`
 
-### 4. AI Proposed Direction & Trade-offs
-* **Direction**: Option B. Standardizes data storage and validation while leaving database drivers abstract.
-* **Trade-off**: Requires writing local verification code for the fields.
+Optional fields:
+- `matchId`
+- `competitionLabel`
+- `seasonLabel`
+- `marketSubtype`
+- `lineValue`
+- `lineDisplay`
+- `liveScoreHome`
+- `liveScoreAway`
+- `liveMinute`
+- `settlement`
+- `profitLossPoints`
+- `notes`
+- `tags`
+- `source`
+- `trace`
+- `predictionTraceId`
+- `recommendationId`
 
-### 5. Open Questions
-* Should we allow custom tags or categorization? (AI proposal: Yes, pending owner confirmation).
+### 3. Candidate Direction
+Define `BetRecordEnvelope` as the documentation-level boundary for manual bet records. `notes` and `tags` are approved for v1 as metadata only. They must not drive prediction, bankroll, risk, settlement, or AI recommendation logic in v1.
 
-### 6. What It Must NOT Decide Yet
-* Production SQL or NoSQL database schemas or ORM packages.
+`profitLossPoints` must be signed and nullable while the bet is pending.
 
-### 7. What Implementation It May Unlock Later
-* Storing bets in IndexedDB or syncing to a cloud database.
+### 4. Trade-offs
+This gives enough structure for filtering, reporting, trace linking, and backup while avoiding production storage implementation. It still requires later implementation planning for validation and UI entry behavior.
+
+### 5. What It Must NOT Decide Yet
+- Production database schemas or object mapper packages.
+- Final persistence implementation.
+- Profit/loss formulas.
+- Prediction, bankroll, risk, settlement, or AI recommendation logic driven by metadata.
+
+### 6. What Implementation It May Unlock Later
+- Manual betting journal entry planning.
+- Export/import planning.
+- Trace links to prediction and recommendation records after the relevant ADRs are approved.
 
 ---
 
 ## ADR-0024: Match-Centric Betting History Grouping (Candidate)
 
 ### 1. Problem
-Users frequently place multiple distinct wagers on the same match. Listing wagers as a flat chronological feed without match context makes records confusing.
+Users frequently place multiple distinct wagers on the same match. Listing wagers as a flat chronological feed without match context makes records difficult to review.
 
-### 2. Owner Requirement
-The app must store betting history by match. Multiple bets for the same match should be grouped under the same match.
+### 2. Owner-Applied Requirement
+Use `MatchBettingGroup` as the grouping boundary. `matchGroupId` is the source of truth. `matchId` from feed data is optional. Manual grouping fallback is required.
 
-### 3. Options Considered
-* **Option A**: Store bets as flat records with a simple match text field (no grouping).
-* **Option B (AI Proposal)**: Create a `MatchBettingGroup` envelope that references a Match ID when available, while preserving a manual grouping fallback, and contains references to associated `BetRecordEnvelope` records.
-* **Option C**: Group bets only in frontend presentations, keeping the storage data flat.
+Optional group fields:
+- `kickoffTime`
+- `competitionLabel`
+- `seasonLabel`
+- `groupStatus`
 
-### 4. AI Proposed Direction & Trade-offs
-* **Direction**: Option B. Ensures data grouping is represented in the domain architecture, making reports simpler to aggregate.
-* **Trade-off**: Requires maintaining relationships between wagers and match groups.
+Multiple bets from the same match must appear under the same match group.
 
-### 5. Open Questions
-* How do we handle grouping if the user types team names with different spellings? (AI proposal: define owner-approved normalization rules before implementation).
+### 3. Candidate Direction
+Model match grouping through `matchGroupId`, not through normalized team names. Team-name normalization may support suggestions or autocomplete only, and must not become final grouping logic.
 
-### 6. What It Must NOT Decide Yet
-* Enforcing database foreign-key constraints.
+### 4. Trade-offs
+Using `matchGroupId` avoids accidental merges caused by spelling changes, duplicate names, or manual entry variation. It requires explicit group creation or selection behavior later.
 
-### 7. What Implementation It May Unlock Later
-* Match-level summary metrics (e.g. net profit/loss per match).
+### 5. What It Must NOT Decide Yet
+- Database foreign-key constraints.
+- Feed matching implementation.
+- Automatic regrouping logic.
+
+### 6. What Implementation It May Unlock Later
+- Match-level history views.
+- Expandable match group UI.
+- Feed-assisted suggestions without making feed data mandatory.
 
 ---
 
 ## ADR-0025: Market Catalog and Line Preset Registry (Candidate)
 
 ### 1. Problem
-Adding new markets or validating manual line inputs can bloat code if wagers are hardcoded.
+Adding markets or validating manual line inputs can bloat the journal if market behavior is hardcoded into entry, reporting, or settlement code.
 
-### 2. Owner Requirement
-The user must be able to select markets (1X2, Over/Under, Handicap, Corners, etc.) with presets or manual line entry.
+### 2. Owner-Applied Requirement
+V1 built-in market baseline:
+- 1X2
+- Over/Under
+- Handicap
+- Corners
+- Custom Market
 
-### 3. Options Considered
-* **Option A**: Hardcode validation checks per market inside the main transaction route.
-* **Option B (AI Proposal)**: Establish a `MarketCatalog` and `MarketTypeRegistry` where each market is a registered module defining presets and verification checks.
-* **Option C**: No line presets (manual-only input).
+Deferred markets:
+- Cards
+- Team Totals
+- First Half
+- BTTS
+- Player props
+- Exact score
+- Other detailed market families
 
-### 4. AI Proposed Direction & Trade-offs
-* **Direction**: Option B. Decouples validation code from record logic.
-* **Trade-off**: Minor configuration overhead.
+### 3. Candidate Direction
+`MarketCatalog` and `MarketTypeRegistry` are approved as architecture boundaries. Line presets should be configurable. Manual line entry must always be allowed.
 
-### 5. Open Questions
-* Which preset values are loaded by default? (AI proposal: use common line presets, with exact values requiring owner confirmation).
+If a line is not a standard 0.25 increment, the UI should show a warning but must not block save.
 
-### 6. What It Must NOT Decide Yet
-* The exact calculation logic for settlements of specific new markets.
+### 4. Trade-offs
+This gives v1 enough useful market coverage while avoiding a wide market surface that would force unapproved settlement complexity. Custom Market preserves manual flexibility.
 
-### 7. What Implementation It May Unlock Later
-* Dynamic loading of custom market types from third-party configuration files.
+### 5. What It Must NOT Decide Yet
+- Settlement formulas for market types.
+- Detailed market-family support beyond the v1 baseline.
+- Hard-blocking line validation.
+
+### 6. What Implementation It May Unlock Later
+- Market picker planning.
+- Configurable preset planning.
+- Non-blocking validation warning planning.
 
 ---
 
 ## ADR-0026: Odds Format Strategy Boundary (Candidate)
 
 ### 1. Problem
-Converting between different formats (HK, Decimal, Malay, American) can introduce bugs and rounding discrepancies if scattered across the codebase.
+Odds formats introduce conversion risk. Incorrect conversion rules can corrupt settlement and reporting results.
 
-### 2. Owner Requirement
-Default odds format must be HK odds, with support for switching to other common formats later.
+### 2. Owner-Applied Requirement
+HK odds is the default format for v1.
 
-### 3. Options Considered
-* **Option A**: Convert values dynamically in the UI elements.
-* **Option B (AI Proposal)**: Preserve user-entered odds format and plan a unified `OddsFormatAdapter` boundary for future owner-approved normalization rules.
-* **Option C**: Force all wagers to be saved and viewed as Decimal only.
+Store:
+- `oddsFormat`
+- Raw odds as `rawOddsValue` / `oddsValue`
 
-### 4. AI Proposed Direction & Trade-offs
-* **Direction**: Option B. Keeps calculations isolated.
-* **Trade-off**: Requires writing parsing adapters.
+`normalizedOddsValue` can exist as an optional target/internal field and may remain null until conversion formulas are owner-approved.
 
-### 5. Open Questions
-* What is the decimal precision limit for internal odds multipliers? (AI proposal: choose an owner-approved precision limit before implementation).
+Visible odds formats in the first implementation:
+- HK only
 
-### 6. What It Must NOT Decide Yet
-* The actual mathematical conversion formulas for Malay or American odds.
+Deferred:
+- Decimal display/conversion
+- Malay display/conversion
+- Indonesian display/conversion
+- American display/conversion
 
-### 7. What Implementation It May Unlock Later
-* Clean format switching in the user's dashboard view.
+### 3. Candidate Direction
+Use an odds-format boundary for future conversion behavior, but do not implement conversion formulas until a later owner-approved ADR explicitly approves them.
+
+### 4. Trade-offs
+HK-only visible entry reduces first implementation risk. Preserving a future normalized field keeps the architecture ready for later multi-format support.
+
+### 5. What It Must NOT Decide Yet
+- Any conversion formula.
+- Any rounding tolerance.
+- Any non-HK visible display in the first implementation.
+
+### 6. What Implementation It May Unlock Later
+- HK-only odds input planning.
+- Optional internal field planning for later conversion.
+- Future odds adapter ADR drafting.
 
 ---
 
 ## ADR-0027: Stake Points and Profit/Loss Boundary (Candidate)
 
 ### 1. Problem
-Real currency wagering adds compliance, payment, and security risks.
+Real currency tracking adds compliance, money movement, and security risk. Points-based tracking gives the owner a safer v1 journal boundary.
 
-### 2. Owner Requirement
-Stakes and profit/loss in v1 must be points, not real currency.
+### 2. Owner-Applied Requirement
+V1 uses points only. No real currency.
 
-### 3. Options Considered
-* **Option A**: Store stakes as arbitrary strings.
-* **Option B (AI Proposal)**: Use points-only stake and profit/loss fields, with positive stake values and owner-approved precision.
-* **Option C**: Allow real currency inputs alongside points in v1.
+`stakePoints`:
+- Positive number
+- Decimal allowed
+- Up to 2 decimal places
+- Must be greater than 0
 
-### 4. AI Proposed Direction & Trade-offs
-* **Direction**: Option B. Protects users by keeping transactions mock-only.
-* **Trade-off**: Limits applicability to cash tracking.
+`profitLossPoints`:
+- Signed number
+- Can be positive, zero, or negative
+- Nullable while the bet is pending
 
-### 5. Open Questions
-* Can points contain decimals? (AI proposal: Yes, with precision confirmed by the owner).
+### 3. Candidate Direction
+Use points-only stake and profit/loss fields. Future P/L direction is hybrid: auto-calculate profit/loss only after settlement formulas are owner-approved, and allow manual override/manual adjustment for edge cases.
 
-### 6. What It Must NOT Decide Yet
-* Formulas for ROI, yield, or payout ratios.
+### 4. Trade-offs
+Points keep v1 away from money handling. Manual adjustment gives a practical escape hatch, but formulas remain blocked until explicitly approved.
 
-### 7. What Implementation It May Unlock Later
-* Simple conversion to real currencies if authorized by the owner in v2.
+### 5. What It Must NOT Decide Yet
+- ROI formulas.
+- Yield formulas.
+- Stake-sizing formulas.
+- Kelly Criterion.
+- Bankroll adjustment formulas.
+- Risk formulas.
+- Settlement payout formulas.
+
+### 6. What Implementation It May Unlock Later
+- Points-only entry validation planning.
+- Nullable pending P/L planning.
+- Manual adjustment planning after lifecycle boundaries are drafted.
 
 ---
 
 ## ADR-0028: Bet Lifecycle and Settlement Boundary (Candidate)
 
 ### 1. Problem
-Automatically resolving wagers requires complex feed parsing, while manual-only tracking is error-prone.
+Settlement status drives reports, history filtering, and future automation hooks. Unclear states would make reporting and later formulas unreliable.
 
-### 2. Owner Requirement
-Users must be able to track wagers, supporting live wagers and status resolution.
+### 2. Owner-Applied Requirement
+Use a manual-first settlement lifecycle.
 
-### 3. Options Considered
-* **Option A**: Pure manual status updates.
-* **Option B (AI Proposal)**: Define owner-approved lifecycle states that support manual toggles and future auto-settlement hooks via a `SettlementStrategy` boundary.
-* **Option C**: Fully automated background settlement script only.
+Approved v1 statuses:
+- `pending`
+- `won`
+- `lost`
+- `push`
+- `void`
+- `half_won`
+- `half_lost`
+- `manual_adjustment`
 
-### 4. AI Proposed Direction & Trade-offs
-* **Direction**: Option B. Offers safety of manual control with modular hooks for automation.
-* **Trade-off**: Requires mapping split result outcomes.
+### 3. Candidate Direction
+Auto-settlement from feed data is deferred. Settlement formulas are deferred until explicit owner approval. Users must be able to edit/correct settlement status.
 
-### 5. Open Questions
-* Should settlement recalculate profit/loss on modification? (AI proposal: require a separate owner-approved formula ADR before any recalculation behavior is implemented).
+`manual_adjustment` is required for cashout, operator-specific settlement, unusual cases, and manual correction.
 
-### 6. What It Must NOT Decide Yet
-* Implementing automated score parsing from external feeds.
+### 4. Trade-offs
+Manual-first settlement keeps user control and avoids incorrect feed-based automation. It requires careful UX to prevent accidental edits and to explain manual adjustment.
 
-### 7. What Implementation It May Unlock Later
-* Semi-automated settlement based on ingested match goals.
+### 5. What It Must NOT Decide Yet
+- Settlement formulas.
+- Auto-settlement implementation.
+- Feed-based settlement rules.
+- Formula-based recalculation behavior.
+
+### 6. What Implementation It May Unlock Later
+- Manual settlement UI planning.
+- Editable/correctable status planning.
+- Manual adjustment flow planning.
 
 ---
 
 ## ADR-0029: Reporting Aggregation Boundary (Candidate)
 
 ### 1. Problem
-Aggregating reports dynamically in frontend controllers degrades rendering performance.
+Reports are core to betting history value, but aggregation logic can become tangled with UI rendering, storage choices, and unapproved formulas.
 
-### 2. Owner Requirement
-Provide daily, weekly, and monthly reports.
+### 2. Owner-Applied Requirement
+V1 reports:
+- Daily
+- Weekly
+- Monthly
 
-### 3. Options Considered
-* **Option A**: Implement hardcoded loops inside the UI rendering logic.
-* **Option B (AI Proposal)**: Abstract aggregation behavior to a separate `ReportAggregator` boundary, returning an owner-approved report envelope later.
-* **Option C**: Pre-calculate and store reports in database collection records.
+Grouping:
+- Use browser local timezone for report periods.
+- Store timestamps in UTC.
 
-### 4. AI Proposed Direction & Trade-offs
-* **Direction**: Option B. Decouples math and presentation.
-* **Trade-off**: Slightly increases model complexity.
+Candidate report fields:
+- `totalBets`
+- `settledBets`
+- `pendingBets`
+- `winCount`
+- `lossCount`
+- `pushCount`
+- `voidCount`
+- `halfWinCount`
+- `halfLossCount`
+- `totalStakePoints`
+- `profitLossPoints`
+- `marketBreakdown`
+- `liveVsPreMatchBreakdown`
 
-### 5. Open Questions
-* Should reporting use UTC or local device timezone? (AI proposal: use the user's local reporting period while preserving UTC event timestamps).
+Deferred:
+- ROI
+- Yield
+- CLV
+- Bankroll curve
+- Advanced charts
 
-### 6. What It Must NOT Decide Yet
-* SQL queries or database views for aggregation.
+### 3. Candidate Direction
+Use a separate reporting aggregation boundary. The boundary may plan candidate report output fields, but must not implement formulas, queries, or persistent report views yet.
 
-### 7. What Implementation It May Unlock Later
-* Caching aggregated reports in IndexedDB for offline capabilities after a separate storage decision.
+### 4. Trade-offs
+Local report periods match user expectations. UTC timestamps preserve auditability. Advanced metrics remain deferred to avoid implementing unapproved formulas.
+
+### 5. What It Must NOT Decide Yet
+- ROI, yield, or CLV formulas.
+- Bankroll curve calculations.
+- SQL queries or database views.
+- Advanced chart implementation.
+
+### 6. What Implementation It May Unlock Later
+- Daily/weekly/monthly report UI planning.
+- Candidate aggregation contract planning.
+- Future chart and metrics ADR drafting.
 
 ---
 
 ## ADR-0030: AI Betting Recommendation Boundary (Candidate)
 
 ### 1. Problem
-Allowing AI to suggest wagers without strict auditability makes it impossible to verify predictions or track performance.
+AI recommendations are risky if they look like automatic betting instructions, write records without consent, claim unsupported confidence, or cannot be audited.
 
-### 2. Owner Requirement
-The app should eventually allow AI to suggest bets.
+### 2. Owner-Applied Requirement
+AI recommendations should appear as read-only recommendation cards.
 
-### 3. Options Considered
-* **Option A**: Let AI directly write wager records into the user's history log.
-* **Option B (AI Proposal)**: Enforce an isolated recommendation boundary where AI suggestions are read-only cards that the user must manually confirm, containing trace references.
-* **Option C**: Pure text suggestions in chat.
+Rules:
+- AI must not auto-create bet records.
+- User must manually press Add to Journal.
+- AI recommendation must include trace references when available.
+- AI must not suggest stake in v1.
+- AI must not rank bets or claim real confidence until prediction algorithm is approved.
+- AI must support no-bet/refusal state.
+- AI must not invent picks when `predictionAvailable` is false.
 
-### 4. AI Proposed Direction & Trade-offs
-* **Direction**: Option B. Maintains strict user control and auditability.
-* **Trade-off**: Requires designing recommendation presentation cards.
+Allowed future card content after prediction ADR approval:
+- Suggested market
+- Suggested line
+- Suggested selection
+- Explanation
+- `predictionTraceId`
+- `recommendationId`
 
-### 5. Open Questions
-* How long should recommendation cards persist? (AI proposal: owner should choose a lifecycle rule before implementation).
+Not allowed in v1:
+- Stake suggestion
+- Auto-save
+- Auto-bet
+- Bankroll-based recommendation
 
-### 6. What It Must NOT Decide Yet
-* The prediction inference or model selection algorithms.
+### 3. Candidate Direction
+Plan a read-only recommendation card boundary with explicit user confirmation before journal creation. Keep recommendation logic, ranking, confidence claims, and prediction algorithms deferred.
 
-### 7. What Implementation It May Unlock Later
-* Auditing AI recommendation win rates against actual user wagers.
+### 4. Trade-offs
+This provides a clear future UX without giving AI write authority. It also prevents fake confidence or untraceable picks before prediction rules are approved.
+
+### 5. What It Must NOT Decide Yet
+- AI prediction algorithms.
+- AI recommendation algorithms.
+- Ranking logic.
+- Real confidence claims.
+- Stake suggestions.
+- Bankroll-based recommendations.
+
+### 6. What Implementation It May Unlock Later
+- Read-only card UX planning.
+- Add-to-journal confirmation flow planning.
+- Refusal/no-bet state planning.
 
 ---
 
 ## ADR-0031: PWA Betting Journal UX Boundary (Candidate)
 
 ### 1. Problem
-Responsive layout issues can break form inputs and dashboards on mobile screens.
+Manual betting entry is likely mobile-heavy. Poor mobile UX will make entry slow, error-prone, and hard to review.
 
-### 2. Owner Requirement
-Phase 5 should include UI/UX design for the PWA betting journal and reporting flow.
+### 2. Owner-Applied Requirement
+Use mobile-first PWA UX.
 
-### 3. Options Considered
-* **Option A**: Simple desktop-first dashboard with scrollbars on mobile.
-* **Option B (AI Proposal)**: Mobile-first responsive layouts with touch-friendly controls and PWA-safe spacing.
-* **Option C**: Native application view (requires wrappers).
+V1 navigation:
+- Today
+- Add
+- Matches
+- Reports
+- AI
 
-### 4. AI Proposed Direction & Trade-offs
-* **Direction**: Option B. Ensures high mobile usability under PWA guidelines.
-* **Trade-off**: Requires writing media queries and responsive styling.
+Main layout:
+- List-based dashboard
+- Grouped by date
+- Match groups expandable
+- Filter pills for Pending, Settled, Live, Market
+- Add Bet as the fastest primary action
 
-### 5. Open Questions
-* Should we support light and dark modes? (AI proposal: choose the default theme during owner review).
+### 3. Candidate Direction
+Do not build calendar-first in v1. Native app wrapper remains deferred. Dark mode is default.
 
-### 6. What It Must NOT Decide Yet
-* Final framework selections or page routing libraries.
+### 4. Trade-offs
+The selected layout prioritizes fast daily use and mobile entry. Calendar-first navigation and native wrapper work remain deferred to keep v1 focused.
 
-### 7. What Implementation It May Unlock Later
-* Creating Android/iOS packages using Capacitor or Cordova.
+### 5. What It Must NOT Decide Yet
+- Native wrapper implementation.
+- Calendar-first UX.
+- Final route/component implementation.
+
+### 6. What Implementation It May Unlock Later
+- Mobile-first screen planning.
+- Navigation planning.
+- Dark-mode-first visual planning.
 
 ---
 
 ## ADR-0032: Bankroll and Risk Strategy Boundary (Candidate)
 
 ### 1. Problem
-Users may place bets that violate sensible risk limits, leading to rapid bankroll depletion.
+Bankroll and risk rules are business-sensitive. Hardcoded limits, stake-sizing methods, or blocking behavior without owner approval would violate governance.
 
-### 2. Owner Requirement
-Design bankroll boundaries that support future adjustments and rules without locking in v1.
+### 2. Owner-Applied Requirement
+Plan `RiskRuleStrategy` as a replaceable boundary.
 
-### 3. Options Considered
-* **Option A**: No bankroll limit checks (unrestricted tracking).
-* **Option B (AI Proposal)**: Design a replaceable `RiskRuleStrategy` boundary that can generate UI warnings only after the owner approves exact guidelines.
-* **Option C**: Hard block entries that violate owner-approved risk rules.
+V1 direction:
+- Warning-only
+- No hard block
+- No default numeric threshold until owner approves
+- No Kelly Criterion
+- No stake-sizing helper
+- No bankroll growth formula
+- No max drawdown formula
 
-### 4. AI Proposed Direction & Trade-offs
-* **Direction**: Option B. Helps user risk management without forcing restrictive blocks.
-* **Trade-off**: Increases interface complexity.
+Users should be able to override warnings.
 
-### 5. Open Questions
-* What is the default risk limit warning threshold? (AI proposal: defer exact thresholds until owner review).
+Future risk warnings can be planned for:
+- High stake compared to bankroll
+- Daily loss warning
+- Weekly loss warning
+- Loss streak warning
 
-### 6. What It Must NOT Decide Yet
-* Math formulas for bankroll growth or maximum drawdowns.
+Exact thresholds are deferred.
 
-### 7. What Implementation It May Unlock Later
-* Custom, user-configured responsible gambling alerts.
+### 3. Candidate Direction
+Use a replaceable, warning-only risk boundary in planning. Do not define numeric thresholds or formulas.
+
+### 4. Trade-offs
+This keeps responsible-use UX possible without pretending the correct risk policy has already been chosen. Warning-only behavior preserves user control.
+
+### 5. What It Must NOT Decide Yet
+- Default numeric thresholds.
+- Hard blocks.
+- Kelly Criterion.
+- Stake-sizing helpers.
+- Bankroll growth formulas.
+- Max drawdown formulas.
+- Risk formulas.
+
+### 6. What Implementation It May Unlock Later
+- Warning UX planning.
+- Override flow planning.
+- Future owner-approved threshold ADR drafting.
+
+---
+
+## ADR-0033: Local-First Betting Data Persistence and Backup Boundary (Candidate)
+
+### 1. Problem
+Betting history is user-entered data. If local data is cleared or storage behavior is unclear, users can lose their journal. At the same time, production storage, accounts, and cloud sync are not approved for v1.
+
+### 2. Owner-Applied Requirement
+V1 should plan local-first storage.
+
+Required:
+- Export/Import JSON backup
+- IndexedDB preferred for future implementation planning
+
+Constraints:
+- `localStorage` can be used only for tiny mock/demo state, not long-term real betting history.
+- Cloud sync is deferred.
+- Auth is deferred.
+- Production DB is deferred.
+- Account system is deferred.
+- No database client, object mapper, table definition, or migration may be created yet.
+
+### 3. Candidate Direction
+Add a local-first persistence and backup boundary to Phase 5 ADR candidates. The boundary should plan data ownership, backup/export behavior, and future storage implementation choices without creating storage code or schemas.
+
+### 4. Trade-offs
+Local-first planning keeps v1 simple and user-controlled. Required JSON backup reduces data-loss risk. Deferring cloud sync and accounts avoids production identity and backend complexity.
+
+### 5. What It Must NOT Decide Yet
+- Production database engine.
+- Auth provider.
+- Account system.
+- Cloud sync strategy.
+- Database client, object mapper, table definition, or migration.
+
+### 6. What Implementation It May Unlock Later
+- Local-first storage planning.
+- Export/import UX planning.
+- IndexedDB implementation ADR drafting after owner approval.

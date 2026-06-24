@@ -1,6 +1,6 @@
 # PWA Betting Journal UX Discovery
 
-This document maps out the mobile-first presentational layouts and user flows for the betting journal and reporting screens. These mockups and flows guide the frontend implementation in `apps/web` for future phases.
+This document maps out the owner-applied mobile-first presentational layouts and user flows for the betting journal and reporting screens. These mockups and flows guide future planning only; they do not authorize implementation.
 
 ---
 
@@ -14,6 +14,11 @@ This document maps out the mobile-first presentational layouts and user flows fo
 * **Recommended v1 UX**: A clean, single-page form with vertical input groups. Presets for markets are displayed as clickable pills.
 * **Future Extension**: Autocomplete team and competition names using previously saved entries.
 
+### V1 Navigation
+* **Tabs**: Today, Add, Matches, Reports, AI.
+* **Primary action**: Add Bet should be the fastest primary action.
+* **Theme**: Dark mode is the default.
+
 ---
 
 ## 2. Match Betting Group Detail
@@ -23,7 +28,7 @@ This document maps out the mobile-first presentational layouts and user flows fo
 * **Validation Questions**:
   * *Q*: How do we display groups with no active bets?
   * *A*: Remove the empty group or redirect to the main journal feed.
-* **Recommended v1 UX**: An accordion-style dropdown or sub-view. The header shows the match teams (e.g. "Alpha vs Beta") and the total net points. Clicking opens a list of individual bet cards.
+* **Recommended v1 UX**: An accordion-style dropdown or sub-view. The header shows generic participant labels and the approved match group summary fields. Clicking opens a list of individual bet cards.
 * **Future Extension**: Add a timeline graph showing live match status changes alongside bet times.
 
 ---
@@ -47,7 +52,7 @@ This document maps out the mobile-first presentational layouts and user flows fo
 * **Validation Questions**:
   * *Q*: What if a market type doesn't use lines (e.g., 1X2)?
   * *A*: Hide the Line Picker input entirely when 1X2 is active.
-* **Recommended v1 UX**: Dynamic field toggle. When "Over / Under" is selected, a horizontal scroll menu of presets (`1.5`, `2.5`, etc.) appears next to a custom decimal text field.
+* **Recommended v1 UX**: Dynamic field toggle. When a line-based market is selected, a horizontal scroll menu of configurable presets appears next to a custom line text field. Non-standard increments show a warning but do not block save.
 * **Future Extension**: Allow users to configure their own favorite presets.
 
 ---
@@ -55,12 +60,12 @@ This document maps out the mobile-first presentational layouts and user flows fo
 ## 5. Odds Input & Format Picker
 * **User Goal**: Input the odds in the user's preferred format.
 * **Required Fields**: Odds Format, Raw Odds Value.
-* **Optional Fields**: Equivalent normalized decimal value.
+* **Optional Fields**: `normalizedOddsValue`, which may remain null until conversion formulas are owner-approved.
 * **Validation Questions**:
-  * *Q*: How do we prevent negative odd values in formats that do not support them?
-  * *A*: Enforce validation check rules immediately on input focus loss.
-* **Recommended v1 UX**: A simple dropdown to toggle between format labels next to a numeric text field. The default is HK.
-* **Future Extension**: Auto-calculate and display equivalent values in other formats in small grey text under the input field.
+  * *Q*: Which odds formats are visible in the first implementation?
+  * *A*: HK only. Other formats remain deferred.
+* **Recommended v1 UX**: A simple HK odds input field for the first implementation.
+* **Future Extension**: Display equivalent values only after owner-approved conversion formulas exist.
 
 ---
 
@@ -72,7 +77,7 @@ This document maps out the mobile-first presentational layouts and user flows fo
   * *Q*: What if the user enters a stake greater than their current mock bankroll?
   * *A*: Display a warning toast but do not lock the transaction.
 * **Recommended v1 UX**: Large numeric keyboard-triggering input field with rapid preset buttons (`+10`, `+50`, `+100` points).
-* **Future Extension**: Integrate Kelly Criterion percentage helper buttons.
+* **Future Extension**: Add owner-approved warning-only risk hints after thresholds are approved. No Kelly Criterion or stake-sizing helper is approved.
 
 ---
 
@@ -83,7 +88,7 @@ This document maps out the mobile-first presentational layouts and user flows fo
 * **Validation Questions**:
   * *Q*: Can settled bets be modified?
   * *A*: Yes, allow changing settlement status back to pending or edit values.
-* **Recommended v1 UX**: Edit dialog with a segmented button selector: `Pending`, `Won`, `Lost`, `Push`, `Void`, `Half Win`, `Half Loss`. Changing the selection computes and previews the resulting points impact.
+* **Recommended v1 UX**: Edit dialog with a segmented button selector: `Pending`, `Won`, `Lost`, `Push`, `Void`, `Half Win`, `Half Loss`, and `Manual Adjustment`. Changing the selection must not imply approved formulas; point impact previews require later owner-approved settlement formulas or manual adjustment input.
 * **Future Extension**: Automated score-based auto-fill helper.
 
 ---
@@ -95,8 +100,8 @@ This document maps out the mobile-first presentational layouts and user flows fo
 * **Validation Questions**:
   * *Q*: How do we handle periods with zero wagers?
   * *A*: Render an empty state graphic rather than a blank or broken screen.
-* **Recommended v1 UX**: A dashboard tab with three sub-navigation views. Displays card tiles for total points profit/loss, win rate, and total bets.
-* **Future Extension**: Visual charts (bar charts, line graphs) showing cumulative bankroll curves.
+* **Recommended v1 UX**: A Reports tab with daily, weekly, and monthly views. Displays owner-approved candidate fields such as total bets, status counts, total stake points, profit/loss points, market breakdown, and live vs pre-match breakdown.
+* **Future Extension**: Advanced charts and bankroll curves remain deferred.
 
 ---
 
@@ -107,8 +112,8 @@ This document maps out the mobile-first presentational layouts and user flows fo
 * **Validation Questions**:
   * *Q*: How does the user dismiss a card?
   * *A*: Provide a "Dismiss" icon that hides the card from the feed.
-* **Recommended v1 UX**: A sliding card element showing the predicted value, odds, and a yellow warning tag designating it as a mock suggestion.
-* **Future Extension**: A dedicated "AI Feed" page sorting candidates by expected value.
+* **Recommended v1 UX**: A read-only recommendation card with trace references when available and a no-bet/refusal state when `predictionAvailable` is false.
+* **Future Extension**: Suggested market, line, selection, explanation, `predictionTraceId`, and `recommendationId` may appear after prediction ADR approval. Ranking and real confidence claims remain deferred.
 
 ---
 
@@ -119,8 +124,15 @@ This document maps out the mobile-first presentational layouts and user flows fo
 * **Validation Questions**:
   * *Q*: What happens to the recommendation card after conversion?
   * *A*: Mark the card as "Tracked" and disable the action button.
-* **Recommended v1 UX**: Clicking "Track this Bet" on the AI card opens the "Add Bet Form" pre-filled with all match and market parameters. The user inputs their stake and saves.
+* **Recommended v1 UX**: Clicking "Add to Journal" on the AI card opens the Add Bet form. The user must manually confirm and save. AI must not suggest stake in v1.
 * **Future Extension**: Link the saved bet ID to the recommendation card trace for audit stats.
+
+---
+
+## Calendar and Native App Deferral
+
+* Calendar-first UI is not part of v1.
+* Native app wrapper remains deferred.
 
 ---
 

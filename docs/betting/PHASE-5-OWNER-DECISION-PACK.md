@@ -24,9 +24,9 @@ All recommendations below are AI proposals only. The owner must explicitly appro
 11. **Exact question for owner**: Do you approve using a strict candidate bet record envelope with optional notes, tags, and trace metadata as the Phase 5 direction for manual bet records?
 12. **Owner response placeholder**:
    - Approved recommended option:
-   - Approved with changes:
+   - Approved with changes: Yes. Use a structured `BetRecordEnvelope` for v1 with the owner-approved core and optional fields below. Notes and tags are approved for v1 as metadata only, and must not drive prediction, bankroll, risk, settlement, or AI recommendation logic in v1. `profitLossPoints` must be signed and nullable while the bet is pending.
    - Rejected:
-   - Notes:
+   - Notes: Core fields: `betId`, `matchGroupId`, `createdAt`, `betTimeType`, `homeTeamName`, `awayTeamName`, `marketType`, `selectionLabel`, `oddsFormat`, `oddsValue`, `stakePoints`, `status`. Optional fields: `matchId`, `competitionLabel`, `seasonLabel`, `marketSubtype`, `lineValue`, `lineDisplay`, `liveScoreHome`, `liveScoreAway`, `liveMinute`, `settlement`, `profitLossPoints`, `notes`, `tags`, `source`, `trace`, `predictionTraceId`, `recommendationId`.
 
 ---
 
@@ -48,9 +48,9 @@ All recommendations below are AI proposals only. The owner must explicitly appro
 11. **Exact question for owner**: Do you approve a match-level grouping boundary that supports multiple bets per match, optional feed match links, and manual grouping fallback?
 12. **Owner response placeholder**:
    - Approved recommended option:
-   - Approved with changes:
+   - Approved with changes: Yes. Use `MatchBettingGroup` as the grouping boundary. `matchGroupId` is the source of truth; `matchId` from feed data is optional. Manual grouping fallback is required.
    - Rejected:
-   - Notes:
+   - Notes: Do not group records only by normalized team names. Team-name normalization can support suggestions and autocomplete, but not final grouping logic. Optional group fields: `kickoffTime`, `competitionLabel`, `seasonLabel`, `groupStatus`. Multiple bets from the same match must appear under the same match group.
 
 ---
 
@@ -72,9 +72,9 @@ All recommendations below are AI proposals only. The owner must explicitly appro
 11. **Exact question for owner**: Do you approve starting Phase 5 market planning with 1X2, Over/Under, Handicap, and Corners as the proposed v1 market set, while preserving manual line entry and future market expansion?
 12. **Owner response placeholder**:
    - Approved recommended option:
-   - Approved with changes:
+   - Approved with changes: Yes. V1 built-in market baseline is 1X2, Over/Under, Handicap, Corners, and Custom Market. `MarketCatalog` and `MarketTypeRegistry` are approved as architecture boundaries.
    - Rejected:
-   - Notes:
+   - Notes: Deferred markets: Cards, Team Totals, First Half, BTTS, player props, exact score, and other detailed market families. Line presets should be configurable. Manual line entry must always be allowed. If a line is not a standard 0.25 increment, show a warning but do not block save.
 
 ---
 
@@ -96,9 +96,9 @@ All recommendations below are AI proposals only. The owner must explicitly appro
 11. **Exact question for owner**: Do you approve keeping HK odds as the default while planning a separate odds-format boundary for future owner-approved conversions?
 12. **Owner response placeholder**:
    - Approved recommended option:
-   - Approved with changes:
+   - Approved with changes: Yes. HK odds is the default format for v1. Store `oddsFormat` and raw odds as `rawOddsValue` / `oddsValue`.
    - Rejected:
-   - Notes:
+   - Notes: `normalizedOddsValue` can exist as an optional target/internal field and may remain null until conversion formulas are owner-approved. Visible odds formats in the first implementation: HK only. Deferred: Decimal, Malay, Indonesian, and American display/conversion. Do not implement conversion formulas unless a later owner-approved ADR explicitly approves them.
 
 ---
 
@@ -120,9 +120,9 @@ All recommendations below are AI proposals only. The owner must explicitly appro
 11. **Exact question for owner**: Do you approve points-only staking and profit/loss tracking for v1, with positive decimal stake values proposed and all formulas deferred?
 12. **Owner response placeholder**:
    - Approved recommended option:
-   - Approved with changes:
+   - Approved with changes: Yes. V1 uses points only, with no real currency. `stakePoints` is a positive number, decimals are allowed, up to 2 decimal places, and the value must be greater than 0. `profitLossPoints` is signed, can be positive, zero, or negative, and is nullable while the bet is pending.
    - Rejected:
-   - Notes:
+   - Notes: Do not implement ROI, yield, stake-sizing, Kelly Criterion, bankroll adjustment, or risk formulas. Future P/L direction is hybrid: auto-calculate profit/loss later only after settlement formulas are owner-approved, while allowing manual override/manual adjustment for edge cases.
 
 ---
 
@@ -144,9 +144,9 @@ All recommendations below are AI proposals only. The owner must explicitly appro
 11. **Exact question for owner**: Do you approve a manual-first bet lifecycle with structured settlement states and future automation hooks, while deferring all payout formulas?
 12. **Owner response placeholder**:
    - Approved recommended option:
-   - Approved with changes:
+   - Approved with changes: Yes. Use a manual-first settlement lifecycle. Approved v1 statuses are `pending`, `won`, `lost`, `push`, `void`, `half_won`, `half_lost`, and `manual_adjustment`.
    - Rejected:
-   - Notes:
+   - Notes: Auto-settlement from feed data is deferred. Settlement formulas are deferred until explicit owner approval. Users must be able to edit/correct settlement status. `manual_adjustment` is required for cashout, operator-specific settlement, unusual cases, and manual correction.
 
 ---
 
@@ -169,9 +169,9 @@ All recommendations below are AI proposals only. The owner must explicitly appro
 11. **Exact question for owner**: Do you approve daily, weekly, and monthly reporting through a separate aggregation boundary, with user-local reporting periods proposed for v1?
 12. **Owner response placeholder**:
    - Approved recommended option:
-   - Approved with changes:
+   - Approved with changes: Yes. V1 reports include daily, weekly, and monthly reports. Report periods use browser local timezone, while stored timestamps remain UTC.
    - Rejected:
-   - Notes:
+   - Notes: Candidate report fields: `totalBets`, `settledBets`, `pendingBets`, `winCount`, `lossCount`, `pushCount`, `voidCount`, `halfWinCount`, `halfLossCount`, `totalStakePoints`, `profitLossPoints`, `marketBreakdown`, `liveVsPreMatchBreakdown`. Deferred: ROI, yield, CLV, bankroll curve, and advanced charts.
 
 ---
 
@@ -193,9 +193,9 @@ All recommendations below are AI proposals only. The owner must explicitly appro
 11. **Exact question for owner**: Do you approve read-only AI recommendation cards with traceability and explicit user confirmation before any bet record is created?
 12. **Owner response placeholder**:
    - Approved recommended option:
-   - Approved with changes:
+   - Approved with changes: Yes. AI recommendations should appear as read-only recommendation cards. AI must not auto-create bet records, and the user must manually press Add to Journal.
    - Rejected:
-   - Notes:
+   - Notes: AI recommendation cards must include trace references when available. AI must not suggest stake in v1, must not rank bets or claim real confidence until a prediction algorithm is approved, must support no-bet/refusal state, and must not invent picks when `predictionAvailable` is false. Future allowed card content after prediction ADR approval: suggested market, suggested line, suggested selection, explanation, `predictionTraceId`, `recommendationId`. Not allowed in v1: stake suggestion, auto-save, auto-bet, bankroll-based recommendation.
 
 ---
 
@@ -217,9 +217,9 @@ All recommendations below are AI proposals only. The owner must explicitly appro
 11. **Exact question for owner**: Do you approve a mobile-first PWA betting journal UX with list-based history, match grouping, and touch-friendly controls as the Phase 5 direction?
 12. **Owner response placeholder**:
    - Approved recommended option:
-   - Approved with changes:
+   - Approved with changes: Yes. Use mobile-first PWA UX. V1 navigation: Today, Add, Matches, Reports, AI. Main layout: list-based dashboard, grouped by date, expandable match groups, filter pills for Pending, Settled, Live, and Market, with Add Bet as the fastest primary action.
    - Rejected:
-   - Notes:
+   - Notes: Do not build calendar-first in v1. Native app wrapper remains deferred. Dark mode is default.
 
 ---
 
@@ -241,9 +241,33 @@ All recommendations below are AI proposals only. The owner must explicitly appro
 11. **Exact question for owner**: Do you approve planning a replaceable, non-blocking bankroll/risk warning boundary while deferring all thresholds, formulas, and enforcement rules?
 12. **Owner response placeholder**:
    - Approved recommended option:
-   - Approved with changes:
+   - Approved with changes: Yes. Plan `RiskRuleStrategy` as a replaceable boundary. V1 direction is warning-only, no hard block, no default numeric threshold until owner approval, no Kelly, no stake-sizing helper, no bankroll growth formula, and no max drawdown formula.
    - Rejected:
-   - Notes:
+   - Notes: Users should be able to override warnings. Future risk warnings can be planned for high stake compared to bankroll, daily loss warning, weekly loss warning, and loss streak warning. Exact thresholds are deferred.
+
+---
+
+## Decision Topic 11: Local-First Betting Data Persistence and Backup Boundary
+
+1. **Decision ID**: P5-ODP-0033
+2. **Related ADR candidate**: ADR-0033, Local-First Betting Data Persistence and Backup Boundary (candidate only)
+3. **Current owner requirement**: Add a new decision topic and ADR candidate for local-first betting data persistence and backup.
+4. **Why this decision matters**: Betting history is user-entered data. Without an explicit local-first and backup boundary, v1 risks either losing user data or accidentally implying cloud, account, or production database commitments that are not approved.
+5. **Recommended option**: Plan local-first storage for v1, require Export/Import JSON backup, prefer IndexedDB for future implementation planning, and keep cloud sync/auth/production DB/account system deferred.
+6. **Alternative options**:
+   - Tiny mock/demo state only, with no durable betting history plan.
+   - Production database and account-backed storage in v1.
+   - Cloud sync-first storage.
+7. **Trade-offs**: The recommended option gives a practical data ownership path without taking on account, backend, or production persistence complexity. It still requires later ADR approval before any storage implementation.
+8. **Future extensibility impact**: This keeps future IndexedDB, export/import, cloud sync, and account-backed storage paths separable.
+9. **What happens if owner chooses recommended option**: ADR-0033 can be drafted later as a candidate local-first persistence and backup boundary. Implementation remains blocked until separately approved.
+10. **What remains changeable later**: Storage engine, backup format details, sync policy, account system, auth, production database, and import conflict behavior remain changeable.
+11. **Exact question for owner**: Do you approve adding ADR-0033 for local-first betting data persistence and backup, with Export/Import JSON required and production storage/cloud/account systems deferred?
+12. **Owner response placeholder**:
+   - Approved recommended option:
+   - Approved with changes: Yes. V1 should plan local-first storage. Export/Import JSON backup is required. IndexedDB is preferred for future implementation planning. `localStorage` can be used only for tiny mock/demo state, not long-term real betting history.
+   - Rejected:
+   - Notes: Cloud sync, auth, production DB, and account system are deferred. No database client, object mapper, table definition, or migration may be created yet.
 
 ---
 

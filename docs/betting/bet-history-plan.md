@@ -3,17 +3,18 @@
 Recording and displaying historical user bets.
 
 ## Purpose
-Ensures that all previous slips are saved and aggregated into performance metrics.
+Plans how user-entered betting history can be displayed, grouped, and audited without authorizing persistence implementation.
 
 ## Status
 - **Status**: Draft
 
 ## Scope
-Database schema logs for previous bets and dashboard UI components.
+Documentation-level planning for match-grouped betting history and dashboard UI components. Production storage, table definitions, query endpoints, and migrations are deferred to owner-approved ADRs.
 
 ## Auditing Guidelines
-- Bet statuses must not be editable once marked "won" or "lost".
-- Compile weekly win/loss ratio tables for analytics.
+- Multiple bets from the same match must appear under the same `matchGroupId`.
+- Users must be able to edit/correct settlement status.
+- Daily, weekly, and monthly report planning must use owner-approved candidate fields only.
 
 ## TODO / Next Steps
-- [ ] Implement bet history query endpoint specs.
+- [ ] Draft owner-approved ADRs before implementing bet history storage or query endpoints.

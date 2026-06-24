@@ -1,19 +1,22 @@
 # Risk Limit Guidelines
 
-Procedures for limiting single stakes and daily risk levels.
+Planning notes for future warning-only risk boundaries.
 
 ## Purpose
-Ensures the app blocks high-risk slips and limits total stakes.
+Documents future non-blocking risk warning categories. It does not approve hard blocks, numeric thresholds, or formulas.
 
 ## Status
 - **Status**: Draft
 
 ## Scope
-Directly plans the validator components used during slip registration.
+Plans a replaceable `RiskRuleStrategy` boundary only.
 
 ## Risk Guidelines
-- Maximum stake per match must not exceed 5% of the total bankroll.
-- Total active bets combined risk must be capped at 25% of bankroll.
+- V1 direction is warning-only.
+- No hard block is approved.
+- No default numeric threshold is approved.
+- Users should be able to override warnings.
+- Exact thresholds are deferred to a future owner decision.
 
 ## TODO / Next Steps
-- [ ] Specify validation error response formats.
+- [ ] Draft owner-approved warning behavior before any risk validation implementation.

@@ -77,7 +77,7 @@ We verify that no code or data structures violating project boundaries were comm
 * [x] **No secrets, API keys, or feed credentials**: Verified.
 * [x] **No real prediction engine code**: Verified.
 * [x] **No betting recommendation algorithms**: Verified.
-* [x] **Competition Agnostic**: Verified. No leagues, team names, or World Cup concepts are hardcoded in any text or architecture boundaries.
+* [x] **Competition Agnostic**: Verified. No leagues, team names, or real tournament concepts are hardcoded in any text or architecture boundaries.
 
 ---
 

@@ -1,233 +1,191 @@
 # Extensible Betting Domain Architecture
 
-This document defines the architectural boundaries, contracts, and interfaces for the betting domain. All modules are designed to be decoupled, replaceable, and competition-agnostic, satisfying the requirements of `docs/governance/OWNER-DECISION-GATES.md`.
+This document defines the owner-applied architectural boundaries for the betting domain. All modules remain decoupled, replaceable, and competition-agnostic, satisfying the requirements of `docs/governance/OWNER-DECISION-GATES.md`.
+
+This document is planning-only. It does not implement business logic, formulas, storage, AI recommendation logic, or final ADR decisions.
 
 ---
 
 ## 1. BetRecordEnvelope
-* **Purpose**: A standard container enclosing a single wager's parameters, trace references, audit data, and state.
-* **What it owns**: Bet ID, match association, market definition, stake, odds, timestamps, trace references, notes, tags, and status.
-* **What it must not own**: The mathematical formulas to convert odds, the validation logic of lines, or database serialization methods.
-* **How to extend later**: Add new keys to the `trace` or `metadata` maps without modifying properties.
-* **Owner decisions required**: Final approval of candidate fields (ADR-0023).
-* **Example generic shape**:
+
+* **Purpose**: Standard container for a single wager's owner-approved candidate fields, trace references, metadata, and state.
+* **What it owns**: Core bet fields, optional live fields, optional trace fields, notes, tags, and signed nullable `profitLossPoints`.
+* **What it must not own**: Mathematical formulas, line validation logic, persistence implementation, prediction logic, bankroll/risk logic, settlement logic, or AI recommendation logic.
+* **How to extend later**: Add future optional fields only through owner-approved ADR updates.
+* **Related candidate**: ADR-0023.
+* **Owner-applied generic shape**:
   ```json
   {
     "betId": "bet_789012",
     "matchGroupId": "match_group_345",
-    "market": {
-      "type": "over_under",
-      "line": 2.5
-    },
-    "odds": {
-      "format": "HK",
-      "rawValue": 0.85
-    },
-    "stake": {
-      "unit": "points",
-      "value": 10.0
-    },
+    "createdAt": "2026-06-24T12:00:00Z",
+    "betTimeType": "pre_match",
+    "homeTeamName": "Team Alpha",
+    "awayTeamName": "Team Beta",
+    "marketType": "over_under",
+    "selectionLabel": "over",
+    "oddsFormat": "HK",
+    "oddsValue": 0.85,
+    "stakePoints": 10.0,
     "status": "pending",
-    "trace": {
-      "predictionTraceId": "pred_trace_xyz123"
-    }
+    "profitLossPoints": null,
+    "notes": "metadata only",
+    "tags": ["manual-review"],
+    "predictionTraceId": "pred_trace_xyz123"
   }
   ```
 
 ---
 
 ## 2. MatchBettingGroup
+
 * **Purpose**: Aggregate multiple wagers associated with a single match for grouped display and assessment.
-* **What it owns**: Match ID, overall group status, and list of associated `BetRecordEnvelope` instances.
-* **What it must not own**: Individual bet calculation formulas or sports scoring logic.
-* **How to extend later**: Add aggregations (e.g., net yield per match) to a `summary` property.
-* **Owner decisions required**: Match lifecycle rules and states (ADR-0024).
-* **Example generic shape**:
+* **What it owns**: `matchGroupId` as source of truth, optional `matchId`, optional kickoff/competition/season/status labels, and associated bet references.
+* **What it must not own**: Individual bet formulas, sports scoring logic, feed matching implementation, or final grouping by normalized team names.
+* **How to extend later**: Add owner-approved match summary fields after reporting and settlement rules are approved.
+* **Related candidate**: ADR-0024.
+* **Owner-applied generic shape**:
   ```json
   {
     "matchGroupId": "match_group_345",
-    "matchId": "match_45678",
+    "matchId": null,
     "homeTeamName": "Team Alpha",
     "awayTeamName": "Team Beta",
+    "kickoffTime": "2026-06-24T12:00:00Z",
+    "competitionLabel": "Competition Alpha",
+    "seasonLabel": "Season 1",
     "bets": ["bet_789012", "bet_789013"],
     "groupStatus": "active"
   }
   ```
+* **Grouping rule**: Team-name normalization may support suggestions/autocomplete only. It must not be final grouping logic.
 
 ---
 
 ## 3. MarketCatalog
-* **Purpose**: Maintain the register of supported markets and coordinate validators.
-* **What it owns**: List of active markets and their display configuration.
-* **What it must not own**: Individual market payout formulas or line presets.
-* **How to extend later**: Register custom markets dynamically via config arrays.
-* **Owner decisions required**: Valid MVP market types (ADR-0025).
-* **Example generic shape**:
-  ```json
-  {
-    "supportedMarkets": [
-      { "id": "1X2", "name": "Full Time Result" },
-      { "id": "over_under", "name": "Total Goals" }
-    ]
-  }
-  ```
+
+* **Purpose**: Maintain the register of supported markets and coordinate display/preset metadata.
+* **What it owns**: Owner-approved v1 baseline market list and deferred market families.
+* **What it must not own**: Individual market payout formulas or settlement logic.
+* **How to extend later**: Register future markets dynamically through owner-approved configuration or strategy boundaries.
+* **Related candidate**: ADR-0025.
+* **V1 baseline**: 1X2, Over/Under, Handicap, Corners, Custom Market.
+* **Deferred**: Cards, Team Totals, First Half, BTTS, player props, exact score, and other detailed market families.
 
 ---
 
 ## 4. MarketTypeRegistry
-* **Purpose**: Map market identifiers to their corresponding validation rules and settlement formulas.
-* **What it owns**: Matchers associating market ID with parsing code.
-* **What it must not own**: Hardcoded bet instance variables.
-* **How to extend later**: Implement a plugin loader that registers new classes implementing `IMarketValidator`.
-* **Owner decisions required**: Market validation strictness levels.
-* **Example generic shape**:
-  ```javascript
-  class MarketTypeRegistry {
-    constructor() { this.validators = new Map(); }
-    register(marketType, validatorInstance) {
-      this.validators.set(marketType, validatorInstance);
-    }
-    getValidator(marketType) { return this.validators.get(marketType); }
-  }
-  ```
+
+* **Purpose**: Map market identifiers to display metadata and future validation boundaries.
+* **What it owns**: Associations between market IDs and owner-approved validation warning boundaries.
+* **What it must not own**: Hardcoded bet instance variables or settlement formulas.
+* **How to extend later**: Add registered validators after ADR approval.
+* **Related candidate**: ADR-0025.
+* **Owner-applied rule**: Non-standard 0.25 line increments should warn but not block save. Manual line entry must always be allowed.
 
 ---
 
 ## 5. LinePresetRegistry
-* **Purpose**: Supply quick-select line values in UI forms based on market category.
-* **What it owns**: Preset values per market ID.
-* **What it must not own**: The user's input line buffer.
-* **How to extend later**: Add league-specific presets via config files.
-* **Owner decisions required**: Preset lists for standard lines (ADR-0025).
-* **Example generic shape**:
-  ```json
-  {
-    "presets": {
-      "over_under": [0.5, 1.0, 1.5, 2.0, 2.25, 2.5, 2.75, 3.0],
-      "handicap": [-1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5]
-    }
-  }
-  ```
+
+* **Purpose**: Supply configurable quick-select line values in UI forms based on market category.
+* **What it owns**: Configurable preset values per market ID.
+* **What it must not own**: The user's input line buffer or blocking validation logic.
+* **How to extend later**: Add user-configurable or owner-approved market presets.
+* **Related candidate**: ADR-0025.
 
 ---
 
 ## 6. OddsFormatAdapter
-* **Purpose**: Standardize conversion between input format styles and the normalized decimal multiplier.
-* **What it owns**: Translation maps and interface methods.
-* **What it must not own**: Specific math formulas until approved.
-* **How to extend later**: Write new adapter subclasses (e.g. `MalayOddsAdapter`).
-* **Owner decisions required**: Conversion rules and rounding tolerances (ADR-0026).
-* **Example generic shape**:
-  ```javascript
-  interface IOddsFormatAdapter {
-    toDecimalMultiplier(rawValue);
-    fromDecimalMultiplier(decimalValue);
-  }
-  ```
+
+* **Purpose**: Preserve raw HK odds in v1 and isolate future conversion behavior.
+* **What it owns**: `oddsFormat`, raw odds, and optional `normalizedOddsValue` as a future target/internal field.
+* **What it must not own**: Conversion formulas until explicitly approved.
+* **How to extend later**: Add Decimal, Malay, Indonesian, or American conversion after a later owner-approved ADR.
+* **Related candidate**: ADR-0026.
+* **Owner-applied rule**: HK is the only visible odds format in the first implementation.
 
 ---
 
 ## 7. StakeUnitPolicy
-* **Purpose**: Define units, minimum/maximum limits, and precision parameters for stakes.
-* **What it owns**: Staking restrictions (minimum limits, fractional points).
-* **What it must not own**: UI validation alerts or current user balance.
-* **How to extend later**: Add currency policies if points-based wagers are expanded.
-* **Owner decisions required**: Limit values (ADR-0027).
-* **Example generic shape**:
-  ```json
-  {
-    "stakePolicy": {
-      "unit": "points",
-      "minStake": 0.1,
-      "maxStake": 10000.0,
-      "decimalPlaces": 2
-    }
-  }
-  ```
+
+* **Purpose**: Define points-only stake unit policy.
+* **What it owns**: Positive stake constraint and 2-decimal stake precision.
+* **What it must not own**: UI warning logic, bankroll state, stake-sizing helpers, or risk formulas.
+* **How to extend later**: Add future owner-approved unit policies if the product expands.
+* **Related candidate**: ADR-0027.
+* **Owner-applied rule**: `profitLossPoints` is signed and nullable while pending.
 
 ---
 
 ## 8. SettlementStrategy
-* **Purpose**: Compute profit/loss based on match outcomes and bet properties.
-* **What it owns**: Calculation logic for win, loss, half-win, half-loss, push, and void outcomes.
-* **What it must not own**: Score fetching or user database updates.
-* **How to extend later**: Dynamic registration of formula strategies per market.
-* **Owner decisions required**: Detailed formula definitions (ADR-0028).
-* **Example generic shape**:
-  ```javascript
-  class SettlementStrategy {
-    calculate(stake, oddsDecimal, status, outcomes) {
-      // Returns { profitLossPoints: Number, state: String }
-    }
-  }
-  ```
+
+* **Purpose**: Isolate future profit/loss behavior after formulas are owner-approved.
+* **What it owns**: Future owner-approved settlement calculation boundaries.
+* **What it must not own**: Score fetching, user storage updates, auto-settlement from feed data, or formulas before approval.
+* **How to extend later**: Add formula strategies only after explicit owner approval.
+* **Related candidate**: ADR-0028.
+* **Owner-applied statuses**: `pending`, `won`, `lost`, `push`, `void`, `half_won`, `half_lost`, `manual_adjustment`.
+* **Deferred**: Auto-settlement and all settlement formulas.
 
 ---
 
 ## 9. ReportAggregator
-* **Purpose**: Generate aggregates from historical records.
-* **What it owns**: Grouping metrics over day, week, month ranges.
-* **What it must not own**: UI styling or persistent storage files.
-* **How to extend later**: Add custom charts or custom metrics (e.g. Yield, ROI).
-* **Owner decisions required**: Reporting field requirements (ADR-0029).
-* **Example generic shape**:
-  ```javascript
-  class ReportAggregator {
-    aggregate(betsList, filterRange) {
-      // Returns aggregated reporting structure
-    }
-  }
-  ```
+
+* **Purpose**: Generate owner-approved candidate report fields for daily, weekly, and monthly views.
+* **What it owns**: Candidate grouping metrics over browser-local report periods, using UTC stored timestamps.
+* **What it must not own**: UI styling, persistent storage files, SQL queries, ROI/yield/CLV formulas, bankroll curve logic, or advanced charts.
+* **How to extend later**: Add custom charts or deferred metrics only after owner approval.
+* **Related candidate**: ADR-0029.
+* **Deferred**: ROI, yield, CLV, bankroll curve, advanced charts, and storage queries.
 
 ---
 
 ## 10. AiRecommendationBoundary
-* **Purpose**: Isolate AI suggestions from the journal log and verify inputs.
-* **What it owns**: Validation of candidate recommendations, prediction traces, and confidence parameters.
-* **What it must not own**: Prediction calculations or auto-staking logic.
-* **How to extend later**: Connect new local-ai models.
-* **Owner decisions required**: AI recommendations layout and rules (ADR-0030).
-* **Example generic shape**:
+
+* **Purpose**: Isolate AI recommendation presentation from journal writes.
+* **What it owns**: Read-only recommendation card boundaries, trace references when available, and no-bet/refusal state planning.
+* **What it must not own**: Prediction calculations, ranking logic, real confidence claims, stake suggestions, auto-save, auto-bet, or bankroll-based recommendation.
+* **How to extend later**: Connect to approved prediction envelopes only after prediction ADR approval.
+* **Related candidate**: ADR-0030.
+* **Owner-applied generic shape**:
   ```json
   {
-    "candidateId": "rec_112233",
+    "recommendationId": "rec_112233",
     "predictionTraceId": "pred_xyz987",
+    "predictionAvailable": true,
     "suggestedMarket": { "type": "1X2", "selection": "home" },
-    "suggestedOdds": 0.90,
-    "confidenceLabel": "HIGH"
+    "suggestedLine": null
   }
   ```
 
 ---
 
 ## 11. RiskRuleStrategy
-* **Purpose**: Evaluate user actions against safety bounds.
-* **What it owns**: Stake caps, warning indicators.
-* **What it must not own**: Enforcement locks unless authorized.
-* **How to extend later**: Add custom warning modules (e.g., loss streak checks).
-* **Owner decisions required**: Warning limits (ADR-0032).
-* **Example generic shape**:
-  ```javascript
-  class RiskRuleStrategy {
-    evaluate(candidateBet, userHistory) {
-      // Returns list of safety warnings or validation failures
-    }
-  }
-  ```
+
+* **Purpose**: Plan future warning-only responsible-use checks behind a replaceable boundary.
+* **What it owns**: Future owner-approved warning indicators.
+* **What it must not own**: Enforcement locks, default numeric thresholds, Kelly Criterion, stake-sizing helpers, bankroll growth formulas, max drawdown formulas, or risk formulas.
+* **How to extend later**: Add warning modules for high stake compared to bankroll, daily loss warning, weekly loss warning, and loss streak warning after owner threshold approval.
+* **Related candidate**: ADR-0032.
+* **Owner-applied rule**: Warnings are overrideable and non-blocking in v1 planning.
 
 ---
 
 ## 12. ResponsibleUseBoundary
-* **Purpose**: Enforce safe-use limits (e.g., betting cooldowns, max daily stake limits).
-* **What it owns**: Cooldown timers, cumulative daily totals.
-* **What it must not own**: User financial details.
-* **How to extend later**: Implement hard locks if the owner moves past basic warnings.
-* **Owner decisions required**: Threshold guidelines (ADR-0032).
-* **Example generic shape**:
-  ```javascript
-  class ResponsibleUseBoundary {
-    isLimitExceeded(dailyTotalPoints, limitThreshold) {
-      return dailyTotalPoints > limitThreshold;
-    }
-  }
-  ```
+
+* **Purpose**: Document future responsible-use warning categories.
+* **What it owns**: Future warning categories only.
+* **What it must not own**: User financial details, hard locks, formulas, or default numeric thresholds.
+* **How to extend later**: Implement hard locks only if explicitly approved in a later owner decision.
+* **Related candidate**: ADR-0032.
+
+---
+
+## 13. LocalFirstPersistenceBoundary
+
+* **Purpose**: Plan local-first data ownership, backup, and future storage boundaries for betting history.
+* **What it owns**: Export/Import JSON backup requirement and future local-first storage planning.
+* **What it must not own**: Production database implementation, account system, auth, cloud sync, database client, object mapper, table definition, or migration.
+* **How to extend later**: Plan IndexedDB implementation after owner-approved ADR drafting.
+* **Related candidate**: ADR-0033.
+* **Owner-applied rule**: `localStorage` can be used only for tiny mock/demo state, not long-term real betting history.

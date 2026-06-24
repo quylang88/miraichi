@@ -196,3 +196,18 @@ This catalog documents open product and business logic questions for the Miraich
   * *Option B*: Hard block transactions that violate risk rules.
 * **Impact of Options**: Option A misses a key product differentiator. Option B frustrates users. The default strategy warning is helpful and non-intrusive.
 * **Blocks Implementation?**: No.
+
+---
+
+## 16. Local-First Betting Data Persistence and Backup
+
+### Question: Should Phase 5 add a local-first betting data persistence and backup ADR candidate?
+* **Why it matters**: Betting history is user-entered data. Without a local-first and backup boundary, v1 risks either losing user data or implying unapproved cloud/account/database commitments.
+* **Owner-Applied Direction**: Add ADR-0033 for local-first betting data persistence and backup. Plan local-first storage, require Export/Import JSON backup, prefer IndexedDB for future implementation planning, and restrict `localStorage` to tiny mock/demo state only.
+* **Deferred Options**:
+  * Cloud sync.
+  * Auth.
+  * Production database.
+  * Account system.
+* **Impact of Options**: Local-first planning keeps v1 focused and user-controlled while avoiding unapproved production persistence. Cloud/account-backed storage would add significant architecture and governance requirements.
+* **Blocks Implementation?**: Yes (storage implementation remains blocked until ADR-0033 is drafted and approved).
