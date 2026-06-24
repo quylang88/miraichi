@@ -1,6 +1,6 @@
 # Phase 5: Owner Decision Questions Catalog
 
-This catalog documents the open product and business logic questions for the Miraichi owner. Each decision requires owner approval (via ADR) before implementation.
+This catalog documents open product and business logic questions for the Miraichi owner. Each recommendation is an AI proposal only and requires explicit owner approval before any ADR update or implementation.
 
 ---
 
@@ -8,7 +8,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: Should the manual bet record support custom, user-defined labels/metadata (tags, notes) in version 1?
 * **Why it matters**: Users often track notes about bets (e.g., "followed tipster X", "weather was rainy"). Standardizing metadata fields early helps design search and filter capabilities.
-* **Recommended Default**: Allow a single optional `notes` text field and a simple `tags` array of strings.
+* **AI Recommended Proposal**: Allow a single optional `notes` text field and a simple `tags` array of strings.
 * **Alternative Options**:
   * *Option A*: Strict fields only (no custom notes/tags).
   * *Option B*: Multi-field structured metadata (e.g., custom confidence rating 1-5, tipster ID).
@@ -21,7 +21,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: How should the system handle match groups for matches that are cancelled, postponed, or replayed?
 * **Why it matters**: If a match is postponed, bets placed on it may remain pending, get voided by rules, or move to the new date.
-* **Recommended Default**: Link betting groups to the unique Match ID. If a match is cancelled or postponed, mark the match group status as "postponed" and default to voiding the bets unless the user manually overrides them.
+* **AI Recommended Proposal**: Link betting groups to a stable match grouping identity. If a match is cancelled or postponed, preserve the group and require owner-approved lifecycle rules before any automatic voiding behavior is implemented.
 * **Alternative Options**:
   * *Option A*: Delete the group and all bets if a match is cancelled.
   * *Option B*: Allow manual detach/attach of bets to any other match.
@@ -34,7 +34,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: Which exact markets are required for the v1 MVP release?
 * **Why it matters**: Although the catalog is extensible, we need a baseline of built-in markets for validation and quick-select presets.
-* **Recommended Default**: 1X2, Over / Under (Total Goals), Handicap (Spread), and Corners.
+* **AI Recommended Proposal**: 1X2, Over / Under (Total Goals), Handicap (Spread), and Corners.
 * **Alternative Options**:
   * *Option A*: Only 1X2 and Over/Under.
   * *Option B*: Include cards, goalscorers, half-time/full-time, and player props.
@@ -47,7 +47,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: Should line validation enforce standard sports increments, or allow arbitrary decimal inputs?
 * **Why it matters**: Handicap and Over/Under lines are typically increments of `0.25` (e.g., `2.0`, `2.25`, `2.5`, `2.75`). If users can type `2.34`, settlement logic will fail or require complex math.
-* **Recommended Default**: Allow arbitrary manual text input for compatibility with custom lines, but display a warnings banner if the input is not a multiple of `0.25`.
+* **AI Recommended Proposal**: Allow arbitrary manual text input for compatibility with custom lines, but plan a future warning boundary for values outside owner-approved line conventions.
 * **Alternative Options**:
   * *Option A*: Hard restrict input to strict quarter-line increments (`*.0`, `*.25`, `*.5`, `*.75`).
   * *Option B*: Free text without warnings.
@@ -60,7 +60,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: What fields should be recorded for a live bet compared to a pre-match bet?
 * **Why it matters**: Tracking live bet performance requires knowing the state of the game when the wager was logged (e.g. score, elapsed time).
-* **Recommended Default**: Record a `betTimeType` (`pre_match` | `live`), and if `live`, capture mandatory fields `liveScoreHome` and `liveScoreAway` (as integers) at the time of entry.
+* **AI Recommended Proposal**: Record a `betTimeType` (`pre_match` | `live`), and if `live`, capture score-at-entry fields at the time of entry.
 * **Alternative Options**:
   * *Option A*: Treat pre-match and live bets exactly the same (no score tracking at bet time).
   * *Option B*: Capture detailed match event context (minute, card count, possession).
@@ -73,7 +73,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: How should other odds formats (Decimal, Malay, Indo, American) be translated internally?
 * **Why it matters**: To compute profit/loss consistently, all odds formats must convert to a single internal decimal representation (European decimal odds or pure multiplier).
-* **Recommended Default**: Convert all input formats to a standardized decimal multiplier value (`decimalOdds`) internally, while preserving the user's input format and raw text for rendering.
+* **AI Recommended Proposal**: Preserve the user's input format and raw text, and plan a separate odds-format boundary for future owner-approved normalization rules.
 * **Alternative Options**:
   * *Option A*: Perform direct formulas per format type at calculation time.
   * *Option B*: Store only Decimal odds and discard the original input format type.
@@ -86,7 +86,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: Can stakes be recorded as decimal points, or must they be positive integers?
 * **Why it matters**: Points-based staking might use units of `1` point, but fractional sizing (e.g., `0.5` points, `1.5` points) is common for risk adjustment.
-* **Recommended Default**: Support positive decimal stake values with up to 2 decimal places (e.g. `10.50` points). Stake must be strictly greater than zero.
+* **AI Recommended Proposal**: Support positive decimal stake values with an owner-approved precision limit. Negative stakes remain out of scope unless the owner approves lay-style tracking later.
 * **Alternative Options**:
   * *Option A*: Integer-only stakes (e.g., `1`, `2`, `5` points).
   * *Option B*: Negative stakes allowed (representing lay positions).
@@ -99,13 +99,11 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: How should "half-win" and "half-loss" payouts be calculated for quarter-lines?
 * **Why it matters**: A handicap of `+0.25` or `-0.25` results in partial payouts (half win, half refund, or half loss, half refund) depending on the margin.
-* **Recommended Default**: Formulate a settlement mapping where:
-  * Half-Win: `Profit = Stake * (Odds - 1) / 2`
-  * Half-Loss: `Loss = -Stake / 2`
+* **AI Recommended Proposal**: Treat half-win and half-loss as explicit settlement states, but defer the exact payout mapping and formulas to a later owner-approved ADR.
 * **Alternative Options**:
   * *Option A*: Force binary win/loss states (no half payouts supported).
   * *Option B*: Allow users to override and manually enter the profit/loss points directly.
-* **Impact of Options**: Option A results in incorrect balances. Option B is highly flexible but prone to manual entry errors. Recommending automated calculation based on a mapping is best, with Option B as a backup override.
+* **Impact of Options**: Option A can misrepresent split outcomes. Option B is highly flexible but prone to manual entry errors. A structured settlement mapping is likely needed later, but the owner must approve the exact formula before implementation.
 * **Blocks Implementation?**: Yes (affects settlement calculations).
 
 ---
@@ -114,7 +112,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: Should bets be settled automatically when a match ends, or require manual user settlement?
 * **Why it matters**: Auto-settlement requires coupling the betting journal with ingestion feeds and resolving matches. Manual settlement puts control in the user's hands.
-* **Recommended Default**: Provide a manual status selector (`pending`, `won`, `lost`, `void`, `half_won`, `half_lost`) in v1, with an optional "auto-fill" helper button if match scores are ingested.
+* **AI Recommended Proposal**: Provide a manual status selector in v1, with any auto-fill helper deferred until match-score ingestion and settlement rules are separately approved.
 * **Alternative Options**:
   * *Option A*: Strict manual-only settlement.
   * *Option B*: Fully automated background settlement script (no manual override).
@@ -127,7 +125,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: How should reporting dates be aligned (UTC vs. User Local Timezone)?
 * **Why it matters**: A bet placed on a Saturday night in one timezone might show up as Sunday in UTC, affecting weekly and monthly aggregations.
-* **Recommended Default**: Aggregate reports using the user's local browser timezone, but store all transaction dates in UTC.
+* **AI Recommended Proposal**: Aggregate reports using the user's local browser timezone while preserving UTC timestamps for stored event times.
 * **Alternative Options**:
   * *Option A*: Perform all reporting calculations strictly in UTC.
   * *Option B*: Let the user choose their reporting timezone in settings.
@@ -140,7 +138,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: Should AI recommendations show up as notification cards, or directly inject drafts into the journal?
 * **Why it matters**: Users should never have wagers automatically added without consent. Clear separation prevents legal/risk issues.
-* **Recommended Default**: Display recommendations as separate, read-only "Recommendation Cards" that contain an "Add to Journal" button.
+* **AI Recommended Proposal**: Display recommendations as separate, read-only "Recommendation Cards" that contain an "Add to Journal" action requiring explicit user confirmation.
 * **Alternative Options**:
   * *Option A*: Direct injection as draft records in the main log.
   * *Option B*: Purely text-based chat replies without structured UX cards.
@@ -153,7 +151,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: Should the mobile UI focus on a calendar-based layout or a list-based dashboard for bet records?
 * **Why it matters**: Screen space is limited. List views are easier to build, but calendar views make historical reports easier to navigate.
-* **Recommended Default**: A list-based dashboard grouped chronologically by date headers, with filter pills for "Pending", "Settled", and "Market".
+* **AI Recommended Proposal**: A list-based dashboard grouped chronologically by date headers, with filter controls for status and market.
 * **Alternative Options**:
   * *Option A*: Full-screen calendar widget.
   * *Option B*: Infinite scroll feed.
@@ -166,7 +164,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: What fallback mechanism should be used if the browser storage (localStorage/IndexedDB) is cleared?
 * **Why it matters**: PWAs relying on local browser cache risk losing data if the OS clears local storage to free space.
-* **Recommended Default**: Provide an easy "Export to JSON" and "Import JSON" backup button in v1 settings.
+* **AI Recommended Proposal**: Provide an easy "Export to JSON" and "Import JSON" backup flow in v1 settings if local-first storage is used.
 * **Alternative Options**:
   * *Option A*: No recovery mechanism (data is lost).
   * *Option B*: Mandate cloud synchronization (requires database and auth).
@@ -179,7 +177,7 @@ This catalog documents the open product and business logic questions for the Mir
 
 ### Question: How do we link a manual bet record back to an AI prediction trace for audit purposes?
 * **Why it matters**: When auditing model performance, we must trace whether a user's bet matched the AI's predicted outcome.
-* **Recommended Default**: Include an optional `predictionTraceId` field in the `BetRecordEnvelope` that links to the AI prediction envelope.
+* **AI Recommended Proposal**: Include an optional prediction trace reference in the bet record boundary, pending owner approval of the final trace contract.
 * **Alternative Options**:
   * *Option A*: No linkage (betting and predictions are separate).
   * *Option B*: Enforce that bets can only be created from AI predictions.
@@ -190,9 +188,9 @@ This catalog documents the open product and business logic questions for the Mir
 
 ## 15. Future Bankroll/Risk Management
 
-### Question: Should we implement bankroll warnings when a user stakes a high percentage of their total bankroll?
-* **Why it matters**: Responsible-use principles suggest warning users if a stake exceeds safe levels (e.g. >5% of bankroll).
-* **Recommended Default**: Design a replaceable `RiskRuleStrategy` interface that receives the candidate stake and total bankroll, generating warnings in the UI if triggered, but do not block the user.
+### Question: Should we plan bankroll warnings when a user stakes above an owner-defined share of their total bankroll?
+* **Why it matters**: Responsible-use principles may require warnings if a stake exceeds owner-approved risk boundaries.
+* **AI Recommended Proposal**: Design a replaceable risk-warning boundary that can receive candidate stake and bankroll context later, generating non-blocking UI warnings only after the owner approves the exact rule.
 * **Alternative Options**:
   * *Option A*: No risk warnings.
   * *Option B*: Hard block transactions that violate risk rules.

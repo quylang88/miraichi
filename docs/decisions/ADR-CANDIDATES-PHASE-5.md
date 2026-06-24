@@ -1,6 +1,6 @@
 # Architectural Decision Record Candidates: Phase 5 Betting Journal and Business Logic
 
-This document compiles the candidate Architectural Decision Records (ADRs) proposed to open Phase 5. Under `docs/governance/OWNER-DECISION-GATES.md`, all candidates require explicit owner approval before implementation begins.
+This document compiles the candidate Architectural Decision Records (ADRs) proposed to open Phase 5. Under `docs/governance/OWNER-DECISION-GATES.md`, all candidates require explicit owner approval before implementation begins. Any recommendation in this file is an AI proposal only, not an owner decision and not an ADR status.
 
 ---
 
@@ -14,15 +14,15 @@ The app must allow users to manually record real bets they have placed or want t
 
 ### 3. Options Considered
 * **Option A**: Log wagers as free-text fields (no schema validation).
-* **Option B (Recommended)**: Define a strict candidate data contract `BetRecordEnvelope` enclosing identifiers, trace keys, and stakes.
+* **Option B (AI Proposal)**: Define a strict candidate data contract `BetRecordEnvelope` enclosing identifiers, trace keys, and stakes.
 * **Option C**: Create database models directly.
 
-### 4. Recommended Direction & Trade-offs
+### 4. AI Proposed Direction & Trade-offs
 * **Direction**: Option B. Standardizes data storage and validation while leaving database drivers abstract.
 * **Trade-off**: Requires writing local verification code for the fields.
 
 ### 5. Open Questions
-* Should we allow custom tags or categorization? (Recommended: Yes).
+* Should we allow custom tags or categorization? (AI proposal: Yes, pending owner confirmation).
 
 ### 6. What It Must NOT Decide Yet
 * Production SQL or NoSQL database schemas or ORM packages.
@@ -42,15 +42,15 @@ The app must store betting history by match. Multiple bets for the same match sh
 
 ### 3. Options Considered
 * **Option A**: Store bets as flat records with a simple match text field (no grouping).
-* **Option B (Recommended)**: Create a `MatchBettingGroup` envelope that references a Match ID (or a unique home-away team key) and contains an array of `BetRecordEnvelope` references.
+* **Option B (AI Proposal)**: Create a `MatchBettingGroup` envelope that references a Match ID when available, while preserving a manual grouping fallback, and contains references to associated `BetRecordEnvelope` records.
 * **Option C**: Group bets only in frontend presentations, keeping the storage data flat.
 
-### 4. Recommended Direction & Trade-offs
+### 4. AI Proposed Direction & Trade-offs
 * **Direction**: Option B. Ensures data grouping is represented in the domain architecture, making reports simpler to aggregate.
 * **Trade-off**: Requires maintaining relationships between wagers and match groups.
 
 ### 5. Open Questions
-* How do we handle grouping if the user types team names with different spellings? (Recommended default: Normalize team names to lowercase, stripping spaces).
+* How do we handle grouping if the user types team names with different spellings? (AI proposal: define owner-approved normalization rules before implementation).
 
 ### 6. What It Must NOT Decide Yet
 * Enforcing database foreign-key constraints.
@@ -70,15 +70,15 @@ The user must be able to select markets (1X2, Over/Under, Handicap, Corners, etc
 
 ### 3. Options Considered
 * **Option A**: Hardcode validation checks per market inside the main transaction route.
-* **Option B (Recommended)**: Establish a `MarketCatalog` and `MarketTypeRegistry` where each market is a registered module defining presets and verification checks.
+* **Option B (AI Proposal)**: Establish a `MarketCatalog` and `MarketTypeRegistry` where each market is a registered module defining presets and verification checks.
 * **Option C**: No line presets (manual-only input).
 
-### 4. Recommended Direction & Trade-offs
+### 4. AI Proposed Direction & Trade-offs
 * **Direction**: Option B. Decouples validation code from record logic.
 * **Trade-off**: Minor configuration overhead.
 
 ### 5. Open Questions
-* Which preset values are loaded by default? (Recommended: Multiples of `0.25` up to `3.5`).
+* Which preset values are loaded by default? (AI proposal: use common line presets, with exact values requiring owner confirmation).
 
 ### 6. What It Must NOT Decide Yet
 * The exact calculation logic for settlements of specific new markets.
@@ -98,15 +98,15 @@ Default odds format must be HK odds, with support for switching to other common 
 
 ### 3. Options Considered
 * **Option A**: Convert values dynamically in the UI elements.
-* **Option B (Recommended)**: Normalize all odd formats to an internal decimal multiplier value inside a unified `OddsFormatAdapter` interface, keeping calculations consistent.
+* **Option B (AI Proposal)**: Preserve user-entered odds format and plan a unified `OddsFormatAdapter` boundary for future owner-approved normalization rules.
 * **Option C**: Force all wagers to be saved and viewed as Decimal only.
 
-### 4. Recommended Direction & Trade-offs
+### 4. AI Proposed Direction & Trade-offs
 * **Direction**: Option B. Keeps calculations isolated.
 * **Trade-off**: Requires writing parsing adapters.
 
 ### 5. Open Questions
-* What is the decimal precision limit for internal odds multipliers? (Recommended: 4 decimal places).
+* What is the decimal precision limit for internal odds multipliers? (AI proposal: choose an owner-approved precision limit before implementation).
 
 ### 6. What It Must NOT Decide Yet
 * The actual mathematical conversion formulas for Malay or American odds.
@@ -126,15 +126,15 @@ Stakes and profit/loss in v1 must be points, not real currency.
 
 ### 3. Options Considered
 * **Option A**: Store stakes as arbitrary strings.
-* **Option B (Recommended)**: Mandate a float type `stakePoints` and `profitLossPoints` for all wagers, restricted to positive values.
+* **Option B (AI Proposal)**: Use points-only stake and profit/loss fields, with positive stake values and owner-approved precision.
 * **Option C**: Allow real currency inputs alongside points in v1.
 
-### 4. Recommended Direction & Trade-offs
+### 4. AI Proposed Direction & Trade-offs
 * **Direction**: Option B. Protects users by keeping transactions mock-only.
 * **Trade-off**: Limits applicability to cash tracking.
 
 ### 5. Open Questions
-* Can points contain decimals? (Recommended: Yes, up to 2 decimals).
+* Can points contain decimals? (AI proposal: Yes, with precision confirmed by the owner).
 
 ### 6. What It Must NOT Decide Yet
 * Formulas for ROI, yield, or payout ratios.
@@ -154,15 +154,15 @@ Users must be able to track wagers, supporting live wagers and status resolution
 
 ### 3. Options Considered
 * **Option A**: Pure manual status updates.
-* **Option B (Recommended)**: Define a state machine (`pending` -> `won`/`lost`/`push`/`void`/`half_won`/`half_lost`) that supports manual toggles or auto-settlement hooks via a `SettlementStrategy` interface.
+* **Option B (AI Proposal)**: Define owner-approved lifecycle states that support manual toggles and future auto-settlement hooks via a `SettlementStrategy` boundary.
 * **Option C**: Fully automated background settlement script only.
 
-### 4. Recommended Direction & Trade-offs
+### 4. AI Proposed Direction & Trade-offs
 * **Direction**: Option B. Offers safety of manual control with modular hooks for automation.
 * **Trade-off**: Requires mapping split result outcomes.
 
 ### 5. Open Questions
-* Should settlement recalculate profit/loss on modification? (Recommended: Yes).
+* Should settlement recalculate profit/loss on modification? (AI proposal: require a separate owner-approved formula ADR before any recalculation behavior is implemented).
 
 ### 6. What It Must NOT Decide Yet
 * Implementing automated score parsing from external feeds.
@@ -182,21 +182,21 @@ Provide daily, weekly, and monthly reports.
 
 ### 3. Options Considered
 * **Option A**: Implement hardcoded loops inside the UI rendering logic.
-* **Option B (Recommended)**: Abstract aggregation calculations to a separate class `ReportAggregator`, returning a standardized report envelope.
+* **Option B (AI Proposal)**: Abstract aggregation behavior to a separate `ReportAggregator` boundary, returning an owner-approved report envelope later.
 * **Option C**: Pre-calculate and store reports in database collection records.
 
-### 4. Recommended Direction & Trade-offs
+### 4. AI Proposed Direction & Trade-offs
 * **Direction**: Option B. Decouples math and presentation.
 * **Trade-off**: Slightly increases model complexity.
 
 ### 5. Open Questions
-* Should reporting use UTC or local device timezone? (Recommended: Local device).
+* Should reporting use UTC or local device timezone? (AI proposal: use the user's local reporting period while preserving UTC event timestamps).
 
 ### 6. What It Must NOT Decide Yet
 * SQL queries or database views for aggregation.
 
 ### 7. What Implementation It May Unlock Later
-* Caching aggregated reports inIndexedDB for offline capabilities.
+* Caching aggregated reports in IndexedDB for offline capabilities after a separate storage decision.
 
 ---
 
@@ -210,15 +210,15 @@ The app should eventually allow AI to suggest bets.
 
 ### 3. Options Considered
 * **Option A**: Let AI directly write wager records into the user's history log.
-* **Option B (Recommended)**: Enforce an isolated recommendation boundary where AI suggestions are read-only cards that the user must manually confirm, containing full prediction trace IDs.
+* **Option B (AI Proposal)**: Enforce an isolated recommendation boundary where AI suggestions are read-only cards that the user must manually confirm, containing trace references.
 * **Option C**: Pure text suggestions in chat.
 
-### 4. Recommended Direction & Trade-offs
+### 4. AI Proposed Direction & Trade-offs
 * **Direction**: Option B. Maintains strict user control and auditability.
 * **Trade-off**: Requires designing recommendation presentation cards.
 
 ### 5. Open Questions
-* How long should recommendation cards persist? (Recommended: Until the associated match begins).
+* How long should recommendation cards persist? (AI proposal: owner should choose a lifecycle rule before implementation).
 
 ### 6. What It Must NOT Decide Yet
 * The prediction inference or model selection algorithms.
@@ -238,15 +238,15 @@ Phase 5 should include UI/UX design for the PWA betting journal and reporting fl
 
 ### 3. Options Considered
 * **Option A**: Simple desktop-first dashboard with scrollbars on mobile.
-* **Option B (Recommended)**: Mobile-first responsive layouts with bottom navigation menus, touch-friendly preset buttons, and CSS safe-area padding.
+* **Option B (AI Proposal)**: Mobile-first responsive layouts with touch-friendly controls and PWA-safe spacing.
 * **Option C**: Native application view (requires wrappers).
 
-### 4. Recommended Direction & Trade-offs
+### 4. AI Proposed Direction & Trade-offs
 * **Direction**: Option B. Ensures high mobile usability under PWA guidelines.
 * **Trade-off**: Requires writing media queries and responsive styling.
 
 ### 5. Open Questions
-* Should we support light and dark modes? (Recommended: Sleek dark mode by default).
+* Should we support light and dark modes? (AI proposal: choose the default theme during owner review).
 
 ### 6. What It Must NOT Decide Yet
 * Final framework selections or page routing libraries.
@@ -266,15 +266,15 @@ Design bankroll boundaries that support future adjustments and rules without loc
 
 ### 3. Options Considered
 * **Option A**: No bankroll limit checks (unrestricted tracking).
-* **Option B (Recommended)**: Design a replaceable `RiskRuleStrategy` interface that receives the candidate bet parameters and current bankroll balance, generating UI warnings if guidelines are exceeded.
-* **Option C**: Hard block all transactions that violate Kelly Criterion limits.
+* **Option B (AI Proposal)**: Design a replaceable `RiskRuleStrategy` boundary that can generate UI warnings only after the owner approves exact guidelines.
+* **Option C**: Hard block entries that violate owner-approved risk rules.
 
-### 4. Recommended Direction & Trade-offs
+### 4. AI Proposed Direction & Trade-offs
 * **Direction**: Option B. Helps user risk management without forcing restrictive blocks.
 * **Trade-off**: Increases interface complexity.
 
 ### 5. Open Questions
-* What is the default risk limit warning threshold? (Recommended: >5% of total bankroll).
+* What is the default risk limit warning threshold? (AI proposal: defer exact thresholds until owner review).
 
 ### 6. What It Must NOT Decide Yet
 * Math formulas for bankroll growth or maximum drawdowns.
