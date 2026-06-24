@@ -66,5 +66,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Mock-up local-ai service and verify trace metadata pipeline.
 - [x] Establish PWA-first client delivery strategy and make web app PWA-ready.
 - [x] Begin Phase 5 Betting/History/Bankroll planning and draft candidate ADRs.
+- [x] Create Phase 5.2 Wave A ADR planning documents and 6 draft ADRs (ADR-0023, 0024, 0025, 0026, 0031, 0033).
 
 

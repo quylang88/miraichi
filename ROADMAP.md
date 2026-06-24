@@ -59,3 +59,4 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Implement Phase 4 local-ai mock inference endpoints and client proxy.
 - [x] Align client app as PWA-first and defer native iOS.
 - [x] Begin Phase 5 planning for betting rules, history tracking, and risk limits.
+- [x] Draft Phase 5.2 Wave A ADRs (ADR-0023, 0024, 0025, 0026, 0031, 0033).

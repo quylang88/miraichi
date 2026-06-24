@@ -1,0 +1,34 @@
+# Phase 5.2 Wave A Draft Scope
+
+This document specifies the exact scope boundaries and contents for the Wave A ADR draft phase.
+
+## 1. Included Draft ADRs
+
+Wave A encompasses exactly six candidate ADR files to be created in `Draft` status:
+
+| ADR ID | Title | Scope and Boundaries |
+| :--- | :--- | :--- |
+| **ADR-0023** | User-Entered Real Bet Record Boundary | Defines the candidate JSON properties of `BetRecordEnvelope`. |
+| **ADR-0024** | Match-Centric Betting History Grouping | Defines grouping by match and the `MatchBettingGroup` object. |
+| **ADR-0025** | Market Catalog and Line Preset Registry | Configures the list of standard football markets and UI lines presets. |
+| **ADR-0026** | Odds Format Strategy Boundary | Sets HK odds as default and raw odds value storage, deferring conversion math. |
+| **ADR-0031** | PWA Betting Journal UX Boundary | Outlines navigation tabs, date groupings, list views, and PWA considerations. |
+| **ADR-0033** | Local-First Betting Data Persistence Boundary | Specifies local-first IndexedDB strategy, backups, and data privacy. |
+
+---
+
+## 2. Explicit Exclusions
+
+The following components are strictly out-of-scope for Wave A and will not be drafted in these ADRs:
+1. **Mathematical Calculations**: Any profit/loss, yield, ROI, stake sizing, or odds conversion formulas.
+2. **Execution Code / DB Tables**: No code files, library installations (e.g. SQLite, Sequelize), database drivers, or migration scripts.
+3. **External Integrations**: Bookmaker APIs, data feeds, account creation, or email services.
+4. **Active AI recommendation features**: Actual card suggestion logic or probability threshold triggers.
+
+---
+
+## 3. Governance Status
+
+* **Status: Draft**: All ADR documents remain in `Draft` status.
+* **Review Needed**: These drafts will be submitted to the owner for feedback.
+* **No Implementation**: Coding is blocked.
