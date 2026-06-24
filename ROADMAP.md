@@ -43,8 +43,8 @@ Outlines high-level roadmap milestones across multiple phases.
 - Establish PWA shell caching and mobile-first responsive layout.
 - Run basic agent coordination scenarios.
 
-### Milestone 6: Betting Accounts & Bankroll Strategy Planning
-- Establish specifications for simulated user wagers, history, and limits.
+### Milestone 6: Betting Accounts & Bankroll Strategy Planning (Completed)
+- Establish specifications for simulated wagers, history, reports, and limits.
 - Formulate adapter contracts for owner-controlled betting logic.
 
 ## TODO / Next Steps
@@ -58,7 +58,4 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Review Phase 4 candidate ADRs (ADR-0017 to ADR-0021).
 - [x] Implement Phase 4 local-ai mock inference endpoints and client proxy.
 - [x] Align client app as PWA-first and defer native iOS.
-- [ ] Begin Phase 5 planning for betting rules, history tracking, and risk limits.
-
-
-
+- [x] Begin Phase 5 planning for betting rules, history tracking, and risk limits.

@@ -36,7 +36,7 @@ Index list of records.
 - [ADR-0020-llm-explanation-role-and-prediction-refusal-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0020-llm-explanation-role-and-prediction-refusal-boundary.md) - LLM Explanation Role and Prediction Refusal Boundary. (Status: Accepted)
 - [ADR-0021-prediction-evaluation-and-backtesting-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0021-prediction-evaluation-and-backtesting-boundary.md) - Prediction Evaluation and Backtesting Boundary. (Status: Accepted)
 - [ADR-0022-client-delivery-strategy-pwa-first-native-ios-deferred.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0022-client-delivery-strategy-pwa-first-native-ios-deferred.md) - Client Delivery Strategy (PWA-First, Native iOS Deferred). (Status: Accepted)
- 
+- [ADR-CANDIDATES-PHASE-5.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-5.md) - Candidate decisions for user wagers, history grouping, market catalogs, odds formatting, point aggregation, and UI flows in Phase 5. (Status: Candidate)
  
  
  ## Reports & Summaries

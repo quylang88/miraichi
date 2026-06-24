@@ -43,10 +43,10 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Deliverables**: Inference endpoints, local prediction pipeline tests, and prompt routing logs.
 - **Status**: Completed.
 
-### Phase 5: Betting/History/Bankroll Modules
-- **Goal**: Implement betting rules, audit logs, and bankroll tracking logic.
-- **Deliverables**: Prediction accuracy evaluations, bankroll adjustments, risk limit checks.
-- **Status**: Active Planning.
+### Phase 5: Betting History, Bankroll, Reports, AI Recommendation Boundary, and Extensible Business Logic Discovery
+- **Goal**: Gather owner requirements, formulate open questions, and design extensible domain boundaries for manual bet logging, reporting, and AI advice.
+- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, and candidate ADRs (ADR-0023 to ADR-0032).
+- **Status**: Completed.
 
 ### Phase 6: Testing/Deployment
 - **Goal**: Perform end-to-end integration, security audits, and production deployments.
@@ -65,6 +65,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Approve Phase 4 candidate ADRs (ADR-0017 to ADR-0021).
 - [x] Mock-up local-ai service and verify trace metadata pipeline.
 - [x] Establish PWA-first client delivery strategy and make web app PWA-ready.
-- [ ] Begin Phase 5 Betting/History/Bankroll planning and draft candidate ADRs.
+- [x] Begin Phase 5 Betting/History/Bankroll planning and draft candidate ADRs.
 
 
