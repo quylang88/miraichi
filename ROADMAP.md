@@ -43,10 +43,21 @@ Outlines high-level roadmap milestones across multiple phases.
 - Establish PWA shell caching and mobile-first responsive layout.
 - Run basic agent coordination scenarios.
 
-### Milestone 6: Betting Accounts & Bankroll Strategy Planning (Completed)
+### Milestone 6: Betting Accounts & Bankroll Strategy Planning (Active)
 - Establish specifications for simulated wagers, history, reports, and limits.
 - Formulate adapter contracts for owner-controlled betting logic.
 - Accept Phase 5.2 Wave A foundation ADRs and ADR-0034 as architecture/planning boundaries only.
+- Start Phase 5.3 Wave A Implementation Planning without starting implementation.
+
+### Milestone 7: Real Data Provider, Dataset, and Evaluation Planning (Future)
+- Plan real data provider selection and dataset boundaries.
+- Define model evaluation criteria before any real training.
+- Keep provider choice, datasets, and evaluation gates under owner-approved ADRs.
+
+### Milestone 8: Model Training and Prediction Engine R&D (Future)
+- Begin real model training research only after Phase 7 planning is accepted.
+- Draft prediction algorithm and model runtime ADRs before implementation.
+- Keep betting recommendation and stake advice separate from prediction model R&D.
 
 ## TODO / Next Steps
 - [x] Complete Phase 1 architecture planning milestones.
@@ -62,4 +73,6 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Begin Phase 5 planning for betting rules, history tracking, and risk limits.
 - [x] Draft Phase 5.2 Wave A ADRs (ADR-0023, 0024, 0025, 0026, 0031, 0033).
 - [x] Accept Phase 5.2 Wave A foundation ADRs and ADR-0034.
-- [ ] Begin Phase 5.3 Wave A Implementation Planning without starting implementation.
+- [x] Begin Phase 5.3 Wave A Implementation Planning without starting implementation.
+- [ ] Propose Phase 5.4 TypeScript tooling setup execution plan for owner review.
+- [ ] Keep real AI training out of Phase 5.3 and Phase 6; reserve it for future Phase 7 and Phase 8 planning.

@@ -44,14 +44,24 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Status**: Completed.
 
 ### Phase 5: Betting History, Bankroll, Reports, AI Recommendation Boundary, and Extensible Business Logic Discovery
-- **Goal**: Gather owner requirements, formulate open questions, and design extensible domain boundaries for manual bet logging, reporting, and AI advice.
-- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, and accepted ADR-0034 TypeScript technical direction.
-- **Status**: Completed.
+- **Goal**: Gather owner requirements, formulate open questions, design extensible domain boundaries, accept Wave A foundation ADRs, and plan future implementation for manual bet logging, reporting, local-first storage, PWA navigation, and typed domain contracts.
+- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, accepted ADR-0034 TypeScript technical direction, and Phase 5.3 Wave A implementation planning documents.
+- **Status**: Active.
 
 ### Phase 6: Testing/Deployment
 - **Goal**: Perform end-to-end integration, security audits, and production deployments.
 - **Deliverables**: Accepted CI/CD workflows, deployment artifacts, and monitoring dashboards.
 - **Status**: TODO.
+
+### Phase 7: Real Data Provider, Dataset, and Evaluation Planning
+- **Goal**: Plan real provider selection, dataset construction, data quality, evaluation methodology, and governance for future real prediction work.
+- **Deliverables**: Owner-approved ADRs for data provider strategy, dataset boundaries, evaluation criteria, and model-readiness gates.
+- **Status**: Future.
+
+### Phase 8: Model Training and Prediction Engine R&D
+- **Goal**: Research and prototype real model training and prediction engine approaches only after Phase 7 planning is accepted.
+- **Deliverables**: Owner-approved R&D plans, model experiment boundaries, evaluation reports, and prediction algorithm ADRs.
+- **Status**: Future.
 
 ## TODO / Next Steps
 - [x] Review Phase 1 architecture planning package.
@@ -68,5 +78,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Begin Phase 5 Betting/History/Bankroll planning and draft candidate ADRs.
 - [x] Create Phase 5.2 Wave A ADR planning documents and 6 draft ADRs (ADR-0023, 0024, 0025, 0026, 0031, 0033).
 - [x] Accept Phase 5.2 Wave A foundation ADRs and ADR-0034 as architecture/planning boundaries only.
-- [ ] Begin Phase 5.3 Wave A Implementation Planning without starting implementation.
-
+- [x] Begin Phase 5.3 Wave A Implementation Planning without starting implementation.
+- [ ] Propose Phase 5.4 TypeScript tooling setup execution plan for owner review.
+- [ ] Keep real AI training out of Phase 5.3 and Phase 6; plan it only through future Phase 7 and Phase 8 ADRs.
