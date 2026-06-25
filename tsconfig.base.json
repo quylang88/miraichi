@@ -16,6 +16,7 @@
   "include": [
     "apps/**/*.js",
     "packages/**/*.js",
+    "packages/**/*.ts",
     "scripts/**/*.js"
   ],
   "exclude": [

@@ -49,6 +49,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Accept Phase 5.2 Wave A foundation ADRs and ADR-0034 as architecture/planning boundaries only.
 - Start Phase 5.3 Wave A Implementation Planning without starting implementation.
 - Complete Phase 5.4 TypeScript tooling setup for future typed contracts.
+- Complete Phase 5.5 Typed Shared Domain Contracts as type-only shared boundaries.
 
 ### Milestone 7: Real Data Provider, Dataset, and Evaluation Planning (Future)
 - Plan real data provider selection and dataset boundaries.
@@ -76,5 +77,6 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Accept Phase 5.2 Wave A foundation ADRs and ADR-0034.
 - [x] Begin Phase 5.3 Wave A Implementation Planning without starting implementation.
 - [x] Complete Phase 5.4 TypeScript tooling setup execution.
-- [ ] Propose Phase 5.5 Typed Shared Domain Contracts for owner review.
+- [x] Complete Phase 5.5 Typed Shared Domain Contracts execution.
+- [ ] Propose Phase 5.6 Market Catalog and Line Preset Config for owner review.
 - [ ] Keep real AI training out of Phase 5.3 and Phase 6; reserve it for future Phase 7 and Phase 8 planning.
