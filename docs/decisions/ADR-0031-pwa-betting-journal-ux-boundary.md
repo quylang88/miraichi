@@ -1,8 +1,10 @@
 # ADR-0031: PWA Betting Journal UX Boundary
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-24
+* **Accepted Date**: 2026-06-24
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved
 * **Implementation Status**: Not started
 
 ---
@@ -111,3 +113,13 @@ This ADR does not authorize:
 * No betting calculations or financial formulas.
 * No database client, ORM, schema, or migration.
 * No executable code implementation.
+
+## Acceptance Notes
+
+This ADR is accepted as an architecture and planning boundary.
+
+This ADR accepts the five primary domain-tab navigation backbone: `Today`, `Matches`, `Bets`, `Bankroll`, and `Miraichi`. It does not authorize implementation by itself, and it does not authorize final UI implementation, router implementation, native wrapper work, real AI cards, formulas, calculations, storage implementation, integrations, prediction algorithms, or AI recommendation behavior.
+
+Adding, removing, replacing, or renaming a primary tab requires future owner-approved ADR review.
+
+Implementation requires a later owner-approved implementation plan. Business logic, formulas, algorithms, storage implementation, and integrations remain blocked unless explicitly approved by later ADRs or implementation plans.

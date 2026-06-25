@@ -4,9 +4,13 @@ This document compiles the candidate Architectural Decision Records (ADRs) propo
 
 The owner responses from `docs/betting/PHASE-5-OWNER-DECISION-SUMMARY.md` have been applied to candidate wording. This file still does not accept ADRs, mark ADRs ready, create final ADR files, or authorize implementation.
 
+Update: Phase 5.2 Wave A foundation ADRs ADR-0023, ADR-0024, ADR-0025, ADR-0026, ADR-0031, ADR-0033, and technical ADR-0034 were owner-approved and accepted on 2026-06-24 as architecture and planning boundaries only. Implementation remains not started and requires a later owner-approved implementation plan.
+
 ---
 
-## ADR-0023: User-Entered Real Bet Record Boundary (Candidate)
+## ADR-0023: User-Entered Real Bet Record Boundary (Accepted)
+
+**Acceptance status**: Accepted on 2026-06-24. Implementation status: Not started.
 
 ### 1. Problem
 Users need a structured format to log wagers they have placed or want to track. Loose JSON files make validation, reporting, export/import, and traceability unreliable.
@@ -68,7 +72,9 @@ This gives enough structure for filtering, reporting, trace linking, and backup 
 
 ---
 
-## ADR-0024: Match-Centric Betting History Grouping (Candidate)
+## ADR-0024: Match-Centric Betting History Grouping (Accepted)
+
+**Acceptance status**: Accepted on 2026-06-24. Implementation status: Not started.
 
 ### 1. Problem
 Users frequently place multiple distinct wagers on the same match. Listing wagers as a flat chronological feed without match context makes records difficult to review.
@@ -102,7 +108,9 @@ Using `matchGroupId` avoids accidental merges caused by spelling changes, duplic
 
 ---
 
-## ADR-0025: Market Catalog and Line Preset Registry (Candidate)
+## ADR-0025: Market Catalog and Line Preset Registry (Accepted)
+
+**Acceptance status**: Accepted on 2026-06-24. Implementation status: Not started.
 
 ### 1. Problem
 Adding markets or validating manual line inputs can bloat the journal if market behavior is hardcoded into entry, reporting, or settlement code.
@@ -144,7 +152,9 @@ This gives v1 enough useful market coverage while avoiding a wide market surface
 
 ---
 
-## ADR-0026: Odds Format Strategy Boundary (Candidate)
+## ADR-0026: Odds Format Strategy Boundary (Accepted)
+
+**Acceptance status**: Accepted on 2026-06-24. Implementation status: Not started.
 
 ### 1. Problem
 Odds formats introduce conversion risk. Incorrect conversion rules can corrupt settlement and reporting results.
@@ -373,7 +383,9 @@ This provides a clear future UX without giving AI write authority. It also preve
 
 ---
 
-## ADR-0031: PWA Betting Journal UX Boundary (Candidate)
+## ADR-0031: PWA Betting Journal UX Boundary (Accepted)
+
+**Acceptance status**: Accepted on 2026-06-24. Implementation status: Not started.
 
 ### 1. Problem
 Manual betting entry is likely mobile-heavy. Poor mobile UX will make entry slow, error-prone, and hard to review.
@@ -462,7 +474,9 @@ This keeps responsible-use UX possible without pretending the correct risk polic
 
 ---
 
-## ADR-0033: Local-First Betting Data Persistence and Backup Boundary (Candidate)
+## ADR-0033: Local-First Betting Data Persistence and Backup Boundary (Accepted)
+
+**Acceptance status**: Accepted on 2026-06-24. Implementation status: Not started.
 
 ### 1. Problem
 Betting history is user-entered data. If local data is cleared or storage behavior is unclear, users can lose their journal. At the same time, production storage, accounts, and cloud sync are not approved for v1.
@@ -502,7 +516,9 @@ Local-first planning keeps v1 simple and user-controlled. Required JSON backup r
 
 ---
 
-## ADR-0034: TypeScript Adoption and Typed Domain Contracts Boundary (Technical Candidate)
+## ADR-0034: TypeScript Adoption and Typed Domain Contracts Boundary (Accepted Technical ADR)
+
+**Acceptance status**: Accepted on 2026-06-24. Implementation status: Not started.
 
 ### 1. Problem
 Phase 5 introduces increasingly complex cross-app domain boundaries such as `BetRecordEnvelope`, `MatchBettingGroup`, `MarketCatalog`, `OddsFormatAdapter`, `SettlementStrategy`, `ReportAggregator`, `AiRecommendationBoundary`, and `RiskRuleStrategy`.

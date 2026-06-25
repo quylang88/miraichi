@@ -10,13 +10,13 @@ These ADRs establish the core structures, interfaces, and client layouts.
 
 | ADR ID | Title | Wave | Status | Last Updated |
 | :--- | :--- | :--- | :--- | :--- |
-| **ADR-0023** | User-Entered Real Bet Record Boundary | Wave A | Draft | 2026-06-24 |
-| **ADR-0024** | Match-Centric Betting History Grouping | Wave A | Draft | 2026-06-24 |
-| **ADR-0025** | Market Catalog and Line Preset Registry | Wave A | Draft | 2026-06-24 |
-| **ADR-0026** | Odds Format Strategy Boundary | Wave A | Draft | 2026-06-24 |
-| **ADR-0031** | PWA Betting Journal UX Boundary | Wave A | Draft | 2026-06-24 |
-| **ADR-0033** | Local-First Betting Data Persistence Boundary | Wave A | Draft | 2026-06-24 |
-| **ADR-0034** | TypeScript Adoption and Typed Domain Contracts Boundary | Technical adjunct | Draft | 2026-06-24 |
+| **ADR-0023** | User-Entered Real Bet Record Boundary | Wave A | Accepted | 2026-06-24 |
+| **ADR-0024** | Match-Centric Betting History Grouping | Wave A | Accepted | 2026-06-24 |
+| **ADR-0025** | Market Catalog and Line Preset Registry | Wave A | Accepted | 2026-06-24 |
+| **ADR-0026** | Odds Format Strategy Boundary | Wave A | Accepted | 2026-06-24 |
+| **ADR-0031** | PWA Betting Journal UX Boundary | Wave A | Accepted | 2026-06-24 |
+| **ADR-0033** | Local-First Betting Data Persistence Boundary | Wave A | Accepted | 2026-06-24 |
+| **ADR-0034** | TypeScript Adoption and Typed Domain Contracts Boundary | Technical adjunct | Accepted | 2026-06-24 |
 
 ---
 

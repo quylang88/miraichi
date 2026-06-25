@@ -1,8 +1,10 @@
 # ADR-0024: Match-Centric Betting History Grouping
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-24
+* **Accepted Date**: 2026-06-24
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved
 * **Implementation Status**: Not started
 
 ---
@@ -48,3 +50,11 @@ Users place multiple wagers on the same match (e.g., placing a pre-match handica
 * No automated matching heuristics or grouping algorithms.
 * No direct dependencies on data ingestion feeds for grouping.
 * No executable code implementation.
+
+## Acceptance Notes
+
+This ADR is accepted as an architecture and planning boundary.
+
+This ADR accepts the `MatchBettingGroup` boundary only. It does not authorize implementation by itself, and it does not authorize automatic grouping, auto-merge behavior, feed matching logic, database constraints, storage implementation, integrations, formulas, or algorithms.
+
+Implementation requires a later owner-approved implementation plan. Business logic, formulas, algorithms, storage implementation, and integrations remain blocked unless explicitly approved by later ADRs or implementation plans.

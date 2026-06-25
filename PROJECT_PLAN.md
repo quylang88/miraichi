@@ -45,7 +45,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 
 ### Phase 5: Betting History, Bankroll, Reports, AI Recommendation Boundary, and Extensible Business Logic Discovery
 - **Goal**: Gather owner requirements, formulate open questions, and design extensible domain boundaries for manual bet logging, reporting, and AI advice.
-- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, and candidate ADRs (ADR-0023 to ADR-0032).
+- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, and accepted ADR-0034 TypeScript technical direction.
 - **Status**: Completed.
 
 ### Phase 6: Testing/Deployment
@@ -67,5 +67,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Establish PWA-first client delivery strategy and make web app PWA-ready.
 - [x] Begin Phase 5 Betting/History/Bankroll planning and draft candidate ADRs.
 - [x] Create Phase 5.2 Wave A ADR planning documents and 6 draft ADRs (ADR-0023, 0024, 0025, 0026, 0031, 0033).
-
+- [x] Accept Phase 5.2 Wave A foundation ADRs and ADR-0034 as architecture/planning boundaries only.
+- [ ] Begin Phase 5.3 Wave A Implementation Planning without starting implementation.
 

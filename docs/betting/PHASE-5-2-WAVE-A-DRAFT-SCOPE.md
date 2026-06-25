@@ -36,7 +36,6 @@ The following components are strictly out-of-scope for Wave A and will not be dr
 
 ## 3. Governance Status
 
-* **Status: Draft**: All ADR documents remain in `Draft` status.
-* **Review Needed**: These drafts will be submitted to the owner for feedback.
-* **No Implementation**: Coding is blocked.
+* **Accepted After Owner Review**: ADR-0023, ADR-0024, ADR-0025, ADR-0026, ADR-0031, ADR-0033, and ADR-0034 were accepted on 2026-06-24 as architecture and planning boundaries.
+* **No Implementation**: Coding remains blocked.
 * **Technical ADR Separation**: ADR-0034 is a technical architecture ADR only. It must not become a vehicle for business logic, toolchain installation, or framework selection.

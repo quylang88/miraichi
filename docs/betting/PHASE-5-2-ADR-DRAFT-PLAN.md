@@ -37,3 +37,9 @@ The remaining ADRs in Phase 5's candidates backlog are deferred to Wave B and la
 * **Draft Status Only**: All ADRs created in this step will be explicitly marked as `Status: Draft`. Under no circumstances may their status be changed to `Accepted` or `Ready` by the agent.
 * **Implementation Gate**: Coding, schema creation, database client additions, and mock calculations remain **strictly blocked** until the project owner reviews this draft pack, chooses/accepts the ADRs, and explicitly authorizes an implementation phase.
 * **TypeScript Gate**: ADR-0034 may recommend TypeScript as a technical direction, but TypeScript tooling and migration remain blocked until a later implementation plan is approved.
+
+## 6. Owner Acceptance Update
+
+On 2026-06-24, the owner explicitly approved accepting Wave A foundation ADRs ADR-0023, ADR-0024, ADR-0025, ADR-0026, ADR-0031, ADR-0033, and technical ADR-0034 as architecture and planning boundaries.
+
+This acceptance does not authorize implementation. Phase 5.3 Wave A Implementation Planning may begin, but code, dependencies, TypeScript tooling, UI/router files, storage adapters, formulas, algorithms, schemas, migrations, and integrations remain blocked until a later owner-approved implementation plan.

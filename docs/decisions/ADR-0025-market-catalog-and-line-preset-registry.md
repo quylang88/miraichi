@@ -1,8 +1,10 @@
 # ADR-0025: Market Catalog and Line Preset Registry
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-24
+* **Accepted Date**: 2026-06-24
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved
 * **Implementation Status**: Not started
 
 ---
@@ -51,3 +53,11 @@ Wagers span various market types (e.g. Handicap, 1X2). Hardcoding how these mark
 * No hard-block validator scripts that prevent bet record creation.
 * No market-specific calculations or parsing inside the generic UI/API mediation boundaries.
 * No executable code implementation.
+
+## Acceptance Notes
+
+This ADR is accepted as an architecture and planning boundary.
+
+This ADR accepts the `MarketCatalog` and `LinePresetRegistry` boundaries only. It does not authorize implementation by itself, and it does not authorize market settlement formulas, hard-block validators, market-specific calculation logic, storage implementation, integrations, prediction algorithms, or AI recommendation behavior.
+
+Implementation requires a later owner-approved implementation plan. Business logic, formulas, algorithms, storage implementation, and integrations remain blocked unless explicitly approved by later ADRs or implementation plans.

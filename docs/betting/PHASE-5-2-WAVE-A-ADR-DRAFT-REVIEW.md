@@ -51,3 +51,9 @@ All six files follow this structure exactly.
 ## 4. Conclusion
 
 **Wave A ADR review may begin**: **YES (AUTHORIZED)**. The drafts are complete, properly structured, and safely isolated.
+
+## 5. Owner Acceptance Update
+
+This draft review records the pre-acceptance readiness state. On 2026-06-24, the owner explicitly approved accepting Wave A foundation ADRs ADR-0023, ADR-0024, ADR-0025, ADR-0026, ADR-0031, ADR-0033, and technical ADR-0034 as architecture and planning boundaries.
+
+See [PHASE-5-2-WAVE-A-ADR-ACCEPTANCE-SUMMARY.md](file:///c:/CODE/miraichi/docs/betting/PHASE-5-2-WAVE-A-ADR-ACCEPTANCE-SUMMARY.md) and [PHASE-5-2-WAVE-A-ADR-ACCEPTANCE-REVIEW.md](file:///c:/CODE/miraichi/docs/betting/PHASE-5-2-WAVE-A-ADR-ACCEPTANCE-REVIEW.md) for the accepted status. Implementation remains blocked until a later owner-approved implementation plan.

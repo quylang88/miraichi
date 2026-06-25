@@ -37,13 +37,13 @@ Index list of records.
 - [ADR-0021-prediction-evaluation-and-backtesting-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0021-prediction-evaluation-and-backtesting-boundary.md) - Prediction Evaluation and Backtesting Boundary. (Status: Accepted)
 - [ADR-0022-client-delivery-strategy-pwa-first-native-ios-deferred.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0022-client-delivery-strategy-pwa-first-native-ios-deferred.md) - Client Delivery Strategy (PWA-First, Native iOS Deferred). (Status: Accepted)
 - [ADR-CANDIDATES-PHASE-5.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-5.md) - Candidate decisions for user wagers, history grouping, market catalogs, odds formatting, point aggregation, and UI flows in Phase 5. (Status: Candidate)
-- [ADR-0023-user-entered-real-bet-record-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0023-user-entered-real-bet-record-boundary.md) - User-Entered Real Bet Record Boundary. (Status: Draft)
-- [ADR-0024-match-centric-betting-history-grouping.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0024-match-centric-betting-history-grouping.md) - Match-Centric Betting History Grouping. (Status: Draft)
-- [ADR-0025-market-catalog-and-line-preset-registry.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0025-market-catalog-and-line-preset-registry.md) - Market Catalog and Line Preset Registry. (Status: Draft)
-- [ADR-0026-odds-format-strategy-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0026-odds-format-strategy-boundary.md) - Odds Format Strategy Boundary. (Status: Draft)
-- [ADR-0031-pwa-betting-journal-ux-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0031-pwa-betting-journal-ux-boundary.md) - PWA Betting Journal UX Boundary. (Status: Draft)
-- [ADR-0033-local-first-betting-data-persistence-and-backup-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0033-local-first-betting-data-persistence-and-backup-boundary.md) - Local-First Betting Data Persistence and Backup Boundary. (Status: Draft)
-- [ADR-0034-typescript-adoption-and-typed-domain-contracts-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0034-typescript-adoption-and-typed-domain-contracts-boundary.md) - TypeScript Adoption and Typed Domain Contracts Boundary. (Status: Draft)
+- [ADR-0023-user-entered-real-bet-record-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0023-user-entered-real-bet-record-boundary.md) - User-Entered Real Bet Record Boundary. (Status: Accepted)
+- [ADR-0024-match-centric-betting-history-grouping.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0024-match-centric-betting-history-grouping.md) - Match-Centric Betting History Grouping. (Status: Accepted)
+- [ADR-0025-market-catalog-and-line-preset-registry.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0025-market-catalog-and-line-preset-registry.md) - Market Catalog and Line Preset Registry. (Status: Accepted)
+- [ADR-0026-odds-format-strategy-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0026-odds-format-strategy-boundary.md) - Odds Format Strategy Boundary. (Status: Accepted)
+- [ADR-0031-pwa-betting-journal-ux-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0031-pwa-betting-journal-ux-boundary.md) - PWA Betting Journal UX Boundary. (Status: Accepted)
+- [ADR-0033-local-first-betting-data-persistence-and-backup-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0033-local-first-betting-data-persistence-and-backup-boundary.md) - Local-First Betting Data Persistence and Backup Boundary. (Status: Accepted)
+- [ADR-0034-typescript-adoption-and-typed-domain-contracts-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0034-typescript-adoption-and-typed-domain-contracts-boundary.md) - TypeScript Adoption and Typed Domain Contracts Boundary. (Status: Accepted)
  
  
  ## Reports & Summaries

@@ -46,6 +46,7 @@ Outlines high-level roadmap milestones across multiple phases.
 ### Milestone 6: Betting Accounts & Bankroll Strategy Planning (Completed)
 - Establish specifications for simulated wagers, history, reports, and limits.
 - Formulate adapter contracts for owner-controlled betting logic.
+- Accept Phase 5.2 Wave A foundation ADRs and ADR-0034 as architecture/planning boundaries only.
 
 ## TODO / Next Steps
 - [x] Complete Phase 1 architecture planning milestones.
@@ -60,3 +61,5 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Align client app as PWA-first and defer native iOS.
 - [x] Begin Phase 5 planning for betting rules, history tracking, and risk limits.
 - [x] Draft Phase 5.2 Wave A ADRs (ADR-0023, 0024, 0025, 0026, 0031, 0033).
+- [x] Accept Phase 5.2 Wave A foundation ADRs and ADR-0034.
+- [ ] Begin Phase 5.3 Wave A Implementation Planning without starting implementation.

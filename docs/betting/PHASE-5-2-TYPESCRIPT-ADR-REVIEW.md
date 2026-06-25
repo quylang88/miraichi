@@ -63,3 +63,9 @@ ADR-0031 was cleaned so that it:
 **ADR-0034 owner review may begin**: **YES**.
 
 This is a technical ADR review only. It does not authorize TypeScript installation, dependency changes, `tsconfig` files, JavaScript migration, build pipeline work, framework selection, database/ORM selection, formulas, or algorithms.
+
+## 5. Owner Acceptance Update
+
+On 2026-06-24, the owner explicitly approved accepting ADR-0034 as a technical architecture and planning boundary.
+
+ADR-0034 acceptance does not authorize TypeScript installation, dependency changes, `tsconfig` files, JavaScript migration, build pipeline work, framework selection, database/ORM selection, formulas, algorithms, or implementation.

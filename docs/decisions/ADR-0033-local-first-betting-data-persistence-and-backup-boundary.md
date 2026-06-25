@@ -1,8 +1,10 @@
 # ADR-0033: Local-First Betting Data Persistence and Backup Boundary
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-24
+* **Accepted Date**: 2026-06-24
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved
 * **Implementation Status**: Not started
 
 ---
@@ -47,3 +49,11 @@ PWA web clients need durable storage for local wagers. Relying strictly on sessi
 * No authorization or signup logic.
 * No cloud synchronization services.
 * No executable code implementation.
+
+## Acceptance Notes
+
+This ADR is accepted as an architecture and planning boundary.
+
+This ADR accepts the local-first persistence and backup boundary only. It does not authorize implementation by itself, and it does not authorize IndexedDB implementation, export/import code, cloud sync, auth, database clients, ORM libraries, schema files, migrations, integrations, formulas, or algorithms.
+
+Implementation requires a later owner-approved implementation plan. Business logic, formulas, algorithms, storage implementation, and integrations remain blocked unless explicitly approved by later ADRs or implementation plans.

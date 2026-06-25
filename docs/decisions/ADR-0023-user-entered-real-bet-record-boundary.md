@@ -1,8 +1,10 @@
 # ADR-0023: User-Entered Real Bet Record Boundary
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-24
+* **Accepted Date**: 2026-06-24
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved
 * **Implementation Status**: Not started
 
 ---
@@ -80,3 +82,11 @@ Users need a consistent structure to manually record and track their betting his
 3. **Should `liveMinute` be optional or required for live wagers?**
    - *Why it matters*: Enforcing it ensures better live stats, but might make entry tedious.
    - *Recommended default*: Keep it optional in v1.
+
+## Acceptance Notes
+
+This ADR is accepted as an architecture and planning boundary.
+
+This ADR accepts the `BetRecordEnvelope` boundary only. It does not authorize implementation by itself, and it does not authorize database schema creation, validation implementation, calculation logic, storage implementation, integrations, prediction algorithms, or AI recommendation behavior.
+
+Implementation requires a later owner-approved implementation plan. Business logic, formulas, algorithms, storage implementation, and integrations remain blocked unless explicitly approved by later ADRs or implementation plans.

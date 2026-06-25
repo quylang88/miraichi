@@ -1,8 +1,10 @@
 # ADR-0026: Odds Format Strategy Boundary
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-24
+* **Accepted Date**: 2026-06-24
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved
 * **Implementation Status**: Not started
 
 ---
@@ -38,3 +40,11 @@ Sports betting uses diverse odds format systems globally. Scattering format conv
 * No rounding logic or decimal formatting utilities for wagers.
 * No settlement calculations depending on format conversions.
 * No executable code implementation.
+
+## Acceptance Notes
+
+This ADR is accepted as an architecture and planning boundary.
+
+This ADR accepts the HK-only v1 odds format boundary only. It does not authorize implementation by itself, and it does not authorize odds conversion formulas, rounding logic, decimal formatting utilities, settlement calculations, storage implementation, integrations, prediction algorithms, or AI recommendation behavior.
+
+Implementation requires a later owner-approved implementation plan. Business logic, formulas, algorithms, storage implementation, and integrations remain blocked unless explicitly approved by later ADRs or implementation plans.

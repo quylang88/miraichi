@@ -1,8 +1,10 @@
 # ADR-0034: TypeScript Adoption and Typed Domain Contracts Boundary
 
-* **Status**: Draft
+* **Status**: Accepted
 * **Date**: 2026-06-24
+* **Accepted Date**: 2026-06-24
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved
 * **Implementation Status**: Not started
 
 ---
@@ -193,3 +195,11 @@ This ADR does not implement TypeScript. It explicitly excludes:
 * Should strict mode be mandatory from day one for domain contracts?
 * Should existing JavaScript apps remain JavaScript until Phase 5 code planning?
 * Should ADR-0034 be accepted before Wave A ADR acceptance, or alongside Wave A?
+
+## Acceptance Notes
+
+This ADR is accepted as an architecture and planning boundary.
+
+This ADR accepts TypeScript as the technical direction for future typed domain contracts and gradual adoption. It does not authorize implementation by itself, and it does not authorize TypeScript dependency installation, `tsconfig` creation, JavaScript-to-TypeScript migration, build pipeline changes, framework selection, storage implementation, integrations, prediction algorithms, betting formulas, or AI recommendation behavior.
+
+Implementation requires a later owner-approved implementation plan. Business logic, formulas, algorithms, storage implementation, and integrations remain blocked unless explicitly approved by later ADRs or implementation plans.
