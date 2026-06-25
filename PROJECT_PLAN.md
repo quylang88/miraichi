@@ -44,8 +44,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Status**: Completed.
 
 ### Phase 5: Betting History, Bankroll, Reports, AI Recommendation Boundary, and Extensible Business Logic Discovery
-- **Goal**: Gather owner requirements, formulate open questions, design extensible domain boundaries, accept Wave A foundation ADRs, plan future implementation, establish approved TypeScript tooling, and add type-only shared contracts for accepted Wave A boundaries.
-- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, accepted ADR-0034 TypeScript technical direction, Phase 5.3 Wave A implementation planning documents, Phase 5.4 TypeScript tooling setup, and Phase 5.5 Typed Shared Domain Contracts.
+- **Goal**: Gather owner requirements, formulate open questions, design extensible domain boundaries, accept Wave A foundation ADRs, plan future implementation, establish approved TypeScript tooling, add type-only shared contracts, and add static typechecked market config for accepted Wave A boundaries.
+- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, accepted ADR-0034 TypeScript technical direction, Phase 5.3 Wave A implementation planning documents, Phase 5.4 TypeScript tooling setup, Phase 5.5 Typed Shared Domain Contracts, and Phase 5.6 Market Catalog and Line Preset Config.
 - **Status**: Active.
 
 ### Phase 6: Testing/Deployment
@@ -81,5 +81,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Begin Phase 5.3 Wave A Implementation Planning without starting implementation.
 - [x] Complete Phase 5.4 TypeScript tooling setup execution.
 - [x] Complete Phase 5.5 Typed Shared Domain Contracts execution.
-- [ ] Propose Phase 5.6 Market Catalog and Line Preset Config for owner review.
+- [x] Complete Phase 5.6 Market Catalog and Line Preset Config execution.
+- [ ] Propose Phase 5.7 Add Bet Draft Boundary and Form State Contract for owner review.
 - [ ] Keep real AI training out of Phase 5.3 and Phase 6; plan it only through future Phase 7 and Phase 8 ADRs.

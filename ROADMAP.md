@@ -50,6 +50,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Start Phase 5.3 Wave A Implementation Planning without starting implementation.
 - Complete Phase 5.4 TypeScript tooling setup for future typed contracts.
 - Complete Phase 5.5 Typed Shared Domain Contracts as type-only shared boundaries.
+- Complete Phase 5.6 Market Catalog and Line Preset Config as static typechecked config.
 
 ### Milestone 7: Real Data Provider, Dataset, and Evaluation Planning (Future)
 - Plan real data provider selection and dataset boundaries.
@@ -78,5 +79,6 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Begin Phase 5.3 Wave A Implementation Planning without starting implementation.
 - [x] Complete Phase 5.4 TypeScript tooling setup execution.
 - [x] Complete Phase 5.5 Typed Shared Domain Contracts execution.
-- [ ] Propose Phase 5.6 Market Catalog and Line Preset Config for owner review.
+- [x] Complete Phase 5.6 Market Catalog and Line Preset Config execution.
+- [ ] Propose Phase 5.7 Add Bet Draft Boundary and Form State Contract for owner review.
 - [ ] Keep real AI training out of Phase 5.3 and Phase 6; reserve it for future Phase 7 and Phase 8 planning.

@@ -40,6 +40,7 @@ export interface MarketDefinition {
   manualLineEntryAllowed: boolean;
   linePresetRegistry?: LinePresetRegistry;
   nonStandardLinePolicy?: NonStandardLinePolicy;
+  manualEscapeHatch?: true;
 }
 
 export interface MarketCatalog {
