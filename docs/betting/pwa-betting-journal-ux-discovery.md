@@ -100,12 +100,12 @@ This document maps out the owner-applied mobile-first presentational layouts and
 * **Validation Questions**:
   * *Q*: How do we handle periods with zero wagers?
   * *A*: Render an empty state graphic rather than a blank or broken screen.
-* **Recommended v1 UX**: A Reports tab with daily, weekly, and monthly views. Displays owner-approved candidate fields such as total bets, status counts, total stake points, profit/loss points, market breakdown, and live vs pre-match breakdown.
+* **Recommended v1 UX**: Daily, weekly, and monthly reporting views live under the Bankroll navigation surface. Displays owner-approved candidate fields such as total bets, status counts, total stake points, profit/loss points, market breakdown, and live vs pre-match breakdown.
 * **Future Extension**: Advanced charts and bankroll curves remain deferred.
 
 ---
 
-## 9. AI Recommendation Card Flow
+## 9. Miraichi AI Recommendation Card Flow
 * **User Goal**: View AI suggestions and understand why they are recommended.
 * **Required Fields**: Prediction trace reference.
 * **Optional Fields**: Statistical explanation snippet.

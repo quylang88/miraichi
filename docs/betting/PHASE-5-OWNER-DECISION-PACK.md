@@ -217,7 +217,7 @@ All recommendations below are AI proposals only. The owner must explicitly appro
 11. **Exact question for owner**: Do you approve a mobile-first PWA betting journal UX with list-based history, match grouping, and touch-friendly controls as the Phase 5 direction?
 12. **Owner response placeholder**:
    - Approved recommended option:
-   - Approved with changes: Yes. Use mobile-first PWA UX. V1 navigation: Today, Add, Matches, Reports, AI. Main layout: list-based dashboard, grouped by date, expandable match groups, filter pills for Pending, Settled, Live, and Market, with Add Bet as the fastest primary action.
+   - Approved with changes: Yes. Use mobile-first PWA UX. V1 navigation: Today, Matches, Bets, Bankroll, Miraichi. Main layout: list-based dashboard, grouped by date, expandable match groups, filter pills for Pending, Settled, Live, and Market, with Add Bet as the fastest primary action, not a primary navigation tab. Reports live under Bankroll. AI recommendation and assistant surfaces live under Miraichi.
    - Rejected:
    - Notes: Do not build calendar-first in v1. Native app wrapper remains deferred. Dark mode is default.
 

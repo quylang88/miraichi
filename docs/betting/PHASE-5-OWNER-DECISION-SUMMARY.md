@@ -102,9 +102,11 @@ Allowed future card content after prediction ADR approval includes suggested mar
 
 **Owner response**: Approved with changes.
 
-Use mobile-first PWA UX. V1 navigation is Today, Add, Matches, Reports, and AI.
+Use mobile-first PWA UX. V1 navigation is Today, Matches, Bets, Bankroll, and Miraichi.
 
 The main layout is a list-based dashboard grouped by date, with expandable match groups and filter pills for Pending, Settled, Live, and Market. Add Bet is the fastest primary action.
+
+Add Bet is a primary action, not a primary navigation tab. Reports live under the Bankroll surface. AI recommendation and assistant surfaces live under Miraichi.
 
 Calendar-first UI is not part of v1. Native app wrapper remains deferred. Dark mode is the default.
 

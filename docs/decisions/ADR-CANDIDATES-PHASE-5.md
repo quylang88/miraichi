@@ -383,20 +383,20 @@ Use mobile-first PWA UX.
 
 V1 navigation:
 - Today
-- Add
 - Matches
-- Reports
-- AI
+- Bets
+- Bankroll
+- Miraichi
 
 Main layout:
 - List-based dashboard
 - Grouped by date
 - Match groups expandable
 - Filter pills for Pending, Settled, Live, Market
-- Add Bet as the fastest primary action
+- Add Bet as the fastest primary action, not a primary navigation tab
 
 ### 3. Candidate Direction
-Do not build calendar-first in v1. Native app wrapper remains deferred. Dark mode is default.
+Do not build calendar-first in v1. Native app wrapper remains deferred. Dark mode is default. Reports live under the Bankroll surface. AI recommendation and assistant surfaces live under Miraichi.
 
 ### 4. Trade-offs
 The selected layout prioritizes fast daily use and mobile entry. Calendar-first navigation and native wrapper work remain deferred to keep v1 focused.
