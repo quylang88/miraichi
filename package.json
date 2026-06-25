@@ -3,7 +3,6 @@
   "private": true,
   "type": "module",
   "version": "1.0.0",
-
   "description": "Miraichi monorepo scaffold",
   "scripts": {
     "dev": "pnpm --filter \"./apps/*\" --parallel run dev",
@@ -21,9 +20,13 @@
     "phase3:verify": "node scripts/phase3-verify.js",
     "phase4:verify": "node scripts/phase4-verify.js",
     "phase4:integration": "node scripts/phase4-integration-verify.js",
-    "pwa:verify": "node scripts/pwa-verify.js"
+    "pwa:verify": "node scripts/pwa-verify.js",
+    "typecheck": "tsc -p tsconfig.base.json --noEmit"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
   }
 }
