@@ -23,6 +23,8 @@ We will create drafts for the following 6 ADRs:
 5. **ADR-0031**: PWA Betting Journal UX Boundary
 6. **ADR-0033**: Local-First Betting Data Persistence and Backup Boundary
 
+In addition, **ADR-0034: TypeScript Adoption and Typed Domain Contracts Boundary** may be drafted as a technical adjunct to Phase 5.2. ADR-0034 is not a betting/business-logic ADR. It must not authorize TypeScript installation, dependency changes, `tsconfig` files, JavaScript migration, framework selection, database/ORM selection, formulas, prediction algorithms, or AI recommendation logic.
+
 ## 4. Deferred ADRs (Later Waves)
 The remaining ADRs in Phase 5's candidates backlog are deferred to Wave B and later:
 * **ADR-0027**: Stake Points and Profit/Loss Boundary (Wave B)
@@ -34,3 +36,4 @@ The remaining ADRs in Phase 5's candidates backlog are deferred to Wave B and la
 ## 5. Draft Status & Implementation Block
 * **Draft Status Only**: All ADRs created in this step will be explicitly marked as `Status: Draft`. Under no circumstances may their status be changed to `Accepted` or `Ready` by the agent.
 * **Implementation Gate**: Coding, schema creation, database client additions, and mock calculations remain **strictly blocked** until the project owner reviews this draft pack, chooses/accepts the ADRs, and explicitly authorizes an implementation phase.
+* **TypeScript Gate**: ADR-0034 may recommend TypeScript as a technical direction, but TypeScript tooling and migration remain blocked until a later implementation plan is approved.

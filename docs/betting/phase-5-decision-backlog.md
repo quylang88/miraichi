@@ -16,6 +16,7 @@ These ADRs establish the core structures, interfaces, and client layouts.
 | **ADR-0026** | Odds Format Strategy Boundary | Wave A | Draft | 2026-06-24 |
 | **ADR-0031** | PWA Betting Journal UX Boundary | Wave A | Draft | 2026-06-24 |
 | **ADR-0033** | Local-First Betting Data Persistence Boundary | Wave A | Draft | 2026-06-24 |
+| **ADR-0034** | TypeScript Adoption and Typed Domain Contracts Boundary | Technical adjunct | Draft | 2026-06-24 |
 
 ---
 

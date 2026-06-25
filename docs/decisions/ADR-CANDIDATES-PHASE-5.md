@@ -499,3 +499,46 @@ Local-first planning keeps v1 simple and user-controlled. Required JSON backup r
 - Local-first storage planning.
 - Export/import UX planning.
 - IndexedDB implementation ADR drafting after owner approval.
+
+---
+
+## ADR-0034: TypeScript Adoption and Typed Domain Contracts Boundary (Technical Candidate)
+
+### 1. Problem
+Phase 5 introduces increasingly complex cross-app domain boundaries such as `BetRecordEnvelope`, `MatchBettingGroup`, `MarketCatalog`, `OddsFormatAdapter`, `SettlementStrategy`, `ReportAggregator`, `AiRecommendationBoundary`, and `RiskRuleStrategy`.
+
+Keeping these contracts as loose JavaScript objects for too long increases the risk of field drift and app-to-app contract mismatch across `apps/web`, `apps/api`, `apps/local-ai`, `apps/worker`, and `packages/shared`.
+
+### 2. Owner-Applied Technical Direction
+The owner agrees that Miraichi should adopt TypeScript as a technical architecture direction.
+
+Constraints:
+- Existing JavaScript should not be migrated all at once.
+- New domain contracts and future implementation work should move TypeScript-first after approval.
+- Technical architecture recommendations may be proposed by the AI agent.
+- Business logic decisions remain owner-decided.
+- TypeScript must not imply any frontend framework, backend framework, database, ORM, prediction model, betting formula, AI provider, or deployment target decision.
+
+### 3. Candidate Direction
+Create a dedicated technical ADR for TypeScript adoption and typed domain contracts. Keep TypeScript out of ADR-0031 so the PWA UX ADR stays focused on UX/navigation boundaries.
+
+### 4. Trade-offs
+TypeScript-first contracts reduce field drift and contract mismatch without requiring an immediate full-repo migration. A full migration now would be too disruptive, while staying JavaScript-only risks recurring domain-shape errors as the betting journal grows.
+
+### 5. What It Must NOT Decide Yet
+- TypeScript version.
+- `tsconfig` structure.
+- Typecheck/build toolchain.
+- Frontend framework.
+- Backend framework.
+- Database or ORM.
+- Runtime model or AI provider.
+- Any prediction, betting, settlement, odds conversion, ROI/yield/CLV, stake-sizing, bankroll, or risk formula.
+
+### 6. What Implementation It May Unlock Later
+- TypeScript tooling implementation planning.
+- Typed shared domain contracts in `packages/shared`.
+- Typed config/registry modules after toolchain approval.
+- App-by-app migration planning when needed.
+
+This candidate does not authorize implementation, dependency changes, `tsconfig` files, JavaScript-to-TypeScript migration, or build pipeline changes.

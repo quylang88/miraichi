@@ -43,6 +43,7 @@ Index list of records.
 - [ADR-0026-odds-format-strategy-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0026-odds-format-strategy-boundary.md) - Odds Format Strategy Boundary. (Status: Draft)
 - [ADR-0031-pwa-betting-journal-ux-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0031-pwa-betting-journal-ux-boundary.md) - PWA Betting Journal UX Boundary. (Status: Draft)
 - [ADR-0033-local-first-betting-data-persistence-and-backup-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0033-local-first-betting-data-persistence-and-backup-boundary.md) - Local-First Betting Data Persistence and Backup Boundary. (Status: Draft)
+- [ADR-0034-typescript-adoption-and-typed-domain-contracts-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0034-typescript-adoption-and-typed-domain-contracts-boundary.md) - TypeScript Adoption and Typed Domain Contracts Boundary. (Status: Draft)
  
  
  ## Reports & Summaries
@@ -91,4 +92,3 @@ Index list of records.
 
 ## TODO / Next Steps
 - [ ] Add future logs as design decisions are made.
-
