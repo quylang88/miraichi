@@ -45,7 +45,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 
 ### Phase 5: Betting History, Bankroll, Reports, AI Recommendation Boundary, and Extensible Business Logic Discovery
 - **Goal**: Gather owner requirements, formulate open questions, design extensible domain boundaries, accept Wave A foundation ADRs, plan future implementation, establish approved TypeScript tooling, add type-only shared contracts, and add static typechecked market config for accepted Wave A boundaries.
-- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, accepted ADR-0034 TypeScript technical direction, Phase 5.3 Wave A implementation planning documents, Phase 5.4 TypeScript tooling setup, Phase 5.5 Typed Shared Domain Contracts, and Phase 5.6 Market Catalog and Line Preset Config.
+- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, accepted ADR-0034 TypeScript technical direction, Phase 5.3 Wave A implementation planning documents, Phase 5.4 TypeScript tooling setup, Phase 5.5 Typed Shared Domain Contracts, Phase 5.6 Market Catalog and Line Preset Config, and Phase 5.7A Black Apple Ledger PWA UI preview.
 - **Status**: Active.
 
 ### Phase 6: Testing/Deployment
@@ -82,5 +82,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete Phase 5.4 TypeScript tooling setup execution.
 - [x] Complete Phase 5.5 Typed Shared Domain Contracts execution.
 - [x] Complete Phase 5.6 Market Catalog and Line Preset Config execution.
-- [ ] Propose Phase 5.7 Add Bet Draft Boundary and Form State Contract for owner review.
+- [x] Complete Phase 5.7A Black Apple Ledger PWA UI preview execution.
+- [ ] Propose Phase 5.7B PWA Navigation Shell and Forms implementation only after owner accepts Black Apple Ledger as the production visual basis.
 - [ ] Keep real AI training out of Phase 5.3 and Phase 6; plan it only through future Phase 7 and Phase 8 ADRs.

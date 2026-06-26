@@ -30,6 +30,7 @@ Includes all directories and apps under this monorepo.
 - Added Phase 1 Completion Review ([PHASE-1-COMPLETION-REVIEW.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REVIEW.md)) executing the milestone verification.
 - Added Phase 1 Completion Report ([PHASE-1-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REPORT.md)) summarizing Phase 1 milestones and status.
 - Added Phase 1 Decision Backlog ([PHASE-1-DECISION-BACKLOG.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-DECISION-BACKLOG.md)) tracking unresolved architectural decisions.
+- Revised Phase 5.7A PWA preview direction to Black Apple Ledger, superseding the Modern Premium green-glow direction and keeping the preview static, generic, and formula-free.
 
 ## TODO / Next Steps
 - [ ] Version and release the application skeleton (Milestone 2).
