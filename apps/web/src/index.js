@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = pathModule.dirname(__filename);
 const ROOT_DIR = pathModule.resolve(__dirname, '../../../');
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3010;
 
 const server = http.createServer((req, res) => {
   const url = req.url;
@@ -30,6 +30,9 @@ const server = http.createServer((req, res) => {
   } else if (url === '/service-worker.js') {
     filePath = pathModule.join(ROOT_DIR, 'apps/web/public/service-worker.js');
     contentType = 'application/javascript';
+  } else if (url === '/preview' || url === '/preview.html') {
+    filePath = pathModule.join(ROOT_DIR, 'apps/web/public/preview.html');
+    contentType = 'text/html';
   } else if (
     url === '/icons/icon.svg' ||
     url === '/icons/icon-180.png' ||

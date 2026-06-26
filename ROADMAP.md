@@ -51,6 +51,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Complete Phase 5.4 TypeScript tooling setup for future typed contracts.
 - Complete Phase 5.5 Typed Shared Domain Contracts as type-only shared boundaries.
 - Complete Phase 5.6 Market Catalog and Line Preset Config as static typechecked config.
+- Complete Phase 5.7A Black Apple Ledger PWA UI preview as the selected visual mockup direction.
 
 ### Milestone 7: Real Data Provider, Dataset, and Evaluation Planning (Future)
 - Plan real data provider selection and dataset boundaries.
@@ -80,5 +81,6 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Complete Phase 5.4 TypeScript tooling setup execution.
 - [x] Complete Phase 5.5 Typed Shared Domain Contracts execution.
 - [x] Complete Phase 5.6 Market Catalog and Line Preset Config execution.
-- [ ] Propose Phase 5.7 Add Bet Draft Boundary and Form State Contract for owner review.
+- [x] Complete Phase 5.7A Black Apple Ledger PWA UI preview execution.
+- [ ] Propose Phase 5.7B PWA Navigation Shell and Forms implementation only after owner accepts Black Apple Ledger as the production visual basis.
 - [ ] Keep real AI training out of Phase 5.3 and Phase 6; reserve it for future Phase 7 and Phase 8 planning.
