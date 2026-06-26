@@ -2,7 +2,7 @@
 
 * **Date**: 2026-06-26
 * **Phase**: 5.7A
-* **Status**: Completed - Provisional Preview Baseline
+* **Status**: Completed - Accepted Production Baseline Direction (Adjustable)
 
 This report documents the revised Phase 5.7A interactive visual design preview and its closure boundary.
 
@@ -118,8 +118,10 @@ Rendered verification should also confirm:
 * The browser console has no relevant errors.
 * Mobile and desktop screenshots have no clipped text, overlapping controls, or framework overlay.
 
----
+## 7. Next Steps & Transition
 
-## 7. What Remains Blocked
+Phase 5.7A has been completed and accepted as the adjustable production baseline. We transition next to:
+1. **Phase 5.8**: App Settings, Language/i18n, and UI Flexibility Planning (no runtime code).
+2. **Phase 5.9**: Production PWA Shell Implementation (reusing the Black Apple Ledger baseline, pending owner approval).
 
-All core calculations, formulas, persistence, real AI behavior, real teams, leagues, providers, databases, betting integrations, production settings UI, language switching, i18n framework work, and final production UI implementation remain blocked.
+All backend persistence, real data providers, settlement formulas, risk sizing, and AI recommendation engines remain blocked and deferred to later phases.

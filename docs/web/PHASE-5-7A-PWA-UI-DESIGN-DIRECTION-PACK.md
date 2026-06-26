@@ -2,7 +2,7 @@
 
 * **Date**: 2026-06-26
 * **Phase**: 5.7A
-* **Status**: Closed - Temporary Preview Baseline
+* **Status**: Closed - Accepted Production Baseline Direction (Adjustable)
 
 This document records the provisional Phase 5.7A preview direction for the Miraichi mobile-first PWA betting journal interface.
 
@@ -62,15 +62,16 @@ Future Phase 5.7B work remains deferred and must not begin until a separate owne
 
 ---
 
-## 5. Provisional UI Note
+## 5. Production Baseline & UI Flex Note
 
-The current Black Apple Ledger preview is accepted only as a temporary preview baseline.
+The current Black Apple Ledger preview is accepted as the current production baseline direction.
 
-It is **not** the final production UI. It does not lock final colors, spacing, typography, settings layout, language behavior, navigation treatment, modal behavior, or interaction details.
+Key principles for this baseline:
+* It is **not** a permanently locked final design system. Future small UI changes are expected and should be supported through tokens, components, and configurations.
+* Future UI changes must remain easy and cost-effective to implement.
+* Phase 5.9 may implement the production PWA shell using this baseline, subject to owner review and approval.
 
-The purpose of accepting this preview is practical: it lets the project continue to later non-UI phases without blocking on final design. Future UI revisions are expected and allowed.
-
-Phase 5.7B production UI implementation remains deferred until separately approved by the owner.
+Phase 5.7B (original layout/forms implementation) has been merged and deferred into Phase 5.8 planning and Phase 5.9 shell implementation.
 
 ---
 
