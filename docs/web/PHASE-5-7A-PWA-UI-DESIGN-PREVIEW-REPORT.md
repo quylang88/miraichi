@@ -2,9 +2,9 @@
 
 * **Date**: 2026-06-26
 * **Phase**: 5.7A
-* **Status**: Completed - Updated to Option E Black Apple Ledger
+* **Status**: Completed - Provisional Preview Baseline
 
-This report documents the revised Phase 5.7A interactive visual design preview.
+This report documents the revised Phase 5.7A interactive visual design preview and its closure boundary.
 
 ---
 
@@ -17,7 +17,10 @@ Phase 5.7A remains visual design exploration and preview only.
 * **Included**: Static mock screens for `Today`, `Matches`, `Bets`, `Bankroll`, and `Miraichi`.
 * **Included**: Preview-only Add Bet sheet, Review sheet, expandable match ledger rows, bottom tab switching, search filtering, segmented controls, and assistant note.
 * **Removed**: Google Fonts, Playfair-style title, green glow, sparkline trend cue, financial trend copy, and potential-winnings copy.
-* **Excluded**: No business logic, prediction algorithms, staking, bankroll formulas, settlement formulas, persistence, IndexedDB, database work, bookmaker integration, or real data.
+* **Excluded**: No business logic, prediction algorithms, staking, bankroll formulas, settlement formulas, persistence, IndexedDB, database work, bookmaker integration, real data, app settings UI, language selector, i18n framework, or translation files.
+
+> [!IMPORTANT]
+> The `/preview` surface is temporary and non-final. It is not a production shell and must not be treated as owner final design approval. It may be revised or replaced later.
 
 ---
 
@@ -35,6 +38,8 @@ Phase 5.7A remains visual design exploration and preview only.
   * This report.
 * `docs/web/PHASE-5-7A-PWA-UI-DESIGN-PREVIEW-REVIEW.md`
   * Updates compliance notes for Black Apple Ledger.
+* `docs/web/PHASE-5-7A-PROVISIONAL-UI-CLOSURE-NOTE.md`
+  * Records the owner clarification that the current preview is a temporary baseline and does not authorize final UI implementation.
 * `docs/superpowers/specs/2026-06-25-pwa-ui-design-preview-design.md`
   * Aligns the design spec with Option E.
 * `docs/superpowers/plans/2026-06-25-pwa-ui-design-preview.md`
@@ -57,7 +62,7 @@ The preview remains:
 
 ## 4. Design Decision
 
-The selected direction is **Option E: Black Apple Ledger**.
+The selected provisional direction is **Option E: Black Apple Ledger**.
 
 Why:
 
@@ -66,6 +71,7 @@ Why:
 * iOS-like blue works better as a restrained interaction accent than green glow.
 * Removing trend charts and potential-return copy keeps the preview away from implied financial advice or hidden formulas.
 * Adding real screens and sheets makes the preview judge the product experience, not just the Today skin.
+* Treating this as provisional keeps the project moving without pretending final UI decisions are complete.
 
 ---
 
@@ -116,4 +122,4 @@ Rendered verification should also confirm:
 
 ## 7. What Remains Blocked
 
-All core calculations, formulas, persistence, real AI behavior, real teams, leagues, providers, databases, and betting integrations remain blocked.
+All core calculations, formulas, persistence, real AI behavior, real teams, leagues, providers, databases, betting integrations, production settings UI, language switching, i18n framework work, and final production UI implementation remain blocked.

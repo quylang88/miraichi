@@ -51,7 +51,10 @@ Outlines high-level roadmap milestones across multiple phases.
 - Complete Phase 5.4 TypeScript tooling setup for future typed contracts.
 - Complete Phase 5.5 Typed Shared Domain Contracts as type-only shared boundaries.
 - Complete Phase 5.6 Market Catalog and Line Preset Config as static typechecked config.
-- Complete Phase 5.7A Black Apple Ledger PWA UI preview as the selected visual mockup direction.
+- Complete Phase 5.7A Black Apple Ledger PWA UI preview as a provisional preview baseline only.
+- Defer Phase 5.7B production UI implementation until separately approved.
+- Plan future app settings and language/i18n support, including English and Vietnamese.
+- Recommend Phase 5.8 Local-First Persistence and Backup Planning/Adapter Boundary as the next planning phase.
 
 ### Milestone 7: Real Data Provider, Dataset, and Evaluation Planning (Future)
 - Plan real data provider selection and dataset boundaries.
@@ -81,6 +84,8 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Complete Phase 5.4 TypeScript tooling setup execution.
 - [x] Complete Phase 5.5 Typed Shared Domain Contracts execution.
 - [x] Complete Phase 5.6 Market Catalog and Line Preset Config execution.
-- [x] Complete Phase 5.7A Black Apple Ledger PWA UI preview execution.
-- [ ] Propose Phase 5.7B PWA Navigation Shell and Forms implementation only after owner accepts Black Apple Ledger as the production visual basis.
+- [x] Complete Phase 5.7A Black Apple Ledger PWA UI preview as a provisional preview baseline only.
+- [ ] Defer Phase 5.7B PWA Navigation Shell and Forms implementation until the owner explicitly approves a production UI implementation plan.
+- [ ] Plan App Settings and Language/i18n, including English and Vietnamese support plus additional owner-requested app settings.
+- [ ] Begin Phase 5.8 Local-First Persistence and Backup Planning/Adapter Boundary as the recommended next planning phase.
 - [ ] Keep real AI training out of Phase 5.3 and Phase 6; reserve it for future Phase 7 and Phase 8 planning.

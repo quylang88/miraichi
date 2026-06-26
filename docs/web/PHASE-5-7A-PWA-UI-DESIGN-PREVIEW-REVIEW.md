@@ -2,9 +2,9 @@
 
 * **Date**: 2026-06-26
 * **Phase**: 5.7A
-* **Status**: Completed Verification - Option E Black Apple Ledger
+* **Status**: Completed Verification - Provisional Option E Preview
 
-This document verifies the revised Black Apple Ledger preview and documentation compliance with the owner-approved guardrails.
+This document verifies the revised Black Apple Ledger preview and documentation compliance with the owner-approved guardrails and provisional UI closure.
 
 ---
 
@@ -28,6 +28,12 @@ This document verifies the revised Black Apple Ledger preview and documentation 
 | **14. Existing app flow not permanently replaced** | Yes | The default `/` dashboard flow remains separate from `/preview`. |
 | **15. Owner can inspect preview locally** | Yes | Open `http://localhost:3010/preview` after starting the web server. |
 | **16. Phase 5.7B remains gated** | Yes | Production navigation shell work still requires a separate owner-approved plan. |
+| **17. Current UI is marked temporary/provisional** | Yes | Phase 5.7A is closed as a temporary preview baseline, not final UI approval. |
+| **18. Final production UI remains deferred** | Yes | Final production shell, final design system, and UI polish require later planning. |
+| **19. App settings remain deferred** | Yes | No settings UI, settings schema, or settings storage is introduced. |
+| **20. Language/i18n remains deferred** | Yes | No language selector, i18n framework, translation files, or runtime language behavior is introduced. |
+| **21. English and Vietnamese support requires later planning** | Yes | English and Vietnamese are recorded as future planning requirements only. |
+| **22. Phase 5.7B is not authorized by Phase 5.7A** | Yes | Phase 5.7B production UI implementation remains deferred until explicit owner approval. |
 
 ---
 
@@ -49,4 +55,4 @@ The reviewed surface includes:
 
 ## 3. Conclusion
 
-The Black Apple Ledger preview complies with Phase 5.7A boundaries and is a cleaner visual basis than the superseded Modern Premium direction. It remains preview-only and does not authorize production UI implementation, business logic, persistence, formulas, real data, or AI recommendation behavior.
+The Black Apple Ledger preview complies with Phase 5.7A boundaries and is a cleaner temporary baseline than the superseded Modern Premium direction. It remains preview-only and does not authorize production UI implementation, business logic, persistence, formulas, real data, settings implementation, language/i18n implementation, or AI recommendation behavior.

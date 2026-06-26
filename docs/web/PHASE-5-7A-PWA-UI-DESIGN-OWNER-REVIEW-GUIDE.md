@@ -2,9 +2,9 @@
 
 * **Date**: 2026-06-26
 * **Phase**: 5.7A
-* **Status**: Updated for Option E Black Apple Ledger
+* **Status**: Updated for Provisional Option E Closure
 
-This guide explains how to inspect the revised **Black Apple Ledger** preview.
+This guide explains how to inspect the revised **Black Apple Ledger** preview as a temporary baseline.
 
 ---
 
@@ -56,7 +56,7 @@ Verify:
 * **No visual noise**: No green glow, no sparkline trend cue, no glassmorphism, no neon.
 
 > [!NOTE]
-> This is a **visual exploration direction** and **NOT the final UI design**. Future production implementation still needs a separate plan.
+> This is a **temporary visual exploration direction** and **NOT the final UI design**. Future production implementation still needs a separate plan.
 
 ---
 
@@ -85,6 +85,8 @@ Useful feedback:
 * Whether Add Bet should remain a floating action or move into the top bar later.
 * Whether the Bankroll tab should stay as a points-only snapshot or be renamed later.
 * Whether the assistant inbox should be more prominent in the real app shell.
+* Whether later color, layout, typography, navigation treatment, settings, language, and design style should change.
+* Whether the project should continue to later non-UI phases without waiting for final UI decisions.
 
 Not useful at this phase:
 
@@ -92,6 +94,29 @@ Not useful at this phase:
 
 ---
 
-## 5. Decision Before Phase 5.7B
+## 5. Future Settings and Language Feedback
 
-Phase 5.7B should not start until the owner explicitly accepts Black Apple Ledger as the production visual basis or requests a specific revision.
+For language support, the owner should decide later:
+
+* Default language.
+* Supported languages.
+* Translation scope.
+* Settings placement.
+* Whether English and Vietnamese are required at first release or staged later.
+
+For app settings, the owner should later collect:
+
+* Account-independent app preferences.
+* Theme and display preferences.
+* Language and localization preferences.
+* Any other owner-requested settings.
+
+These decisions belong in a later settings ADR or planning pack. They are not part of Phase 5.7A.
+
+---
+
+## 6. Decision Before Phase 5.7B
+
+The owner can continue with later phases without finalizing UI.
+
+Phase 5.7B should not start until the owner explicitly approves a production UI implementation plan. Phase 5.7A does not count as final design approval.

@@ -2,17 +2,18 @@
 
 * **Date**: 2026-06-26
 * **Phase**: 5.7A
-* **Status**: Updated - Option E Black Apple Ledger Selected
+* **Status**: Closed - Temporary Preview Baseline
 
-This document records the selected Phase 5.7A preview direction for the Miraichi mobile-first PWA betting journal interface.
+This document records the provisional Phase 5.7A preview direction for the Miraichi mobile-first PWA betting journal interface.
 
 ---
 
 ## 1. Selected Direction
 
-### Option E: Black Apple Ledger (Selected)
+### Option E: Black Apple Ledger (Temporary Preview Baseline)
 
 * **Design Intent**: Show a real daily app surface instead of a theme picker. The preview focuses on `Today`, grouped match ledger work, manual record review, assistant context, Add Bet access, and the fixed five-tab navigation.
+* **Decision Status**: Accepted only as a provisional visual direction for preview continuity. It is not final production UI approval.
 * **Visual Personality**: Pure black, restrained, high-clarity, and iOS-inspired. The UI should feel like a serious mobile tool, not a betting promo screen.
 * **Typography**: System font stack only: `-apple-system`, `BlinkMacSystemFont`, `SF Pro Text`, `Segoe UI`, and sans-serif fallbacks. No external Google Fonts and no serif display header.
 * **Palette**: Pure black and near-black base (`#000000`, `#050505`), charcoal surfaces (`#111113`, `#1c1c1e`), hairline borders (`rgba(255,255,255,0.08)`), white/gray text, and restrained iOS-like blue (`#0a84ff`) for interaction.
@@ -22,7 +23,7 @@ This document records the selected Phase 5.7A preview direction for the Miraichi
 * **Boundary Copy**: Uses safe labels such as `Points snapshot`, `Manual ledger`, `No formula run`, and `Preview only`.
 
 > [!IMPORTANT]
-> This is a design direction preview and **NOT** the final production UI. It does not authorize production betting workflows, formulas, storage, AI recommendations, or real data integration.
+> This is a temporary design direction preview and **NOT** the final production UI. It does not authorize production betting workflows, formulas, storage, AI recommendations, real data integration, final settings behavior, or final language behavior.
 
 ---
 
@@ -55,18 +56,46 @@ The blunt conclusion: the previous green premium direction was visually stronger
 
 ## 4. Owner Decision
 
-The selected Phase 5.7A preview direction is **Option E: Black Apple Ledger**.
+The Phase 5.7A preview direction is **Option E: Black Apple Ledger** as a temporary preview baseline only.
 
-Future Phase 5.7B work should use this direction only after a separate owner-approved production implementation plan.
+Future Phase 5.7B work remains deferred and must not begin until a separate owner-approved production implementation plan exists.
 
 ---
 
-## 5. Deferred Items
+## 5. Provisional UI Note
+
+The current Black Apple Ledger preview is accepted only as a temporary preview baseline.
+
+It is **not** the final production UI. It does not lock final colors, spacing, typography, settings layout, language behavior, navigation treatment, modal behavior, or interaction details.
+
+The purpose of accepting this preview is practical: it lets the project continue to later non-UI phases without blocking on final design. Future UI revisions are expected and allowed.
+
+Phase 5.7B production UI implementation remains deferred until separately approved by the owner.
+
+---
+
+## 6. Deferred UI and App Settings Planning
+
+The following UI and app settings work is explicitly deferred:
+
+* App settings planning.
+* Language settings planning.
+* English and Vietnamese language support planning.
+* Theme/settings customization planning.
+* Collection of other owner-requested settings in a later settings ADR or planning pack.
+* Final design system and production UI polish.
+
+These items should not be implemented in Phase 5.7A closure.
+
+---
+
+## 7. Deferred Items
 
 The following remain out of scope:
 
 * Production stylesheet finalization.
 * Framework/router replacement.
+* Production settings UI, language selector, i18n framework, or translation files.
 * Real match, league, team, provider, or tournament data.
 * IndexedDB, persistence, backup, or sync.
 * Staking, bankroll, ROI, yield, CLV, settlement, or risk formulas.
