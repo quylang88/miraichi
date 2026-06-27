@@ -108,5 +108,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Create `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`.
 - [x] Owner review Phase 6 CI/CD and Staging Smoke Automation implementation plan before `phase:code-slice`.
 - [x] Complete `phase:code-slice Phase 6 staging smoke-check script`.
-- [ ] Start `phase:code-slice Phase 6 CI check workflow` after owner approval.
+- [x] Complete `phase:code-slice Phase 6 CI check workflow`.
+- [ ] Start `phase:code-slice Phase 6 migrate PWA service-worker registration JS to TS`.
 - [ ] Keep real AI training out of Phase 5; plan it only through future Phase 7 and Phase 8 ADRs.

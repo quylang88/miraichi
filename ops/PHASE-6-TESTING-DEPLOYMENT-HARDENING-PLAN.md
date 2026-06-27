@@ -129,9 +129,10 @@ Recommended answer: no. Use scripted smoke checks and manual QA first; paid moni
 | 6.1 | `phase:plan Phase 6 Testing/Deployment Hardening` | This planning package and updated ops docs. |
 | 6.2 | `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation` | `ops/PHASE-6-CI-CD-STAGING-SMOKE-AUTOMATION-IMPLEMENTATION-PLAN.md`. |
 | 6.3 | `phase:code-slice Phase 6 smoke-check script` | Completed by `ops/PHASE-6-STAGING-SMOKE-CHECK-SCRIPT-REVIEW.md`. |
-| 6.4 | `phase:code-slice Phase 6 CI check workflow` | One workflow that runs verification but does not deploy. |
-| 6.5 | `phase:integration-test Phase 6 verification hardening` | `pnpm run verify:local` and relevant integration checks pass after workflow/script changes. |
-| 6.6 | `phase:staging Phase 6 hardened staging process` | Staging deploy and automated/manual smoke evidence refreshed. |
+| 6.4 | `phase:code-slice Phase 6 CI check workflow` | Completed by `ops/PHASE-6-CI-CHECK-WORKFLOW-REVIEW.md`. |
+| 6.5 | `phase:code-slice Phase 6 migrate PWA service-worker registration JS to TS` | Narrow owner-requested migration slice added to the implementation plan. |
+| 6.6 | `phase:integration-test Phase 6 verification hardening` | `pnpm run verify:local` and relevant integration checks pass after workflow/script/migration changes. |
+| 6.7 | `phase:staging Phase 6 hardened staging process` | Staging deploy and automated/manual smoke evidence refreshed. |
 
 ## Exit Gate For This Planning Phase
 
@@ -143,10 +144,10 @@ This `phase:plan` can close only when:
 4. Secret handling policy is explicit.
 5. The next lifecycle command is chosen.
 
-Recommended next command after owner approval of the implementation plan:
+Recommended next command after the CI check workflow slice:
 
 ```text
-phase:code-slice Phase 6 CI check workflow
+phase:code-slice Phase 6 migrate PWA service-worker registration JS to TS
 ```
 
 Do not start `phase:code-slice` until the implementation plan lists exact files, failing tests, implementation steps, and verification commands.

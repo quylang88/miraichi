@@ -7,7 +7,7 @@ Establishes the parameters for automated deployment of PRs to a staging environm
 
 ## Status
 - **Status**: Active
-- **Review Status**: Phase 6 planning active after Phase 5.12 Cloudflare Pages staging redeploy.
+- **Review Status**: Phase 6 smoke command and check-only CI workflow implemented; deployment automation remains manual.
 
 ## Scope
 Maps sandbox URLs, mock databases, and staging test suites.
