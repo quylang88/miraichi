@@ -1,4 +1,4 @@
-const CACHE_NAME = 'miraichi-shell-v3-phase-5-9-preview-parity';
+const CACHE_NAME = 'miraichi-shell-v4-phase-5-9-production';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

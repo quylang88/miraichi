@@ -16,10 +16,17 @@ Directly plans tests suites layout and runtime checks.
 - Write a failing unit test before each new feature, bug fix, refactor, or behavior change.
 - Unit tests run with Vitest through `pnpm run test:unit`.
 - Coverage evidence runs through `pnpm run test:unit:coverage`; new or modified behavior targets 80% coverage as a review gate.
-- Integration verification runs through `pnpm run test:integration`.
-- Release verification runs through `pnpm run verify:release`.
+- Current code slices require unit/local verification only. Do not run integration or endpoint E2E after every small implementation slice.
+- Integration verification runs through `pnpm run test:integration` only after a large feature boundary is complete.
+- Release verification runs through `pnpm run verify:release` after the large feature boundary has passed integration and is ready for staging/release review.
 - Isolate test mock databases from staging/production configurations.
 - Placeholder pass-only scripts such as `node -e "... pass"` are forbidden.
+
+## Large Feature Boundary Rule
+- A large feature boundary is a feature-complete milestone whose behavior crosses modules, routes, app surfaces, or runtime processes.
+- Examples include one completed production tab (`Today`, `Matches`, `Bets`, `Bankroll`, or `Miraichi`), a complete local AI training workflow, a complete LLM capability, a complete persistence adapter, or a complete endpoint-backed workflow.
+- Before that boundary is complete, run the targeted failing unit test, the passing unit test, and relevant local checks.
+- After that boundary is complete, run `pnpm run test:integration`; endpoint E2E belongs here, not inside every small code slice.
 
 ## Test Layout
 - Unit tests are colocated with the source they verify. Use `*.test.{js,ts}` next to the module, for example `src/foo.test.ts` beside `src/foo.ts` or `src/foo.test.js` beside `src/foo.js`.

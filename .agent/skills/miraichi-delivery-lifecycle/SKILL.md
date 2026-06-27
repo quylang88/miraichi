@@ -26,8 +26,8 @@ No phase may skip its exit gate. A fast shortcut that removes evidence is a brok
 | --- | --- | --- |
 | `phase:plan <feature>` | Product/architecture analysis, spec, ADR/doc updates only | Owner-approved spec or explicit next-step approval |
 | `phase:implementation-plan <approved spec>` | Task breakdown into small TDD code slices | Every slice has exact files, failing unit test, implementation step, and verification command |
-| `phase:code-slice <task>` | One small implementation slice | Failing unit test observed, minimal code written, unit test passes, relevant local checks pass |
-| `phase:integration-test` | Full local and cross-boundary verification | `pnpm run verify:local` and `pnpm run test:integration` pass |
+| `phase:code-slice <task>` | One small implementation slice | Failing unit test observed, minimal code written, unit test passes, relevant local checks pass; do not run integration or endpoint E2E unless this slice closes a large feature boundary |
+| `phase:integration-test` | Full local and cross-boundary verification after a large feature boundary is complete | `pnpm run verify:local` and `pnpm run test:integration` pass |
 | `phase:staging` | Staging deployment and staging smoke checks | `pnpm run verify:release` passes and staging target is configured; otherwise fail fast |
 | `phase:owner-feedback` | Package staging evidence and owner feedback | Owner gives explicit approval or requested changes become new lifecycle work |
 | `phase:production` | Production promotion | Staging smoke passed, owner approval is explicit, rollback path is known |
@@ -49,6 +49,18 @@ No phase may skip its exit gate. A fast shortcut that removes evidence is a brok
 - Write the smallest implementation that passes.
 - Run the package-specific test or `pnpm run test:unit`.
 - Do not move to integration while any slice is unverified.
+- Normal code slices stop at unit/local verification. Integration and endpoint E2E are milestone gates, not per-slice gates.
+
+### Large Feature Boundary
+
+A large feature boundary is a feature-complete milestone whose behavior crosses modules, routes, app surfaces, or runtime processes. Examples:
+
+- one completed production tab such as `Today`, `Matches`, `Bets`, `Bankroll`, or `Miraichi`;
+- a complete local AI training workflow;
+- a complete LLM capability or prompt-routing workflow;
+- a complete persistence adapter, import/export path, or endpoint-backed workflow.
+
+Only after one of these boundaries is complete should the owner or agent enter `phase:integration-test` and run integration or endpoint E2E.
 
 ### Local Verification
 
@@ -61,6 +73,8 @@ pnpm run verify:local
 This must include lifecycle verification, real unit tests, syntax linting, typecheck, and guardrail audit. Placeholder scripts such as `node -e "... pass"` are forbidden.
 
 ### Integration Verification
+
+Run this only after a large feature boundary is complete, not after every code slice:
 
 Run:
 
@@ -99,6 +113,7 @@ Do not deploy to staging unless it passes.
 - New or modified behavior needs meaningful unit coverage, not only integration smoke coverage.
 - Coverage target for new/changed code is 80% as a review gate. Do not fake global repo coverage while legacy files are still untested.
 - Integration tests do not replace unit tests.
+- Integration and endpoint E2E are reserved for large feature boundary completion. A normal current-code change only needs the failing unit test, the passing unit test, and relevant local checks.
 
 ## Stop Conditions
 

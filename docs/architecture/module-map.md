@@ -22,6 +22,7 @@ File structures for packages and applications.
 - Integration tests live in `tests/integration/` or remain as explicit `scripts/*integration*` verifiers when they orchestrate phase checks.
 - E2E tests live in `tests/e2e/` once they represent browser or user-flow behavior.
 - Fixtures and shared helpers belong in the owning package or app under `fixtures/`, `__fixtures__/`, or `test-utils/`.
+- Normal code slices use colocated unit tests and relevant local checks. Integration and endpoint E2E are large feature boundary gates, not per-slice requirements.
 
 ## TypeScript migration order
 1. `packages/shared`: typed contracts, pure shared helpers, domain-safe interfaces.

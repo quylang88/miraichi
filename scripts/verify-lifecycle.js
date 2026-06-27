@@ -33,10 +33,12 @@ export const REQUIRED_TEST_ORGANIZATION_MARKERS = [
   { file: 'docs/workflows/testing-workflow.md', marker: '*.test.{js,ts}' },
   { file: 'docs/workflows/testing-workflow.md', marker: 'tests/integration/' },
   { file: 'docs/workflows/testing-workflow.md', marker: 'tests/e2e/' },
+  { file: 'docs/workflows/testing-workflow.md', marker: 'large feature boundary' },
   { file: 'docs/workflows/testing-workflow.md', marker: 'colocated' },
   { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: '*.test.{js,ts}' },
   { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: 'tests/integration/' },
-  { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: 'tests/e2e/' }
+  { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: 'tests/e2e/' },
+  { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: 'large feature boundary' }
 ];
 
 export const REQUIRED_TYPESCRIPT_DIRECTION_MARKERS = [

@@ -420,7 +420,7 @@ a:focus-visible {
   }
 }
 
-/* Phase 5.9 production shell: preview parity with Black Apple Ledger. */
+/* Phase 5.9 production shell: Black Apple Ledger baseline. */
 :root {
   --bg: var(--bg-color-pure);
   --bg-raised: var(--bg-color-raised);
@@ -464,7 +464,7 @@ svg {
   width: 100%;
 }
 
-.preview-page {
+.production-page {
   background: var(--bg);
   display: grid;
   min-height: 100dvh;
@@ -1452,7 +1452,7 @@ svg {
 }
 
 @media (max-width: 520px) {
-  .preview-page {
+  .production-page {
     padding: 0;
     place-items: stretch start;
   }

@@ -4,6 +4,8 @@ import {
   getNavigationTabById,
   navigationTabs
 } from './config/navigation-tabs.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { renderAppShell } from './components/app-shell.js';
 import { renderBottomNavigation } from './components/bottom-navigation.js';
 import { createSettingsService } from './services/settings-service.js';
@@ -59,7 +61,7 @@ describe('production PWA shell rendering', () => {
     const html = renderAppShell({ activeTabId: 'today', translate: t });
 
     expect(html).toContain('data-production-shell="phase-5-9"');
-    expect(html).toContain('data-preview-parity="black-apple-ledger"');
+    expect(html).toContain('data-production-baseline="black-apple-ledger"');
     expect(html).toContain('data-shell-tab-panel="today"');
     expect(html).toContain('data-shell-tab-panel="matches"');
     expect(html).toContain('data-shell-tab-panel="bets"');
@@ -70,7 +72,7 @@ describe('production PWA shell rendering', () => {
     expect(html).not.toContain('data-primary-tab="add"');
   });
 
-  it('keeps production visually and structurally aligned with the accepted preview shell', () => {
+  it('keeps production aligned with the accepted Black Apple Ledger shell structure', () => {
     const html = renderAppShell({ activeTabId: 'today', translate: t });
 
     expect(html).toContain('class="top-bar"');
@@ -90,6 +92,23 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('id="match-summary-readonly"');
     expect(html).not.toContain('id="match-field"');
     expect(html).not.toContain('data-primary-add');
+  });
+
+  it('does not render detail copy under primary tab titles', () => {
+    const html = renderAppShell({ activeTabId: 'today', translate: t });
+
+    expect(html).not.toContain('Quick snapshot for points, matches, and market context.');
+    expect(html).not.toContain('Generic fixtures grouped for manual tracking.');
+    expect(html).not.toContain('Manage ongoing, draft, and settled mock records.');
+    expect(html).not.toContain('Static point snapshot for layout review.');
+    expect(html).not.toContain('Context inbox for future review workflows.');
+  });
+
+  it('keeps production as the only served web shell route', () => {
+    const serverSource = readFileSync(fileURLToPath(new URL('./index.js', import.meta.url)), 'utf8');
+
+    expect(serverSource).not.toContain('/preview');
+    expect(serverSource).not.toContain('preview.html');
   });
 
   it('renders accessible bottom navigation buttons with the active tab marked', () => {

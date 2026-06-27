@@ -112,7 +112,7 @@ const serviceWorkerPath = path.join(ROOT_DIR, 'apps/web/public/service-worker.js
 if (fs.existsSync(serviceWorkerPath)) {
   const content = fs.readFileSync(serviceWorkerPath, 'utf8');
   const requiredCacheMarkers = [
-    "miraichi-shell-v3-phase-5-9-preview-parity",
+    "miraichi-shell-v4-phase-5-9-production",
     "/apps/web/src/shell-entry.js",
     "/apps/web/src/config/navigation-tabs.js",
     "/apps/web/src/components/app-shell.js"
@@ -178,7 +178,7 @@ if (fs.existsSync(appShellPath)) {
   const content = fs.readFileSync(appShellPath, 'utf8');
   const requiredShellMarkers = [
     'data-production-shell="phase-5-9"',
-    'data-preview-parity="black-apple-ledger"',
+    'data-production-baseline="black-apple-ledger"',
     'data-settings-entry="miraichi-tab"',
     'data-add-bet-boundary="planned"',
     'class="top-bar"',
@@ -204,48 +204,30 @@ if (fs.existsSync(appShellPath)) {
   }
 }
 
-// 2b. Verify the preview keeps Add Bet scoped to a match group
+// 2b. Verify the obsolete preview shell is no longer served now that production owns the UI
 const previewPath = path.join(ROOT_DIR, 'apps/web/public/preview.html');
 if (fs.existsSync(previewPath)) {
-  const content = fs.readFileSync(previewPath, 'utf8');
-
-  const requiredPreviewMarkers = [
-    'id="screen-match-detail"',
-    'data-open-match',
-    'data-open-scoped-add',
-    'data-open-edit',
-    'data-review-only',
-    'id="match-summary-readonly"'
-  ];
-
-  for (const marker of requiredPreviewMarkers) {
-    if (!content.includes(marker)) {
-      console.error(`  ❌ Preview missing match-scoped marker: ${marker}`);
-      failed = true;
-    } else {
-      console.log(`  ✅ Preview marker found: ${marker}`);
-    }
-  }
-
-  const forbiddenPreviewMarkers = [
-    'id="match-field"',
-    'name="match-field"',
-    'for="match-field"',
-    'data-primary-add',
-    'Add Bet via Match'
-  ];
-
-  for (const marker of forbiddenPreviewMarkers) {
-    if (content.includes(marker)) {
-      console.error(`  ❌ Preview still contains global match dropdown marker: ${marker}`);
-      failed = true;
-    } else {
-      console.log(`  ✅ Preview omits global match dropdown marker: ${marker}`);
-    }
-  }
-} else {
-  console.error('  ❌ apps/web/public/preview.html not found.');
+  console.error('  ❌ Obsolete preview shell still exists: apps/web/public/preview.html');
   failed = true;
+} else {
+  console.log('  ✅ Obsolete preview shell file is absent.');
+}
+
+if (fs.existsSync(webServerPath)) {
+  const content = fs.readFileSync(webServerPath, 'utf8');
+  const forbiddenPreviewRoutes = [
+    '/preview',
+    'preview.html'
+  ];
+
+  for (const marker of forbiddenPreviewRoutes) {
+    if (content.includes(marker)) {
+      console.error(`  ❌ Obsolete preview route marker still exists in web server: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Web server omits obsolete preview route marker: ${marker}`);
+    }
+  }
 }
 
 // 3. Verify no native iOS files exist

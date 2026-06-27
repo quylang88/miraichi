@@ -32,9 +32,6 @@ const server = http.createServer((req, res) => {
   } else if (url === '/service-worker.js') {
     filePath = pathModule.join(ROOT_DIR, 'apps/web/public/service-worker.js');
     contentType = 'application/javascript';
-  } else if (url === '/preview' || url === '/preview.html') {
-    filePath = pathModule.join(ROOT_DIR, 'apps/web/public/preview.html');
-    contentType = 'text/html';
   } else if (
     url === '/favicon.ico' ||
     url === '/icons/icon.svg' ||

@@ -54,7 +54,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Complete Phase 5.7A Black Apple Ledger PWA UI preview as an adjustable production baseline direction.
 - Defer Phase 5.7B production UI implementation until separately approved.
 - Plan future app settings and language/i18n support, including English and Vietnamese (Phase 5.8).
-- Complete Phase 5.9 Production PWA Shell Implementation using TypeScript-first shell modules and preview-parity Black Apple Ledger structure.
+- Complete Phase 5.9 Production PWA Shell Implementation using TypeScript-first shell modules and production-baseline Black Apple Ledger structure.
 - Recommend Phase 5.10 Add Bet Draft/Form State + Persistence Planning next.
 - Defer Local-First Persistence Implementation to Phase 5.11 after Phase 5.10 planning and owner approval.
 
@@ -89,7 +89,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Complete Phase 5.7A Black Apple Ledger PWA UI preview as a provisional preview baseline only (adjustable).
 - [x] Defer Phase 5.7B PWA Navigation Shell and Forms implementation until the owner explicitly approves a production UI implementation plan.
 - [x] Plan App Settings and Language/i18n, including English and Vietnamese support plus additional owner-requested app settings (Phase 5.8).
-- [x] Complete Phase 5.9 Production PWA Shell Implementation using TypeScript-first shell modules and preview-parity Black Apple Ledger structure.
+- [x] Complete Phase 5.9 Production PWA Shell Implementation using TypeScript-first shell modules and production-baseline Black Apple Ledger structure.
 - [ ] Recommend Phase 5.10 Add Bet Draft/Form State + Persistence Planning next.
 - [ ] Defer Local-First Persistence Implementation to Phase 5.11 after Phase 5.10 planning and owner approval.
 - [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.

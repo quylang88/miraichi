@@ -7,7 +7,7 @@ Review Phase 5.9 against lifecycle, TypeScript, frontend, and guardrail requirem
 - **Status**: Completed Review - Verified
 
 ## Scope
-Checks the production shell implementation, preview preservation, TypeScript-first compliance, and prohibited business logic boundaries.
+Checks the production shell implementation, retired preview route, TypeScript-first compliance, and prohibited business logic boundaries.
 
 ---
 
@@ -16,8 +16,9 @@ Checks the production shell implementation, preview preservation, TypeScript-fir
 | Requirement | Result | Notes |
 | :--- | :---: | :--- |
 | `/` serves a production PWA shell | PASS | `apps/web/src/index.js` now mounts `shell-entry.ts` through the no-build TS bridge. |
-| `/preview` remains available | PASS | Existing preview route is unchanged. |
-| Production shell matches the accepted preview structure | PASS | `/` now uses preview-parity `top-bar`, `notice`, `main-scroll`, `screen`, match-detail, bottom sheet, and `bottom-nav` structures. |
+| `/preview` is retired | PASS | Production `/` is the only served web shell route. |
+| Production shell matches the accepted Black Apple Ledger structure | PASS | `/` now uses production `top-bar`, `notice`, `main-scroll`, `screen`, match-detail, bottom sheet, and `bottom-nav` structures. |
+| Primary tab headers stay concise | PASS | The five primary tabs no longer render detail text under the tab title. |
 | Five primary tabs only | PASS | `today`, `matches`, `bets`, `bankroll`, and `miraichi` are the only primary tab IDs. |
 | No Settings or Add primary tab | PASS | Settings entry is inside the Miraichi tab; Add Bet remains a planned boundary action. |
 | New shell modules are TypeScript-first | PASS | New shell source files are `.ts`; new test is `production-shell.test.ts`. |
@@ -37,10 +38,12 @@ Checks the production shell implementation, preview preservation, TypeScript-fir
 
 ## 3. Closure Recommendation
 
-Phase 5.9 may be closed. Full verification passed:
+Phase 5.9 remains closed. The original large-boundary shell implementation passed:
 
 * `pnpm run verify:local`
 * `pnpm run test:integration`
 * `pnpm run verify:release`
+
+Owner-feedback corrections after closure should use unit/local verification unless they close a new large feature boundary.
 
 Proceed next to **Phase 5.10 Add Bet Draft/Form State + Persistence Planning**.

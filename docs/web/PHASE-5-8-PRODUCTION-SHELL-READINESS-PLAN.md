@@ -9,7 +9,7 @@ This document plans the future Phase 5.9 Production PWA Shell implementation. No
 The goal of Phase 5.9 will be to build the real, functional web client shell serving the default `/` dashboard.
 
 ### 1.1 Key Principles
-1. **Reuse the Preview Aesthetics**: Port the Black Apple Ledger design (Option E) directly into the production code.
+1. **Reuse the Approved Aesthetics**: Port the Black Apple Ledger design (Option E) directly into the production code.
 2. **Avoid Hardcoded UI Details**: Extract DOM structures, styles, and configurations into structured files.
 3. **No Domain Business Logic in UI**: UI must only collect values (e.g. text inputs, select dropdowns) and delegate validation/calculation to decoupled services.
 4. **Keep Settings & i18n Ready but Defer Backend Integration**: Define settings structures and i18n lookup patterns, but defer full integration (e.g. cloud backups) until later phases.
@@ -28,7 +28,7 @@ We recommend the following monorepo file changes for Phase 5.9:
 ### 2.2 Shell Web Entry Point
 * **Modify** `apps/web/src/index.js`:
   * Swap SPA entry path or routing so `/` serves a production-ready template rather than a blank scaffold.
-  * Keep `/preview` active for design regression testing until final owner sign-off.
+  * Retire `/preview` after the production shell is accepted; production `/` becomes the source-of-truth shell.
 
 ### 2.3 New Components (Client-Side TypeScript)
 Phase 5.9 must follow ADR-0034 and the repo TypeScript migration direction. New production shell modules should be `.ts`; existing `.js` files may remain only as runtime bridges or legacy entrypoints.

@@ -131,11 +131,11 @@ function closeSheets(): void {
 
 function updateAddFormState(): void {
   const addForm = document.getElementById('add-form');
-  const savePreview = document.getElementById('save-preview') as HTMLButtonElement | null;
+  const saveDraftShell = document.getElementById('save-draft-shell') as HTMLButtonElement | null;
   const oddsField = document.getElementById('odds-field') as HTMLInputElement | null;
   const stakeField = document.getElementById('stake-field') as HTMLInputElement | null;
 
-  if (!(addForm instanceof HTMLFormElement) || !savePreview || !oddsField || !stakeField) {
+  if (!(addForm instanceof HTMLFormElement) || !saveDraftShell || !oddsField || !stakeField) {
     return;
   }
 
@@ -143,7 +143,7 @@ function updateAddFormState(): void {
   const market = formData.get('market-field');
   const odds = oddsField.value.trim();
   const stake = stakeField.value.trim();
-  savePreview.disabled = !(market && odds && stake);
+  saveDraftShell.disabled = !(market && odds && stake);
 }
 
 function updateMatchSearch(searchInput: HTMLInputElement): void {
@@ -308,8 +308,8 @@ appRoot.addEventListener('submit', (event) => {
   }
 
   event.preventDefault();
-  const savePreview = document.getElementById('save-preview') as HTMLButtonElement | null;
-  if (savePreview?.disabled) {
+  const saveDraftShell = document.getElementById('save-draft-shell') as HTMLButtonElement | null;
+  if (saveDraftShell?.disabled) {
     return;
   }
   setText('add-feedback', 'Shell only: mock draft validated, no data saved.');

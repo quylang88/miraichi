@@ -21,15 +21,16 @@ Phase 5.9 replaces the old `/` scaffold with a production PWA shell using the ac
 * `Bankroll`
 * `Miraichi`
 
-The implementation ports the accepted Black Apple Ledger preview structure into production while keeping `/preview` available as the design reference route.
+The implementation ports the accepted Black Apple Ledger structure into production. After owner feedback, production `/` is the source of truth and the obsolete `/preview` route has been retired.
 
-Production `/` now uses the same preview-derived shell language:
+Production `/` now uses the Black Apple Ledger shell language:
 
 * phone-frame app shell on desktop and edge-to-edge mobile shell;
-* `top-bar`, `notice`, `main-scroll`, and preview-like `screen` sections;
+* `top-bar`, `notice`, `main-scroll`, and production `screen` sections;
 * Today summary rows, segmented controls, match cards, ledger rows, points rows, and assistant rows;
 * match-detail sub-view with match-scoped Add Bet entry;
 * Add, Edit, and Review bottom sheets as static shell surfaces.
+* Primary tab headers do not render detail text under the tab title.
 
 ## 2. Files Changed
 
@@ -38,32 +39,34 @@ Runtime shell:
 * `apps/web/src/index.js`
   * Keeps the legacy no-build web server.
   * Serves `/` with `#app-root` and the shell entry module.
+  * Retires `/preview` and `/preview.html`; production `/` owns the current shell.
   * Adds a TypeScript transpile bridge so browser imports like `/apps/web/src/shell-entry.js` can resolve to source-owned `.ts` modules.
 * `apps/web/src/shell-entry.ts`
   * Mounts the shell, handles tab switching, and keeps URL tab state.
-  * Provides preview-parity shell interactions: match-detail navigation, bottom sheets, segmented controls, search filtering, and static Add Bet form enablement.
+  * Provides production shell interactions: match-detail navigation, bottom sheets, segmented controls, search filtering, and static Add Bet form enablement.
 * `apps/web/src/config/navigation-tabs.ts`
   * Defines the five approved stable tab IDs.
 * `apps/web/src/components/app-shell.ts`
-  * Renders the production shell using preview-parity Black Apple Ledger structure.
+  * Renders the production shell using the Black Apple Ledger structure.
 * `apps/web/src/components/bottom-navigation.ts`
-  * Renders accessible bottom tab buttons using the same `bottom-nav` / `nav-item` structure as the accepted preview.
+  * Renders accessible bottom tab buttons using the production `bottom-nav` / `nav-item` structure.
 * `apps/web/src/services/settings-service.ts`
   * Stores shell-only settings such as locale, theme, and display density.
   * Rejects non-shell data such as betting history.
 * `apps/web/src/services/i18n-service.ts`
   * Provides fallback-first locale resolution and translation stubs.
 * `apps/web/public/service-worker.js`
-  * Bumps the shell cache to `miraichi-shell-v3-phase-5-9-preview-parity` so existing cache-first browsers receive the preview-parity production shell.
+  * Bumps the shell cache to `miraichi-shell-v4-phase-5-9-production` so existing cache-first browsers receive the current production shell.
 * `packages/ui/src/index.css`
-  * Adds Black Apple Ledger design tokens and production shell classes sourced from the accepted preview structure.
+  * Adds Black Apple Ledger design tokens and production shell classes.
 
 Verification and governance:
 
 * `apps/web/src/production-shell.test.ts`
   * Adds colocated unit coverage for navigation, shell rendering, i18n, and shell-only settings.
+  * Verifies primary tab headers do not render detail copy and that production is the only served web shell route.
 * `scripts/pwa-verify.js`
-  * Verifies production shell TypeScript modules, accepted tab IDs, preview-parity shell markers, and preview invariants.
+  * Verifies production shell TypeScript modules, accepted tab IDs, production shell markers, and absence of the retired preview shell route/file.
 * `scripts/verify-lifecycle.js`
   * Requires TypeScript-first markers in docs and skills.
 * `.agent/skills/*` and docs updates
@@ -100,13 +103,19 @@ Targeted verification run during implementation:
 | `pnpm run typecheck` | PASS |
 | `pnpm run pwa:verify` | PASS |
 
-Final phase verification:
+Large-boundary phase verification already performed for the initial Phase 5.9 shell closure:
 
 | Command | Result |
 | :--- | :--- |
 | `pnpm run verify:local` | PASS |
 | `pnpm run test:integration` | PASS |
 | `pnpm run verify:release` | PASS |
+
+Maintenance correction verification for the owner feedback in this update should stay unit/local first because it is not a new large feature boundary:
+
+| Command | Result |
+| :--- | :--- |
+| `pnpm exec vitest run apps/web/src/production-shell.test.ts` | PASS |
 
 Rendered runtime check:
 

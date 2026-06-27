@@ -54,13 +54,11 @@ function renderSummaryRow({
 function renderScreenHeader({
   label,
   title,
-  subtitle,
   titleId,
   aside = ''
 }: {
   readonly label: string;
   readonly title: string;
-  readonly subtitle: string;
   readonly titleId: string;
   readonly aside?: string;
 }): string {
@@ -69,7 +67,6 @@ function renderScreenHeader({
       <div>
         <p class="screen-label">${escapeHtml(label)}</p>
         <h1 class="screen-title" id="${escapeHtml(titleId)}">${escapeHtml(title)}</h1>
-        <p class="screen-subtitle">${escapeHtml(subtitle)}</p>
       </div>
       ${aside}
     </div>
@@ -82,7 +79,6 @@ function renderTodayPanel(activeTabId: ProductionNavigationTabId, translate: Tra
       ${renderScreenHeader({
         label: translate('today.eyebrow', 'Today command center'),
         title: translate('today.title', 'Today'),
-        subtitle: translate('today.subtitle', 'Quick snapshot for points, matches, and market context.'),
         titleId: 'today-title',
         aside: '<div class="date-tile" aria-label="Phase 5.9"><span class="date-day">5.9</span><span class="date-month">PWA</span></div>'
       })}
@@ -198,7 +194,6 @@ function renderMatchesPanel(activeTabId: ProductionNavigationTabId, translate: T
       ${renderScreenHeader({
         label: translate('matches.eyebrow', 'Browse'),
         title: translate('matches.title', 'Matches'),
-        subtitle: translate('matches.subtitle', 'Generic fixtures grouped for manual tracking.'),
         titleId: 'matches-title'
       })}
 
@@ -244,7 +239,6 @@ function renderBetsPanel(activeTabId: ProductionNavigationTabId, translate: Tran
       ${renderScreenHeader({
         label: translate('bets.eyebrow', 'Record management'),
         title: translate('bets.title', 'Bets'),
-        subtitle: translate('bets.subtitle', 'Manage ongoing, draft, and settled mock records. New records are added through a match.'),
         titleId: 'bets-title'
       })}
 
@@ -264,7 +258,7 @@ function renderBetsPanel(activeTabId: ProductionNavigationTabId, translate: Tran
       <div class="stack">
         ${renderBetRow('Team Alpha win', 'Ongoing &middot; Team Alpha vs Team Beta &middot; Odds 2.10 &middot; Stake 100 pts', '<button class="text-button" type="button" data-open-edit data-edit-title="Team Alpha win">Edit</button>')}
         ${renderBetRow('Totals draft', 'Team Gamma vs Team Delta &middot; Needs market confirmation', '<button class="text-button" type="button" data-open-edit data-edit-title="Totals draft">Edit</button>')}
-        ${renderBetRow('Settled manual record', 'Team Echo vs Team Foxtrot &middot; Settled &middot; review-only preview', '<button class="text-button" type="button" data-open-sheet="review" data-review-only data-review-title="Team Echo vs Team Foxtrot">Review</button>')}
+        ${renderBetRow('Settled manual record', 'Team Echo vs Team Foxtrot &middot; Settled &middot; review-only shell', '<button class="text-button" type="button" data-open-sheet="review" data-review-only data-review-title="Team Echo vs Team Foxtrot">Review</button>')}
         <article class="note-card warning">
           <div class="note-eyebrow">Boundary</div>
           <div class="note-title">Ongoing records can be edited here; settled records are review-only in this shell.</div>
@@ -350,9 +344,8 @@ function renderBankrollPanel(activeTabId: ProductionNavigationTabId, translate: 
   return `
     <section class="${getScreenClass('bankroll', activeTabId)}" id="screen-bankroll" data-shell-tab-panel="bankroll" aria-labelledby="bankroll-title">
       ${renderScreenHeader({
-        label: translate('bankroll.eyebrow', 'Points-only preview'),
+        label: translate('bankroll.eyebrow', 'Points-only shell'),
         title: translate('bankroll.title', 'Bankroll'),
-        subtitle: translate('bankroll.subtitle', 'Static point snapshot for layout review.'),
         titleId: 'bankroll-title'
       })}
 
@@ -363,7 +356,7 @@ function renderBankrollPanel(activeTabId: ProductionNavigationTabId, translate: 
       </div>
 
       <section class="note-card warning">
-        <div class="note-eyebrow">Preview boundary</div>
+        <div class="note-eyebrow">Shell boundary</div>
         <div class="note-title">No charts are shown here because charts can imply real calculation.</div>
         <p class="note-copy">If charts return later, they must be explicitly marked static or backed by a separate approved formula and data plan.</p>
       </section>
@@ -389,7 +382,6 @@ function renderMiraichiPanel(activeTabId: ProductionNavigationTabId, translate: 
       ${renderScreenHeader({
         label: translate('miraichi.eyebrow', 'Assistant surface'),
         title: translate('miraichi.title', 'Miraichi'),
-        subtitle: translate('miraichi.subtitle', 'Context inbox for future review workflows.'),
         titleId: 'miraichi-title'
       })}
 
@@ -470,7 +462,7 @@ function renderSheets(): string {
           </div>
           <div class="sheet-actions">
             <button class="secondary-button" type="button" data-close-sheet>Cancel</button>
-            <button class="primary-button" id="save-preview" type="submit" disabled>Save Draft</button>
+            <button class="primary-button" id="save-draft-shell" type="submit" disabled>Save Draft</button>
           </div>
           <div class="sheet-feedback" id="add-feedback" aria-live="polite"></div>
         </form>
@@ -542,7 +534,7 @@ function renderSheets(): string {
         <section class="note-card warning">
           <div class="note-eyebrow">Boundary note</div>
           <div class="note-title">This sheet does not calculate returns.</div>
-          <p class="note-copy">It only previews how a future review surface could look. No data is stored and no betting advice is generated.</p>
+          <p class="note-copy">It only shows how a future review surface could look. No data is stored and no betting advice is generated.</p>
         </section>
         <div class="sheet-actions">
           <button class="secondary-button" type="button" data-close-sheet>Close</button>
@@ -582,8 +574,8 @@ export function renderAppShell({
   const panels = navigationTabs.map((tab) => panelRenderers[tab.id](safeActiveTabId, translate)).join('');
 
   return `
-    <div class="preview-page preview-page--production">
-      <div class="app-shell" data-production-shell="phase-5-9" data-preview-parity="black-apple-ledger" aria-label="Miraichi Black Apple Ledger production shell">
+    <div class="production-page">
+      <div class="app-shell" data-production-shell="phase-5-9" data-production-baseline="black-apple-ledger" aria-label="Miraichi Black Apple Ledger production shell">
         <header class="top-bar">
           <a class="brand" href="/" aria-label="Miraichi home">
             <span class="brand-mark" aria-hidden="true">M</span>
