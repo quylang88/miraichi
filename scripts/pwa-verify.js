@@ -13,7 +13,13 @@ const filesToVerify = [
   'apps/web/public/manifest.webmanifest',
   'apps/web/public/service-worker.js',
   'apps/web/public/icons/icon.svg',
-  'apps/web/src/pwa/register-service-worker.js'
+  'apps/web/src/pwa/register-service-worker.js',
+  'apps/web/src/shell-entry.ts',
+  'apps/web/src/config/navigation-tabs.ts',
+  'apps/web/src/components/app-shell.ts',
+  'apps/web/src/components/bottom-navigation.ts',
+  'apps/web/src/services/settings-service.ts',
+  'apps/web/src/services/i18n-service.ts'
 ];
 
 let failed = false;
@@ -51,6 +57,7 @@ if (fs.existsSync(webServerPath)) {
 
   // Verify iOS meta tags
   const iosMetaTags = [
+    'rel="icon"',
     'apple-mobile-web-app-capable',
     'apple-mobile-web-app-status-bar-style',
     'apple-mobile-web-app-title',
@@ -72,9 +79,129 @@ if (fs.existsSync(webServerPath)) {
   } else {
     console.log('  ✅ Service worker registration script import found.');
   }
+
+  if (!content.includes('/apps/web/src/shell-entry.js')) {
+    console.error('  ❌ Production shell missing shell-entry.js script import.');
+    failed = true;
+  } else {
+    console.log('  ✅ Production shell entry script import found.');
+  }
+
+  if (!content.includes('id="app-root"')) {
+    console.error('  ❌ Production shell missing app-root mount point.');
+    failed = true;
+  } else {
+    console.log('  ✅ Production shell app-root mount point found.');
+  }
 } else {
   console.error('  ❌ apps/web/src/index.js not found.');
   failed = true;
+}
+
+// 2a. Verify production shell is TypeScript-first and uses the accepted five-tab backbone
+const productionShellFiles = [
+  'apps/web/src/shell-entry.ts',
+  'apps/web/src/config/navigation-tabs.ts',
+  'apps/web/src/components/app-shell.ts',
+  'apps/web/src/components/bottom-navigation.ts',
+  'apps/web/src/services/settings-service.ts',
+  'apps/web/src/services/i18n-service.ts'
+];
+
+const serviceWorkerPath = path.join(ROOT_DIR, 'apps/web/public/service-worker.js');
+if (fs.existsSync(serviceWorkerPath)) {
+  const content = fs.readFileSync(serviceWorkerPath, 'utf8');
+  const requiredCacheMarkers = [
+    "miraichi-shell-v3-phase-5-9-preview-parity",
+    "/apps/web/src/shell-entry.js",
+    "/apps/web/src/config/navigation-tabs.js",
+    "/apps/web/src/components/app-shell.js"
+  ];
+
+  for (const marker of requiredCacheMarkers) {
+    if (!content.includes(marker)) {
+      console.error(`  ❌ Service worker missing Phase 5.9 cache marker: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Service worker Phase 5.9 cache marker found: ${marker}`);
+    }
+  }
+}
+
+for (const file of productionShellFiles) {
+  const fullPath = path.join(ROOT_DIR, file);
+  if (!fs.existsSync(fullPath)) {
+    console.error(`  ❌ Production shell TypeScript module missing: ${file}`);
+    failed = true;
+  } else {
+    console.log(`  ✅ Production shell TypeScript module found: ${file}`);
+  }
+}
+
+const navigationConfigPath = path.join(ROOT_DIR, 'apps/web/src/config/navigation-tabs.ts');
+if (fs.existsSync(navigationConfigPath)) {
+  const content = fs.readFileSync(navigationConfigPath, 'utf8');
+  const requiredTabs = [
+    "'today'",
+    "'matches'",
+    "'bets'",
+    "'bankroll'",
+    "'miraichi'"
+  ];
+
+  for (const marker of requiredTabs) {
+    if (!content.includes(marker)) {
+      console.error(`  ❌ Production navigation config missing tab marker: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Production navigation tab marker found: ${marker}`);
+    }
+  }
+
+  const forbiddenTabs = [
+    "id: 'settings'",
+    "id: 'add'"
+  ];
+
+  for (const marker of forbiddenTabs) {
+    if (content.includes(marker)) {
+      console.error(`  ❌ Production navigation config contains forbidden primary tab: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Production navigation config omits forbidden primary tab: ${marker}`);
+    }
+  }
+}
+
+const appShellPath = path.join(ROOT_DIR, 'apps/web/src/components/app-shell.ts');
+if (fs.existsSync(appShellPath)) {
+  const content = fs.readFileSync(appShellPath, 'utf8');
+  const requiredShellMarkers = [
+    'data-production-shell="phase-5-9"',
+    'data-preview-parity="black-apple-ledger"',
+    'data-settings-entry="miraichi-tab"',
+    'data-add-bet-boundary="planned"',
+    'class="top-bar"',
+    'class="notice"',
+    'class="main-scroll"',
+    'id="screen-today"',
+    'id="screen-match-detail"',
+    'data-open-match',
+    'data-open-scoped-add',
+    'data-open-edit',
+    'data-review-only',
+    'class="sheet-backdrop"',
+    'id="match-summary-readonly"'
+  ];
+
+  for (const marker of requiredShellMarkers) {
+    if (!content.includes(marker)) {
+      console.error(`  ❌ Production shell missing marker: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Production shell marker found: ${marker}`);
+    }
+  }
 }
 
 // 2b. Verify the preview keeps Add Bet scoped to a match group

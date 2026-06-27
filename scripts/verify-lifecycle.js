@@ -42,10 +42,15 @@ export const REQUIRED_TEST_ORGANIZATION_MARKERS = [
 export const REQUIRED_TYPESCRIPT_DIRECTION_MARKERS = [
   { file: 'docs/workflows/testing-workflow.md', marker: 'ADR-0034' },
   { file: 'docs/workflows/testing-workflow.md', marker: '*.test.ts' },
+  { file: 'docs/workflows/testing-workflow.md', marker: 'New app modules must be TypeScript-first' },
   { file: 'docs/workflows/testing-workflow.md', marker: 'big-bang migration' },
   { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: 'gradual TypeScript' },
   { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: '*.test.ts' },
-  { file: 'docs/architecture/module-map.md', marker: 'TypeScript migration order' }
+  { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: 'New app modules must be TypeScript-first' },
+  { file: '.agent/skills/miraichi-project-guardrails/SKILL.md', marker: 'New application modules default to TypeScript' },
+  { file: 'docs/architecture/module-map.md', marker: 'TypeScript migration order' },
+  { file: 'docs/architecture/module-map.md', marker: 'New application modules must be TypeScript-first' },
+  { file: 'apps/web/docs/frontend-architecture.md', marker: 'New web client modules must be TypeScript-first' }
 ];
 
 export const REQUIRED_DOC_INDEX_REFERENCES = [

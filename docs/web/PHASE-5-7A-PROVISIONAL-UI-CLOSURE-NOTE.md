@@ -43,8 +43,7 @@ Phase 5.7A does not lock:
 
 The following remain deferred:
 
-* Phase 5.7B production UI implementation.
-* Final production shell.
+* Final production design polish.
 * Final design system and UI polish.
 * App settings UI.
 * Language selector.
@@ -83,8 +82,14 @@ The project should not wait for final UI design before proceeding with non-UI pl
 
 ---
 
-## 7. Recommended Next Phase
+## 7. Superseded Next Phase Note
 
-The recommended next phase is **Phase 5.8 Local-First Persistence and Backup Planning/Adapter Boundary**.
+The older recommendation to make Phase 5.8 a local-first persistence planning phase is superseded by `PROJECT_PLAN.md`.
 
-This recommendation is planning-only. It must not introduce production storage, backup, sync, settings, i18n, formulas, or real betting behavior without a separate owner-approved implementation plan.
+The actual sequence is:
+
+1. **Phase 5.8**: App Settings, Language/i18n, and UI Flexibility Planning.
+2. **Phase 5.9**: Production PWA Shell Implementation.
+3. **Phase 5.10**: Add Bet Draft/Form State + Persistence Planning.
+
+Production storage, backup, sync, formulas, or real betting behavior still require separate owner-approved implementation plans.

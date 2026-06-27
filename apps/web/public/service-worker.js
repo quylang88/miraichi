@@ -1,8 +1,15 @@
-const CACHE_NAME = 'miraichi-shell-v1';
+const CACHE_NAME = 'miraichi-shell-v3-phase-5-9-preview-parity';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/packages/ui/src/index.css'
+  '/packages/ui/src/index.css',
+  '/apps/web/src/shell-entry.js',
+  '/apps/web/src/config/navigation-tabs.js',
+  '/apps/web/src/components/app-shell.js',
+  '/apps/web/src/components/bottom-navigation.js',
+  '/apps/web/src/components/html.js',
+  '/apps/web/src/services/settings-service.js',
+  '/apps/web/src/services/i18n-service.js'
 ];
 
 self.addEventListener('install', (event) => {

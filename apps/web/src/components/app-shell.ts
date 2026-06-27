@@ -1,0 +1,613 @@
+import {
+  getSafeNavigationTabId,
+  navigationTabs,
+  type NavigationTab,
+  type ProductionNavigationTabId
+} from '../config/navigation-tabs.js';
+import { t, type TranslateFunction } from '../services/i18n-service.js';
+import { renderBottomNavigation } from './bottom-navigation.js';
+import { escapeHtml } from './html.js';
+
+const icons = Object.freeze({
+  back: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  bookmark: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4.8A1.8 1.8 0 0 1 8.8 3h6.4A1.8 1.8 0 0 1 17 4.8V21l-5-3-5 3V4.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19V9M10 19V5M15 19v-7M20 19H4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  document: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h7l4 4v14H7V3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 3v5h4M9.5 13h5M9.5 16h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  down: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 10 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  filter: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v4M12 17v4M4.2 6.2l2.8 2.8M17 17l2.8 2.8M3 12h4M17 12h4M4.2 17.8 7 15M17 7l2.8-2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  time: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8"/></svg>',
+  up: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 14 6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+});
+
+function getScreenClass(tabId: ProductionNavigationTabId, activeTabId: ProductionNavigationTabId): string {
+  return tabId === activeTabId ? 'screen active' : 'screen';
+}
+
+function renderSummaryRow({
+  icon,
+  title,
+  meta,
+  value,
+  small = false
+}: {
+  readonly icon: string;
+  readonly title: string;
+  readonly meta: string;
+  readonly value: string;
+  readonly small?: boolean;
+}): string {
+  return `
+    <div class="summary-row">
+      <div class="summary-icon" aria-hidden="true">${icon}</div>
+      <div class="summary-copy">
+        <div class="summary-title">${escapeHtml(title)}</div>
+        <div class="summary-meta">${escapeHtml(meta)}</div>
+      </div>
+      <div class="summary-value${small ? ' small' : ''}">${escapeHtml(value)}</div>
+    </div>
+  `;
+}
+
+function renderScreenHeader({
+  label,
+  title,
+  subtitle,
+  titleId,
+  aside = ''
+}: {
+  readonly label: string;
+  readonly title: string;
+  readonly subtitle: string;
+  readonly titleId: string;
+  readonly aside?: string;
+}): string {
+  return `
+    <div class="screen-header">
+      <div>
+        <p class="screen-label">${escapeHtml(label)}</p>
+        <h1 class="screen-title" id="${escapeHtml(titleId)}">${escapeHtml(title)}</h1>
+        <p class="screen-subtitle">${escapeHtml(subtitle)}</p>
+      </div>
+      ${aside}
+    </div>
+  `;
+}
+
+function renderTodayPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction): string {
+  return `
+    <section class="${getScreenClass('today', activeTabId)}" id="screen-today" data-shell-tab-panel="today" aria-labelledby="today-title">
+      ${renderScreenHeader({
+        label: translate('today.eyebrow', 'Today command center'),
+        title: translate('today.title', 'Today'),
+        subtitle: translate('today.subtitle', 'Quick snapshot for points, matches, and market context.'),
+        titleId: 'today-title',
+        aside: '<div class="date-tile" aria-label="Phase 5.9"><span class="date-day">5.9</span><span class="date-month">PWA</span></div>'
+      })}
+
+      <div class="summary-list" aria-label="Today summary">
+        ${renderSummaryRow({
+          icon: icons.time,
+          title: 'Pending',
+          meta: 'Journal rows waiting for review',
+          value: '2'
+        })}
+        ${renderSummaryRow({
+          icon: icons.bookmark,
+          title: 'Watchlist',
+          meta: 'Mock matches saved for later',
+          value: '4'
+        })}
+        ${renderSummaryRow({
+          icon: icons.document,
+          title: 'Points snapshot',
+          meta: 'Manual ledger. No formula run.',
+          value: 'Static',
+          small: true
+        })}
+      </div>
+
+      <div class="segmented" role="tablist" aria-label="Today filter">
+        <button class="active" type="button">Pending</button>
+        <button type="button">Settled</button>
+        <button type="button">Live</button>
+        <button type="button">Market</button>
+      </div>
+
+      <div class="section-heading">
+        <h2>Match Snapshot</h2>
+        <span>Markets today</span>
+      </div>
+
+      <div class="stack">
+        <article class="match-card" data-match-card>
+          <div class="match-main">
+            <div class="match-topline">
+              <div class="tag-row">
+                <span class="tag blue">Live</span>
+                <span class="tag">Market 1X2</span>
+                <span class="tag amber">Pending</span>
+              </div>
+              <div class="row-actions">
+                <button class="text-button" type="button" data-open-match data-match-title="Team Alpha vs Team Beta" data-match-meta="Kickoff 18:00 (Mkt) &middot; matchGroupId: group-alpha-beta">Open</button>
+                <button class="icon-button" type="button" data-toggle-match aria-expanded="true" aria-label="Collapse Team Alpha vs Team Beta">${icons.up}</button>
+              </div>
+            </div>
+            <h3 class="match-title">Team Alpha vs Team Beta</h3>
+            <p class="match-meta">Kickoff 18:00 (Mkt) &middot; Pending: 1 journal row</p>
+          </div>
+          <div class="ledger-detail">
+            <div class="ledger-row">
+              <div>
+                <div class="ledger-title">Ongoing market note</div>
+                <div class="ledger-meta">Team Alpha win &middot; Odds: 2.10 &middot; Pending journal row</div>
+              </div>
+              <button class="text-button" type="button" data-open-match data-match-title="Team Alpha vs Team Beta" data-match-meta="Kickoff 18:00 (Mkt) &middot; matchGroupId: group-alpha-beta">Open</button>
+            </div>
+            <div class="ledger-row">
+              <div>
+                <div class="ledger-title">Assistant note</div>
+                <div class="ledger-meta">Context-only boundary note. No ranking, confidence, or stake advice.</div>
+              </div>
+              <span class="ledger-state">Static</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="match-card collapsed" data-match-card>
+          <div class="match-main">
+            <div class="match-topline">
+              <div class="tag-row">
+                <span class="tag">Scheduled</span>
+                <span class="tag">Totals</span>
+              </div>
+              <div class="row-actions">
+                <button class="text-button" type="button" data-open-match data-match-title="Team Gamma vs Team Delta" data-match-meta="Kickoff 21:30 (Mkt) &middot; matchGroupId: group-gamma-delta">Open</button>
+                <button class="icon-button" type="button" data-toggle-match aria-expanded="false" aria-label="Expand Team Gamma vs Team Delta">${icons.down}</button>
+              </div>
+            </div>
+            <h3 class="match-title">Team Gamma vs Team Delta</h3>
+            <p class="match-meta">Kickoff 21:30 (Mkt) &middot; Watchlist only</p>
+          </div>
+          <div class="ledger-detail">
+            <div class="ledger-row">
+              <div>
+                <div class="ledger-title">Watchlist note</div>
+                <div class="ledger-meta">Generic match context reserved for later manual review.</div>
+              </div>
+              <span class="ledger-state">No draft</span>
+            </div>
+          </div>
+        </article>
+
+        <section class="note-card">
+          <div class="note-eyebrow">Miraichi note</div>
+          <div class="note-title">This shell is a journal surface, not an advice engine.</div>
+          <p class="note-copy">The assistant area can summarize user-entered context later, but this production shell does not rank picks, estimate confidence, or propose stake size.</p>
+        </section>
+      </div>
+    </section>
+  `;
+}
+
+function renderMatchesPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction): string {
+  return `
+    <section class="${getScreenClass('matches', activeTabId)}" id="screen-matches" data-shell-tab-panel="matches" aria-labelledby="matches-title">
+      ${renderScreenHeader({
+        label: translate('matches.eyebrow', 'Browse'),
+        title: translate('matches.title', 'Matches'),
+        subtitle: translate('matches.subtitle', 'Generic fixtures grouped for manual tracking.'),
+        titleId: 'matches-title'
+      })}
+
+      <div class="search-row">
+        <input class="search-input" id="match-search" type="search" placeholder="Search generic teams" aria-label="Search generic teams">
+        <button class="filter-button" type="button" aria-label="Open match filters">${icons.filter}</button>
+      </div>
+
+      <div class="date-group">
+        <div class="group-label">Today</div>
+        ${renderMatchRow('Team Alpha vs Team Beta', '18:00 &middot; Market 1X2 &middot; 1 pending row', 'Kickoff 18:00 (Mkt) &middot; matchGroupId: group-alpha-beta')}
+        ${renderMatchRow('Team Gamma vs Team Delta', '21:30 &middot; Totals &middot; watchlist', 'Kickoff 21:30 (Mkt) &middot; matchGroupId: group-gamma-delta')}
+      </div>
+
+      <div class="date-group">
+        <div class="group-label">Next group</div>
+        ${renderMatchRow('Team Echo vs Team Foxtrot', '15:00 &middot; Market 1X2 &middot; no draft', 'Kickoff 15:00 (Mkt) &middot; matchGroupId: group-echo-foxtrot')}
+        ${renderMatchRow('Team North vs Team South', '19:45 &middot; Totals &middot; mock fixture', 'Kickoff 19:45 (Mkt) &middot; matchGroupId: group-north-south')}
+      </div>
+
+      <div class="empty-state" id="matches-empty">No generic matches match this search.</div>
+    </section>
+  `;
+}
+
+function renderMatchRow(title: string, meta: string, detailMeta: string): string {
+  return `
+    <article class="match-row" data-match-row>
+      <div class="row-split">
+        <div>
+          <div class="row-title">${escapeHtml(title)}</div>
+          <div class="row-meta">${meta}</div>
+        </div>
+        <button class="text-button" type="button" data-open-match data-match-title="${escapeHtml(title)}" data-match-meta="${detailMeta}">Open</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderBetsPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction): string {
+  return `
+    <section class="${getScreenClass('bets', activeTabId)}" id="screen-bets" data-shell-tab-panel="bets" aria-labelledby="bets-title">
+      ${renderScreenHeader({
+        label: translate('bets.eyebrow', 'Record management'),
+        title: translate('bets.title', 'Bets'),
+        subtitle: translate('bets.subtitle', 'Manage ongoing, draft, and settled mock records. New records are added through a match.'),
+        titleId: 'bets-title'
+      })}
+
+      <div class="action-row">
+        <button class="primary-button add-inline" type="button" data-open-match data-match-title="Team Alpha vs Team Beta" data-match-meta="Kickoff 18:00 (Mkt) &middot; matchGroupId: group-alpha-beta">
+          ${icons.plus}
+          Choose Match to Add
+        </button>
+      </div>
+
+      <div class="segmented three" role="tablist" aria-label="Bet record filter">
+        <button class="active" type="button">Ongoing</button>
+        <button type="button">Drafts</button>
+        <button type="button">Settled</button>
+      </div>
+
+      <div class="stack">
+        ${renderBetRow('Team Alpha win', 'Ongoing &middot; Team Alpha vs Team Beta &middot; Odds 2.10 &middot; Stake 100 pts', '<button class="text-button" type="button" data-open-edit data-edit-title="Team Alpha win">Edit</button>')}
+        ${renderBetRow('Totals draft', 'Team Gamma vs Team Delta &middot; Needs market confirmation', '<button class="text-button" type="button" data-open-edit data-edit-title="Totals draft">Edit</button>')}
+        ${renderBetRow('Settled manual record', 'Team Echo vs Team Foxtrot &middot; Settled &middot; review-only preview', '<button class="text-button" type="button" data-open-sheet="review" data-review-only data-review-title="Team Echo vs Team Foxtrot">Review</button>')}
+        <article class="note-card warning">
+          <div class="note-eyebrow">Boundary</div>
+          <div class="note-title">Ongoing records can be edited here; settled records are review-only in this shell.</div>
+          <p class="note-copy">Adding a new record starts from a match group so the shell stays aligned with matchGroupId grouping. No storage, settlement, or formula is run.</p>
+        </article>
+      </div>
+    </section>
+  `;
+}
+
+function renderBetRow(title: string, meta: string, actionHtml: string): string {
+  return `
+    <article class="bet-row">
+      <div class="row-split">
+        <div>
+          <div class="row-title">${escapeHtml(title)}</div>
+          <div class="row-meta">${meta}</div>
+        </div>
+        ${actionHtml}
+      </div>
+    </article>
+  `;
+}
+
+function renderMatchDetailPanel(): string {
+  return `
+    <section class="screen" id="screen-match-detail" aria-labelledby="match-detail-title">
+      <button class="secondary-button back-button" type="button" id="match-detail-back">
+        ${icons.back}
+        Back
+      </button>
+
+      <div class="screen-header">
+        <div>
+          <p class="screen-label">Match group</p>
+          <h1 class="screen-title" id="match-detail-title">Team Alpha vs Team Beta</h1>
+          <p class="screen-subtitle" id="match-detail-meta">Kickoff 18:00 (Mkt) &middot; matchGroupId: group-alpha-beta</p>
+        </div>
+      </div>
+
+      <div class="match-context" aria-label="Selected match group context">
+        <div class="context-line">
+          <div class="context-label">Grouping key</div>
+          <div class="context-value">matchGroupId</div>
+        </div>
+        <div class="context-line">
+          <div class="context-label">Entry rule</div>
+          <div class="context-value">Add through this match</div>
+        </div>
+      </div>
+
+      <div class="segmented two" role="tablist" aria-label="Match detail tabs">
+        <button class="active" type="button" data-detail-tab="bets">Bets</button>
+        <button type="button" data-detail-tab="info">Info</button>
+      </div>
+
+      <div class="detail-panel" id="match-detail-panel-bets">
+        <div class="action-row">
+          <button class="primary-button add-inline" type="button" data-open-scoped-add data-add-bet-boundary="planned">
+            ${icons.plus}
+            Add Bet
+          </button>
+        </div>
+
+        <div class="stack">
+          ${renderBetRow('Team Alpha win', 'Ongoing &middot; Odds 2.10 &middot; Stake 100 pts', '<button class="text-button" type="button" data-open-edit data-edit-title="Team Alpha win">Edit</button>')}
+          ${renderBetRow('Settled context row', 'Review-only shell. No settlement math.', '<button class="text-button" type="button" data-open-sheet="review" data-review-only data-review-title="Settled context row">Review</button>')}
+        </div>
+      </div>
+
+      <div class="detail-panel" id="match-detail-panel-info" hidden>
+        <section class="note-card">
+          <div class="note-eyebrow">Match detail boundary</div>
+          <div class="note-title">This sub-view is context, not a new primary tab.</div>
+          <p class="note-copy">The selected match group supplies the Add Bet context. Feed match linking remains optional and no automatic grouping or merge logic runs here.</p>
+        </section>
+      </div>
+    </section>
+  `;
+}
+
+function renderBankrollPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction): string {
+  return `
+    <section class="${getScreenClass('bankroll', activeTabId)}" id="screen-bankroll" data-shell-tab-panel="bankroll" aria-labelledby="bankroll-title">
+      ${renderScreenHeader({
+        label: translate('bankroll.eyebrow', 'Points-only preview'),
+        title: translate('bankroll.title', 'Bankroll'),
+        subtitle: translate('bankroll.subtitle', 'Static point snapshot for layout review.'),
+        titleId: 'bankroll-title'
+      })}
+
+      <div class="points-grid">
+        ${renderPointsRow('Current points', '24,500 pts', 'Static')}
+        ${renderPointsRow('Source', 'Manual ledger', 'Mock')}
+        ${renderPointsRow('Formula status', 'Not run', 'Blocked')}
+      </div>
+
+      <section class="note-card warning">
+        <div class="note-eyebrow">Preview boundary</div>
+        <div class="note-title">No charts are shown here because charts can imply real calculation.</div>
+        <p class="note-copy">If charts return later, they must be explicitly marked static or backed by a separate approved formula and data plan.</p>
+      </section>
+    </section>
+  `;
+}
+
+function renderPointsRow(label: string, value: string, state: string): string {
+  return `
+    <div class="points-row">
+      <div>
+        <div class="points-label">${escapeHtml(label)}</div>
+        <div class="points-value">${escapeHtml(value)}</div>
+      </div>
+      <div class="points-state">${escapeHtml(state)}</div>
+    </div>
+  `;
+}
+
+function renderMiraichiPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction): string {
+  return `
+    <section class="${getScreenClass('miraichi', activeTabId)}" id="screen-miraichi" data-shell-tab-panel="miraichi" aria-labelledby="miraichi-title">
+      ${renderScreenHeader({
+        label: translate('miraichi.eyebrow', 'Assistant surface'),
+        title: translate('miraichi.title', 'Miraichi'),
+        subtitle: translate('miraichi.subtitle', 'Context inbox for future review workflows.'),
+        titleId: 'miraichi-title'
+      })}
+
+      <div class="stack">
+        ${renderAssistantRow('Context check', 'Static note: generic match data is incomplete. No recommendation is produced.')}
+        ${renderAssistantRow('Draft review queue', 'One manual row can be reviewed by the user. No ranking, confidence, or stake advice.')}
+        <article class="note-card" data-settings-entry="miraichi-tab">
+          <div class="note-eyebrow">Role</div>
+          <div class="note-title">Miraichi explains context; it does not decide bets.</div>
+          <p class="note-copy">This keeps the assistant UX aligned with the existing AI and betting guardrails while still showing a useful app surface.</p>
+        </article>
+        <button type="button" class="secondary-button add-inline" data-settings-entry="miraichi-tab">Settings</button>
+        <div class="settings-summary" data-settings-summary>
+          ${escapeHtml(translate('settings.summary', 'Language and appearance settings are shell-only until later phases.'))}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderAssistantRow(title: string, meta: string): string {
+  return `
+    <article class="assistant-row">
+      <div class="row-icon" aria-hidden="true">${icons.spark}</div>
+      <div>
+        <div class="row-title">${escapeHtml(title)}</div>
+        <div class="row-meta">${escapeHtml(meta)}</div>
+      </div>
+    </article>
+  `;
+}
+
+function renderSheets(): string {
+  return `
+    <div class="sheet-backdrop" data-close-sheet></div>
+
+    <section class="sheet" id="add-sheet" aria-hidden="true" aria-labelledby="add-sheet-title" role="dialog">
+      <div class="sheet-grabber" aria-hidden="true"></div>
+      <div class="sheet-header">
+        <div>
+          <h2 class="sheet-title" id="add-sheet-title">Add Bet</h2>
+          <p class="sheet-subtitle" id="add-sheet-subtitle">Scoped to Team Alpha vs Team Beta</p>
+        </div>
+        <button class="icon-button" type="button" data-close-sheet aria-label="Close Add Bet sheet">${icons.close}</button>
+      </div>
+      <div class="sheet-body">
+        <form class="form-grid" id="add-form" novalidate>
+          <div class="readonly-summary" id="match-summary-readonly" aria-label="Selected match summary">
+            <div class="context-line">
+              <div class="context-label">Selected match</div>
+              <div class="context-value" id="add-summary-title">Team Alpha vs Team Beta</div>
+            </div>
+            <div class="context-line">
+              <div class="context-label">Scope</div>
+              <div class="context-value">matchGroupId context</div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="market-field">Market</label>
+            <select class="field-select" id="market-field" name="market-field" required>
+              <option value="">Select market</option>
+              <option value="1X2">Market 1X2</option>
+              <option value="Totals">Totals</option>
+              <option value="Manual note">Manual note</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="odds-field">Odds</label>
+            <input class="field-input" id="odds-field" name="odds-field" inputmode="decimal" placeholder="Example: 2.10" required>
+          </div>
+          <div class="field">
+            <label for="stake-field">Stake points</label>
+            <input class="field-input" id="stake-field" name="stake-field" inputmode="numeric" placeholder="Example: 100" required>
+          </div>
+          <div class="field">
+            <label for="note-field">User note</label>
+            <textarea class="field-textarea" id="note-field" name="note-field" placeholder="Optional context note"></textarea>
+          </div>
+          <div class="sheet-actions">
+            <button class="secondary-button" type="button" data-close-sheet>Cancel</button>
+            <button class="primary-button" id="save-preview" type="submit" disabled>Save Draft</button>
+          </div>
+          <div class="sheet-feedback" id="add-feedback" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
+
+    <section class="sheet" id="edit-sheet" aria-hidden="true" aria-labelledby="edit-sheet-title" role="dialog">
+      <div class="sheet-grabber" aria-hidden="true"></div>
+      <div class="sheet-header">
+        <div>
+          <h2 class="sheet-title" id="edit-sheet-title">Edit Ongoing Bet</h2>
+          <p class="sheet-subtitle" id="edit-subtitle">Team Alpha win</p>
+        </div>
+        <button class="icon-button" type="button" data-close-sheet aria-label="Close Edit Bet sheet">${icons.close}</button>
+      </div>
+      <div class="sheet-body">
+        <form class="form-grid" novalidate>
+          <div class="readonly-summary" aria-label="Editable record scope">
+            <div class="context-line">
+              <div class="context-label">Edit policy</div>
+              <div class="context-value">Ongoing/draft only</div>
+            </div>
+            <div class="context-line">
+              <div class="context-label">Match scope</div>
+              <div class="context-value">Team Alpha vs Team Beta</div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="edit-market-field">Market</label>
+            <select class="field-select" id="edit-market-field" name="edit-market-field">
+              <option value="1X2">Market 1X2</option>
+              <option value="Totals">Totals</option>
+              <option value="Manual note">Manual note</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="edit-odds-field">Odds</label>
+            <input class="field-input" id="edit-odds-field" name="edit-odds-field" inputmode="decimal" value="2.10">
+          </div>
+          <div class="field">
+            <label for="edit-stake-field">Stake points</label>
+            <input class="field-input" id="edit-stake-field" name="edit-stake-field" inputmode="numeric" value="100">
+          </div>
+          <div class="sheet-actions">
+            <button class="secondary-button" type="button" data-close-sheet>Cancel</button>
+            <button class="primary-button" type="button" data-close-sheet>Save Edit</button>
+          </div>
+          <div class="sheet-feedback">Shell only: ongoing edit surface, no data saved.</div>
+        </form>
+      </div>
+    </section>
+
+    <section class="sheet" id="review-sheet" aria-hidden="true" aria-labelledby="review-sheet-title" role="dialog">
+      <div class="sheet-grabber" aria-hidden="true"></div>
+      <div class="sheet-header">
+        <div>
+          <h2 class="sheet-title" id="review-sheet-title">Review Draft</h2>
+          <p class="sheet-subtitle" id="review-subtitle">Team Alpha vs Team Beta</p>
+        </div>
+        <button class="icon-button" type="button" data-close-sheet aria-label="Close Review sheet">${icons.close}</button>
+      </div>
+      <div class="sheet-body">
+        <div class="review-list">
+          ${renderReviewItem('Record type', 'Manual draft')}
+          ${renderReviewItem('Market', 'Market 1X2')}
+          ${renderReviewItem('Odds', '2.10')}
+          ${renderReviewItem('Stake points', '100 pts')}
+        </div>
+        <section class="note-card warning">
+          <div class="note-eyebrow">Boundary note</div>
+          <div class="note-title">This sheet does not calculate returns.</div>
+          <p class="note-copy">It only previews how a future review surface could look. No data is stored and no betting advice is generated.</p>
+        </section>
+        <div class="sheet-actions">
+          <button class="secondary-button" type="button" data-close-sheet>Close</button>
+          <button class="primary-button" type="button" data-close-sheet>Done</button>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderReviewItem(label: string, value: string): string {
+  return `
+    <div class="review-item">
+      <div class="review-label">${escapeHtml(label)}</div>
+      <div class="review-value">${escapeHtml(value)}</div>
+    </div>
+  `;
+}
+
+const panelRenderers: Record<ProductionNavigationTabId, (activeTabId: ProductionNavigationTabId, translate: TranslateFunction) => string> = Object.freeze({
+  today: renderTodayPanel,
+  matches: renderMatchesPanel,
+  bets: renderBetsPanel,
+  bankroll: renderBankrollPanel,
+  miraichi: renderMiraichiPanel
+});
+
+export function renderAppShell({
+  activeTabId = 'today',
+  translate = t
+}: {
+  readonly activeTabId?: string;
+  readonly translate?: TranslateFunction;
+} = {}): string {
+  const safeActiveTabId = getSafeNavigationTabId(activeTabId);
+  const activeTab = navigationTabs.find((tab: NavigationTab) => tab.id === safeActiveTabId) ?? navigationTabs[0];
+  const panels = navigationTabs.map((tab) => panelRenderers[tab.id](safeActiveTabId, translate)).join('');
+
+  return `
+    <div class="preview-page preview-page--production">
+      <div class="app-shell" data-production-shell="phase-5-9" data-preview-parity="black-apple-ledger" aria-label="Miraichi Black Apple Ledger production shell">
+        <header class="top-bar">
+          <a class="brand" href="/" aria-label="Miraichi home">
+            <span class="brand-mark" aria-hidden="true">M</span>
+            <span class="brand-copy">
+              <span class="brand-name">Miraichi</span>
+              <span class="brand-meta">${escapeHtml(translate('shell.subtitle', 'Black Apple Ledger Shell'))}</span>
+            </span>
+          </a>
+          <div class="status-chip" aria-label="Production shell status">
+            <span class="status-dot" aria-hidden="true"></span>
+            Shell
+          </div>
+        </header>
+
+        <div class="notice" data-add-bet-boundary="planned">Production shell. Static generic data. No storage, no formulas, no recommendations.</div>
+
+        <main class="main-scroll" id="main-scroll" data-active-tab="${escapeHtml(safeActiveTabId)}" aria-label="${escapeHtml(activeTab.fallbackDescription)}">
+          ${panels}
+          ${renderMatchDetailPanel()}
+        </main>
+
+        ${renderBottomNavigation({ activeTabId: safeActiveTabId, tabs: navigationTabs, translate })}
+        ${renderSheets()}
+      </div>
+    </div>
+  `;
+}

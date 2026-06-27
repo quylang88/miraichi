@@ -15,6 +15,7 @@
   },
   "include": [
     "apps/**/*.js",
+    "apps/**/*.ts",
     "packages/**/*.js",
     "packages/**/*.ts",
     "scripts/**/*.js"

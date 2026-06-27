@@ -30,8 +30,9 @@ Targets client-side features, styling system integration, page layout structure,
 - Follow the page boundaries in `apps/web/docs/page-map.md`.
 - Follow the v1 interaction and layout rules in `apps/web/docs/ui-guidelines.md`.
 - Ensure strict responsiveness across standard mobile, tablet, and desktop screen widths.
+- New web client source must be TypeScript-first. Do not add new implementation `.js` modules for components, services, config, or tests unless the file is an explicit legacy/no-build bridge.
 
 ## TODO / Next Steps
-- [ ] Initialize Next.js / Vite framework setup after framework selection.
-- [ ] Connect shared design tokens from `packages/ui`.
+- [ ] Keep the no-build TypeScript bridge until a framework or bundler is explicitly approved.
+- [ ] Continue connecting shared design tokens from `packages/ui`.
 - [ ] Scaffold only the approved v1 navigation and deferred boundaries described above.
