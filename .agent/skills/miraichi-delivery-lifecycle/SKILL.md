@@ -39,6 +39,10 @@ No phase may skip its exit gate. A fast shortcut that removes evidence is a brok
 
 ## Mandatory Gates
 
+### Implementation Plan Handoff
+
+After creating or updating a `phase:implementation-plan`, save the detailed plan to the appropriate repository document and return only a concise chat summary: plan path, goal, 3-5 slice names, blocked/forbidden scope, and the recommended next lifecycle command. Do not paste the full plan into chat unless the owner explicitly asks for it.
+
 ### Before Coding
 
 - Existing approved spec or implementation plan must exist, unless the user explicitly provides one in the prompt.

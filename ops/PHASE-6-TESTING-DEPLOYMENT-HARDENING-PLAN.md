@@ -5,7 +5,7 @@ Plan the non-production hardening work needed before any later final-release own
 
 ## Status
 - **Status**: Active Planning
-- **Review Status**: Owner approval required before Phase 6 implementation planning.
+- **Review Status**: Owner approved implementation planning via `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`; implementation plan created.
 
 ## Scope
 Phase 6 covers CI/CD workflow planning, repeatable staging deployment hardening, smoke-check automation planning, rollback notes, security/secrets audit planning, and monitoring plan drafts.
@@ -127,8 +127,8 @@ Recommended answer: no. Use scripted smoke checks and manual QA first; paid moni
 | Step | Lifecycle command | Output |
 | :--- | :--- | :--- |
 | 6.1 | `phase:plan Phase 6 Testing/Deployment Hardening` | This planning package and updated ops docs. |
-| 6.2 | `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation` | Exact TDD slices for CI check plan, smoke script, and docs updates. |
-| 6.3 | `phase:code-slice Phase 6 smoke-check script` | One tested script that verifies a staging URL without secrets. |
+| 6.2 | `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation` | `ops/PHASE-6-CI-CD-STAGING-SMOKE-AUTOMATION-IMPLEMENTATION-PLAN.md`. |
+| 6.3 | `phase:code-slice Phase 6 smoke-check script` | Completed by `ops/PHASE-6-STAGING-SMOKE-CHECK-SCRIPT-REVIEW.md`. |
 | 6.4 | `phase:code-slice Phase 6 CI check workflow` | One workflow that runs verification but does not deploy. |
 | 6.5 | `phase:integration-test Phase 6 verification hardening` | `pnpm run verify:local` and relevant integration checks pass after workflow/script changes. |
 | 6.6 | `phase:staging Phase 6 hardened staging process` | Staging deploy and automated/manual smoke evidence refreshed. |
@@ -143,10 +143,10 @@ This `phase:plan` can close only when:
 4. Secret handling policy is explicit.
 5. The next lifecycle command is chosen.
 
-Recommended next command after owner approval:
+Recommended next command after owner approval of the implementation plan:
 
 ```text
-phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation
+phase:code-slice Phase 6 CI check workflow
 ```
 
 Do not start `phase:code-slice` until the implementation plan lists exact files, failing tests, implementation steps, and verification commands.

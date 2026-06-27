@@ -24,6 +24,7 @@
     "verify:staging": "pnpm run verify:release && pnpm run build:web-static",
     "deploy:staging": "pnpm run verify:staging && pnpm dlx wrangler pages deploy apps/web/dist --project-name miraichi-staging",
     "deploy:staging:local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-staging-local.ps1",
+    "smoke:staging": "node scripts/staging-smoke-check.js",
     "test:e2e": "node scripts/test-endpoints.js",
     "audit": "node scripts/audit-rules.js",
     "phase2:check-rules": "node scripts/phase2-verify.js",

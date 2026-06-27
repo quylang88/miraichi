@@ -71,6 +71,16 @@ After deployment, verify:
 - Browser storage uses IndexedDB for draft persistence; `localStorage` is not used for betting history.
 - Backup/import JSON helper behavior remains covered by local verification before deploy.
 
+## Phase 6 Smoke Command
+
+Run the automated smoke check against the current Cloudflare Pages deployment URL:
+
+```powershell
+pnpm run smoke:staging -- https://e9b19946.miraichi-staging.pages.dev
+```
+
+Replace the URL with the deployment URL returned by the current staging deploy.
+
 ## References
 
 - Cloudflare Pages Direct Upload docs: https://developers.cloudflare.com/pages/get-started/direct-upload/
@@ -86,4 +96,5 @@ After deployment, verify:
 - [x] Record staging URL and smoke-check evidence.
 - [x] Defer formal owner-feedback and production promotion until all planned release phases are complete.
 - [x] Record Phase 5.12 staging redeploy evidence: `https://e9b19946.miraichi-staging.pages.dev`.
-- [ ] Plan repeatable staging smoke automation in Phase 6.
+- [x] Plan repeatable staging smoke automation in Phase 6.
+- [x] Implement repeatable staging smoke command with `pnpm run smoke:staging`.

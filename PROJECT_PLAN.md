@@ -104,6 +104,9 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] After Phase 5.12 staging passes, decide whether Phase 5 can close or whether another explicit Phase 5 quality-up item exists.
 - [x] Close Phase 5 with staging smoke evidence and recommend Phase 6 planning.
 - [x] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
-- [ ] Owner review Phase 6 Testing/Deployment Hardening Plan before implementation planning.
-- [ ] After owner approval, start `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`.
+- [x] Owner review Phase 6 Testing/Deployment Hardening Plan before implementation planning.
+- [x] Create `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`.
+- [x] Owner review Phase 6 CI/CD and Staging Smoke Automation implementation plan before `phase:code-slice`.
+- [x] Complete `phase:code-slice Phase 6 staging smoke-check script`.
+- [ ] Start `phase:code-slice Phase 6 CI check workflow` after owner approval.
 - [ ] Keep real AI training out of Phase 5; plan it only through future Phase 7 and Phase 8 ADRs.

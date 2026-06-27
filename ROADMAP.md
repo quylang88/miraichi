@@ -112,6 +112,9 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Complete `phase:quality-up ui-ux-improve Phase 5.12 Owner Requested Shell Cleanup` staging redeploy before Phase 5 closeout.
 - [x] Close Phase 5 with staging smoke evidence and recommend Phase 6 planning.
 - [x] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
-- [ ] Owner review Phase 6 Testing/Deployment Hardening Plan before implementation planning.
-- [ ] After owner approval, start `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`.
+- [x] Owner review Phase 6 Testing/Deployment Hardening Plan before implementation planning.
+- [x] Create `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`.
+- [x] Owner review Phase 6 CI/CD and Staging Smoke Automation implementation plan before `phase:code-slice`.
+- [x] Complete `phase:code-slice Phase 6 staging smoke-check script`.
+- [ ] Start `phase:code-slice Phase 6 CI check workflow` after owner approval.
 - [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.

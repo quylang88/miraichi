@@ -139,7 +139,15 @@ If you find issues, fix them inline. No need to re-review — just fix and move 
 
 ## Execution Handoff
 
-After saving the plan, offer execution choice:
+After saving the plan, do not paste the full plan into chat. The user should not have to read a long plan inline. Give a concise chat summary with:
+
+- Plan file path.
+- Goal in one sentence.
+- 3-5 task bullets naming the slices only.
+- Key blocked/forbidden scope.
+- Recommended next lifecycle command.
+
+Then offer execution choice:
 
 **"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. Two execution options:**
 

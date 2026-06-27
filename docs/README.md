@@ -11,6 +11,8 @@ Central index for cross-cutting Miraichi documentation. Do not move module-speci
 - Docs status hygiene review: `docs/governance/DOCS-STATUS-HYGIENE-REVIEW.md`
 - Phase 5 closeout review: `docs/betting/PHASE-5-CLOSEOUT-REVIEW.md`
 - Phase 6 testing/deployment hardening plan: `ops/PHASE-6-TESTING-DEPLOYMENT-HARDENING-PLAN.md`
+- Phase 6 CI/CD and staging smoke automation implementation plan: `ops/PHASE-6-CI-CD-STAGING-SMOKE-AUTOMATION-IMPLEMENTATION-PLAN.md`
+- Phase 6 staging smoke-check script review: `ops/PHASE-6-STAGING-SMOKE-CHECK-SCRIPT-REVIEW.md`
 
 ## Application Docs
 - API architecture: `apps/api/docs/api-architecture.md`
