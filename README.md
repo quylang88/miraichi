@@ -6,8 +6,8 @@ An AI-driven football prediction and betting management application.
 Miraichi provides an extensible platform for AI football prediction, betting management, risk limits, bankroll tracking, and collaborative agent workflows.
 
 ## Status
-- **Status**: Draft
-- **Current Phase**: Phase 5 - Betting History, Bankroll, Reports, AI Recommendation Boundary, and Extensible Business Logic Discovery
+- **Status**: Active
+- **Current Phase**: Phase 5.10 - Add Bet Draft/Form State and Persistence Planning
 - **Phase Source of Truth**: `PROJECT_PLAN.md`
 
 ## Scope
@@ -31,6 +31,6 @@ While the initial launch targets World Cup use cases, the domain language, data 
 - Football domain concepts (competitions, seasons, teams, matches, markets, bets, bankrolls) are modeled abstractly.
 
 ## TODO / Next Steps
-- [ ] Continue Phase 5 execution only through approved lifecycle phases.
+- [ ] Continue Phase 5.10 as planning/contract work only until owner review closes it.
 - [ ] Use `phase:plan`, `phase:implementation-plan`, `phase:code-slice`, `phase:integration-test`, `phase:staging`, `phase:owner-feedback`, `phase:production`, or `phase:maintenance` to make the active gate explicit.
 - [ ] Run `pnpm run verify:release` before staging or production promotion.

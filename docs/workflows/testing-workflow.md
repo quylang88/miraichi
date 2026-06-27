@@ -6,7 +6,7 @@ Procedures for verifying code updates.
 Establishes testing patterns for units, integration layers, and system APIs.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Directly plans tests suites layout and runtime checks.
@@ -39,8 +39,10 @@ Directly plans tests suites layout and runtime checks.
 - ADR-0034 defines TypeScript as the gradual technical direction for typed contracts and domain boundaries.
 - Do not perform a big-bang migration. Existing `.test.js` files stay valid until their source module is migrated or the test file is being materially changed.
 - New tests for TypeScript modules must use `*.test.ts`.
-- New app modules must be TypeScript-first. For new `apps/*/src` implementation code, write `.ts` modules and colocated `*.test.ts` tests unless the file is an explicit legacy runtime bridge.
+- New app modules must be TypeScript-first.
+- New app/package implementation modules must be TypeScript-first. For new `apps/*/src` and `packages/*/src` implementation code, write `.ts` modules and colocated `*.test.ts` tests unless the file is an explicit legacy runtime bridge.
 - Prefer `.ts` for new shared contracts, config, validators, and pure domain helpers. App routes and runtime entrypoints migrate later after their lower-level contracts are stable.
+- A JavaScript migration slice must identify exact files, expected behavior-preservation tests, and the verification command before renaming files.
 - If a future build bundles application code, exclude `*.test.{js,ts}` from production artifacts explicitly.
 
 ## TODO / Next Steps

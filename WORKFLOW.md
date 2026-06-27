@@ -6,7 +6,7 @@ Standard operating procedures for developers and AI agents working on Miraichi.
 This document ensures consistency, quality, and seamless coordination between human engineers and AI subagents.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active Governance
 
 ## Scope
 Covers git branching, commit message formatting, code review procedures, agent execution rules, and handoff protocols.
@@ -58,6 +58,13 @@ Covers git branching, commit message formatting, code review procedures, agent e
 ### 8. Documentation Update Workflow
 - Any architectural change must update relevant docs and ADRs.
 - Docs must not contain hard-coded competition references.
+- Documentation status must follow `docs/governance/DOCUMENT-STATUS-TAXONOMY.md`; do not promote non-ADR docs to `Accepted` without explicit owner approval evidence.
+
+### 8.1 TypeScript Migration Workflow
+- New implementation modules under `apps/*/src` and `packages/*/src` must be TypeScript-first.
+- Existing JavaScript remains legacy until a specific migration slice names exact files, tests, and verification commands.
+- Do not run a bulk JavaScript-to-TypeScript migration as cleanup.
+- JavaScript is acceptable for existing runtime bridges, service workers, package entry bridges, and scripts when a compatibility reason is documented.
 
 ### 9. Phase 1 Architecture Planning Workflow
 - Phase 1 changes are limited to Markdown documentation and decision records.

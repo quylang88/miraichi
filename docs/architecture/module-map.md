@@ -31,9 +31,11 @@ File structures for packages and applications.
 4. App routes and UI modules after their contracts are typed.
 5. Runtime entrypoints and operational scripts last.
 
-New application modules must be TypeScript-first. Create new `apps/*/src` and `packages/*/src` implementation modules as `.ts` by default; keep `.js` only for existing legacy code, runtime bridges, or scripts that cannot reasonably move yet.
+New application modules must be TypeScript-first.
 
-Do not run a big-bang JavaScript-to-TypeScript migration. Existing JavaScript remains valid until the owning module is part of an approved code slice.
+New application and package implementation modules must be TypeScript-first. Create new `apps/*/src` and `packages/*/src` implementation modules as `.ts` by default; keep `.js` only for existing legacy code, service workers, runtime bridges, or scripts that cannot reasonably move yet.
+
+Do not run a big-bang JavaScript-to-TypeScript migration. Existing JavaScript remains valid until the owning module is part of an approved code slice that names exact files, tests, and verification commands.
 
 ## TODO / Next Steps
 - [ ] Implement monorepo boundary lints checking rules.

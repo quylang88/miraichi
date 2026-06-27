@@ -6,7 +6,7 @@ Milestones and timeline for the development of Miraichi.
 This document provides visibility into planned feature rollouts and releases.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Outlines high-level roadmap milestones across multiple phases.
@@ -55,7 +55,8 @@ Outlines high-level roadmap milestones across multiple phases.
 - Defer Phase 5.7B production UI implementation until separately approved.
 - Plan future app settings and language/i18n support, including English and Vietnamese (Phase 5.8).
 - Complete Phase 5.9 Production PWA Shell Implementation using TypeScript-first shell modules and production-baseline Black Apple Ledger structure.
-- Recommend Phase 5.10 Add Bet Draft/Form State + Persistence Planning next.
+- Start Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
+- Keep Phase 5.10 planning-only until owner review closes it.
 - Defer Local-First Persistence Implementation to Phase 5.11 after Phase 5.10 planning and owner approval.
 
 ### Milestone 7: Real Data Provider, Dataset, and Evaluation Planning (Future)
@@ -90,6 +91,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Defer Phase 5.7B PWA Navigation Shell and Forms implementation until the owner explicitly approves a production UI implementation plan.
 - [x] Plan App Settings and Language/i18n, including English and Vietnamese support plus additional owner-requested app settings (Phase 5.8).
 - [x] Complete Phase 5.9 Production PWA Shell Implementation using TypeScript-first shell modules and production-baseline Black Apple Ledger structure.
-- [ ] Recommend Phase 5.10 Add Bet Draft/Form State + Persistence Planning next.
+- [x] Start Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
+- [ ] Complete owner review of Phase 5.10 planning before any persistence implementation.
 - [ ] Defer Local-First Persistence Implementation to Phase 5.11 after Phase 5.10 planning and owner approval.
 - [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.

@@ -37,7 +37,9 @@ Use this skill at the beginning of every task analysis, plan creation, or before
 - Do not hard-code World Cup.
 - World Cup is only the first use case.
 - Miraichi must remain competition-agnostic.
-- New application modules default to TypeScript. Do not add new `.js` implementation modules under `apps/*/src` or `packages/*/src` when a `.ts` module is viable. JavaScript is allowed only for existing legacy files, package/runtime entry bridges, or scripts with an explicit compatibility reason.
+- New application modules default to TypeScript.
+- New application and package implementation modules default to TypeScript. Do not add new `.js` implementation modules under `apps/*/src` or `packages/*/src` when a `.ts` module is viable. JavaScript is allowed only for existing legacy files, service workers, package/runtime entry bridges, or scripts with an explicit compatibility reason.
+- Do not perform bulk JavaScript-to-TypeScript migration. Existing JavaScript may migrate only through an approved slice that identifies exact files, tests, and verification commands.
 
 ## What Not to Do
 - Never accept a task to write functional API route handlers or UI view code.
