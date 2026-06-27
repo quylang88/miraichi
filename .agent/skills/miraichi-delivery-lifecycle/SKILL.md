@@ -9,7 +9,7 @@ description: Use when planning, coding, testing, staging, releasing, or maintain
 
 Treat Miraichi like a real production project:
 
-`plan -> implementation plan -> code slice with TDD -> full integration -> staging -> phase closeout -> next phase`
+`plan -> implementation plan -> code slice with TDD -> full integration -> staging -> quality-up ui-ux-improve when owner requests it -> phase closeout -> next phase`
 
 Formal owner feedback and production promotion are final-release gates, not mandatory after every intermediate phase. Intermediate phases must still produce evidence and a next-phase recommendation.
 
@@ -31,12 +31,17 @@ No phase may skip its exit gate. A fast shortcut that removes evidence is a brok
 | `phase:implementation-plan <approved spec>` | Task breakdown into small TDD code slices | Every slice has exact files, failing unit test, implementation step, and verification command |
 | `phase:code-slice <task>` | One small implementation slice | Failing unit test observed, minimal code written, unit test passes, relevant local checks pass; do not run integration or endpoint E2E unless this slice closes a large feature boundary |
 | `phase:integration-test` | Full local and cross-boundary verification after a large feature boundary is complete | `pnpm run verify:local` and `pnpm run test:integration` pass |
-| `phase:staging` | Staging deployment and staging smoke checks | `pnpm run verify:release` passes and staging target is configured; otherwise fail fast |
+| `phase:staging` | Staging deployment and staging smoke checks | `pnpm run verify:staging` passes, which includes `verify:release` and a fresh static artifact build; staging target is configured; otherwise fail fast |
+| `phase:quality-up ui-ux-improve <scope>` | Owner-requested UI/UX polish, visible copy cleanup, redundant control removal, and small interaction fixes after staging feedback | Targeted tests pass, `pnpm run verify:staging` passes, staging is redeployed, and staging smoke evidence is refreshed |
 | `phase:owner-feedback` | Final-release owner review, or an explicit owner-requested review checkpoint | Owner gives explicit approval or requested changes become new lifecycle work |
 | `phase:production` | Final-release production promotion | All planned phases for the release are complete, staging smoke passed, owner approval is explicit, rollback path is known |
 | `phase:maintenance <change>` | Bugfixes and extensions after release | Same lifecycle as normal work; no hotfix bypass |
 
 ## Mandatory Gates
+
+### Implementation Plan Handoff
+
+After creating or updating a `phase:implementation-plan`, save the detailed plan to the appropriate repository document and return only a concise chat summary: plan path, goal, 3-5 slice names, blocked/forbidden scope, and the recommended next lifecycle command. Do not paste the full plan into chat unless the owner explicitly asks for it.
 
 ### Before Coding
 
@@ -97,10 +102,22 @@ pnpm run verify:release
 
 Do not deploy to staging unless it passes.
 
+### Staging Verification
+
+Run:
+
+```bash
+pnpm run verify:staging
+```
+
+This command must run release verification and then rebuild `apps/web/dist`. Do not run staging smoke checks or Cloudflare Pages deployment from a stale artifact.
+
 ## Staging And Production
 
 - If no staging target is configured, stop and report the missing target. Do not pretend a deploy happened.
+- Staging deploys must use `pnpm run deploy:staging` or an equivalent command that runs `pnpm run verify:staging` immediately before `wrangler pages deploy`.
 - Staging must produce a phase closeout pack: changed scope, test evidence, staging URL or explicit missing-target reason, known risks, and the recommended next phase.
+- If the owner requests UI/UX or small functional corrections after staging, run `phase:quality-up ui-ux-improve` before closing the phase or recommending final review.
 - Intermediate phases do not automatically enter `phase:owner-feedback` or `phase:production`.
 - Production requires all planned release phases to be complete and explicit owner approval after final-release review. Local pass or intermediate staging pass alone is not production approval.
 - Maintenance and feature expansion must start again at `phase:plan` or `phase:code-slice`, depending on whether the owner already approved the exact change.
@@ -109,6 +126,7 @@ Do not deploy to staging unless it passes.
 
 - Do not recommend `phase:owner-feedback` after an intermediate phase unless the owner explicitly asks for a review checkpoint.
 - Do not recommend `phase:production` until the project plan marks all planned release phases complete or explicitly out of scope.
+- Do not recommend `phase:production` while owner-requested `phase:quality-up ui-ux-improve` work is pending.
 - Phase closeout responses must still recommend the next phase and list any owner decisions that would block that next phase.
 - Guardrail-sensitive decisions remain blocked without explicit owner direction even when formal owner review is deferred. This includes business logic, prediction algorithms, betting calculations, real provider selection, cloud sync, auth, production database schemas, paid infrastructure, and secrets.
 
@@ -119,10 +137,11 @@ Do not deploy to staging unless it passes.
 - New tests for TypeScript modules must use `*.test.ts`.
 - Integration suites belong in `tests/integration/` unless an existing `scripts/*integration*` verifier is intentionally kept as an orchestrated phase check.
 - E2E browser or user-flow suites belong in `tests/e2e/`.
-- Miraichi uses gradual TypeScript adoption. Do not migrate the whole repo in one pass; prefer TypeScript first for shared contracts, config, validators, and pure domain helpers.
+- Miraichi uses TypeScript-first adoption with gradual TypeScript hardening as the default after the owner-approved repo-wide JavaScript-to-TypeScript migration. `gradual TypeScript` now means tightening types and reducing boundary `any`, not adding new tracked JavaScript source.
 - New app modules must be TypeScript-first.
-- New app/package implementation modules must be TypeScript-first. Existing JavaScript files may stay JavaScript until an approved migration slice, but new `apps/*/src` and `packages/*/src` components, services, config, validators, pure helpers, contracts, and tests must use `.ts` / `*.test.ts` unless the file is a legacy runtime bridge with a documented reason.
-- A JavaScript migration slice must name the exact files being migrated, the tests that prove behavior did not change, and the verification command. Do not rename `.js` files to `.ts` as opportunistic cleanup.
+- New app/package/script implementation modules must be TypeScript-first. New tracked implementation source under `apps/`, `packages/`, and `scripts/` must use `.ts` / `*.test.ts` unless the owner explicitly approves a compatibility exception.
+- Browser `.js` URLs and generated static `.js` artifacts may remain when they are compatibility surfaces backed by TypeScript source and covered by verification.
+- A JavaScript migration slice must name the files or file groups being migrated, the tests that prove behavior did not change, and the verification command. Do not rename `.js` files to `.ts` as opportunistic cleanup.
 - New or modified behavior needs meaningful unit coverage, not only integration smoke coverage.
 - Coverage target for new/changed code is 80% as a review gate. Do not fake global repo coverage while legacy files are still untested.
 - Integration tests do not replace unit tests.

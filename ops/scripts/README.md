@@ -7,7 +7,7 @@ Exposes terminal actions for cleanups, migrations, and local verification steps.
 
 ## Status
 - **Status**: Draft
-- **Review Status**: Deferred until Phase 6 planning.
+- **Review Status**: Phase 6 planning active; implementation pending owner approval.
 
 ## Scope
 Developer scripts, database initialization runners, and environment setup commands.
@@ -17,4 +17,5 @@ Developer scripts, database initialization runners, and environment setup comman
 - Document inputs and requirements inside each script header.
 
 ## TODO / Next Steps
-- [ ] Implement initial monorepo checkout validator script.
+- [ ] Review `ops/PHASE-6-TESTING-DEPLOYMENT-HARDENING-PLAN.md`.
+- [ ] Keep new ops scripts out of scope until Phase 6 implementation planning names exact files and verification commands.

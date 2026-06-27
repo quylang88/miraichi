@@ -80,4 +80,4 @@ Phase 5.11 staging passed.
 
 Do not proceed to `phase:owner-feedback` or `phase:production` for this intermediate phase. Formal owner-feedback and production promotion are deferred until all planned release phases are complete or explicitly removed from scope.
 
-Earliest safe next action: `phase:plan Phase 6 Testing/Deployment Hardening`.
+Earliest safe next action after the owner-requested post-staging feedback: `phase:quality-up ui-ux-improve Phase 5.12 Owner Requested Shell Cleanup`.

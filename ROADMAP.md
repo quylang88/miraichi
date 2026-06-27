@@ -43,7 +43,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Establish PWA shell caching and mobile-first responsive layout.
 - Run basic agent coordination scenarios.
 
-### Milestone 6: Betting Accounts & Bankroll Strategy Planning (Active)
+### Milestone 6: Betting Accounts & Bankroll Strategy Planning (Completed)
 - Establish specifications for simulated wagers, history, reports, and limits.
 - Formulate adapter contracts for owner-controlled betting logic.
 - Accept Phase 5.2 Wave A foundation ADRs and ADR-0034 as architecture/planning boundaries only.
@@ -58,13 +58,22 @@ Outlines high-level roadmap milestones across multiple phases.
 - Complete document status hygiene before Phase 5.10.
 - Complete owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
 - Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices for shared contracts, form state, memory persistence, IndexedDB persistence, and versioned draft backup/import helpers.
+- Complete Phase 5.12 owner-requested UI/UX quality-up, staging redeploy, and Phase 5 closeout.
 
-### Milestone 7: Real Data Provider, Dataset, and Evaluation Planning (Future)
+### Milestone 7: Testing/Deployment Hardening (Active Implementation)
+- Plan CI/CD workflow hardening and staging deployment automation.
+- Plan security and secrets checks without committing credentials.
+- Draft repeatable smoke-check automation, rollback notes, and monitoring plans.
+- Complete the owner-approved repo-wide JavaScript-to-TypeScript source migration while preserving browser `.js` compatibility URLs.
+- Keep production promotion blocked until final-release owner approval.
+
+### Milestone 8: Real Data Provider, Dataset, and Evaluation Planning (Future)
 - Plan real data provider selection and dataset boundaries.
+- Use full FIFA World Cup fixture coverage as the first provider target if accepted, while keeping the ingestion adapter competition-agnostic.
 - Define model evaluation criteria before any real training.
 - Keep provider choice, datasets, and evaluation gates under owner-approved ADRs.
 
-### Milestone 8: Model Training and Prediction Engine R&D (Future)
+### Milestone 9: Model Training and Prediction Engine R&D (Future)
 - Begin real model training research only after Phase 7 planning is accepted.
 - Draft prediction algorithm and model runtime ADRs before implementation.
 - Keep betting recommendation and stake advice separate from prediction model R&D.
@@ -101,5 +110,14 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Run `phase:staging Phase 5.11` and record closeout evidence before the next phase.
 - [x] Create/link Cloudflare Pages project `miraichi-staging`, deployment token, Pages URL, and smoke-check evidence.
 - [x] Defer formal owner-feedback and production promotion until all planned release phases are complete.
-- [ ] Start `phase:plan Phase 6 Testing/Deployment Hardening`.
-- [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.
+- [x] Complete `phase:quality-up ui-ux-improve Phase 5.12 Owner Requested Shell Cleanup` staging redeploy before Phase 5 closeout.
+- [x] Close Phase 5 with staging smoke evidence and recommend Phase 6 planning.
+- [x] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
+- [x] Owner review Phase 6 Testing/Deployment Hardening Plan before implementation planning.
+- [x] Create `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`.
+- [x] Owner review Phase 6 CI/CD and Staging Smoke Automation implementation plan before `phase:code-slice`.
+- [x] Complete `phase:code-slice Phase 6 staging smoke-check script`.
+- [x] Complete `phase:code-slice Phase 6 CI check workflow`.
+- [x] Complete owner-requested `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration`.
+- [ ] Run `phase:staging Phase 6 hardened staging process` to deploy the refreshed TypeScript-sourced static artifact and record new smoke evidence.
+- [ ] Keep real AI training out of Phase 6; reserve it for future Phase 7 and Phase 8 planning.

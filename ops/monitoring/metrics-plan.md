@@ -7,15 +7,16 @@ Establishes the key performance indicators (KPIs) to monitor.
 
 ## Status
 - **Status**: Draft
-- **Review Status**: Deferred until Phase 6 planning.
+- **Review Status**: Phase 6 planning active; metrics provider pending owner approval.
 
 ## Scope
 Tracks routes latency, database connections pools, worker task sizes, and AI model predictions confidence accuracy.
 
 ## Standard Metrics
-- **API**: HTTP Request duration, active db connections, error rate.
-- **Worker**: Jobs count in queue, retry ratios, execution time.
-- **AI**: Inference time, probability calibration score.
+- **Web/PWA Staging**: HTTP availability, service worker cache marker, smoke-check pass rate.
+- **API**: HTTP request duration, active db connections, error rate after API staging is approved.
+- **Worker**: Jobs count in queue, retry ratios, execution time after worker staging is approved.
+- **AI**: Inference time and calibration metrics only after real model evaluation planning is approved.
 
 ## TODO / Next Steps
-- [ ] Connect Prometheus metrics exporter client specs.
+- [ ] Keep backend, database, and model metrics draft-only until their staging targets are approved.

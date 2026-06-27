@@ -22,6 +22,13 @@ const icons = Object.freeze({
   up: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 14 6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 });
 
+export function getTodayDateTileParts(date = new Date()): { readonly day: string; readonly month: string } {
+  return {
+    day: String(date.getDate()),
+    month: new Intl.DateTimeFormat('en-US', { month: 'short' }).format(date).toUpperCase()
+  };
+}
+
 function getScreenClass(tabId: ProductionNavigationTabId, activeTabId: ProductionNavigationTabId): string {
   return tabId === activeTabId ? 'screen active' : 'screen';
 }
@@ -74,13 +81,15 @@ function renderScreenHeader({
 }
 
 function renderTodayPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction): string {
+  const todayDateTile = getTodayDateTileParts();
+
   return `
     <section class="${getScreenClass('today', activeTabId)}" id="screen-today" data-shell-tab-panel="today" aria-labelledby="today-title">
       ${renderScreenHeader({
         label: translate('today.eyebrow', 'Today command center'),
         title: translate('today.title', 'Today'),
         titleId: 'today-title',
-        aside: '<div class="date-tile" aria-label="Phase 5.9"><span class="date-day">5.9</span><span class="date-month">PWA</span></div>'
+        aside: `<div class="date-tile" aria-label="Current date ${todayDateTile.day} ${todayDateTile.month}"><span class="date-day">${todayDateTile.day}</span><span class="date-month">${todayDateTile.month}</span></div>`
       })}
 
       <div class="summary-list" aria-label="Today summary">
@@ -93,7 +102,7 @@ function renderTodayPanel(activeTabId: ProductionNavigationTabId, translate: Tra
         ${renderSummaryRow({
           icon: icons.bookmark,
           title: 'Watchlist',
-          meta: 'Mock matches saved for later',
+          meta: 'Matches saved for later',
           value: '4'
         })}
         ${renderSummaryRow({
@@ -208,12 +217,6 @@ function renderMatchesPanel(activeTabId: ProductionNavigationTabId, translate: T
         ${renderMatchRow('Team Gamma vs Team Delta', '21:30 &middot; Totals &middot; watchlist', 'Kickoff 21:30 (Mkt) &middot; matchGroupId: group-gamma-delta')}
       </div>
 
-      <div class="date-group">
-        <div class="group-label">Next group</div>
-        ${renderMatchRow('Team Echo vs Team Foxtrot', '15:00 &middot; Market 1X2 &middot; no draft', 'Kickoff 15:00 (Mkt) &middot; matchGroupId: group-echo-foxtrot')}
-        ${renderMatchRow('Team North vs Team South', '19:45 &middot; Totals &middot; mock fixture', 'Kickoff 19:45 (Mkt) &middot; matchGroupId: group-north-south')}
-      </div>
-
       <div class="empty-state" id="matches-empty">No generic matches match this search.</div>
     </section>
   `;
@@ -242,13 +245,6 @@ function renderBetsPanel(activeTabId: ProductionNavigationTabId, translate: Tran
         titleId: 'bets-title'
       })}
 
-      <div class="action-row">
-        <button class="primary-button add-inline" type="button" data-open-match data-match-title="Team Alpha vs Team Beta" data-match-meta="Kickoff 18:00 (Mkt) &middot; matchGroupId: group-alpha-beta">
-          ${icons.plus}
-          Choose Match to Add
-        </button>
-      </div>
-
       <div class="segmented three" role="tablist" aria-label="Bet record filter">
         <button class="active" type="button">Ongoing</button>
         <button type="button">Drafts</button>
@@ -258,7 +254,6 @@ function renderBetsPanel(activeTabId: ProductionNavigationTabId, translate: Tran
       <div class="stack">
         ${renderBetRow('Team Alpha win', 'Ongoing &middot; Team Alpha vs Team Beta &middot; Odds 2.10 &middot; Stake 100 pts', '<button class="text-button" type="button" data-open-edit data-edit-title="Team Alpha win">Edit</button>')}
         ${renderBetRow('Totals draft', 'Team Gamma vs Team Delta &middot; Needs market confirmation', '<button class="text-button" type="button" data-open-edit data-edit-title="Totals draft">Edit</button>')}
-        ${renderBetRow('Settled manual record', 'Team Echo vs Team Foxtrot &middot; Settled &middot; review-only shell', '<button class="text-button" type="button" data-open-sheet="review" data-review-only data-review-title="Team Echo vs Team Foxtrot">Review</button>')}
         <article class="note-card warning">
           <div class="note-eyebrow">Boundary</div>
           <div class="note-title">Ongoing records can be edited here; settled records are review-only in this shell.</div>
@@ -351,7 +346,7 @@ function renderBankrollPanel(activeTabId: ProductionNavigationTabId, translate: 
 
       <div class="points-grid">
         ${renderPointsRow('Current points', '24,500 pts', 'Static')}
-        ${renderPointsRow('Source', 'Manual ledger', 'Mock')}
+        ${renderPointsRow('Source', 'Manual ledger', 'Manual')}
         ${renderPointsRow('Formula status', 'Not run', 'Blocked')}
       </div>
 
@@ -576,22 +571,6 @@ export function renderAppShell({
   return `
     <div class="production-page">
       <div class="app-shell" data-production-shell="phase-5-9" data-production-baseline="black-apple-ledger" aria-label="Miraichi Black Apple Ledger production shell">
-        <header class="top-bar">
-          <a class="brand" href="/" aria-label="Miraichi home">
-            <span class="brand-mark" aria-hidden="true">M</span>
-            <span class="brand-copy">
-              <span class="brand-name">Miraichi</span>
-              <span class="brand-meta">${escapeHtml(translate('shell.subtitle', 'Black Apple Ledger Shell'))}</span>
-            </span>
-          </a>
-          <div class="status-chip" aria-label="Production shell status">
-            <span class="status-dot" aria-hidden="true"></span>
-            Shell
-          </div>
-        </header>
-
-        <div class="notice" data-add-bet-boundary="planned">Production shell. Static generic data. No storage, no formulas, no recommendations.</div>
-
         <main class="main-scroll" id="main-scroll" data-active-tab="${escapeHtml(safeActiveTabId)}" aria-label="${escapeHtml(activeTab.fallbackDescription)}">
           ${panels}
           ${renderMatchDetailPanel()}

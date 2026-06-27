@@ -37,12 +37,13 @@ Directly plans tests suites layout and runtime checks.
 
 ## TypeScript Test Direction
 - ADR-0034 defines TypeScript as the gradual technical direction for typed contracts and domain boundaries.
-- Do not perform a big-bang migration. Existing `.test.js` files stay valid until their source module is migrated or the test file is being materially changed.
+- Do not perform an unapproved big-bang migration. The owner-approved Phase 6 repo-wide migration moved tracked implementation source under `apps/`, `packages/`, and `scripts/` to TypeScript; future work must keep that source TypeScript-first.
+- The `*.test.{js,ts}` pattern remains documented for historical compatibility and external test discovery, but new or modified Miraichi source tests must use `*.test.ts`.
 - New tests for TypeScript modules must use `*.test.ts`.
 - New app modules must be TypeScript-first.
-- New app/package implementation modules must be TypeScript-first. For new `apps/*/src` and `packages/*/src` implementation code, write `.ts` modules and colocated `*.test.ts` tests unless the file is an explicit legacy runtime bridge.
-- Prefer `.ts` for new shared contracts, config, validators, and pure domain helpers. App routes and runtime entrypoints migrate later after their lower-level contracts are stable.
-- A JavaScript migration slice must identify exact files, expected behavior-preservation tests, and the verification command before renaming files.
+- New app/package/script implementation modules must be TypeScript-first. For new `apps/`, `packages/`, and `scripts/` implementation code, write `.ts` modules and colocated `*.test.ts` tests unless the owner explicitly approves a compatibility exception.
+- Browser `.js` URLs and generated static `.js` artifacts may remain when backed by TypeScript source and covered by verification.
+- A future JavaScript migration slice must identify exact files or file groups, expected behavior-preservation tests, runtime strategy, and the verification command before renaming files.
 - If a future build bundles application code, exclude `*.test.{js,ts}` from production artifacts explicitly.
 
 ## TODO / Next Steps

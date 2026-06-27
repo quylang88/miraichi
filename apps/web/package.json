@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node src/index.js",
-    "start": "node src/index.js",
-    "build:static": "node scripts/build-static.js",
+    "dev": "tsx src/index.ts",
+    "start": "tsx src/index.ts",
+    "build:static": "tsx scripts/build-static.ts",
     "test": "vitest run",
     "test:unit": "vitest run",
     "test:unit:coverage": "vitest run --coverage",
-    "lint": "node ../../scripts/check-js-syntax.js ."
+    "lint": "tsx ../../scripts/check-js-syntax.ts ."
   },
   "dependencies": {
     "@miraichi/shared": "workspace:*",

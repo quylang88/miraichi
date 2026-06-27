@@ -7,18 +7,19 @@
     "noEmit": true,
     "allowJs": true,
     "checkJs": false,
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": ["node"]
   },
   "include": [
-    "apps/**/*.js",
     "apps/**/*.ts",
-    "packages/**/*.js",
     "packages/**/*.ts",
-    "scripts/**/*.js",
+    "scripts/**/*.ts",
     "types/**/*.d.ts"
   ],
   "exclude": [

@@ -7,15 +7,15 @@ Establishes the severity levels and pager routing for exceptions.
 
 ## Status
 - **Status**: Draft
-- **Review Status**: Deferred until Phase 6 planning.
+- **Review Status**: Phase 6 planning active; alert routing pending owner approval.
 
 ## Scope
 Directly plans pager channels and alert parameters.
 
 ## Alerting Levels
-- **P1 - Critical**: API down, DB connections failed (pages on-call dev).
-- **P2 - Warning**: Queue size exceeded, local-ai inference latency > 5s (sends slack notice).
-- **P3 - Info**: Minor sync anomalies (logs only).
+- **P1 - Critical**: Staging smoke check cannot load the web/PWA shell after deployment.
+- **P2 - Warning**: Service worker marker mismatch or manifest unavailable on staging.
+- **P3 - Info**: Manual QA finding or non-blocking console warning.
 
 ## TODO / Next Steps
-- [ ] Configure alert trigger logic with monitoring systems.
+- [ ] Decide whether alerts stay manual in Phase 6 or use a provider after owner approval.

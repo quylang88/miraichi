@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lifecycle verification
+        run: pnpm run verify:lifecycle
+
+      - name: Unit tests
+        run: pnpm run test:unit
+
+      - name: JavaScript syntax check
+        run: pnpm run lint
+
+      - name: TypeScript typecheck
+        run: pnpm run typecheck
+
+      - name: Guardrail audit
+        run: pnpm run audit

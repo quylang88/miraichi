@@ -7,7 +7,7 @@ Ensures that developers and staging runners execute applications in identical ru
 
 ## Status
 - **Status**: Draft
-- **Review Status**: Deferred until Phase 6 planning.
+- **Review Status**: Phase 6 planning active; container implementation deferred.
 
 ## Scope
 Directly maps out Dockerfiles, compose files, and registry tags strategies.
@@ -17,4 +17,4 @@ Directly maps out Dockerfiles, compose files, and registry tags strategies.
 - Do not store environment passwords or variables keys directly inside Docker images.
 
 ## TODO / Next Steps
-- [ ] Establish initial docker-compose configuration stub.
+- [ ] Decide whether Docker remains planning-only until API, worker, and local-ai staging targets are approved.

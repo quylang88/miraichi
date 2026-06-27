@@ -312,7 +312,7 @@ appRoot.addEventListener('submit', (event) => {
   if (saveDraftShell?.disabled) {
     return;
   }
-  setText('add-feedback', 'Shell only: mock draft validated, no data saved.');
+  setText('add-feedback', 'Shell only: draft validated, no data saved.');
 });
 
 document.addEventListener('keydown', (event) => {

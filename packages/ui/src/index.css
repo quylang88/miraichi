@@ -585,11 +585,18 @@ svg {
 
 .main-scroll {
   flex: 1 1 auto;
+  margin-right: -18px;
   min-height: 0;
   overflow-y: auto;
-  padding: 18px 16px;
-  scrollbar-color: var(--surface-3) transparent;
+  padding: 18px 34px 18px 16px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
   z-index: 1;
+}
+
+.main-scroll::-webkit-scrollbar {
+  height: 0;
+  width: 0;
 }
 
 .screen {
@@ -1470,7 +1477,7 @@ svg {
 @media (max-width: 360px) {
   .main-scroll {
     padding-left: 12px;
-    padding-right: 12px;
+    padding-right: 30px;
   }
 
   .top-bar,
