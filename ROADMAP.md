@@ -57,7 +57,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Complete Phase 5.9 Production PWA Shell Implementation using TypeScript-first shell modules and production-baseline Black Apple Ledger structure.
 - Complete document status hygiene before Phase 5.10.
 - Complete owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
-- Start Phase 5.11 as Local-First Add Bet Draft Persistence Implementation Planning before any code slice.
+- Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices for shared contracts, form state, memory persistence, IndexedDB persistence, and versioned draft backup/import helpers.
 
 ### Milestone 7: Real Data Provider, Dataset, and Evaluation Planning (Future)
 - Plan real data provider selection and dataset boundaries.
@@ -95,5 +95,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Complete Phase 1, Phase 3, Phase 4, app/package, and ops docs hygiene slices.
 - [x] Complete owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
 - [x] Create Phase 5.11 Local-First Add Bet Draft Persistence Implementation Plan.
-- [ ] Owner review Phase 5.11 implementation plan before `phase:code-slice`.
+- [x] Owner review Phase 5.11 implementation plan before `phase:code-slice`.
+- [x] Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices.
+- [ ] Run `phase:integration-test Phase 5.11` before staging or owner-feedback promotion.
 - [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.

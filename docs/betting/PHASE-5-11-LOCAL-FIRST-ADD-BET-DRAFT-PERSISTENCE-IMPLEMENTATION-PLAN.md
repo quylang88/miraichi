@@ -4,7 +4,7 @@
 
 **Goal:** Build the first local-first Add Bet draft persistence boundary without formulas, APIs, cloud sync, auth, production schemas, or real betting-history settlement behavior.
 
-**Architecture:** Phase 5.11 starts with shared TypeScript contracts, then adds web-local form state, an in-memory adapter for deterministic tests, an IndexedDB adapter for browser persistence, and JSON backup helpers for draft payloads. Storage remains behind an adapter boundary so future storage changes do not leak into UI or domain logic.
+**Architecture:** Phase 5.11 starts with shared TypeScript contracts, then adds web-local form state, an in-memory adapter for deterministic tests, an IndexedDB adapter for browser persistence, and JSON backup/import helpers for draft payloads. Storage remains behind an adapter boundary so future storage changes do not leak into UI or domain logic.
 
 **Tech Stack:** TypeScript, Vitest, pnpm workspaces, browser IndexedDB, `fake-indexeddb` for unit tests.
 
@@ -48,8 +48,8 @@ Create:
 * `apps/web/src/features/add-bet-draft/add-bet-draft-memory-adapter.test.ts` - Memory adapter tests.
 * `apps/web/src/features/add-bet-draft/add-bet-draft-indexeddb-adapter.ts` - IndexedDB adapter.
 * `apps/web/src/features/add-bet-draft/add-bet-draft-indexeddb-adapter.test.ts` - IndexedDB adapter tests with `fake-indexeddb`.
-* `apps/web/src/features/add-bet-draft/add-bet-draft-backup.ts` - Versioned JSON export/parse helpers for draft backups.
-* `apps/web/src/features/add-bet-draft/add-bet-draft-backup.test.ts` - Backup helper tests.
+* `apps/web/src/features/add-bet-draft/add-bet-draft-backup.ts` - Versioned JSON export, parse, and conflict-safe import helpers for draft backups.
+* `apps/web/src/features/add-bet-draft/add-bet-draft-backup.test.ts` - Backup/import helper tests.
 
 Modify:
 
@@ -1022,7 +1022,7 @@ If `auto_commit: false`: skip commit and print `Skipping commit (auto_commit: fa
 
 ---
 
-## 7. Task 5: Draft Backup JSON Helpers
+## 7. Task 5: Draft Backup/Import JSON Helpers
 
 **Files:**
 
@@ -1382,7 +1382,7 @@ Spec coverage:
 * Form-state fields: Task 2.
 * Persistence adapter boundary: Tasks 3 and 4.
 * IndexedDB implementation direction: Task 4.
-* Backup JSON versioning and malformed/unsupported schema rejection: Task 5.
+* Backup/import JSON versioning, malformed/unsupported schema rejection, and conflict-safe import without silent overwrite: Task 5.
 * No formulas, schemas, APIs, auth, cloud sync, or prediction logic: Sections 1, 10, and Task 7.
 
 Placeholder scan:
