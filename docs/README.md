@@ -9,6 +9,7 @@ Central index for cross-cutting Miraichi documentation. Do not move module-speci
 - Owner gates: `docs/governance/OWNER-DECISION-GATES.md`
 - Document status taxonomy: `docs/governance/DOCUMENT-STATUS-TAXONOMY.md`
 - Docs status hygiene review: `docs/governance/DOCS-STATUS-HYGIENE-REVIEW.md`
+- Phase 5 closeout review: `docs/betting/PHASE-5-CLOSEOUT-REVIEW.md`
 
 ## Application Docs
 - API architecture: `apps/api/docs/api-architecture.md`

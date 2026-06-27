@@ -4,7 +4,7 @@
 Record the owner-requested Phase 5.12 UI/UX quality-up before Phase 5 closeout.
 
 ## Status
-- **Status**: In Progress - Local and Release Verification Passed, Staging Redeploy Pending Authenticated Wrangler Session
+- **Status**: Completed - Staging Redeployed and Smoke-Checked
 
 ## Scope
 This phase improves the existing web/PWA shell after staging feedback. It does not approve production, does not perform final owner review, does not add real match providers, does not create API routes, does not create production schemas, and does not add betting formulas, prediction logic, recommendation ranking, auth, cloud sync, or secrets.
@@ -32,6 +32,7 @@ pnpm exec vitest run apps/web/src/pwa/register-service-worker.test.js
 pnpm run pwa:verify
 pnpm run verify:release
 pnpm run verify:staging
+pnpm run deploy:staging:local
 ```
 
 Release verification result:
@@ -75,25 +76,27 @@ Localhost cache note:
 
 ## Staging Redeploy
 
-Staging redeploy is still pending because the current agent session is not authenticated with Cloudflare Wrangler:
+Staging redeploy passed after the owner configured Cloudflare credentials outside the repository.
 
 ```powershell
-pnpm dlx wrangler whoami
+pnpm run deploy:staging:local
 ```
 
 Result:
 
 ```text
-You are not authenticated. Please run `wrangler login`.
+Deployment complete: https://e9b19946.miraichi-staging.pages.dev
 ```
 
-Required owner-terminal command after setting Cloudflare credentials:
+Smoke evidence captured on 2026-06-27:
 
-```powershell
-pnpm run deploy:staging
-```
-
-After deploy, smoke-check the returned Pages URL before Phase 5 closeout.
+| URL | Result |
+| :--- | :--- |
+| `https://e9b19946.miraichi-staging.pages.dev/` | HTTP 200; root shell contains `Miraichi`, `shell-entry`, and `app-root`. |
+| `https://e9b19946.miraichi-staging.pages.dev/manifest.webmanifest` | HTTP 200; manifest name is `Miraichi`. |
+| `https://e9b19946.miraichi-staging.pages.dev/service-worker.js` | HTTP 200; contains `miraichi-shell-v5-phase-5-12-quality-up`. |
+| `https://e9b19946.miraichi-staging.pages.dev/apps/web/src/shell-entry.js` | HTTP 200; contains `renderAppShell`. |
+| `https://e9b19946.miraichi-staging.pages.dev/packages/ui/src/index.css` | HTTP 200; contains `main-scroll`. |
 
 ## Match Data Source Decision
 
@@ -108,4 +111,4 @@ Recommended future data path:
 
 ## Conclusion
 
-Phase 5.12 local quality-up is implemented and verified locally. Phase 5 cannot close until the updated static artifact is redeployed to Cloudflare Pages staging and staging smoke evidence is refreshed.
+Phase 5.12 quality-up is implemented, verified locally, redeployed to Cloudflare Pages staging, and smoke-checked. This satisfies the Phase 5.12 closeout gate for Phase 5.
