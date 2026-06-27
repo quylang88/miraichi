@@ -24,7 +24,8 @@ Client UI layout, spacing, accessibility, responsiveness, and v1 interaction rul
 ## Navigation Rules
 - On mobile, navigation should behave like a persistent app navigation surface with the five v1 destinations.
 - `Add Bet` is a primary action, not a navigation destination.
-- The `Today` view is the default daily operating surface.
+- The `Today` view is the default read-first daily snapshot surface for points, matches, and market context.
+- Match detail is a sub-view under `Today`, `Matches`, or `Bets`, not a sixth primary tab.
 - Do not introduce calendar-first navigation in v1.
 - Do not introduce native wrapper assumptions, native-only gestures, or app-store packaging requirements in the web UI spec.
 
@@ -37,10 +38,13 @@ Client UI layout, spacing, accessibility, responsiveness, and v1 interaction rul
 - Filtering must narrow the list without changing the primary date and match-group hierarchy.
 
 ## Add Bet Rules
-- `Add Bet` must be the fastest visible action from the main app shell, the `Today` flow, and the `Bets` surface.
+- `Add Bet` must remain fast, but it should not be exposed directly from the `Today` snapshot surface.
 - The Add flow is manual-first. AI must not auto-create bet records.
 - The primary save/submit action must remain disabled until required fields are valid.
 - Market presets may use pills, but manual entry must remain available where the Phase 5 boundary requires it.
+- Add Bet forms must be scoped to a selected match group before entry. Do not use a large global match dropdown inside the Add Bet form.
+- Top-level `Bets` can expose a fast add action, but that action must open a match chooser/detail path before showing the Add Bet form.
+- Ongoing and draft records may expose edit controls. Settled records should be review-only unless a later owner-approved correction/reopen flow exists.
 
 ## Visual and Accessibility Rules
 - Style using Vanilla CSS; reference `packages/ui` design tokens when available.

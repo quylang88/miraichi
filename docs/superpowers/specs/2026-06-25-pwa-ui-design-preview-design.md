@@ -3,6 +3,7 @@
 * **Date**: 2026-06-26
 * **Phase**: 5.7A
 * **Status**: Updated - Option E Black Apple Ledger Selected
+* **Latest Update**: 2026-06-27 - Add Bet is match-scoped outside Today in the preview
 
 ---
 
@@ -43,15 +44,18 @@ Modularity rules:
   * Accent: restrained iOS-like blue `#0a84ff`.
   * Amber is allowed only for caution/boundary notes.
 * **Today Screen**:
-  * Compact header, date tile, summary rows, segmented filter, match ledger, assistant note, and Add Bet action.
+  * Compact header, date tile, summary rows, segmented filter, match snapshot, and assistant note.
+  * Today is read-first: quick points, match, and market context only. It must not expose direct Add Bet entry.
   * Summary copy must stay preview-safe: `Points snapshot`, `Manual ledger`, `No formula run`.
 * **Other Screens**:
-  * `Matches`: search/filter row and grouped generic match rows.
-  * `Bets`: manual drafts and static records only.
+  * `Matches`: search/filter row and grouped generic match rows with `Open` actions into a match detail sub-view.
+  * `Match Detail`: sub-view only, not a primary tab. Contains local `Bets` and `Info` segments, scoped `Add Bet`, and match context tied to `matchGroupId`.
+  * `Bets`: management surface for ongoing, draft, and settled records. Ongoing/draft records can show `Edit`; settled records are review-only in this preview.
   * `Bankroll`: points-only snapshot; no trend chart.
   * `Miraichi`: assistant inbox/context notes only.
 * **Sheets**:
-  * Add Bet sheet: compact fields, disabled save until mock-valid input, no storage.
+  * Add Bet sheet: compact fields scoped to the current match group, disabled save until mock-valid input, no storage, and no match selector dropdown.
+  * Edit sheet: preview-only ongoing/draft edit surface with no storage.
   * Review sheet: static draft details and boundary note.
 
 ---
@@ -98,6 +102,9 @@ Verify:
 
 * `preview.html` includes `Black Apple Ledger`.
 * `preview.html` includes `Today`, `Matches`, `Bets`, `Bankroll`, and `Miraichi`.
+* `preview.html` includes a match detail sub-view but does not add a sixth primary navigation tab.
+* `preview.html` does not include `id="match-field"`, `name="match-field"`, or `for="match-field"`.
+* `preview.html` does not include `data-primary-add` or `Add Bet via Match`.
 * `preview.html` does not include `Playfair Display`, `Potential Winnings`, `vs Yesterday`, or `Bankroll Balance`.
 * Mobile `390px x 844px` and desktop `1280px x 900px` have no clipped text or overlapping primary controls.
-* Tab switching, match expand/collapse, Add Bet sheet, and Review sheet work.
+* Tab switching, match expand/collapse, match detail opening, scoped Add Bet sheet, ongoing edit sheet, and Review sheet work.

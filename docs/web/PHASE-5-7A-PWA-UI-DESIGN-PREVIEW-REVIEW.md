@@ -44,11 +44,11 @@ The revised preview fixes the main weakness of the Modern Premium revision: it r
 The reviewed surface includes:
 
 * **Brand Header**: `Miraichi`, Black Apple Ledger preview label, and `Mock only` status chip.
-* **Today Screen**: Compact Today header, date tile, summary rows, segmented filters, and match ledger.
-* **Match Ledger**: Expandable rows using generic teams and static manual draft labels.
+* **Today Screen**: Compact Today header, date tile, summary rows, segmented filters, and read-first match snapshot.
+* **Match Snapshot**: Expandable rows using generic teams, market context, and links to match detail without direct Add Bet.
 * **All Primary Tabs**: `Today`, `Matches`, `Bets`, `Bankroll`, and `Miraichi`.
-* **Add Bet Sheet**: iOS-style bottom sheet with compact fields and disabled save until mock-valid input.
-* **Review Sheet**: Static draft details and boundary note.
+* **Add Bet Sheet**: Match-scoped iOS-style bottom sheet with compact fields, read-only match context, and disabled save until mock-valid input.
+* **Edit and Review Sheets**: Ongoing/draft edit preview and static review details with boundary notes.
 * **Assistant Surface**: Context-only copy, no advice language.
 
 ---

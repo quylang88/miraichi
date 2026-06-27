@@ -77,6 +77,50 @@ if (fs.existsSync(webServerPath)) {
   failed = true;
 }
 
+// 2b. Verify the preview keeps Add Bet scoped to a match group
+const previewPath = path.join(ROOT_DIR, 'apps/web/public/preview.html');
+if (fs.existsSync(previewPath)) {
+  const content = fs.readFileSync(previewPath, 'utf8');
+
+  const requiredPreviewMarkers = [
+    'id="screen-match-detail"',
+    'data-open-match',
+    'data-open-scoped-add',
+    'data-open-edit',
+    'data-review-only',
+    'id="match-summary-readonly"'
+  ];
+
+  for (const marker of requiredPreviewMarkers) {
+    if (!content.includes(marker)) {
+      console.error(`  ❌ Preview missing match-scoped marker: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Preview marker found: ${marker}`);
+    }
+  }
+
+  const forbiddenPreviewMarkers = [
+    'id="match-field"',
+    'name="match-field"',
+    'for="match-field"',
+    'data-primary-add',
+    'Add Bet via Match'
+  ];
+
+  for (const marker of forbiddenPreviewMarkers) {
+    if (content.includes(marker)) {
+      console.error(`  ❌ Preview still contains global match dropdown marker: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Preview omits global match dropdown marker: ${marker}`);
+    }
+  }
+} else {
+  console.error('  ❌ apps/web/public/preview.html not found.');
+  failed = true;
+}
+
 // 3. Verify no native iOS files exist
 const iosDir = path.join(ROOT_DIR, 'apps/ios');
 if (fs.existsSync(iosDir)) {

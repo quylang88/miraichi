@@ -359,6 +359,10 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
+    .segmented.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .segmented button {
       min-width: 0;
       min-height: 34px;
@@ -734,6 +738,59 @@
       white-space: nowrap;
     }
 
+    .row-actions {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .back-button {
+      margin: 0 0 12px;
+    }
+
+    .readonly-summary,
+    .match-context {
+      display: grid;
+      gap: 8px;
+      padding: 13px 14px;
+      border-radius: var(--radius-card);
+      background: var(--bg-raised);
+      border: 1px solid var(--line);
+    }
+
+    .match-context {
+      margin-bottom: 14px;
+    }
+
+    .context-line {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .context-label {
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 760;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .context-value {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 720;
+      line-height: 1.25;
+      text-align: right;
+    }
+
+    .detail-panel[hidden] {
+      display: none;
+    }
+
     .points-grid {
       display: grid;
       gap: 8px;
@@ -1014,11 +1071,12 @@
 
     @media (max-width: 520px) {
       .preview-page {
+        place-items: stretch start;
         padding: 0;
       }
 
       .app-shell {
-        width: 100vw;
+        width: min(100vw, 390px);
         height: 100dvh;
         min-height: 0;
         border: 0;
@@ -1112,7 +1170,7 @@
             <div>
               <p class="screen-label">Today command center</p>
               <h1 class="screen-title" id="today-title">Today</h1>
-              <p class="screen-subtitle">Manual journal work, grouped by date.</p>
+              <p class="screen-subtitle">Quick snapshot for points, matches, and market context.</p>
             </div>
             <div class="date-tile" aria-label="June 26">
               <span class="date-day">26</span>
@@ -1171,18 +1229,9 @@
             <button type="button">Market</button>
           </div>
 
-          <div class="action-row">
-            <button class="primary-button add-inline" type="button" data-open-sheet="add" data-primary-add="true">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-              </svg>
-              Add Bet
-            </button>
-          </div>
-
           <div class="section-heading">
-            <h2>Match Ledger</h2>
-            <span>Grouped by date</span>
+            <h2>Match Snapshot</h2>
+            <span>Markets today</span>
           </div>
 
           <div class="stack">
@@ -1194,11 +1243,14 @@
                     <span class="tag">Market 1X2</span>
                     <span class="tag amber">Pending</span>
                   </div>
-                  <button class="icon-button" type="button" data-toggle-match aria-expanded="true" aria-label="Collapse Team Alpha vs Team Beta">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path d="m6 14 6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </button>
+                  <div class="row-actions">
+                    <button class="text-button" type="button" data-open-match data-match-title="Team Alpha vs Team Beta" data-match-meta="Kickoff 18:00 (Mkt) · matchGroupId: group-alpha-beta">Open</button>
+                    <button class="icon-button" type="button" data-toggle-match aria-expanded="true" aria-label="Collapse Team Alpha vs Team Beta">
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="m6 14 6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 <h3 class="match-title">Team Alpha vs Team Beta</h3>
                 <p class="match-meta">Kickoff 18:00 (Mkt) · Pending: 1 journal row</p>
@@ -1206,10 +1258,10 @@
               <div class="ledger-detail">
                 <div class="ledger-row">
                   <div>
-                    <div class="ledger-title">Manual bet draft</div>
-                    <div class="ledger-meta">Type: Team Alpha win · Odds: 2.10 · Stake: 100 pts</div>
+                    <div class="ledger-title">Ongoing market note</div>
+                    <div class="ledger-meta">Team Alpha win · Odds: 2.10 · Pending journal row</div>
                   </div>
-                  <button class="text-button" type="button" data-open-sheet="review" data-review-title="Team Alpha vs Team Beta">Review</button>
+                  <button class="text-button" type="button" data-open-match data-match-title="Team Alpha vs Team Beta" data-match-meta="Kickoff 18:00 (Mkt) · matchGroupId: group-alpha-beta">Open</button>
                 </div>
                 <div class="ledger-row">
                   <div>
@@ -1228,11 +1280,14 @@
                     <span class="tag">Scheduled</span>
                     <span class="tag">Totals</span>
                   </div>
-                  <button class="icon-button" type="button" data-toggle-match aria-expanded="false" aria-label="Expand Team Gamma vs Team Delta">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path d="m6 10 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </button>
+                  <div class="row-actions">
+                    <button class="text-button" type="button" data-open-match data-match-title="Team Gamma vs Team Delta" data-match-meta="Kickoff 21:30 (Mkt) · matchGroupId: group-gamma-delta">Open</button>
+                    <button class="icon-button" type="button" data-toggle-match aria-expanded="false" aria-label="Expand Team Gamma vs Team Delta">
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="m6 10 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 <h3 class="match-title">Team Gamma vs Team Delta</h3>
                 <p class="match-meta">Kickoff 21:30 (Mkt) · Watchlist only</p>
@@ -1282,7 +1337,7 @@
                   <div class="row-title">Team Alpha vs Team Beta</div>
                   <div class="row-meta">18:00 · Market 1X2 · 1 pending row</div>
                 </div>
-                <button class="text-button" type="button" data-open-sheet="review" data-review-title="Team Alpha vs Team Beta">Review</button>
+                <button class="text-button" type="button" data-open-match data-match-title="Team Alpha vs Team Beta" data-match-meta="Kickoff 18:00 (Mkt) · matchGroupId: group-alpha-beta">Open</button>
               </div>
             </article>
             <article class="match-row" data-match-row>
@@ -1291,7 +1346,7 @@
                   <div class="row-title">Team Gamma vs Team Delta</div>
                   <div class="row-meta">21:30 · Totals · watchlist</div>
                 </div>
-                <span class="row-value">Static</span>
+                <button class="text-button" type="button" data-open-match data-match-title="Team Gamma vs Team Delta" data-match-meta="Kickoff 21:30 (Mkt) · matchGroupId: group-gamma-delta">Open</button>
               </div>
             </article>
           </div>
@@ -1304,7 +1359,7 @@
                   <div class="row-title">Team Echo vs Team Foxtrot</div>
                   <div class="row-meta">15:00 · Market 1X2 · no draft</div>
                 </div>
-                <span class="row-value">Open</span>
+                <button class="text-button" type="button" data-open-match data-match-title="Team Echo vs Team Foxtrot" data-match-meta="Kickoff 15:00 (Mkt) · matchGroupId: group-echo-foxtrot">Open</button>
               </div>
             </article>
             <article class="match-row" data-match-row>
@@ -1313,7 +1368,7 @@
                   <div class="row-title">Team North vs Team South</div>
                   <div class="row-meta">19:45 · Totals · mock fixture</div>
                 </div>
-                <span class="row-value">Open</span>
+                <button class="text-button" type="button" data-open-match data-match-title="Team North vs Team South" data-match-meta="Kickoff 19:45 (Mkt) · matchGroupId: group-north-south">Open</button>
               </div>
             </article>
           </div>
@@ -1324,15 +1379,24 @@
         <section class="screen" id="screen-bets" aria-labelledby="bets-title">
           <div class="screen-header">
             <div>
-              <p class="screen-label">Manual records</p>
+              <p class="screen-label">Record management</p>
               <h1 class="screen-title" id="bets-title">Bets</h1>
-              <p class="screen-subtitle">Mock records only. No payout or settlement math.</p>
+              <p class="screen-subtitle">Manage ongoing, draft, and settled mock records. New records are added through a match.</p>
             </div>
           </div>
 
+          <div class="action-row">
+            <button class="primary-button add-inline" type="button" data-open-match data-match-title="Team Alpha vs Team Beta" data-match-meta="Kickoff 18:00 (Mkt) · matchGroupId: group-alpha-beta">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+              Choose Match to Add
+            </button>
+          </div>
+
           <div class="segmented three" role="tablist" aria-label="Bet record filter">
-            <button class="active" type="button">Drafts</button>
-            <button type="button">Pending</button>
+            <button class="active" type="button">Ongoing</button>
+            <button type="button">Drafts</button>
             <button type="button">Settled</button>
           </div>
 
@@ -1341,9 +1405,9 @@
               <div class="row-split">
                 <div>
                   <div class="row-title">Team Alpha win</div>
-                  <div class="row-meta">Team Alpha vs Team Beta · Odds 2.10 · Stake 100 pts</div>
+                  <div class="row-meta">Ongoing · Team Alpha vs Team Beta · Odds 2.10 · Stake 100 pts</div>
                 </div>
-                <button class="text-button" type="button" data-open-sheet="review" data-review-title="Team Alpha vs Team Beta">Review</button>
+                <button class="text-button" type="button" data-open-edit data-edit-title="Team Alpha win">Edit</button>
               </div>
             </article>
             <article class="bet-row">
@@ -1352,14 +1416,96 @@
                   <div class="row-title">Totals draft</div>
                   <div class="row-meta">Team Gamma vs Team Delta · Needs market confirmation</div>
                 </div>
-                <span class="row-value">Draft</span>
+                <button class="text-button" type="button" data-open-edit data-edit-title="Totals draft">Edit</button>
+              </div>
+            </article>
+            <article class="bet-row">
+              <div class="row-split">
+                <div>
+                  <div class="row-title">Settled manual record</div>
+                  <div class="row-meta">Team Echo vs Team Foxtrot · Settled · review-only preview</div>
+                </div>
+                <button class="text-button" type="button" data-open-sheet="review" data-review-only data-review-title="Team Echo vs Team Foxtrot">Review</button>
               </div>
             </article>
             <article class="note-card warning">
               <div class="note-eyebrow">Boundary</div>
-              <div class="note-title">The list is static and does not settle records.</div>
-              <p class="note-copy">Future production behavior needs a separate owner-approved implementation plan and must stay inside the existing betting-record boundaries.</p>
+              <div class="note-title">Ongoing records can be edited here; settled records are review-only in this preview.</div>
+              <p class="note-copy">Adding a new record starts from a match group so the preview stays aligned with matchGroupId grouping. No storage, settlement, or formula is run.</p>
             </article>
+          </div>
+        </section>
+
+        <section class="screen" id="screen-match-detail" aria-labelledby="match-detail-title">
+          <button class="secondary-button back-button" type="button" id="match-detail-back">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Back
+          </button>
+
+          <div class="screen-header">
+            <div>
+              <p class="screen-label">Match group</p>
+              <h1 class="screen-title" id="match-detail-title">Team Alpha vs Team Beta</h1>
+              <p class="screen-subtitle" id="match-detail-meta">Kickoff 18:00 (Mkt) · matchGroupId: group-alpha-beta</p>
+            </div>
+          </div>
+
+          <div class="match-context" aria-label="Selected match group context">
+            <div class="context-line">
+              <div class="context-label">Grouping key</div>
+              <div class="context-value">matchGroupId</div>
+            </div>
+            <div class="context-line">
+              <div class="context-label">Entry rule</div>
+              <div class="context-value">Add through this match</div>
+            </div>
+          </div>
+
+          <div class="segmented two" role="tablist" aria-label="Match detail tabs">
+            <button class="active" type="button" data-detail-tab="bets">Bets</button>
+            <button type="button" data-detail-tab="info">Info</button>
+          </div>
+
+          <div class="detail-panel" id="match-detail-panel-bets">
+            <div class="action-row">
+              <button class="primary-button add-inline" type="button" data-open-scoped-add>
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                </svg>
+                Add Bet
+              </button>
+            </div>
+
+            <div class="stack">
+              <article class="bet-row">
+                <div class="row-split">
+                  <div>
+                    <div class="row-title">Team Alpha win</div>
+                    <div class="row-meta">Ongoing · Odds 2.10 · Stake 100 pts</div>
+                  </div>
+                  <button class="text-button" type="button" data-open-edit data-edit-title="Team Alpha win">Edit</button>
+                </div>
+              </article>
+              <article class="bet-row">
+                <div class="row-split">
+                  <div>
+                    <div class="row-title">Settled context row</div>
+                    <div class="row-meta">Review-only preview. No settlement math.</div>
+                  </div>
+                  <button class="text-button" type="button" data-open-sheet="review" data-review-only data-review-title="Settled context row">Review</button>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div class="detail-panel" id="match-detail-panel-info" hidden>
+            <section class="note-card">
+              <div class="note-eyebrow">Match detail boundary</div>
+              <div class="note-title">This sub-view is context, not a new primary tab.</div>
+              <p class="note-copy">The selected match group supplies the Add Bet context. Feed match linking remains optional and no automatic grouping or merge logic runs here.</p>
+            </section>
           </div>
         </section>
 
@@ -1496,7 +1642,7 @@
         <div class="sheet-header">
           <div>
             <h2 class="sheet-title" id="add-sheet-title">Add Bet</h2>
-            <p class="sheet-subtitle">Preview-only sheet. Valid fields enable the mock action; nothing is saved.</p>
+            <p class="sheet-subtitle" id="add-sheet-subtitle">Scoped to Team Alpha vs Team Beta</p>
           </div>
           <button class="icon-button" type="button" data-close-sheet aria-label="Close Add Bet sheet">
             <svg viewBox="0 0 24 24" fill="none">
@@ -1506,13 +1652,15 @@
         </div>
         <div class="sheet-body">
           <form class="form-grid" id="add-form" novalidate>
-            <div class="field">
-              <label for="match-field">Match</label>
-              <select class="field-select" id="match-field" name="match-field" required>
-                <option value="Team Alpha vs Team Beta">Team Alpha vs Team Beta</option>
-                <option value="Team Gamma vs Team Delta">Team Gamma vs Team Delta</option>
-                <option value="Team Echo vs Team Foxtrot">Team Echo vs Team Foxtrot</option>
-              </select>
+            <div class="readonly-summary" id="match-summary-readonly" aria-label="Selected match summary">
+              <div class="context-line">
+                <div class="context-label">Selected match</div>
+                <div class="context-value" id="add-summary-title">Team Alpha vs Team Beta</div>
+              </div>
+              <div class="context-line">
+                <div class="context-label">Scope</div>
+                <div class="context-value">matchGroupId context</div>
+              </div>
             </div>
             <div class="field">
               <label for="market-field">Market</label>
@@ -1540,6 +1688,56 @@
               <button class="primary-button" id="save-preview" type="submit" disabled>Save Draft</button>
             </div>
             <div class="sheet-feedback" id="add-feedback" aria-live="polite"></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="sheet" id="edit-sheet" aria-hidden="true" aria-labelledby="edit-sheet-title" role="dialog">
+        <div class="sheet-grabber" aria-hidden="true"></div>
+        <div class="sheet-header">
+          <div>
+            <h2 class="sheet-title" id="edit-sheet-title">Edit Ongoing Bet</h2>
+            <p class="sheet-subtitle" id="edit-subtitle">Team Alpha win</p>
+          </div>
+          <button class="icon-button" type="button" data-close-sheet aria-label="Close Edit Bet sheet">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <form class="form-grid" novalidate>
+            <div class="readonly-summary" aria-label="Editable record scope">
+              <div class="context-line">
+                <div class="context-label">Edit policy</div>
+                <div class="context-value">Ongoing/draft only</div>
+              </div>
+              <div class="context-line">
+                <div class="context-label">Match scope</div>
+                <div class="context-value">Team Alpha vs Team Beta</div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="edit-market-field">Market</label>
+              <select class="field-select" id="edit-market-field" name="edit-market-field">
+                <option value="1X2">Market 1X2</option>
+                <option value="Totals">Totals</option>
+                <option value="Manual note">Manual note</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="edit-odds-field">Odds</label>
+              <input class="field-input" id="edit-odds-field" name="edit-odds-field" inputmode="decimal" value="2.10">
+            </div>
+            <div class="field">
+              <label for="edit-stake-field">Stake points</label>
+              <input class="field-input" id="edit-stake-field" name="edit-stake-field" inputmode="numeric" value="100">
+            </div>
+            <div class="sheet-actions">
+              <button class="secondary-button" type="button" data-close-sheet>Cancel</button>
+              <button class="primary-button" type="button" data-close-sheet>Save Edit</button>
+            </div>
+            <div class="sheet-feedback">Preview only: ongoing edit surface, no data saved.</div>
           </form>
         </div>
       </section>
@@ -1600,11 +1798,20 @@
     const addForm = document.getElementById('add-form');
     const savePreview = document.getElementById('save-preview');
     const addFeedback = document.getElementById('add-feedback');
+    const addSheetSubtitle = document.getElementById('add-sheet-subtitle');
+    const addSummaryTitle = document.getElementById('add-summary-title');
     const reviewSubtitle = document.getElementById('review-subtitle');
+    const editSubtitle = document.getElementById('edit-subtitle');
     const matchSearch = document.getElementById('match-search');
     const matchesEmpty = document.getElementById('matches-empty');
+    const matchDetailTitle = document.getElementById('match-detail-title');
+    const matchDetailMeta = document.getElementById('match-detail-meta');
+    const matchDetailBack = document.getElementById('match-detail-back');
+    let currentScreenName = 'today';
+    let matchDetailReturnScreen = 'today';
 
     function setActiveScreen(screenName) {
+      currentScreenName = screenName;
       screens.forEach((screen) => {
         screen.classList.toggle('active', screen.id === `screen-${screenName}`);
       });
@@ -1622,6 +1829,21 @@
       mainScroll.scrollTop = 0;
     }
 
+    function setMatchDetailContext(title, meta) {
+      matchDetailTitle.textContent = title;
+      matchDetailMeta.textContent = meta;
+      addSheetSubtitle.textContent = `Scoped to ${title}`;
+      addSummaryTitle.textContent = title;
+    }
+
+    function resetMatchDetailTabs() {
+      document.querySelectorAll('[data-detail-tab]').forEach((button) => {
+        button.classList.toggle('active', button.dataset.detailTab === 'bets');
+      });
+      document.getElementById('match-detail-panel-bets').hidden = false;
+      document.getElementById('match-detail-panel-info').hidden = true;
+    }
+
     navItems.forEach((item) => {
       item.addEventListener('click', () => setActiveScreen(item.dataset.screen));
     });
@@ -1631,6 +1853,17 @@
         const group = button.closest('.segmented');
         group.querySelectorAll('button').forEach((peer) => peer.classList.remove('active'));
         button.classList.add('active');
+      });
+    });
+
+    document.querySelectorAll('[data-detail-tab]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const selected = button.dataset.detailTab;
+        document.querySelectorAll('[data-detail-tab]').forEach((peer) => {
+          peer.classList.toggle('active', peer === button);
+        });
+        document.getElementById('match-detail-panel-bets').hidden = selected !== 'bets';
+        document.getElementById('match-detail-panel-info').hidden = selected !== 'info';
       });
     });
 
@@ -1644,6 +1877,21 @@
           ? '<svg viewBox="0 0 24 24" fill="none"><path d="m6 10 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
           : '<svg viewBox="0 0 24 24" fill="none"><path d="m6 14 6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       });
+    });
+
+    document.querySelectorAll('[data-open-match]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const title = button.dataset.matchTitle || 'Selected match group';
+        const meta = button.dataset.matchMeta || 'matchGroupId context';
+        matchDetailReturnScreen = currentScreenName === 'match-detail' ? 'today' : currentScreenName;
+        setMatchDetailContext(title, meta);
+        resetMatchDetailTabs();
+        setActiveScreen('match-detail');
+      });
+    });
+
+    matchDetailBack.addEventListener('click', () => {
+      setActiveScreen(matchDetailReturnScreen);
     });
 
     function openSheet(sheetName) {
@@ -1673,6 +1921,19 @@
           reviewSubtitle.textContent = button.dataset.reviewTitle;
         }
         openSheet(sheetName);
+      });
+    });
+
+    document.querySelectorAll('[data-open-scoped-add]').forEach((button) => {
+      button.addEventListener('click', () => {
+        openSheet('add');
+      });
+    });
+
+    document.querySelectorAll('[data-open-edit]').forEach((button) => {
+      button.addEventListener('click', () => {
+        editSubtitle.textContent = button.dataset.editTitle || 'Ongoing record';
+        openSheet('edit');
       });
     });
 
