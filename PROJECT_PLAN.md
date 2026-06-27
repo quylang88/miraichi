@@ -94,5 +94,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Create Phase 5.11 Local-First Add Bet Draft Persistence Implementation Plan.
 - [x] Owner review Phase 5.11 implementation plan before `phase:code-slice`.
 - [x] Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices.
-- [ ] Run `phase:integration-test Phase 5.11` before staging or owner-feedback promotion.
+- [x] Run `phase:integration-test Phase 5.11` before staging or owner-feedback promotion.
+- [ ] Run `phase:staging Phase 5.11` before owner-feedback promotion.
 - [ ] Keep real AI training out of Phase 5; plan it only through future Phase 7 and Phase 8 ADRs.

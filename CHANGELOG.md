@@ -29,6 +29,7 @@ Includes all directories and apps under this monorepo.
 - Completed document status hygiene slices for Phase 1, Phase 3, Phase 4, app/package docs, and ops docs.
 - Added Miraichi phase transition recommendation skill so phase closeouts must name the next safe phase and owner questions with recommendations.
 - Added Phase 5.11 local-first Add Bet draft persistence contracts, form-state helpers, memory and IndexedDB adapters, and versioned draft backup/import JSON helpers with conflict rejection.
+- Added Phase 5.11 integration review evidence after local and integration gates passed.
 
 ### Changed
 - Promoted Phase 1 ADRs (ADR-0002, 0004-0011) to Accepted status and ADR-0003 to Proposed status based on project owner decisions.
@@ -48,4 +49,5 @@ Includes all directories and apps under this monorepo.
 - [x] Review draft Phase 5.10 Add Bet Draft/Form State + Persistence Planning after docs hygiene closes.
 - [x] Start Phase 5.11 Local-First Add Bet Draft Persistence Implementation Planning.
 - [x] Owner review Phase 5.11 implementation plan before any code slice.
-- [ ] Run Phase 5.11 integration-test boundary verification before staging or owner-feedback promotion.
+- [x] Run Phase 5.11 integration-test boundary verification before staging or owner-feedback promotion.
+- [ ] Run Phase 5.11 staging gate before owner-feedback promotion.
