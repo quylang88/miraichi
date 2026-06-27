@@ -31,8 +31,8 @@ No phase may skip its exit gate. A fast shortcut that removes evidence is a brok
 | `phase:implementation-plan <approved spec>` | Task breakdown into small TDD code slices | Every slice has exact files, failing unit test, implementation step, and verification command |
 | `phase:code-slice <task>` | One small implementation slice | Failing unit test observed, minimal code written, unit test passes, relevant local checks pass; do not run integration or endpoint E2E unless this slice closes a large feature boundary |
 | `phase:integration-test` | Full local and cross-boundary verification after a large feature boundary is complete | `pnpm run verify:local` and `pnpm run test:integration` pass |
-| `phase:staging` | Staging deployment and staging smoke checks | `pnpm run verify:release` passes and staging target is configured; otherwise fail fast |
-| `phase:quality-up ui-ux-improve <scope>` | Owner-requested UI/UX polish, visible copy cleanup, redundant control removal, and small interaction fixes after staging feedback | Targeted tests pass, `pnpm run verify:release` passes, staging is redeployed, and staging smoke evidence is refreshed |
+| `phase:staging` | Staging deployment and staging smoke checks | `pnpm run verify:staging` passes, which includes `verify:release` and a fresh static artifact build; staging target is configured; otherwise fail fast |
+| `phase:quality-up ui-ux-improve <scope>` | Owner-requested UI/UX polish, visible copy cleanup, redundant control removal, and small interaction fixes after staging feedback | Targeted tests pass, `pnpm run verify:staging` passes, staging is redeployed, and staging smoke evidence is refreshed |
 | `phase:owner-feedback` | Final-release owner review, or an explicit owner-requested review checkpoint | Owner gives explicit approval or requested changes become new lifecycle work |
 | `phase:production` | Final-release production promotion | All planned phases for the release are complete, staging smoke passed, owner approval is explicit, rollback path is known |
 | `phase:maintenance <change>` | Bugfixes and extensions after release | Same lifecycle as normal work; no hotfix bypass |
@@ -98,9 +98,20 @@ pnpm run verify:release
 
 Do not deploy to staging unless it passes.
 
+### Staging Verification
+
+Run:
+
+```bash
+pnpm run verify:staging
+```
+
+This command must run release verification and then rebuild `apps/web/dist`. Do not run staging smoke checks or Cloudflare Pages deployment from a stale artifact.
+
 ## Staging And Production
 
 - If no staging target is configured, stop and report the missing target. Do not pretend a deploy happened.
+- Staging deploys must use `pnpm run deploy:staging` or an equivalent command that runs `pnpm run verify:staging` immediately before `wrangler pages deploy`.
 - Staging must produce a phase closeout pack: changed scope, test evidence, staging URL or explicit missing-target reason, known risks, and the recommended next phase.
 - If the owner requests UI/UX or small functional corrections after staging, run `phase:quality-up ui-ux-improve` before closing the phase or recommending final review.
 - Intermediate phases do not automatically enter `phase:owner-feedback` or `phase:production`.

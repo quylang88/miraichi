@@ -108,6 +108,26 @@ const productionShellFiles = [
   'apps/web/src/services/i18n-service.ts'
 ];
 
+const serviceWorkerRegistrationPath = path.join(ROOT_DIR, 'apps/web/src/pwa/register-service-worker.js');
+if (fs.existsSync(serviceWorkerRegistrationPath)) {
+  const content = fs.readFileSync(serviceWorkerRegistrationPath, 'utf8');
+  const requiredLocalDevMarkers = [
+    'LOCAL_DEV_HOSTS',
+    'getRegistrations',
+    'globalThis.caches.delete',
+    'Local dev mode: service workers and shell caches disabled'
+  ];
+
+  for (const marker of requiredLocalDevMarkers) {
+    if (!content.includes(marker)) {
+      console.error(`  ❌ Service worker registration missing local dev cache-bypass marker: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Service worker registration local dev marker found: ${marker}`);
+    }
+  }
+}
+
 const serviceWorkerPath = path.join(ROOT_DIR, 'apps/web/public/service-worker.js');
 if (fs.existsSync(serviceWorkerPath)) {
   const content = fs.readFileSync(serviceWorkerPath, 'utf8');

@@ -25,7 +25,7 @@ Cloudflare Pages is selected as the Phase 5.11 staging target for the web/PWA su
 Rationale:
 
 - Phase 5.11 persistence is local-first browser storage, so staging does not need a server database.
-- The Phase 5.11 web surface now has a static export artifact at `apps/web/dist`.
+- The web surface has a static export artifact at `apps/web/dist`, rebuilt by `pnpm run verify:staging` before staging deployment.
 - Cloudflare Pages Free fits a static PWA staging target without paid server runtime.
 - A dedicated staging project avoids mixing preview/staging URLs with future production.
 - Direct Upload keeps staging independent from a full CI/CD workflow while production deployment remains deferred.
@@ -39,7 +39,7 @@ Constraints:
 
 ## TODO / Next Steps
 - [x] Select Cloudflare Pages for Phase 5.11 web staging.
-- [x] Add static export artifact generation through `pnpm run build:web-static`.
+- [x] Add static export artifact generation through `pnpm run verify:staging` and `pnpm run deploy:staging`.
 - [x] Create Cloudflare Pages project `miraichi-staging`.
 - [x] Configure `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` outside the repository.
 - [x] Record the actual Pages URL after first deployment: `https://eff8f868.miraichi-staging.pages.dev`.

@@ -16,7 +16,7 @@ Directly plans host infrastructure configurations.
 - Separate staging and production environments clearly (different API endpoints, databases).
 - Automate deployment checks before releasing images.
 - Phase 5.11 staging target: **Cloudflare Pages**, using a dedicated staging project named `miraichi-staging`.
-- Phase 5.11 staging deployment mode: Direct Upload with Wrangler after `pnpm run verify:release` and `pnpm run build:web-static` pass.
+- Phase 5.11+ staging deployment mode: Direct Upload with Wrangler through `pnpm run deploy:staging`, which runs `pnpm run verify:staging` and rebuilds `apps/web/dist` before deploy.
 - Production deployment remains blocked until all planned release phases are complete, staging smoke checks pass, and the owner gives explicit final-release approval.
 - Do not deploy API, local-ai, worker, database, auth, cloud sync, or production schemas for Phase 5.11 staging.
 

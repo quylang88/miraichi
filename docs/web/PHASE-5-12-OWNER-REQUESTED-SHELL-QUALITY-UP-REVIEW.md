@@ -20,6 +20,7 @@ This phase improves the existing web/PWA shell after staging feedback. It does n
 | Remove unnecessary extra hardcoded sample rows | PASS | Extra `Team Echo`, `Team North`, `Team South`, and `Foxtrot` sample rows were removed. |
 | Hide the right-side app scrollbar while preserving shell scrolling | PASS | `.main-scroll` keeps vertical scrolling but hides WebKit/Firefox/MS scrollbars; Chrome check confirmed `::-webkit-scrollbar` width is `0px`. |
 | Force cached browsers to receive the quality-up shell | PASS | Service worker cache name bumped from Phase 5.9 to `miraichi-shell-v5-phase-5-12-quality-up`. |
+| Keep local dev changes visible immediately on `localhost:3011` | PASS | Localhost service worker registration now unregisters service workers and deletes shell caches instead of registering cache-first PWA assets. |
 
 ## Verification
 
@@ -27,15 +28,16 @@ Commands passed:
 
 ```powershell
 pnpm exec vitest run apps/web/src/production-shell.test.ts
+pnpm exec vitest run apps/web/src/pwa/register-service-worker.test.js
 pnpm run pwa:verify
 pnpm run verify:release
-pnpm run build:web-static
+pnpm run verify:staging
 ```
 
 Release verification result:
 
 * Lifecycle verification passed.
-* Unit tests passed: 17 files, 62 tests.
+* Unit tests passed: 18 files, 63 tests.
 * JavaScript syntax check passed.
 * Typecheck passed.
 * Audit rules passed.
@@ -68,7 +70,8 @@ Localhost cache note:
 
 * `localhost:3011` serves source files directly, but the registered service worker uses cache-first shell assets.
 * Before this quality-up cache bump, a browser that had already loaded Phase 5.9 could keep serving the old shell from `miraichi-shell-v4-phase-5-9-production`.
-* The Phase 5.12 service worker cache is now `miraichi-shell-v5-phase-5-12-quality-up`, so a reload after the new service worker activates should receive the updated shell.
+* The Phase 5.12 service worker cache is now `miraichi-shell-v5-phase-5-12-quality-up`.
+* Localhost now disables service worker registration, unregisters old workers, deletes shell caches, and reloads once after cleanup when needed.
 
 ## Staging Redeploy
 
@@ -87,7 +90,7 @@ You are not authenticated. Please run `wrangler login`.
 Required owner-terminal command after setting Cloudflare credentials:
 
 ```powershell
-pnpm dlx wrangler pages deploy apps/web/dist --project-name miraichi-staging
+pnpm run deploy:staging
 ```
 
 After deploy, smoke-check the returned Pages URL before Phase 5 closeout.
