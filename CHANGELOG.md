@@ -30,6 +30,7 @@ Includes all directories and apps under this monorepo.
 - Added Miraichi phase transition recommendation skill so phase closeouts must name the next safe phase and owner questions with recommendations.
 - Added Phase 5.11 local-first Add Bet draft persistence contracts, form-state helpers, memory and IndexedDB adapters, and versioned draft backup/import JSON helpers with conflict rejection.
 - Added Phase 5.11 integration review evidence after local and integration gates passed.
+- Selected Railway as the Phase 5.11 web/PWA staging target and recorded the remaining blocker: missing Railway project, service, token, and public domain.
 
 ### Changed
 - Promoted Phase 1 ADRs (ADR-0002, 0004-0011) to Accepted status and ADR-0003 to Proposed status based on project owner decisions.
@@ -51,3 +52,4 @@ Includes all directories and apps under this monorepo.
 - [x] Owner review Phase 5.11 implementation plan before any code slice.
 - [x] Run Phase 5.11 integration-test boundary verification before staging or owner-feedback promotion.
 - [ ] Run Phase 5.11 staging gate before owner-feedback promotion.
+- [ ] Create/link Railway project `miraichi-staging`, service `miraichi-web-staging`, deployment token, and public domain before retrying staging.

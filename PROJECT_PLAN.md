@@ -96,4 +96,5 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices.
 - [x] Run `phase:integration-test Phase 5.11` before staging or owner-feedback promotion.
 - [ ] Run `phase:staging Phase 5.11` before owner-feedback promotion.
+- [ ] Create/link Railway project `miraichi-staging`, service `miraichi-web-staging`, deployment token, public domain, and smoke check before retrying staging.
 - [ ] Keep real AI training out of Phase 5; plan it only through future Phase 7 and Phase 8 ADRs.
