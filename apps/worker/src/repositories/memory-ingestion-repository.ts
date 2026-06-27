@@ -2,50 +2,50 @@
  * Memory Ingestion Repository for transient in-memory storage.
  * Fully competition-agnostic. No business logic.
  */
+import type { IngestionRun, NormalizedMarket, NormalizedMatch } from '../../../../packages/shared/src/contracts/index.js';
+
+function cloneValue<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 class MemoryIngestionRepository {
-  matches: Map<string, any>;
-  markets: Map<string, any>;
-  runs: any[];
+  private matches = new Map<string, NormalizedMatch>();
+  private markets = new Map<string, NormalizedMarket>();
+  private runs: IngestionRun[] = [];
 
-  constructor() {
-    this.matches = new Map();
-    this.markets = new Map();
-    this.runs = [];
+  saveMatch(match: NormalizedMatch): void {
+    this.matches.set(match.id, cloneValue(match));
   }
 
-  saveMatch(match) {
-    this.matches.set(match.id, JSON.parse(JSON.stringify(match)));
+  saveMarket(market: NormalizedMarket): void {
+    this.markets.set(market.id, cloneValue(market));
   }
 
-  saveMarket(market) {
-    this.markets.set(market.id, JSON.parse(JSON.stringify(market)));
+  saveRun(run: IngestionRun): void {
+    this.runs.push(cloneValue(run));
   }
 
-  saveRun(run) {
-    this.runs.push(JSON.parse(JSON.stringify(run)));
-  }
-
-  getMatch(id) {
+  getMatch(id: string): NormalizedMatch | undefined {
     return this.matches.get(id);
   }
 
-  getMarket(id) {
+  getMarket(id: string): NormalizedMarket | undefined {
     return this.markets.get(id);
   }
 
-  listMatches() {
+  listMatches(): NormalizedMatch[] {
     return Array.from(this.matches.values());
   }
 
-  listMarkets() {
+  listMarkets(): NormalizedMarket[] {
     return Array.from(this.markets.values());
   }
 
-  listRuns() {
+  listRuns(): IngestionRun[] {
     return [...this.runs];
   }
 
-  clear() {
+  clear(): void {
     this.matches.clear();
     this.markets.clear();
     this.runs = [];

@@ -18,23 +18,27 @@ export const COMPETITION_REGISTRY = {
   }
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 /**
  * Validates configuration profiles or keys.
  * Rejects payloads containing hardcoded "World Cup" strings or invalid config keys.
  *
- * @param {Record<string, any>} config
+ * @param {unknown} config
  * @returns {boolean}
  */
-export function validateConfig(config) {
-  if (!config) return true;
-  
+export function validateConfig(config: unknown): boolean {
+  if (!isRecord(config)) return true;
+
   const serialized = JSON.stringify(config);
-  
+
   // Rule Check: Hardcoded tournament names (World Cup, Premier League, etc.) are forbidden
   if (/world\s*cup/i.test(serialized) || /premier\s*league/i.test(serialized)) {
     throw new Error("[Config Violation] Hardcoded competition names like 'World Cup' or 'Premier League' are strictly forbidden.");
   }
-  
+
   // Rule Check: Validate configuration keys
   const allowedKeys = [
     'competitionId',
@@ -48,12 +52,12 @@ export function validateConfig(config) {
     'sport',
     'status'
   ];
-  
+
   for (const key of Object.keys(config)) {
     if (!allowedKeys.includes(key)) {
       throw new Error(`[Config Error] Invalid configuration key: '${key}'`);
     }
   }
-  
+
   return true;
 }

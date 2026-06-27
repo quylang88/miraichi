@@ -7,7 +7,7 @@
 import { runMockPrediction } from '../engines/mock-prediction-engine.js';
 import { mockInputCandidate } from '../input/mock-input-candidate.js';
 
-export function handleMockPredict(req, res) {
+export function handleMockPredict(req: import('http').IncomingMessage, res: import('http').ServerResponse) {
   if (req.method !== 'POST') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Method Not Allowed' }));

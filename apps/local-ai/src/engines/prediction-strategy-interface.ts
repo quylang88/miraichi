@@ -14,7 +14,7 @@ export class BasePredictionStrategy {
    * @returns {Object} A partial prediction envelope dataset.
    * @throws {Error} If execution fails or is not implemented.
    */
-  evaluate(inputCandidate) {
+  evaluate(inputCandidate: unknown) {
     throw new Error(
       'evaluate() must be implemented by concrete strategy subclasses. Real strategy execution requires owner-approved ADR.'
     );

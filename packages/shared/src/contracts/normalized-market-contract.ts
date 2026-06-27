@@ -2,6 +2,22 @@
  * Normalized Market Data Contract Object Schema.
  * Fully competition-agnostic. No business logic.
  */
+
+export type NormalizedMarketOutcome = {
+  outcomeId: string;
+  name: string;
+  odds: number;
+};
+
+export type NormalizedMarket = {
+  id: string;
+  matchId: string;
+  marketName: string;
+  providerId: string;
+  updatedAt: string;
+  outcomes: NormalizedMarketOutcome[];
+};
+
 export const NORMALIZED_MARKET_CONTRACT = {
   id: "string",         // Unique ID (e.g. market-alpha-001)
   matchId: "string",    // Target match identifier (e.g. match-alpha-001)

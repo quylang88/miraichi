@@ -4,9 +4,12 @@
  * Proxies to local-ai /ai/v1/mock/predict, falling back to a safe envelope if unreachable.
  */
 
+import type { IncomingMessage, ServerResponse } from 'http';
+import { isJsonObject, parseJsonObjectBody, readNestedStringField, readStringField, type JsonObject } from './json-body.js';
+
 const LOCAL_AI_URL = 'http://localhost:3002';
 
-export function handleMockPredict(req, res) {
+export function handleMockPredict(req: IncomingMessage, res: ServerResponse): void {
   if (req.method !== 'POST') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Method Not Allowed' }));
@@ -18,23 +21,15 @@ export function handleMockPredict(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
-    return;
-  }
-
   let body = '';
-  req.on('data', chunk => {
-    body += chunk;
+  req.on('data', (chunk: unknown) => {
+    body += String(chunk);
   });
 
   req.on('end', async () => {
-    let inputCandidate: Record<string, any> = {};
+    let inputCandidate: JsonObject = {};
     try {
-      if (body.trim()) {
-        inputCandidate = JSON.parse(body);
-      }
+      inputCandidate = parseJsonObjectBody(body);
     } catch {
       // Bad json request body handled gracefully
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -58,23 +53,29 @@ export function handleMockPredict(req, res) {
       }
       throw new Error(`local-ai returned status ${aiRes.status}`);
     } catch (err) {
-      console.warn(`[API Gateway] downstream local-ai mock predict failed (${err.message}). Using safe unreachable fallback.`);
-      
+      const errMessage = err instanceof Error ? err.message : String(err);
+      console.warn(`[API Gateway] downstream local-ai mock predict failed (${errMessage}). Using safe unreachable fallback.`);
+
+      const traceInput = inputCandidate.trace;
+      const traceWorkerRunId = isJsonObject(traceInput)
+        ? readStringField(traceInput, 'workerRunId', 'unknown-run')
+        : 'unknown-run';
+
       // Construct safe fallback envelope
       const fallbackEnvelope = {
         predictionId: 'pred-fallback-unreachable',
-        matchId: inputCandidate.matchId || 'unknown-match',
-        competitionId: inputCandidate.competitionId || 'unknown-competition',
-        seasonId: inputCandidate.seasonId || 'unknown-season',
+        matchId: readStringField(inputCandidate, 'matchId', 'unknown-match'),
+        competitionId: readStringField(inputCandidate, 'competitionId', 'unknown-competition'),
+        seasonId: readStringField(inputCandidate, 'seasonId', 'unknown-season'),
         generatedAt: new Date().toISOString(),
         engineMode: 'mock',
         predictionAvailable: false,
         confidenceLabel: 'not_available',
         outputSummary: 'No owner-approved prediction algorithm is active.',
         trace: {
-          inputCandidateId: inputCandidate.inputCandidateId || 'unknown-candidate',
-          workerRunId: inputCandidate.trace ? inputCandidate.trace.workerRunId : 'unknown-run',
-          sourceProviderId: inputCandidate.sourceProviderId || 'unknown-provider',
+          inputCandidateId: readStringField(inputCandidate, 'inputCandidateId', 'unknown-candidate'),
+          workerRunId: traceWorkerRunId,
+          sourceProviderId: readStringField(inputCandidate, 'sourceProviderId', 'unknown-provider'),
           engineVersion: '1.0.0-mock'
         },
         warnings: ['downstream_service_unreachable']

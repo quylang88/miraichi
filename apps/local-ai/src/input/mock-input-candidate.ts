@@ -5,7 +5,9 @@
  * prediction labels, or wagers.
  */
 
-export const mockInputCandidate = {
+import type { InputCandidate } from '../contracts/mock-prediction-contracts.js';
+
+export const mockInputCandidate: InputCandidate = {
   inputCandidateId: 'input-candidate-alpha-001',
   matchId: 'match-alpha-001',
   competitionId: 'competition-alpha',

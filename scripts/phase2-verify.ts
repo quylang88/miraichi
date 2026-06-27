@@ -19,21 +19,21 @@ try {
   const valid = validateConfig({ competitionId: 'comp_1', seasonId: '2026' });
   assert(valid === true, 'validateConfig accepts valid configuration keys');
 } catch (err) {
-  assert(false, `validateConfig rejected valid configuration: ${err.message}`);
+  assert(false, `validateConfig rejected valid configuration: ${err instanceof Error ? err.message : String(err)}`);
 }
 
 try {
   validateConfig({ competitionId: 'comp_1', name: 'World Cup Tournament' });
   assert(false, 'validateConfig should reject hardcoded "World Cup" tournament references');
 } catch (err) {
-  assert(err.message.includes('strictly forbidden'), 'validateConfig successfully rejects "World Cup" keyword');
+  assert(err instanceof Error ? err.message : String(err).includes('strictly forbidden'), 'validateConfig successfully rejects "World Cup" keyword');
 }
 
 try {
   validateConfig({ competitionId: 'comp_1', invalidField: 'hack' });
   assert(false, 'validateConfig should reject unapproved/invalid config keys');
 } catch (err) {
-  assert(err.message.includes('Invalid configuration key'), 'validateConfig successfully rejects invalid key "invalidField"');
+  assert(err instanceof Error ? err.message : String(err).includes('Invalid configuration key'), 'validateConfig successfully rejects invalid key "invalidField"');
 }
 
 // 2. Chatbot Refusal Checks (ADR-0007 Rule Compliance)

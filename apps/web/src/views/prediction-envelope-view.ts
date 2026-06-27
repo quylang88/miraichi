@@ -7,7 +7,7 @@
 
 import { getMockPrediction } from '../mock-client.js';
 
-export async function renderPredictionEnvelopeView(container) {
+export async function renderPredictionEnvelopeView(container: HTMLElement) {
   container.innerHTML = `
     <h2>Local AI Prediction Envelope View</h2>
     <div style="background: var(--miraichi-bg-card); border: 1px solid var(--miraichi-border); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
@@ -39,7 +39,7 @@ export async function renderPredictionEnvelopeView(container) {
     let warningsHtml = '<em>None</em>';
     if (envelope.warnings && envelope.warnings.length > 0) {
       warningsHtml = `<ul style="margin: 0; padding-left: 1.2rem; color: var(--miraichi-danger);">
-        ${envelope.warnings.map(w => `<li>${w}</li>`).join('')}
+        ${envelope.warnings.map((w: string) => `<li>${w}</li>`).join('')}
       </ul>`;
     }
 
@@ -76,6 +76,6 @@ export async function renderPredictionEnvelopeView(container) {
       </div>
     `;
   } catch (err) {
-    container.innerHTML = `<div style="color: var(--miraichi-danger); padding: 1rem;">Failed to load mock prediction envelope: ${err.message}</div>`;
+    container.innerHTML = `<div style="color: var(--miraichi-danger); padding: 1rem;">Failed to load mock prediction envelope: ${err instanceof Error ? err.message : String(err)}</div>`;
   }
 }

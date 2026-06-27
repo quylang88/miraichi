@@ -26,7 +26,7 @@ export async function getMatches() {
   }
 }
 
-export async function getPrediction(matchId) {
+export async function getPrediction(matchId: string) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/v1/predictions?matchId=${matchId}`);
     if (!res.ok) throw new Error(`HTTP status ${res.status}`);
@@ -54,7 +54,7 @@ export async function getPrediction(matchId) {
   }
 }
 
-export async function sendChatQuery(predictionId, message) {
+export async function sendChatQuery(predictionId: string, message: string) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/v1/chat`, {
       method: 'POST',
@@ -100,7 +100,7 @@ export async function getBetHistory() {
   }
 }
 
-export async function getMockPrediction(inputCandidate) {
+export async function getMockPrediction(inputCandidate: Record<string, unknown>) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/v1/mock/predict`, {
       method: 'POST',
@@ -113,16 +113,16 @@ export async function getMockPrediction(inputCandidate) {
     console.warn('[Mock Client] API Gateway offline. Using mock predict fallback.', err);
     return {
       predictionId: "pred-fallback-offline",
-      matchId: inputCandidate.matchId || "match-alpha-001",
-      competitionId: inputCandidate.competitionId || "competition-alpha",
-      seasonId: inputCandidate.seasonId || "season-alpha-2026",
+      matchId: typeof inputCandidate.matchId === 'string' ? inputCandidate.matchId : "match-alpha-001",
+      competitionId: typeof inputCandidate.competitionId === 'string' ? inputCandidate.competitionId : "competition-alpha",
+      seasonId: typeof inputCandidate.seasonId === 'string' ? inputCandidate.seasonId : "season-alpha-2026",
       generatedAt: new Date().toISOString(),
       engineMode: "mock",
       predictionAvailable: false,
       confidenceLabel: "not_available",
       outputSummary: "No owner-approved prediction algorithm is active.",
       trace: {
-        inputCandidateId: inputCandidate.inputCandidateId || "input-candidate-alpha-001",
+        inputCandidateId: typeof inputCandidate.inputCandidateId === 'string' ? inputCandidate.inputCandidateId : "input-candidate-alpha-001",
         workerRunId: "run-alpha-001",
         sourceProviderId: "provider-mock-alpha",
         engineVersion: "1.0.0-mock"
@@ -132,7 +132,7 @@ export async function getMockPrediction(inputCandidate) {
   }
 }
 
-export async function getMockExplanation(envelope) {
+export async function getMockExplanation(envelope: unknown) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/v1/mock/explain`, {
       method: 'POST',
@@ -143,15 +143,13 @@ export async function getMockExplanation(envelope) {
     return await res.json();
   } catch (err) {
     console.warn('[Mock Client] API Gateway offline. Using mock explain fallback.', err);
+    const env = envelope as Record<string, unknown>;
     return {
-      explanationAvailable: false,
-      reason: "No owner-approved prediction algorithm is active.",
-      references: {
-        predictionId: envelope.predictionId || "unknown-prediction",
-        traceId: envelope.trace ? envelope.trace.inputCandidateId : "unknown-trace"
-      },
-      text: `No prediction data is available for match ${envelope.matchId} because the client fallback is active. (Trace: client-offline)`
+      predictionId: typeof env.predictionId === 'string' ? env.predictionId : 'unknown',
+      reply: env.trace && (env.trace as Record<string, unknown>).llmProvider === 'openai' 
+        ? "AI Explanation: This is a fallback explanation because the API gateway is offline."
+        : `Explanation fallback for match ${(env as Record<string, unknown>).matchId}`,
+      trace: { clientFallback: "active" }
     };
   }
 }
-

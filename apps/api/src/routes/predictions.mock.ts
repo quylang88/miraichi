@@ -6,7 +6,7 @@ const LOCAL_AI_URL = 'http://localhost:3002';
  * Handles GET /api/v1/predictions?matchId={matchId}.
  * Proxies to local-ai statistics processor, or falls back to mock payload.
  */
-export async function handlePredictions(req, res) {
+export async function handlePredictions(req: import('http').IncomingMessage, res: import('http').ServerResponse) {
   const parsedUrl = new URL(req.url || '/', 'http://localhost');
   const matchId = parsedUrl.searchParams.get('matchId');
 

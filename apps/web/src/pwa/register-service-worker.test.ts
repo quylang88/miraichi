@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 async function importFreshRegisterModule() {
   // Vitest query suffix forces a fresh module instance for this side-effect module.
-  // @ts-expect-error - Vite/Vitest query imports are resolved by the test runner.
+  // @ts-expect-error - Vite/Vitest query imports are resolved by the test runner, not tsc.
   await import('./register-service-worker.js?test-localhost-cleanup');
 }
 

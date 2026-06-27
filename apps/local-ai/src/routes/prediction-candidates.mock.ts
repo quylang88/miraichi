@@ -4,7 +4,7 @@ import { MOCK_PREDICTIONS, MOCK_EXPLANATIONS } from '@miraichi/shared';
  * Handles POST /ai/v1/predict.
  * Returns mock statistical prediction candidates (ADR-0006 compliance).
  */
-export async function handlePredict(req, res) {
+export async function handlePredict(req: import('http').IncomingMessage, res: import('http').ServerResponse) {
   if (req.method !== 'POST') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Method Not Allowed' }));
@@ -69,7 +69,7 @@ export async function handlePredict(req, res) {
  * Handles POST /ai/v1/explain.
  * Returns mock LLM chatbot response and audits for scope refusal (ADR-0007 compliance).
  */
-export async function handleExplain(req, res) {
+export async function handleExplain(req: import('http').IncomingMessage, res: import('http').ServerResponse) {
   if (req.method !== 'POST') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Method Not Allowed' }));
@@ -108,7 +108,7 @@ export async function handleExplain(req, res) {
           }
         };
       } else {
-        responsePayload = MOCK_EXPLANATIONS[predictionId] || {
+        responsePayload = MOCK_EXPLANATIONS[predictionId as keyof typeof MOCK_PREDICTIONS] || {
           predictionId,
           reply: "Based on the mock historical trace, the model favors Team A due to their higher average home scoring rate (2.1 vs 1.2) and a strong head-to-head record.",
           trace: {

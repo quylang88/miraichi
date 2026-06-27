@@ -20,7 +20,10 @@ describe('api health route', () => {
   it('returns an ok health payload', () => {
     const response = createMockResponse();
 
-    handleHealth({}, response);
+    handleHealth(
+      {} as unknown as import('http').IncomingMessage,
+      response as unknown as import('http').ServerResponse
+    );
 
     expect(response.statusCode).toBe(200);
     expect(response.headers).toEqual({ 'Content-Type': 'application/json' });

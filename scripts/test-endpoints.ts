@@ -54,7 +54,7 @@ setTimeout(async () => {
     const data = await res.json();
     assert(res.ok && data.status === 'ok', 'GET /api/v1/health returns status ok');
   } catch (err) {
-    assert(false, `GET /api/v1/health request failed: ${err.message}`);
+    assert(false, `GET /api/v1/health request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // 2. GET /api/v1/matches (Gateway Matches list)
@@ -64,7 +64,7 @@ setTimeout(async () => {
     assert(res.ok && Array.isArray(data) && data.length > 0, 'GET /api/v1/matches returns array of fixtures');
     assert(data[0].id === 'match_2026_001', 'Match format uses generic competition-agnostic schema');
   } catch (err) {
-    assert(false, `GET /api/v1/matches request failed: ${err.message}`);
+    assert(false, `GET /api/v1/matches request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // 3. GET /api/v1/predictions?matchId=match_2026_001 (Proxies to local-ai statistics processor)
@@ -75,7 +75,7 @@ setTimeout(async () => {
     assert(data.predictionOutcome === 'home_win', 'Prediction outcome is correct');
     assert(data.status === 'completed' && data.prediction_available === true, 'Output contains ADR-0006 enriched properties');
   } catch (err) {
-    assert(false, `GET /api/v1/predictions request failed: ${err.message}`);
+    assert(false, `GET /api/v1/predictions request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // 4. POST /api/v1/chat (Approved sports query explanation)
@@ -89,7 +89,7 @@ setTimeout(async () => {
     assert(res.ok && data.predictionId === 'pred_2026_9999', 'POST /api/v1/chat accepts sports-related questions');
     assert(data.trace.refusalCheck.passed === true, 'Refusal check passes for approved query');
   } catch (err) {
-    assert(false, `POST /api/v1/chat sports query failed: ${err.message}`);
+    assert(false, `POST /api/v1/chat sports query failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // 5. POST /api/v1/chat (Out-of-scope query safety refusal check)
@@ -103,7 +103,7 @@ setTimeout(async () => {
     assert(res.ok && data.trace.refusalCheck.passed === false, 'Out-of-scope query fails refusal check (ADR-0007 compliance)');
     assert(data.reply.includes('football prediction'), 'Out-of-scope reply returns safety refusal disclaimer');
   } catch (err) {
-    assert(false, `POST /api/v1/chat out-of-scope query failed: ${err.message}`);
+    assert(false, `POST /api/v1/chat out-of-scope query failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // 6. GET /api/v1/bets (Read-only bet log audits check)
@@ -113,7 +113,7 @@ setTimeout(async () => {
     assert(res.ok && Array.isArray(data), 'GET /api/v1/bets returns simulated bet logs array');
     assert(data[0].betId === 'bet_2026_1001', 'Bet log matches mock boundary contracts');
   } catch (err) {
-    assert(false, `GET /api/v1/bets request failed: ${err.message}`);
+    assert(false, `GET /api/v1/bets request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // 7. POST /ai/v1/predict (Local AI stats calculator stub)
@@ -126,7 +126,7 @@ setTimeout(async () => {
     const data = await res.json();
     assert(res.ok && data.status === 'completed', 'POST /ai/v1/predict returns statistics payload status completed');
   } catch (err) {
-    assert(false, `POST /ai/v1/predict request failed: ${err.message}`);
+    assert(false, `POST /ai/v1/predict request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // 8. POST /ai/v1/explain (Local AI chatbot stats processor)
@@ -139,7 +139,7 @@ setTimeout(async () => {
     const data = await res.json();
     assert(res.ok && data.trace.refusalCheck.passed === true, 'POST /ai/v1/explain parses approved chatbot queries');
   } catch (err) {
-    assert(false, `POST /ai/v1/explain request failed: ${err.message}`);
+    assert(false, `POST /ai/v1/explain request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   if (failed) {

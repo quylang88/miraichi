@@ -6,7 +6,7 @@
 
 import { generateMockExplanation } from '../explainability/mock-explanation-refusal.js';
 
-export function handleMockExplain(req, res) {
+export function handleMockExplain(req: import('http').IncomingMessage, res: import('http').ServerResponse) {
   if (req.method !== 'POST') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Method Not Allowed' }));
@@ -14,8 +14,8 @@ export function handleMockExplain(req, res) {
   }
 
   let body = '';
-  req.on('data', chunk => {
-    body += chunk;
+  req.on('data', (chunk: unknown) => {
+    body += String(chunk);
   });
 
   req.on('end', () => {

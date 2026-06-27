@@ -4,9 +4,23 @@ import { fileURLToPath } from 'url';
 
 export const LIFECYCLE_SKILL_MARKER = 'miraichi-delivery-lifecycle';
 
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+type JsonObject = {
+  [key: string]: JsonValue;
+};
+
+function isJsonObject(value: JsonValue | undefined): value is JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readString(value: JsonValue | undefined, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback;
+}
+
 type PackageManifest = {
   path: string;
-  json: Record<string, any>;
+  json: JsonObject;
 };
 
 type MarkerRequirement = {
@@ -93,7 +107,7 @@ export function findPlaceholderScripts(manifests: PackageManifest[]): Placeholde
   const findings: PlaceholderScriptFinding[] = [];
 
   for (const manifest of manifests) {
-    const scripts = manifest.json.scripts || {};
+    const scripts = isJsonObject(manifest.json.scripts) ? manifest.json.scripts : {};
 
     for (const [scriptName, command] of Object.entries(scripts)) {
       if (typeof command !== 'string') continue;
@@ -106,7 +120,7 @@ export function findPlaceholderScripts(manifests: PackageManifest[]): Placeholde
       if (isPassOnlyNodeEval) {
         findings.push({
           file: manifest.path,
-          packageName: manifest.json.name || '(unnamed package)',
+          packageName: readString(manifest.json.name, '(unnamed package)'),
           scriptName,
           command
         });
@@ -118,11 +132,12 @@ export function findPlaceholderScripts(manifests: PackageManifest[]): Placeholde
 }
 
 export function findMissingRootScripts(
-  packageJson: Record<string, any>,
+  packageJson: JsonObject,
   requiredScripts: string[] = REQUIRED_ROOT_SCRIPTS
 ): string[] {
-  const scripts = packageJson.scripts || {};
-  return requiredScripts.filter((scriptName) => !(scriptName in scripts));
+  const scripts = packageJson.scripts;
+  const scriptsObj = isJsonObject(scripts) ? scripts : {};
+  return requiredScripts.filter((scriptName) => !(scriptName in scriptsObj));
 }
 
 export function findMissingLifecycleReferences(
@@ -160,8 +175,8 @@ async function pathExists(filePath: string): Promise<boolean> {
   }
 }
 
-async function readJson(filePath: string): Promise<any> {
-  return JSON.parse(await fs.readFile(filePath, 'utf8'));
+async function readJson(filePath: string): Promise<JsonObject> {
+  return JSON.parse(await fs.readFile(filePath, 'utf8')) as JsonObject;
 }
 
 async function readWorkspacePackageManifests(rootDir: string): Promise<PackageManifest[]> {
@@ -302,7 +317,7 @@ const isCli = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve
 
 if (isCli) {
   main().catch((error) => {
-    console.error(`[Lifecycle Verify] ${error.message}`);
+    console.error(`[Lifecycle Verify] ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   });
 }

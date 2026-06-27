@@ -21,7 +21,7 @@ export const HANDOFF_SCHEMA = {
  * @param {object} params.payload
  * @returns {object} The validated handoff packet.
  */
-export function createHandoffPacket({ fromAgent, toAgent, taskId, payload }) {
+export function createHandoffPacket({ fromAgent, toAgent, taskId, payload }: {fromAgent: string, toAgent: string, taskId: string, payload: unknown}) {
   const packet = {
     fromAgent,
     toAgent,

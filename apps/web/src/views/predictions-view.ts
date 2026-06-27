@@ -5,7 +5,7 @@ import { getMatches, getPrediction } from '../mock-client.js';
  *
  * @param {HTMLElement} container
  */
-export async function renderPredictionsView(container) {
+export async function renderPredictionsView(container: HTMLElement) {
   container.innerHTML = `
     <h2>Upcoming Matches & Predictions</h2>
     <p style="color: var(--miraichi-text-muted);">View AI model confidence profiles and data pipelines. Completely competition-agnostic.</p>
@@ -42,6 +42,6 @@ export async function renderPredictionsView(container) {
     html += '</div>';
     container.innerHTML = html;
   } catch (err) {
-    container.innerHTML = `<div style="color: var(--miraichi-danger); padding: 1rem;">Failed to load predictions: ${err.message}</div>`;
+    container.innerHTML = `<div style="color: var(--miraichi-danger); padding: 1rem;">Failed to load predictions: ${err instanceof Error ? err.message : String(err)}</div>`;
   }
 }

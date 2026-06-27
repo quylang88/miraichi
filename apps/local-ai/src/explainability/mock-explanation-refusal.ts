@@ -5,8 +5,10 @@
  * or connect to external LLMs.
  */
 
-export function generateMockExplanation(envelope) {
-  if (!envelope || typeof envelope !== 'object') {
+import type { MockExplanationRefusal, PredictionEnvelope } from '../contracts/mock-prediction-contracts.js';
+
+export function generateMockExplanation(envelope: PredictionEnvelope | null | undefined): MockExplanationRefusal {
+  if (!envelope) {
     return {
       explanationAvailable: false,
       reason: 'Missing prediction envelope payload.',
@@ -20,10 +22,10 @@ export function generateMockExplanation(envelope) {
       explanationAvailable: false,
       reason: 'No owner-approved prediction algorithm is active.',
       references: {
-        predictionId: envelope.predictionId || 'unknown-prediction',
-        traceId: envelope.trace ? envelope.trace.inputCandidateId : 'unknown-trace'
+        predictionId: envelope.predictionId,
+        traceId: envelope.trace.inputCandidateId
       },
-      text: `No prediction data is available for match ${envelope.matchId} because no owner-approved prediction algorithm is active. I cannot speculate on this match outcome. (Trace: ${envelope.predictionId || 'unknown'})`
+      text: `No prediction data is available for match ${envelope.matchId} because no owner-approved prediction algorithm is active. I cannot speculate on this match outcome. (Trace: ${envelope.predictionId})`
     };
   }
 
