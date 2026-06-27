@@ -31,6 +31,7 @@ Includes all directories and apps under this monorepo.
 - Added Phase 5.11 local-first Add Bet draft persistence contracts, form-state helpers, memory and IndexedDB adapters, and versioned draft backup/import JSON helpers with conflict rejection.
 - Added Phase 5.11 integration review evidence after local and integration gates passed.
 - Selected Cloudflare Pages as the Phase 5.11 free web/PWA staging target and added static export support for `apps/web`.
+- Updated Miraichi lifecycle policy so intermediate phases close with evidence and a next-phase recommendation, while formal owner-feedback and production promotion are deferred until final release.
 
 ### Changed
 - Promoted Phase 1 ADRs (ADR-0002, 0004-0011) to Accepted status and ADR-0003 to Proposed status based on project owner decisions.
@@ -45,11 +46,13 @@ Includes all directories and apps under this monorepo.
 - Updated root phase docs to run document status hygiene before Phase 5.10 and keep Phase 5.11 persistence implementation gated behind owner approval.
 - Recorded owner approval of Phase 5.10 Add Bet Draft/Form State + Persistence Planning and gated Phase 5.11 to implementation planning before code.
 - Added Phase 5.11 Local-First Add Bet Draft Persistence implementation plan with TDD slices for shared contracts, form state, memory adapter, IndexedDB adapter, and backup helpers.
+- Recorded Phase 5.11 staging closeout evidence and deferred formal owner-feedback/production until all planned release phases are complete.
 
 ## TODO / Next Steps
 - [x] Review draft Phase 5.10 Add Bet Draft/Form State + Persistence Planning after docs hygiene closes.
 - [x] Start Phase 5.11 Local-First Add Bet Draft Persistence Implementation Planning.
 - [x] Owner review Phase 5.11 implementation plan before any code slice.
-- [x] Run Phase 5.11 integration-test boundary verification before staging or owner-feedback promotion.
-- [x] Run Phase 5.11 staging gate before owner-feedback promotion.
+- [x] Run Phase 5.11 integration-test boundary verification before staging.
+- [x] Run Phase 5.11 staging gate and closeout evidence before the next phase.
 - [x] Create/link Cloudflare Pages project `miraichi-staging`, deployment token, Pages URL, and smoke-check evidence.
+- [ ] Start `phase:plan Phase 6 Testing/Deployment Hardening`.

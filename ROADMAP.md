@@ -97,7 +97,9 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Create Phase 5.11 Local-First Add Bet Draft Persistence Implementation Plan.
 - [x] Owner review Phase 5.11 implementation plan before `phase:code-slice`.
 - [x] Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices.
-- [x] Run `phase:integration-test Phase 5.11` before staging or owner-feedback promotion.
-- [x] Run `phase:staging Phase 5.11` before owner-feedback promotion.
+- [x] Run `phase:integration-test Phase 5.11` before staging.
+- [x] Run `phase:staging Phase 5.11` and record closeout evidence before the next phase.
 - [x] Create/link Cloudflare Pages project `miraichi-staging`, deployment token, Pages URL, and smoke-check evidence.
+- [x] Defer formal owner-feedback and production promotion until all planned release phases are complete.
+- [ ] Start `phase:plan Phase 6 Testing/Deployment Hardening`.
 - [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.

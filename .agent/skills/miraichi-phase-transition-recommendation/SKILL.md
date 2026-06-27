@@ -13,7 +13,9 @@ metadata:
 Prevent vague phase endings. Every phase closeout must state the earliest safe next phase, the gate evidence, and any owner answers needed before work can continue.
 
 ## Core Rule
-Do not say a phase is ready to advance unless the exit gate is satisfied and required owner approval is explicit. If anything is missing, say the transition is blocked and name the missing evidence.
+Do not say a phase is ready to advance unless the exit gate is satisfied and required owner decisions for the next phase are explicit. If anything is missing, say the transition is blocked and name the missing evidence.
+
+Formal `phase:owner-feedback` and `phase:production` are final-release gates by default. For intermediate phase closeouts, recommend the earliest safe next implementation/planning/testing phase instead of owner feedback, unless the owner explicitly asks for a review checkpoint.
 
 ## Required Inputs
 - Current or closing phase.
@@ -26,20 +28,22 @@ Do not say a phase is ready to advance unless the exit gate is satisfied and req
 2. Treat `PROJECT_PLAN.md` as the current phase source of truth when root docs disagree.
 3. Check the current phase exit gate from the lifecycle skill.
 4. Recommend the earliest safe next phase command, not the most ambitious one.
-5. Identify owner review required before that phase can start.
+5. Identify owner decisions required before that phase can start.
 6. For each owner question, give one recommended answer, the reason, and the risk of choosing otherwise.
-7. If approval or answers are missing, mark the next phase as blocked instead of implying permission.
+7. If required approval or answers are missing, mark the next phase as blocked instead of implying permission.
 
 ## Output Format
 Use the user's language and include these sections:
 
 1. **Ket luan thang**: Can the next phase start, yes or no.
 2. **Vi sao**: Source facts and exit gate evidence.
-3. **Owner review can thiet**: Questions or approvals still required.
+3. **Owner decisions can thiet**: Questions, approvals, or final-review blockers still required.
 4. **Khuyen nghi**: Recommended next phase command and recommended answer for each owner question.
 
 ## Rules
 - Never treat local tests, a proposed document, or an agent recommendation as owner approval.
+- Never recommend `phase:owner-feedback` after an intermediate phase unless the owner explicitly requests it or the project plan says this is the final release review.
+- Never recommend `phase:production` until all planned release phases are complete or explicitly removed from scope.
 - Never recommend `phase:code-slice` when the implementation plan lacks exact files, failing test, implementation step, and verification command.
 - Never recommend Phase 5.11 while Phase 5.10 is incomplete, unreviewed, or unapproved.
 - If multiple next phases are possible, choose the earliest safe lifecycle phase and explain why.
@@ -49,7 +53,7 @@ Use the user's language and include these sections:
 | Mistake | Correct behavior |
 | --- | --- |
 | "Looks ready" without evidence | Cite the exact gate and document evidence. |
-| Skipping owner review because docs are detailed | Require explicit owner approval when the lifecycle says so. |
+| Recommending owner review after every phase | Use phase closeout for intermediate phases; reserve formal owner review for final release unless explicitly requested. |
 | Recommending implementation too early | Recommend `phase:implementation-plan` until TDD slices are exact. |
 | Listing questions without guidance | Recommend an answer for every question and state the risk. |
 

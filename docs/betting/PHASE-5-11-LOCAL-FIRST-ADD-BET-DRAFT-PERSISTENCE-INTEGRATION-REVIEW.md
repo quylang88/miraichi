@@ -67,7 +67,7 @@ Result:
 
 * The current repo `test:integration` command is an orchestrated cross-boundary gate for existing Phase 3, Phase 4, endpoint, and PWA checks. It does not yet include a dedicated browser E2E flow for Phase 5.11 Add Bet draft persistence.
 * Phase 5.11 persistence modules are not wired into a production Add Bet UI flow yet. That is correct for this phase; UI wiring requires a separate owner-approved slice.
-* Staging has not been run. The next lifecycle gate must verify whether a staging target exists before any owner-feedback or production promotion.
+* Staging has since been run through Cloudflare Pages. Intermediate phase closeout should proceed to the next safe phase, not formal owner-feedback or production promotion.
 
 ---
 

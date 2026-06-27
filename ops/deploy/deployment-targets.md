@@ -14,7 +14,7 @@ Infrastructure details for web, api, local-ai, and background workers.
 
 ## Target Architecture
 - **Web App Staging**: Cloudflare Pages project `miraichi-staging`.
-- **Web App Production**: Deferred until staging smoke evidence and owner approval.
+- **Web App Production**: Deferred until all planned release phases are complete and final owner approval is explicit.
 - **Backend API & Workers**: AWS ECS / GCP Cloud Run / VPS.
 - **Local AI Inference**: Dedicated GPU instance (AWS EC2 / RunPod) or serverless CPU environments.
 
@@ -35,7 +35,7 @@ Constraints:
 - The staging target covers `apps/web` only.
 - API, local-ai, worker, database, auth, and cloud sync remain out of scope.
 - The project owner must provide Cloudflare account access and deployment token before deployment can run.
-- Production target selection remains separate and requires explicit owner approval.
+- Production target selection remains separate and requires explicit final-release owner approval.
 
 ## TODO / Next Steps
 - [x] Select Cloudflare Pages for Phase 5.11 web staging.

@@ -17,7 +17,8 @@ Pull Request submission files reviews.
 - [ ] `pnpm run verify:local` passes.
 - [ ] `pnpm run test:integration` passes only when this PR closes a large feature boundary or moves toward staging.
 - [ ] Endpoint E2E is included only for large feature boundary completion, not for every small current-code slice.
-- [ ] Staging owner approval is recorded before production promotion.
+- [ ] Intermediate phase closeout evidence is recorded before starting the next phase.
+- [ ] Final owner approval is recorded before production promotion.
 - [ ] Code builds without errors.
 - [ ] All automated tests pass successfully.
 - [ ] The change is competition-agnostic.

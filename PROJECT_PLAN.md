@@ -17,6 +17,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 3. Every phase must pass verification guidelines defined in the workflow files.
 4. All implementation and release work must follow `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
 5. `PROJECT_PLAN.md` is the source of truth for the current project phase when root docs disagree.
+6. Intermediate phases must close with evidence and a next-phase recommendation, not formal owner-feedback or production promotion. Final owner review and production promotion happen only after all planned release phases are complete or explicitly removed from scope.
+7. Guardrail-sensitive decisions still require explicit owner direction before implementation, even when formal owner review is deferred.
 
 ## Project Phases
 
@@ -50,9 +52,9 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, accepted ADR-0034 TypeScript technical direction, Phase 5.3 Wave A implementation planning documents, Phase 5.4 TypeScript tooling setup, Phase 5.5 Typed Shared Domain Contracts, Phase 5.6 Market Catalog and Line Preset Config, Phase 5.7A Black Apple Ledger PWA UI preview closure, Phase 5.8 App Settings, Language/i18n, and UI Flexibility Planning package, Phase 5.9 Production PWA Shell Implementation, pre-Phase 5.10 document status hygiene, owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning, and Phase 5.11 local-first Add Bet draft persistence and backup/import code slices.
 - **Status**: Active.
 
-### Phase 6: Testing/Deployment
-- **Goal**: Perform end-to-end integration, security audits, and production deployments.
-- **Deliverables**: Accepted CI/CD workflows, deployment artifacts, and monitoring dashboards.
+### Phase 6: Testing/Deployment Hardening
+- **Goal**: Perform end-to-end integration, security audits, staging deployment hardening, CI/CD automation planning, and non-production release readiness work.
+- **Deliverables**: Accepted CI/CD workflows, repeatable staging deployment artifacts, smoke-check automation, rollback notes, and monitoring plan drafts.
 - **Status**: TODO.
 
 ### Phase 7: Real Data Provider, Dataset, and Evaluation Planning
@@ -94,7 +96,9 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Create Phase 5.11 Local-First Add Bet Draft Persistence Implementation Plan.
 - [x] Owner review Phase 5.11 implementation plan before `phase:code-slice`.
 - [x] Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices.
-- [x] Run `phase:integration-test Phase 5.11` before staging or owner-feedback promotion.
-- [x] Run `phase:staging Phase 5.11` before owner-feedback promotion.
+- [x] Run `phase:integration-test Phase 5.11` before staging.
+- [x] Run `phase:staging Phase 5.11` and record closeout evidence before the next phase.
 - [x] Create/link Cloudflare Pages project `miraichi-staging`, deployment token, Pages URL, and smoke-check evidence.
+- [x] Defer formal owner-feedback and production promotion until all planned release phases are complete.
+- [ ] Start `phase:plan Phase 6 Testing/Deployment Hardening`.
 - [ ] Keep real AI training out of Phase 5; plan it only through future Phase 7 and Phase 8 ADRs.

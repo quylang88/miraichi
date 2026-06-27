@@ -33,8 +33,9 @@ Do not commit actual Cloudflare credentials.
 - `pnpm run verify:release` must pass before staging deployment.
 - If staging targets, credentials, or sandbox URLs are not configured, fail fast and report the missing target instead of pretending a deployment happened.
 - For Phase 5.11, deploy only the web/PWA staging surface to Cloudflare Pages.
-- Execute staging smoke checks before promoting to owner feedback.
-- Prepare an owner review pack with changed scope, test evidence, staging URL, known risks, and rollback notes.
+- Execute staging smoke checks before closing the intermediate phase.
+- Prepare a phase closeout pack with changed scope, test evidence, staging URL, known risks, rollback notes, and the recommended next phase.
+- Do not promote an intermediate phase to formal owner-feedback or production unless the owner explicitly requests that checkpoint.
 
 ## Phase 5.11 Deployment Command
 
@@ -89,3 +90,4 @@ After deployment, verify:
 - [x] Configure Cloudflare deployment credentials outside the repository.
 - [x] Run Phase 5.11 staging deploy command.
 - [x] Record staging URL and smoke-check evidence.
+- [x] Defer formal owner-feedback and production promotion until all planned release phases are complete.

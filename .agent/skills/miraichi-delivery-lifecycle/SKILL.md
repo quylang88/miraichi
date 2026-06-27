@@ -9,7 +9,9 @@ description: Use when planning, coding, testing, staging, releasing, or maintain
 
 Treat Miraichi like a real production project:
 
-`plan -> implementation plan -> code slice with TDD -> full integration -> staging -> owner review -> production -> maintenance`
+`plan -> implementation plan -> code slice with TDD -> full integration -> staging -> phase closeout -> next phase`
+
+Formal owner feedback and production promotion are final-release gates, not mandatory after every intermediate phase. Intermediate phases must still produce evidence and a next-phase recommendation.
 
 No phase may skip its exit gate. A fast shortcut that removes evidence is a broken workflow.
 
@@ -30,8 +32,8 @@ No phase may skip its exit gate. A fast shortcut that removes evidence is a brok
 | `phase:code-slice <task>` | One small implementation slice | Failing unit test observed, minimal code written, unit test passes, relevant local checks pass; do not run integration or endpoint E2E unless this slice closes a large feature boundary |
 | `phase:integration-test` | Full local and cross-boundary verification after a large feature boundary is complete | `pnpm run verify:local` and `pnpm run test:integration` pass |
 | `phase:staging` | Staging deployment and staging smoke checks | `pnpm run verify:release` passes and staging target is configured; otherwise fail fast |
-| `phase:owner-feedback` | Package staging evidence and owner feedback | Owner gives explicit approval or requested changes become new lifecycle work |
-| `phase:production` | Production promotion | Staging smoke passed, owner approval is explicit, rollback path is known |
+| `phase:owner-feedback` | Final-release owner review, or an explicit owner-requested review checkpoint | Owner gives explicit approval or requested changes become new lifecycle work |
+| `phase:production` | Final-release production promotion | All planned phases for the release are complete, staging smoke passed, owner approval is explicit, rollback path is known |
 | `phase:maintenance <change>` | Bugfixes and extensions after release | Same lifecycle as normal work; no hotfix bypass |
 
 ## Mandatory Gates
@@ -98,9 +100,17 @@ Do not deploy to staging unless it passes.
 ## Staging And Production
 
 - If no staging target is configured, stop and report the missing target. Do not pretend a deploy happened.
-- Staging must produce an owner review pack: changed scope, test evidence, staging URL or explicit missing-target reason, known risks.
-- Production requires explicit owner approval after staging. Local pass alone is not production approval.
+- Staging must produce a phase closeout pack: changed scope, test evidence, staging URL or explicit missing-target reason, known risks, and the recommended next phase.
+- Intermediate phases do not automatically enter `phase:owner-feedback` or `phase:production`.
+- Production requires all planned release phases to be complete and explicit owner approval after final-release review. Local pass or intermediate staging pass alone is not production approval.
 - Maintenance and feature expansion must start again at `phase:plan` or `phase:code-slice`, depending on whether the owner already approved the exact change.
+
+## Final-Release Review Policy
+
+- Do not recommend `phase:owner-feedback` after an intermediate phase unless the owner explicitly asks for a review checkpoint.
+- Do not recommend `phase:production` until the project plan marks all planned release phases complete or explicitly out of scope.
+- Phase closeout responses must still recommend the next phase and list any owner decisions that would block that next phase.
+- Guardrail-sensitive decisions remain blocked without explicit owner direction even when formal owner review is deferred. This includes business logic, prediction algorithms, betting calculations, real provider selection, cloud sync, auth, production database schemas, paid infrastructure, and secrets.
 
 ## Test Policy
 
@@ -123,7 +133,7 @@ Do not deploy to staging unless it passes.
 Stop and ask or report a blocker when:
 
 - The active phase is unclear and cannot be inferred safely.
-- Required owner approval is missing.
+- Required owner approval or guardrail-sensitive owner direction is missing.
 - A staging or production target is missing.
 - A verification command fails.
 - Implementing the request would cross a guardrail boundary.
