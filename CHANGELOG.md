@@ -43,6 +43,7 @@ Includes all directories and apps under this monorepo.
 - Added Phase 6 smoke-check script review evidence.
 - Added check-only GitHub Actions CI workflow for lifecycle, unit, syntax, typecheck, and audit gates.
 - Added owner-approved Phase 6 repo-wide JavaScript-to-TypeScript migration review evidence.
+- Added Phase 6 TypeScript Strictness Hardening implementation plan to convert TypeScript source migration into enforced source-level type safety.
 
 ### Changed
 - Promoted Phase 1 ADRs (ADR-0002, 0004-0011) to Accepted status and ADR-0003 to Proposed status based on project owner decisions.
@@ -66,6 +67,7 @@ Includes all directories and apps under this monorepo.
 - Implemented Phase 6 CI check workflow with TDD and kept Cloudflare deployment automation blocked.
 - Migrated tracked implementation source under `apps/`, `packages/`, and `scripts/` from JavaScript to TypeScript, added `tsx` runtime wiring, and preserved browser-facing `.js` compatibility URLs.
 - Tightened lifecycle, guardrail, workflow, module-map, and frontend docs so new tracked implementation source stays TypeScript-first after the repo-wide migration.
+- Deferred Phase 6 staging until TypeScript strictness hardening code slices add an audit gate, remove explicit `any`, and enable stricter compiler flags.
 
 ## TODO / Next Steps
 - [x] Review draft Phase 5.10 Add Bet Draft/Form State + Persistence Planning after docs hygiene closes.
@@ -83,4 +85,6 @@ Includes all directories and apps under this monorepo.
 - [x] Complete `phase:code-slice Phase 6 staging smoke-check script`.
 - [x] Complete `phase:code-slice Phase 6 CI check workflow`.
 - [x] Complete owner-requested `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration`.
-- [ ] Run `phase:staging Phase 6 hardened staging process` to deploy the refreshed TypeScript-sourced static artifact and record new smoke evidence.
+- [x] Create `phase:implementation-plan Phase 6 TypeScript Strictness Hardening`.
+- [ ] Start `phase:code-slice Phase 6 type-safety audit gate`.
+- [ ] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.

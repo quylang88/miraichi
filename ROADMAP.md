@@ -65,6 +65,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Plan security and secrets checks without committing credentials.
 - Draft repeatable smoke-check automation, rollback notes, and monitoring plans.
 - Complete the owner-approved repo-wide JavaScript-to-TypeScript source migration while preserving browser `.js` compatibility URLs.
+- Harden TypeScript strictness so future source code cannot regress to explicit `any`, tracked `.js` source, or TypeScript suppression comments.
 - Keep production promotion blocked until final-release owner approval.
 
 ### Milestone 8: Real Data Provider, Dataset, and Evaluation Planning (Future)
@@ -119,5 +120,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Complete `phase:code-slice Phase 6 staging smoke-check script`.
 - [x] Complete `phase:code-slice Phase 6 CI check workflow`.
 - [x] Complete owner-requested `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration`.
-- [ ] Run `phase:staging Phase 6 hardened staging process` to deploy the refreshed TypeScript-sourced static artifact and record new smoke evidence.
+- [x] Create `phase:implementation-plan Phase 6 TypeScript Strictness Hardening`.
+- [ ] Start `phase:code-slice Phase 6 type-safety audit gate`.
+- [ ] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
 - [ ] Keep real AI training out of Phase 6; reserve it for future Phase 7 and Phase 8 planning.
