@@ -12,16 +12,18 @@ const ASSETS_TO_CACHE = [
   '/apps/web/src/services/i18n-service.js'
 ];
 
-self.addEventListener('install', (event) => {
+const serviceWorkerScope = self as any;
+
+serviceWorkerScope.addEventListener('install', (event: any) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
-  self.skipWaiting();
+  serviceWorkerScope.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
+serviceWorkerScope.addEventListener('activate', (event: any) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -33,10 +35,10 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  self.clients.claim();
+  serviceWorkerScope.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
+serviceWorkerScope.addEventListener('fetch', (event: any) => {
   const url = new URL(event.request.url);
 
   // Network-first or pass-through for API and AI routes

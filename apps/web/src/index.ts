@@ -12,7 +12,7 @@ const ROOT_DIR = pathModule.resolve(__dirname, '../../../');
 const PORT = process.env.PORT || 3010;
 
 const server = http.createServer((req, res) => {
-  const requestUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   const url = requestUrl.pathname;
 
   // SPA Entry
@@ -22,7 +22,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  let filePath = null;
+  let filePath: string | null = null;
   let contentType = 'text/plain';
 
   // PWA Routes
@@ -30,7 +30,7 @@ const server = http.createServer((req, res) => {
     filePath = pathModule.join(ROOT_DIR, 'apps/web/public/manifest.webmanifest');
     contentType = 'application/manifest+json';
   } else if (url === '/service-worker.js') {
-    filePath = pathModule.join(ROOT_DIR, 'apps/web/public/service-worker.js');
+    filePath = pathModule.join(ROOT_DIR, 'apps/web/public/service-worker.ts');
     contentType = 'application/javascript';
   } else if (
     url === '/favicon.ico' ||
@@ -66,7 +66,7 @@ const server = http.createServer((req, res) => {
   }
 });
 
-function resolveWebSourcePath(url) {
+function resolveWebSourcePath(url: string) {
   const requestedPath = pathModule.join(ROOT_DIR, url);
   if (fs.existsSync(requestedPath)) {
     return requestedPath;
@@ -82,7 +82,7 @@ function resolveWebSourcePath(url) {
   return requestedPath;
 }
 
-function serveStaticFile(res, filePath, contentType) {
+function serveStaticFile(res: http.ServerResponse, filePath: string, contentType: string) {
   if (filePath.endsWith('.ts')) {
     const source = fs.readFileSync(filePath, 'utf8');
     const transpiled = ts.transpileModule(source, {

@@ -13,14 +13,14 @@ async function verifyPhase4() {
   console.log('[Phase 4 Verify] Starting Phase 4.3 Mock Local AI verification tests...');
 
   const filesToCheck = [
-    'apps/local-ai/src/input/input-candidate-validator.js',
-    'apps/local-ai/src/input/mock-input-candidate.js',
-    'apps/local-ai/src/engines/prediction-strategy-interface.js',
-    'apps/local-ai/src/engines/mock-prediction-engine.js',
-    'apps/local-ai/src/output/prediction-envelope-builder.js',
-    'apps/local-ai/src/explainability/mock-explanation-refusal.js',
-    'apps/local-ai/src/routes/mock-prediction.js',
-    'apps/local-ai/src/routes/mock-explanation.js'
+    'apps/local-ai/src/input/input-candidate-validator.ts',
+    'apps/local-ai/src/input/mock-input-candidate.ts',
+    'apps/local-ai/src/engines/prediction-strategy-interface.ts',
+    'apps/local-ai/src/engines/mock-prediction-engine.ts',
+    'apps/local-ai/src/output/prediction-envelope-builder.ts',
+    'apps/local-ai/src/explainability/mock-explanation-refusal.ts',
+    'apps/local-ai/src/routes/mock-prediction.ts',
+    'apps/local-ai/src/routes/mock-explanation.ts'
   ];
 
   // 1. Verify files exist
@@ -79,7 +79,7 @@ async function verifyPhase4() {
     console.error('  ❌ Failure: explanationAvailable is true for refusal.');
     process.exit(1);
   }
-  if (!explanation.text.includes('No prediction data is available')) {
+  if (!explanation.text || !explanation.text.includes('No prediction data is available')) {
     console.error('  ❌ Failure: explanation text does not contain refusal message.');
     process.exit(1);
   }
@@ -118,7 +118,7 @@ async function scanDir(dirPath, keywords) {
     const fullPath = path.join(dirPath, entry.name);
     if (entry.isDirectory()) {
       await scanDir(fullPath, keywords);
-    } else if (entry.isFile() && entry.name.endsWith('.js')) {
+    } else if (entry.isFile() && (entry.name.endsWith('.js') || entry.name.endsWith('.ts'))) {
       const content = await fs.readFile(fullPath, 'utf-8');
       const lowerContent = content.toLowerCase();
 

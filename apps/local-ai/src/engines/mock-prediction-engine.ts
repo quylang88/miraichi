@@ -1,5 +1,5 @@
 /**
- * mock-prediction-engine.js
+ * mock-prediction-engine.ts
  * Scaffolds the mock prediction engine that runs the input candidate validator
  * and maps properties into a traceable prediction envelope.
  */
@@ -15,7 +15,7 @@ export function runMockPrediction(inputCandidate) {
   }
 
   // 2. Prepare warnings list
-  const warnings = [
+  const warnings: string[] = [
     'Mock engine only. No prediction algorithm has been approved.',
     ...validation.warnings
   ];

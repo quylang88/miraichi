@@ -3,9 +3,9 @@ import { handleHealth } from './health.js';
 
 function createMockResponse() {
   return {
-    statusCode: undefined,
-    headers: undefined,
-    body: undefined,
+    statusCode: undefined as number | undefined,
+    headers: undefined as Record<string, string> | undefined,
+    body: undefined as string | undefined,
     writeHead(statusCode, headers) {
       this.statusCode = statusCode;
       this.headers = headers;
@@ -24,7 +24,7 @@ describe('api health route', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.headers).toEqual({ 'Content-Type': 'application/json' });
-    expect(JSON.parse(response.body)).toMatchObject({
+    expect(JSON.parse(response.body || '{}')).toMatchObject({
       status: 'ok',
       service: 'api-mediation-gateway'
     });

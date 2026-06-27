@@ -3,17 +3,19 @@
  * Fully competition-agnostic. No business logic.
  */
 export class MockProviderAdapter {
+  providerId: string;
+
   constructor() {
     this.providerId = "provider-mock-alpha";
   }
 
-  parseMatches(rawMatches) {
+  parseMatches(rawMatches): Array<Record<string, any>> {
     if (!Array.isArray(rawMatches)) {
       throw new Error("Raw matches must be an array");
     }
 
     return rawMatches.map((raw) => {
-      const normalized = {
+      const normalized: Record<string, any> = {
         id: raw.fixture_id,
         competitionId: raw.comp_name,
         seasonId: raw.season_year,
@@ -38,7 +40,7 @@ export class MockProviderAdapter {
     });
   }
 
-  parseMarkets(rawMarkets) {
+  parseMarkets(rawMarkets): Array<Record<string, any>> {
     if (!Array.isArray(rawMarkets)) {
       throw new Error("Raw markets must be an array");
     }

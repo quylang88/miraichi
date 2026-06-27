@@ -15,20 +15,20 @@ This slice does not add CI deployment, Cloudflare secrets, production promotion,
 
 | Requirement | Result | Evidence |
 | :--- | :---: | :--- |
-| Failing test observed before implementation | PASS | `pnpm exec vitest run scripts/staging-smoke-check.test.js` failed because `scripts/staging-smoke-check.js` did not exist. |
-| Minimal implementation added | PASS | `scripts/staging-smoke-check.js` and `smoke:staging` package script were added. |
+| Failing test observed before implementation | PASS | `pnpm exec vitest run scripts/staging-smoke-check.test.js` failed because `scripts/staging-smoke-check.js` did not exist; this was later migrated to `.ts` by the repo-wide migration. |
+| Minimal implementation added | PASS | `scripts/staging-smoke-check.js` and `smoke:staging` package script were added, then migrated to `scripts/staging-smoke-check.ts` and `tsx`. |
 | Regression test added for `pnpm run ... -- URL` parsing | PASS | Test failed first with `resolveCliBaseUrl is not a function`, then passed after implementation. |
-| Focused unit test passed | PASS | `scripts/staging-smoke-check.test.js`: 7 tests passed. |
+| Focused unit test passed | PASS | `scripts/staging-smoke-check.test.ts`: 7 tests passed after migration. |
 | Typecheck passed | PASS | `pnpm run typecheck` exited with code 0. |
 | Public staging smoke passed | PASS | `pnpm run smoke:staging -- https://e9b19946.miraichi-staging.pages.dev` passed all five smoke checks. |
 | Full local verification passed | PASS | `pnpm run verify:local` passed lifecycle, 19 test files / 70 tests, JS syntax check, typecheck, and audit. |
 | Lifecycle and diff checks passed | PASS | `pnpm run verify:lifecycle` and `git diff --check` exited with code 0. |
-| Forbidden scope stayed out of smoke code | PASS | `scripts/staging-smoke-check.js` and `scripts/staging-smoke-check.test.js` contain no deploy, secret, database, betting formula, prediction, or recommendation markers. |
+| Forbidden scope stayed out of smoke code | PASS | `scripts/staging-smoke-check.ts` and `scripts/staging-smoke-check.test.ts` contain no deploy, secret, database, betting formula, prediction, or recommendation markers. |
 
 ## Commands Verified
 
 ```powershell
-pnpm exec vitest run scripts/staging-smoke-check.test.js
+pnpm exec vitest run scripts/staging-smoke-check.test.ts
 pnpm run typecheck
 pnpm run smoke:staging -- https://e9b19946.miraichi-staging.pages.dev
 pnpm run verify:lifecycle
@@ -48,9 +48,7 @@ PASS ui css https://e9b19946.miraichi-staging.pages.dev/packages/ui/src/index.cs
 
 ## JavaScript To TypeScript Migration Note
 
-This slice intentionally keeps the root smoke checker as JavaScript because existing root verification scripts are JavaScript and Phase 6.2 only approved smoke-check automation.
-
-A JS-to-TS migration remains blocked until a separate approved slice names the exact files, behavior-preservation tests, and verification command. Do not hide migration inside this smoke-check slice.
+This review started from the original smoke-check slice. The owner later approved repo-wide JavaScript-to-TypeScript migration, so the smoke checker now lives at `scripts/staging-smoke-check.ts` and is executed by `tsx`.
 
 ## Recommended Next Phase
 

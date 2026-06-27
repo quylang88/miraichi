@@ -1,5 +1,5 @@
 /**
- * mock-prediction.js
+ * mock-prediction.ts
  * Router endpoint for POST /ai/v1/mock/predict.
  * Returns standard traceable prediction envelopes and defaults to mock refusal.
  */

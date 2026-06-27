@@ -54,8 +54,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 
 ### Phase 6: Testing/Deployment Hardening
 - **Goal**: Perform end-to-end integration, security audits, staging deployment hardening, CI/CD automation planning, and non-production release readiness work.
-- **Deliverables**: Accepted CI/CD workflows, repeatable staging deployment artifacts, smoke-check automation, rollback notes, and monitoring plan drafts.
-- **Status**: Active Planning.
+- **Deliverables**: Accepted CI/CD workflows, repeatable staging deployment artifacts, smoke-check automation, owner-approved repo-wide JavaScript-to-TypeScript source migration, rollback notes, and monitoring plan drafts.
+- **Status**: Active Implementation.
 
 ### Phase 7: Real Data Provider, Dataset, and Evaluation Planning
 - **Goal**: Plan real provider selection, dataset construction, data quality, evaluation methodology, and governance for future real prediction work. The first provider target may be full FIFA World Cup fixture coverage, but implementation must remain competition-agnostic and adapter-based.
@@ -109,5 +109,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Owner review Phase 6 CI/CD and Staging Smoke Automation implementation plan before `phase:code-slice`.
 - [x] Complete `phase:code-slice Phase 6 staging smoke-check script`.
 - [x] Complete `phase:code-slice Phase 6 CI check workflow`.
-- [ ] Start `phase:code-slice Phase 6 migrate PWA service-worker registration JS to TS`.
-- [ ] Keep real AI training out of Phase 5; plan it only through future Phase 7 and Phase 8 ADRs.
+- [x] Complete owner-requested `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration`.
+- [ ] Run `phase:staging Phase 6 hardened staging process` to deploy the refreshed TypeScript-sourced static artifact and record new smoke evidence.
+- [ ] Keep real AI training out of Phase 6; plan it only through future Phase 7 and Phase 8 ADRs.

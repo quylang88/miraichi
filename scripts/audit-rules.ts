@@ -18,8 +18,8 @@ const RULES = [
     message: 'Hardcoded specific tournament/competition name found. Miraichi must remain competition-agnostic.',
     // Allowed files for this specific rule (tests and validators checking agnosticism checks)
     allowList: [
-      'packages/config/src/competition-registry.mock.js',
-      'scripts/phase2-verify.js'
+      'packages/config/src/competition-registry.mock.ts',
+      'scripts/phase2-verify.ts'
     ]
   },
   {
@@ -50,7 +50,7 @@ function scanDir(dirPath) {
     } else if (
       entry.isFile() &&
       (entry.name.endsWith('.js') || entry.name.endsWith('.ts')) &&
-      relativePath !== 'scripts/audit-rules.js'
+      relativePath !== 'scripts/audit-rules.ts'
     ) {
       const content = fs.readFileSync(fullPath, 'utf8');
       

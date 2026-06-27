@@ -1,5 +1,5 @@
 /**
- * prediction-envelope-builder.js
+ * prediction-envelope-builder.ts
  * Centralizes construction of prediction output envelopes.
  * Defaults to safe mock values and does not calculate probabilities,
  * outcome labels, or betting wagers.
@@ -17,7 +17,7 @@ export function buildPredictionEnvelope({
   outputSummary = 'No owner-approved prediction algorithm is active.',
   traceInput = {},
   warnings = []
-}) {
+}: Record<string, any>) {
   const predictionId = `pred-${crypto.randomUUID()}`;
   const generatedAt = new Date().toISOString();
 

@@ -4,8 +4,8 @@
 Plan the non-production hardening work needed before any later final-release owner review or production promotion.
 
 ## Status
-- **Status**: Active Planning
-- **Review Status**: Owner approved implementation planning via `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`; implementation plan created.
+- **Status**: Active Implementation
+- **Review Status**: Owner approved implementation planning via `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`; smoke automation, check-only CI, and owner-requested repo-wide JavaScript-to-TypeScript migration have local/integration evidence.
 
 ## Scope
 Phase 6 covers CI/CD workflow planning, repeatable staging deployment hardening, smoke-check automation planning, rollback notes, security/secrets audit planning, and monitoring plan drafts.
@@ -21,7 +21,7 @@ This phase does not approve production, does not create production infrastructur
 | Release verification | `pnpm run verify:release` chains local and integration checks. | Required before staging and any release candidate. |
 | Staging verification | `pnpm run verify:staging` runs release verification and rebuilds `apps/web/dist`. | Required before any Cloudflare Pages staging deploy. |
 | Staging deploy | `pnpm run deploy:staging:local` loads ignored `.env.local`, verifies staging, then deploys to Cloudflare Pages. | Manual staging is working; CI automation still needs owner-approved secret handling. |
-| Latest staging evidence | `https://e9b19946.miraichi-staging.pages.dev` smoke-checked after Phase 5.12. | Use as the latest non-production reference URL until a newer staging deploy replaces it. |
+| Latest staging evidence | `https://e9b19946.miraichi-staging.pages.dev` smoke-checked by the Phase 6 script after migration. | This proves the existing public staging URL still responds, but it is not a redeploy of the TypeScript-sourced artifact. Run Phase 6 staging next to refresh deployment evidence. |
 
 ## Workstreams
 
@@ -130,9 +130,9 @@ Recommended answer: no. Use scripted smoke checks and manual QA first; paid moni
 | 6.2 | `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation` | `ops/PHASE-6-CI-CD-STAGING-SMOKE-AUTOMATION-IMPLEMENTATION-PLAN.md`. |
 | 6.3 | `phase:code-slice Phase 6 smoke-check script` | Completed by `ops/PHASE-6-STAGING-SMOKE-CHECK-SCRIPT-REVIEW.md`. |
 | 6.4 | `phase:code-slice Phase 6 CI check workflow` | Completed by `ops/PHASE-6-CI-CHECK-WORKFLOW-REVIEW.md`. |
-| 6.5 | `phase:code-slice Phase 6 migrate PWA service-worker registration JS to TS` | Narrow owner-requested migration slice added to the implementation plan. |
-| 6.6 | `phase:integration-test Phase 6 verification hardening` | `pnpm run verify:local` and relevant integration checks pass after workflow/script/migration changes. |
-| 6.7 | `phase:staging Phase 6 hardened staging process` | Staging deploy and automated/manual smoke evidence refreshed. |
+| 6.5 | `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration` | Completed by `ops/PHASE-6-REPO-WIDE-TYPESCRIPT-MIGRATION-REVIEW.md`. |
+| 6.6 | `phase:integration-test Phase 6 verification hardening` | Completed locally as part of the migration review: `pnpm run verify:local` and `pnpm run test:integration` passed. |
+| 6.7 | `phase:staging Phase 6 hardened staging process` | Next required step: staging deploy and automated smoke evidence refreshed from the TypeScript-sourced static artifact. |
 
 ## Exit Gate For This Planning Phase
 
@@ -144,10 +144,10 @@ This `phase:plan` can close only when:
 4. Secret handling policy is explicit.
 5. The next lifecycle command is chosen.
 
-Recommended next command after the CI check workflow slice:
+Recommended next command after the repo-wide TypeScript migration:
 
 ```text
-phase:code-slice Phase 6 migrate PWA service-worker registration JS to TS
+phase:staging Phase 6 hardened staging process
 ```
 
-Do not start `phase:code-slice` until the implementation plan lists exact files, failing tests, implementation steps, and verification commands.
+Do not treat the existing staging smoke pass as production approval or as proof that the newly built artifact was deployed. It only proves the current public staging URL is healthy.

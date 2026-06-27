@@ -1,5 +1,5 @@
 /**
- * mock-explanation-refusal.js
+ * mock-explanation-refusal.ts
  * Evaluates prediction envelopes and returns natural language refusal rationales
  * when predictionAvailable is false. Does not speculate, invent predictions,
  * or connect to external LLMs.

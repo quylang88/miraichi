@@ -42,7 +42,7 @@ Includes all directories and apps under this monorepo.
 - Added repeatable staging smoke-check script and `pnpm run smoke:staging`.
 - Added Phase 6 smoke-check script review evidence.
 - Added check-only GitHub Actions CI workflow for lifecycle, unit, syntax, typecheck, and audit gates.
-- Added a narrow Phase 6 JavaScript-to-TypeScript migration slice for the PWA service-worker registration module.
+- Added owner-approved Phase 6 repo-wide JavaScript-to-TypeScript migration review evidence.
 
 ### Changed
 - Promoted Phase 1 ADRs (ADR-0002, 0004-0011) to Accepted status and ADR-0003 to Proposed status based on project owner decisions.
@@ -64,6 +64,8 @@ Includes all directories and apps under this monorepo.
 - Recorded owner approval to move Phase 6 from planning into implementation planning while keeping code slices gated behind owner review.
 - Implemented Phase 6 staging smoke-check script with TDD and kept JS-to-TS migration as a separate required slice.
 - Implemented Phase 6 CI check workflow with TDD and kept Cloudflare deployment automation blocked.
+- Migrated tracked implementation source under `apps/`, `packages/`, and `scripts/` from JavaScript to TypeScript, added `tsx` runtime wiring, and preserved browser-facing `.js` compatibility URLs.
+- Tightened lifecycle, guardrail, workflow, module-map, and frontend docs so new tracked implementation source stays TypeScript-first after the repo-wide migration.
 
 ## TODO / Next Steps
 - [x] Review draft Phase 5.10 Add Bet Draft/Form State + Persistence Planning after docs hygiene closes.
@@ -80,4 +82,5 @@ Includes all directories and apps under this monorepo.
 - [x] Owner review Phase 6 CI/CD and Staging Smoke Automation implementation plan before `phase:code-slice`.
 - [x] Complete `phase:code-slice Phase 6 staging smoke-check script`.
 - [x] Complete `phase:code-slice Phase 6 CI check workflow`.
-- [ ] Start `phase:code-slice Phase 6 migrate PWA service-worker registration JS to TS`.
+- [x] Complete owner-requested `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration`.
+- [ ] Run `phase:staging Phase 6 hardened staging process` to deploy the refreshed TypeScript-sourced static artifact and record new smoke evidence.

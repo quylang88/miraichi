@@ -1,5 +1,5 @@
 /**
- * mock-prediction.js
+ * mock-prediction.ts
  * API Gateway route for POST /api/v1/mock/predict.
  * Proxies to local-ai /ai/v1/mock/predict, falling back to a safe envelope if unreachable.
  */
@@ -30,7 +30,7 @@ export function handleMockPredict(req, res) {
   });
 
   req.on('end', async () => {
-    let inputCandidate = {};
+    let inputCandidate: Record<string, any> = {};
     try {
       if (body.trim()) {
         inputCandidate = JSON.parse(body);

@@ -4,7 +4,7 @@
  */
 
 export function validateMatch(match) {
-  const errors = [];
+  const errors: string[] = [];
   if (!match.id) errors.push("Missing id");
   if (!match.competitionId) errors.push("Missing competitionId");
   if (!match.seasonId) errors.push("Missing seasonId");
@@ -33,7 +33,7 @@ export function validateMatch(match) {
 }
 
 export function validateMarket(market) {
-  const errors = [];
+  const errors: string[] = [];
   if (!market.id) errors.push("Missing id");
   if (!market.matchId) errors.push("Missing matchId");
   if (!market.marketName) errors.push("Missing marketName");

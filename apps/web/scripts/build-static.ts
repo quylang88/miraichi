@@ -18,15 +18,15 @@ const SOURCE_ROOTS = [
 
 const PUBLIC_DIR = path.join(WEB_DIR, 'public');
 
-function ensureDirectory(directoryPath) {
+function ensureDirectory(directoryPath: string) {
   fs.mkdirSync(directoryPath, { recursive: true });
 }
 
-function removeDirectory(directoryPath) {
+function removeDirectory(directoryPath: string) {
   fs.rmSync(directoryPath, { force: true, recursive: true });
 }
 
-function copyDirectory(sourceDirectory, targetDirectory) {
+function copyDirectory(sourceDirectory: string, targetDirectory: string) {
   if (!fs.existsSync(sourceDirectory)) {
     return;
   }
@@ -35,27 +35,34 @@ function copyDirectory(sourceDirectory, targetDirectory) {
 
   for (const entry of fs.readdirSync(sourceDirectory, { withFileTypes: true })) {
     const sourcePath = path.join(sourceDirectory, entry.name);
-    const targetPath = path.join(targetDirectory, entry.name);
+    const targetFileName = entry.name.endsWith('.ts')
+      ? entry.name.replace(/\.ts$/, '.js')
+      : entry.name;
+    const targetPath = path.join(targetDirectory, targetFileName);
 
     if (entry.isDirectory()) {
       copyDirectory(sourcePath, targetPath);
     } else if (entry.isFile()) {
       ensureDirectory(path.dirname(targetPath));
-      fs.copyFileSync(sourcePath, targetPath);
+      if (sourcePath.endsWith('.ts')) {
+        fs.writeFileSync(targetPath, transpileTypeScriptFile(sourcePath));
+      } else {
+        fs.copyFileSync(sourcePath, targetPath);
+      }
     }
   }
 }
 
-function shouldSkipSourceFile(sourcePath) {
+function shouldSkipSourceFile(sourcePath: string) {
   return (
     sourcePath.endsWith('.test.js') ||
     sourcePath.endsWith('.test.ts') ||
     sourcePath.endsWith('.typecheck.ts') ||
-    sourcePath.endsWith(path.normalize('apps/web/src/index.js'))
+    sourcePath.endsWith(path.normalize('apps/web/src/index.ts'))
   );
 }
 
-function exportSourceTree(sourceRoot) {
+function exportSourceTree(sourceRoot: string) {
   const absoluteSourceRoot = path.join(ROOT_DIR, sourceRoot);
 
   if (!fs.existsSync(absoluteSourceRoot)) {
@@ -66,6 +73,9 @@ function exportSourceTree(sourceRoot) {
 
   while (pendingDirectories.length > 0) {
     const currentDirectory = pendingDirectories.pop();
+    if (!currentDirectory) {
+      continue;
+    }
 
     for (const entry of fs.readdirSync(currentDirectory, { withFileTypes: true })) {
       const sourcePath = path.join(currentDirectory, entry.name);
@@ -85,15 +95,7 @@ function exportSourceTree(sourceRoot) {
       ensureDirectory(path.dirname(outputPath));
 
       if (sourcePath.endsWith('.ts')) {
-        const source = fs.readFileSync(sourcePath, 'utf8');
-        const transpiled = ts.transpileModule(source, {
-          compilerOptions: {
-            isolatedModules: true,
-            module: ts.ModuleKind.ESNext,
-            target: ts.ScriptTarget.ES2022
-          }
-        });
-        fs.writeFileSync(outputPath, transpiled.outputText);
+        fs.writeFileSync(outputPath, transpileTypeScriptFile(sourcePath));
       } else {
         fs.copyFileSync(sourcePath, outputPath);
       }
@@ -111,3 +113,16 @@ for (const sourceRoot of SOURCE_ROOTS) {
 }
 
 console.log(`[Web Static Build] Wrote Cloudflare Pages artifact to ${DIST_DIR}`);
+
+function transpileTypeScriptFile(sourcePath: string) {
+  const source = fs.readFileSync(sourcePath, 'utf8');
+  const transpiled = ts.transpileModule(source, {
+    compilerOptions: {
+      isolatedModules: true,
+      module: ts.ModuleKind.ESNext,
+      target: ts.ScriptTarget.ES2022
+    }
+  });
+
+  return transpiled.outputText;
+}

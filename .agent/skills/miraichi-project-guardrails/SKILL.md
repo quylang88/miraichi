@@ -38,11 +38,14 @@ Use this skill at the beginning of every task analysis, plan creation, or before
 - World Cup is only the first use case.
 - Miraichi must remain competition-agnostic.
 - New application modules default to TypeScript.
-- New application and package implementation modules default to TypeScript. Do not add new `.js` implementation modules under `apps/*/src` or `packages/*/src` when a `.ts` module is viable. JavaScript is allowed only for existing legacy files, service workers, package/runtime entry bridges, or scripts with an explicit compatibility reason.
-- Do not perform bulk JavaScript-to-TypeScript migration. Existing JavaScript may migrate only through an approved slice that identifies exact files, tests, and verification commands.
+- After the owner-approved repo-wide JavaScript-to-TypeScript migration, tracked implementation source under `apps/`, `packages/`, and `scripts/` must stay TypeScript-first. Do not add new tracked `.js` source files there unless an explicit owner-approved compatibility exception names the file and reason.
+- Browser-facing `.js` URLs, generated static `.js` artifacts, third-party configuration formats, and tool-required bridge files may exist only when source ownership remains clear and verification covers the compatibility path.
+- Do not perform opportunistic JavaScript-to-TypeScript migration. Any future migration outside the already migrated repo source must identify exact files or file groups, runtime strategy, behavior-preservation tests, and verification commands.
+- Repository-wide JavaScript-to-TypeScript migration is allowed only when the owner explicitly requests it in the active task. It must preserve browser `.js` URLs where required, update runtime commands before verification, avoid `@ts-nocheck` as a blanket escape hatch, and pass local plus integration verification before being reported complete.
 
 ## What Not to Do
-- Never accept a task to write functional API route handlers or UI view code.
+- Never accept a task to write business logic, prediction logic, betting formulas, production schemas, secrets, or hard-coded competition logic without an accepted owner-approved lifecycle boundary.
+- Never reintroduce tracked JavaScript implementation source as a shortcut after the repo-wide TypeScript migration.
 
 ## Definition of Done
 - Scope validation check passes with no violations found.

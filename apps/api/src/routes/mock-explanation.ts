@@ -1,5 +1,5 @@
 /**
- * mock-explanation.js
+ * mock-explanation.ts
  * API Gateway route for POST /api/v1/mock/explain.
  * Proxies to local-ai /ai/v1/mock/explain, falling back to a safe refusal if unreachable.
  */
@@ -30,7 +30,7 @@ export function handleMockExplain(req, res) {
   });
 
   req.on('end', async () => {
-    let envelope = {};
+    let envelope: Record<string, any> = {};
     try {
       if (body.trim()) {
         envelope = JSON.parse(body);

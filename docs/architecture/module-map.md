@@ -33,9 +33,11 @@ File structures for packages and applications.
 
 New application modules must be TypeScript-first.
 
-New application and package implementation modules must be TypeScript-first. Create new `apps/*/src` and `packages/*/src` implementation modules as `.ts` by default; keep `.js` only for existing legacy code, service workers, runtime bridges, or scripts that cannot reasonably move yet.
+The Phase 6 owner-approved repo-wide migration has already moved tracked implementation source under `apps/`, `packages/`, and `scripts/` to TypeScript. The order above remains useful for future type hardening: contracts first, runtime boundaries last.
 
-Do not run a big-bang JavaScript-to-TypeScript migration. Existing JavaScript remains valid until the owning module is part of an approved code slice that names exact files, tests, and verification commands.
+New application and package implementation modules must be TypeScript-first. Create new `apps/*/src` and `packages/*/src` implementation modules as `.ts` by default; add tracked `.js` source only when an explicit owner-approved compatibility exception names the file and reason.
+
+Do not run an unapproved big-bang JavaScript-to-TypeScript migration. Browser `.js` URLs and generated `.js` build artifacts may remain when they are backed by TypeScript source and covered by verification.
 
 ## TODO / Next Steps
 - [ ] Implement monorepo boundary lints checking rules.

@@ -60,10 +60,11 @@ Outlines high-level roadmap milestones across multiple phases.
 - Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices for shared contracts, form state, memory persistence, IndexedDB persistence, and versioned draft backup/import helpers.
 - Complete Phase 5.12 owner-requested UI/UX quality-up, staging redeploy, and Phase 5 closeout.
 
-### Milestone 7: Testing/Deployment Hardening (Active Planning)
+### Milestone 7: Testing/Deployment Hardening (Active Implementation)
 - Plan CI/CD workflow hardening and staging deployment automation.
 - Plan security and secrets checks without committing credentials.
 - Draft repeatable smoke-check automation, rollback notes, and monitoring plans.
+- Complete the owner-approved repo-wide JavaScript-to-TypeScript source migration while preserving browser `.js` compatibility URLs.
 - Keep production promotion blocked until final-release owner approval.
 
 ### Milestone 8: Real Data Provider, Dataset, and Evaluation Planning (Future)
@@ -117,5 +118,6 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Owner review Phase 6 CI/CD and Staging Smoke Automation implementation plan before `phase:code-slice`.
 - [x] Complete `phase:code-slice Phase 6 staging smoke-check script`.
 - [x] Complete `phase:code-slice Phase 6 CI check workflow`.
-- [ ] Start `phase:code-slice Phase 6 migrate PWA service-worker registration JS to TS`.
-- [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.
+- [x] Complete owner-requested `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration`.
+- [ ] Run `phase:staging Phase 6 hardened staging process` to deploy the refreshed TypeScript-sourced static artifact and record new smoke evidence.
+- [ ] Keep real AI training out of Phase 6; reserve it for future Phase 7 and Phase 8 planning.

@@ -137,10 +137,11 @@ This command must run release verification and then rebuild `apps/web/dist`. Do 
 - New tests for TypeScript modules must use `*.test.ts`.
 - Integration suites belong in `tests/integration/` unless an existing `scripts/*integration*` verifier is intentionally kept as an orchestrated phase check.
 - E2E browser or user-flow suites belong in `tests/e2e/`.
-- Miraichi uses gradual TypeScript adoption. Do not migrate the whole repo in one pass; prefer TypeScript first for shared contracts, config, validators, and pure domain helpers.
+- Miraichi uses TypeScript-first adoption with gradual TypeScript hardening as the default after the owner-approved repo-wide JavaScript-to-TypeScript migration. `gradual TypeScript` now means tightening types and reducing boundary `any`, not adding new tracked JavaScript source.
 - New app modules must be TypeScript-first.
-- New app/package implementation modules must be TypeScript-first. Existing JavaScript files may stay JavaScript until an approved migration slice, but new `apps/*/src` and `packages/*/src` components, services, config, validators, pure helpers, contracts, and tests must use `.ts` / `*.test.ts` unless the file is a legacy runtime bridge with a documented reason.
-- A JavaScript migration slice must name the exact files being migrated, the tests that prove behavior did not change, and the verification command. Do not rename `.js` files to `.ts` as opportunistic cleanup.
+- New app/package/script implementation modules must be TypeScript-first. New tracked implementation source under `apps/`, `packages/`, and `scripts/` must use `.ts` / `*.test.ts` unless the owner explicitly approves a compatibility exception.
+- Browser `.js` URLs and generated static `.js` artifacts may remain when they are compatibility surfaces backed by TypeScript source and covered by verification.
+- A JavaScript migration slice must name the files or file groups being migrated, the tests that prove behavior did not change, and the verification command. Do not rename `.js` files to `.ts` as opportunistic cleanup.
 - New or modified behavior needs meaningful unit coverage, not only integration smoke coverage.
 - Coverage target for new/changed code is 80% as a review gate. Do not fake global repo coverage while legacy files are still untested.
 - Integration tests do not replace unit tests.

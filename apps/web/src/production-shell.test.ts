@@ -123,7 +123,7 @@ describe('production PWA shell rendering', () => {
   });
 
   it('keeps production as the only served web shell route', () => {
-    const serverSource = readFileSync(fileURLToPath(new URL('./index.js', import.meta.url)), 'utf8');
+    const serverSource = readFileSync(fileURLToPath(new URL('./index.ts', import.meta.url)), 'utf8');
 
     expect(serverSource).not.toContain('/preview');
     expect(serverSource).not.toContain('preview.html');

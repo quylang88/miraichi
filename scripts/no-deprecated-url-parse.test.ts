@@ -27,7 +27,7 @@ function scanJavaScriptFiles(dirPath, offenders, deprecatedPattern) {
       continue;
     }
 
-    if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
+    if (!entry.isFile() || (!entry.name.endsWith('.js') && !entry.name.endsWith('.ts'))) continue;
 
     const content = fs.readFileSync(fullPath, 'utf8');
     if (content.includes(deprecatedPattern)) {

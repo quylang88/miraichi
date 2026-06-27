@@ -9,7 +9,13 @@ import {
   runStagingSmokeCheck
 } from './staging-smoke-check.js';
 
-function createResponse(body, status = 200) {
+type TestResponse = {
+  ok: boolean;
+  status: number;
+  text: () => Promise<string>;
+};
+
+function createResponse(body: string, status = 200): TestResponse {
   return {
     ok: status >= 200 && status < 300,
     status,
@@ -17,10 +23,10 @@ function createResponse(body, status = 200) {
   };
 }
 
-function createFetchStub(responsesByUrl) {
-  const calls = [];
+function createFetchStub(responsesByUrl: Record<string, TestResponse>) {
+  const calls: string[] = [];
 
-  async function fetchStub(url) {
+  async function fetchStub(url: string) {
     calls.push(url);
     const response = responsesByUrl[url];
 
@@ -151,6 +157,6 @@ describe('staging smoke check helpers', () => {
   it('wires the root package smoke:staging script to the smoke checker', () => {
     const packageJson = JSON.parse(fs.readFileSync(path.resolve('package.json'), 'utf8'));
 
-    expect(packageJson.scripts['smoke:staging']).toBe('node scripts/staging-smoke-check.js');
+    expect(packageJson.scripts['smoke:staging']).toBe('tsx scripts/staging-smoke-check.ts');
   });
 });

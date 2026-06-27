@@ -1,5 +1,5 @@
 /**
- * mock-explanation-refusal-view.js
+ * mock-explanation-refusal-view.ts
  * Renders the mock explanation refusal view.
  * Displays explanationAvailable status, reason, trace references, and refusal text verbatim.
  * Strictly excludes any speculative wagers or chatbot advice.

@@ -1,10 +1,13 @@
 import { spawn } from 'child_process';
+import path from 'path';
 
 console.log('[Test-Endpoints] Starting API Gateway and Local AI servers...');
 
 // Spawn background processes for apps/api and apps/local-ai
-const apiProcess = spawn('node', ['apps/api/src/index.js'], { stdio: 'inherit' });
-const aiProcess = spawn('node', ['apps/local-ai/src/index.js'], { stdio: 'inherit' });
+const tsxCli = path.resolve('node_modules/tsx/dist/cli.mjs');
+const spawnOptions = { stdio: 'inherit' as const };
+const apiProcess = spawn(process.execPath, [tsxCli, 'apps/api/src/index.ts'], spawnOptions);
+const aiProcess = spawn(process.execPath, [tsxCli, 'apps/local-ai/src/index.ts'], spawnOptions);
 
 function cleanupAndExit(exitCode) {
   console.log('[Test-Endpoints] Shutting down background processes...');

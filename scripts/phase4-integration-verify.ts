@@ -9,10 +9,10 @@ const __dirname = path.dirname(__filename);
 console.log('[Phase 4 Integration Verify] Starting integration tests...');
 
 const filesToCheck = [
-  'apps/api/src/routes/mock-prediction.js',
-  'apps/api/src/routes/mock-explanation.js',
-  'apps/web/src/views/prediction-envelope-view.js',
-  'apps/web/src/views/mock-explanation-refusal-view.js'
+  'apps/api/src/routes/mock-prediction.ts',
+  'apps/api/src/routes/mock-explanation.ts',
+  'apps/web/src/views/prediction-envelope-view.ts',
+  'apps/web/src/views/mock-explanation-refusal-view.ts'
 ];
 
 // 1. Verify files exist
@@ -29,8 +29,10 @@ for (const file of filesToCheck) {
 
 // 2. Spawn background API and Local AI servers
 console.log('[Phase 4 Integration Verify] Starting API Gateway and Local AI servers in background...');
-const apiProcess = spawn('node', ['apps/api/src/index.js'], { stdio: 'inherit' });
-const aiProcess = spawn('node', ['apps/local-ai/src/index.js'], { stdio: 'inherit' });
+const tsxCli = path.join(__dirname, '..', 'node_modules/tsx/dist/cli.mjs');
+const spawnOptions = { stdio: 'inherit' as const };
+const apiProcess = spawn(process.execPath, [tsxCli, 'apps/api/src/index.ts'], spawnOptions);
+const aiProcess = spawn(process.execPath, [tsxCli, 'apps/local-ai/src/index.ts'], spawnOptions);
 
 function cleanupAndExit(exitCode) {
   console.log('[Phase 4 Integration Verify] Shutting down background processes...');

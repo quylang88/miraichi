@@ -11,16 +11,16 @@ async function verifyPhase3() {
   console.log('[Phase 3 Verify] Starting Phase 3 Ingestion verification tests...');
 
   const filesToCheck = [
-    'packages/shared/src/contracts/normalized-match-contract.js',
-    'packages/shared/src/contracts/normalized-market-contract.js',
-    'packages/shared/src/contracts/ingestion-run-contract.js',
+    'packages/shared/src/contracts/normalized-match-contract.ts',
+    'packages/shared/src/contracts/normalized-market-contract.ts',
+    'packages/shared/src/contracts/ingestion-run-contract.ts',
     'apps/worker/src/fixtures/provider-mock-alpha-fixtures.json',
     'apps/worker/src/fixtures/provider-mock-alpha-markets.json',
-    'apps/worker/src/validators/ingestion-validator.js',
-    'apps/worker/src/adapters/mock-provider-adapter.js',
-    'apps/worker/src/repositories/memory-ingestion-repository.js',
-    'apps/worker/src/jobs/mock-ingestion-job.js',
-    'apps/api/src/routes/ingestion-status.mock.js'
+    'apps/worker/src/validators/ingestion-validator.ts',
+    'apps/worker/src/adapters/mock-provider-adapter.ts',
+    'apps/worker/src/repositories/memory-ingestion-repository.ts',
+    'apps/worker/src/jobs/mock-ingestion-job.ts',
+    'apps/api/src/routes/ingestion-status.mock.ts'
   ];
 
   // 1. Verify files exist
@@ -82,7 +82,7 @@ async function scanDir(dirPath, keywords) {
     const fullPath = path.join(dirPath, entry.name);
     if (entry.isDirectory()) {
       await scanDir(fullPath, keywords);
-    } else if (entry.isFile() && entry.name.endsWith('.js')) {
+    } else if (entry.isFile() && (entry.name.endsWith('.js') || entry.name.endsWith('.ts'))) {
       const content = await fs.readFile(fullPath, 'utf-8');
       const lowerContent = content.toLowerCase();
 

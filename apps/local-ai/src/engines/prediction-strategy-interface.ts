@@ -1,5 +1,5 @@
 /**
- * prediction-strategy-interface.js
+ * prediction-strategy-interface.ts
  * Documents the interface requirements for prediction strategy modules.
  * 
  * CRITICAL WARNING: Implementing real prediction strategy algorithms,

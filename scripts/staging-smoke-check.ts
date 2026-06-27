@@ -2,7 +2,35 @@ import { pathToFileURL } from 'url';
 
 export const DEFAULT_PHASE_5_12_CACHE_MARKER = 'miraichi-shell-v5-phase-5-12-quality-up';
 
-export function normalizeBaseUrl(rawBaseUrl) {
+type SmokeFetchResponse = {
+  ok: boolean;
+  status: number;
+  text: () => Promise<string>;
+};
+
+type SmokeFetch = (
+  url: string,
+  init?: {
+    headers?: Record<string, string>;
+  }
+) => Promise<SmokeFetchResponse>;
+
+type StagingSmokeCheck = {
+  label: string;
+  url: string;
+  markers?: string[];
+  json?: Record<string, unknown>;
+};
+
+type StagingSmokeResult = {
+  label: string;
+  url: string;
+  ok: boolean;
+  status: number;
+  message: string;
+};
+
+export function normalizeBaseUrl(rawBaseUrl: string | undefined | null) {
   const baseUrl = String(rawBaseUrl || '').trim().replace(/\/+$/, '');
 
   if (!baseUrl) {
@@ -12,7 +40,10 @@ export function normalizeBaseUrl(rawBaseUrl) {
   return baseUrl;
 }
 
-export function buildStagingSmokeChecks(rawBaseUrl, cacheMarker = DEFAULT_PHASE_5_12_CACHE_MARKER) {
+export function buildStagingSmokeChecks(
+  rawBaseUrl: string | undefined | null,
+  cacheMarker = DEFAULT_PHASE_5_12_CACHE_MARKER
+): StagingSmokeCheck[] {
   const baseUrl = normalizeBaseUrl(rawBaseUrl);
 
   return [
@@ -46,12 +77,15 @@ export function buildStagingSmokeChecks(rawBaseUrl, cacheMarker = DEFAULT_PHASE_
   ];
 }
 
-export function resolveCliBaseUrl(argv = process.argv, env = process.env) {
+export function resolveCliBaseUrl(
+  argv: string[] = process.argv,
+  env: Record<string, string | undefined> = process.env
+) {
   const args = argv.slice(2).filter((arg) => arg !== '--');
   return args[0] || env.STAGING_URL;
 }
 
-function compareJsonField(parsedJson, key, expectedValue) {
+function compareJsonField(parsedJson: Record<string, unknown> | null | undefined, key: string, expectedValue: unknown) {
   if (parsedJson?.[key] !== expectedValue) {
     return `expected JSON ${key}=${JSON.stringify(expectedValue)}`;
   }
@@ -59,7 +93,7 @@ function compareJsonField(parsedJson, key, expectedValue) {
   return null;
 }
 
-async function runOneCheck(check, fetchImpl) {
+async function runOneCheck(check: StagingSmokeCheck, fetchImpl: SmokeFetch): Promise<StagingSmokeResult> {
   let response;
 
   try {
@@ -145,13 +179,17 @@ export async function runStagingSmokeCheck({
   baseUrl,
   fetchImpl = globalThis.fetch,
   cacheMarker = DEFAULT_PHASE_5_12_CACHE_MARKER
+}: {
+  baseUrl: string | undefined | null;
+  fetchImpl?: SmokeFetch;
+  cacheMarker?: string;
 }) {
   if (typeof fetchImpl !== 'function') {
     throw new Error('fetch is unavailable in this Node.js runtime');
   }
 
   const checks = buildStagingSmokeChecks(baseUrl, cacheMarker);
-  const results = [];
+  const results: StagingSmokeResult[] = [];
 
   for (const check of checks) {
     results.push(await runOneCheck(check, fetchImpl));

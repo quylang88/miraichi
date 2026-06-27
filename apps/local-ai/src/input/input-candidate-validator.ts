@@ -1,13 +1,13 @@
 /**
- * input-candidate-validator.js
+ * input-candidate-validator.ts
  * Validates inputCandidate snapshots to ensure all required fields are present.
  * This module is strictly schema-mediating and does not calculate features,
  * score teams, generate probabilities, or produce betting signals.
  */
 
 export function validateInputCandidate(candidate) {
-  const errors = [];
-  const warnings = [];
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
   if (!candidate || typeof candidate !== 'object') {
     return {

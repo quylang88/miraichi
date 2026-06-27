@@ -1,5 +1,5 @@
 /**
- * prediction-envelope-view.js
+ * prediction-envelope-view.ts
  * Renders the prediction envelope details view.
  * Displays predictionAvailable status, engineMode, outputSummary, warnings,
  * and trace elements. Strictly excludes betting tips, picks, or bankroll metrics.

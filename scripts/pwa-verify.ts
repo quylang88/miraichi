@@ -11,9 +11,9 @@ console.log('[PWA Verify] Starting PWA compliance verification...');
 // 1. Verify files exist
 const filesToVerify = [
   'apps/web/public/manifest.webmanifest',
-  'apps/web/public/service-worker.js',
+  'apps/web/public/service-worker.ts',
   'apps/web/public/icons/icon.svg',
-  'apps/web/src/pwa/register-service-worker.js',
+  'apps/web/src/pwa/register-service-worker.ts',
   'apps/web/src/shell-entry.ts',
   'apps/web/src/config/navigation-tabs.ts',
   'apps/web/src/components/app-shell.ts',
@@ -34,8 +34,8 @@ for (const file of filesToVerify) {
   }
 }
 
-// 2. Read apps/web/src/index.js and verify HTML tags and viewport
-const webServerPath = path.join(ROOT_DIR, 'apps/web/src/index.js');
+// 2. Read apps/web/src/index.ts and verify HTML tags and viewport
+const webServerPath = path.join(ROOT_DIR, 'apps/web/src/index.ts');
 if (fs.existsSync(webServerPath)) {
   const content = fs.readFileSync(webServerPath, 'utf8');
   
@@ -94,7 +94,7 @@ if (fs.existsSync(webServerPath)) {
     console.log('  ✅ Production shell app-root mount point found.');
   }
 } else {
-  console.error('  ❌ apps/web/src/index.js not found.');
+  console.error('  ❌ apps/web/src/index.ts not found.');
   failed = true;
 }
 
@@ -108,7 +108,7 @@ const productionShellFiles = [
   'apps/web/src/services/i18n-service.ts'
 ];
 
-const serviceWorkerRegistrationPath = path.join(ROOT_DIR, 'apps/web/src/pwa/register-service-worker.js');
+const serviceWorkerRegistrationPath = path.join(ROOT_DIR, 'apps/web/src/pwa/register-service-worker.ts');
 if (fs.existsSync(serviceWorkerRegistrationPath)) {
   const content = fs.readFileSync(serviceWorkerRegistrationPath, 'utf8');
   const requiredLocalDevMarkers = [
@@ -128,7 +128,7 @@ if (fs.existsSync(serviceWorkerRegistrationPath)) {
   }
 }
 
-const serviceWorkerPath = path.join(ROOT_DIR, 'apps/web/public/service-worker.js');
+const serviceWorkerPath = path.join(ROOT_DIR, 'apps/web/public/service-worker.ts');
 if (fs.existsSync(serviceWorkerPath)) {
   const content = fs.readFileSync(serviceWorkerPath, 'utf8');
   const requiredCacheMarkers = [
@@ -313,8 +313,8 @@ function scanContent(filePath) {
 
 // We scan the new files only to make sure no violations were added
 const filesToScan = [
-  'apps/web/public/service-worker.js',
-  'apps/web/src/pwa/register-service-worker.js'
+  'apps/web/public/service-worker.ts',
+  'apps/web/src/pwa/register-service-worker.ts'
 ];
 for (const file of filesToScan) {
   const fullPath = path.join(ROOT_DIR, file);

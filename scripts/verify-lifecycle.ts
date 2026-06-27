@@ -4,6 +4,23 @@ import { fileURLToPath } from 'url';
 
 export const LIFECYCLE_SKILL_MARKER = 'miraichi-delivery-lifecycle';
 
+type PackageManifest = {
+  path: string;
+  json: Record<string, any>;
+};
+
+type MarkerRequirement = {
+  file: string;
+  marker: string;
+};
+
+type PlaceholderScriptFinding = {
+  file: string;
+  packageName: string;
+  scriptName: string;
+  command: string;
+};
+
 export const REQUIRED_ROOT_SCRIPTS = [
   'test:unit',
   'test:unit:coverage',
@@ -29,7 +46,7 @@ export const REQUIRED_LIFECYCLE_REFERENCE_FILES = [
   '.agent/skills/miraichi-project-guardrails/SKILL.md'
 ];
 
-export const REQUIRED_TEST_ORGANIZATION_MARKERS = [
+export const REQUIRED_TEST_ORGANIZATION_MARKERS: MarkerRequirement[] = [
   { file: 'docs/workflows/testing-workflow.md', marker: '*.test.{js,ts}' },
   { file: 'docs/workflows/testing-workflow.md', marker: 'tests/integration/' },
   { file: 'docs/workflows/testing-workflow.md', marker: 'tests/e2e/' },
@@ -41,7 +58,7 @@ export const REQUIRED_TEST_ORGANIZATION_MARKERS = [
   { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: 'large feature boundary' }
 ];
 
-export const REQUIRED_TYPESCRIPT_DIRECTION_MARKERS = [
+export const REQUIRED_TYPESCRIPT_DIRECTION_MARKERS: MarkerRequirement[] = [
   { file: 'docs/workflows/testing-workflow.md', marker: 'ADR-0034' },
   { file: 'docs/workflows/testing-workflow.md', marker: '*.test.ts' },
   { file: 'docs/workflows/testing-workflow.md', marker: 'New app modules must be TypeScript-first' },
@@ -55,7 +72,7 @@ export const REQUIRED_TYPESCRIPT_DIRECTION_MARKERS = [
   { file: 'apps/web/docs/frontend-architecture.md', marker: 'New web client modules must be TypeScript-first' }
 ];
 
-export const REQUIRED_DOC_INDEX_REFERENCES = [
+export const REQUIRED_DOC_INDEX_REFERENCES: MarkerRequirement[] = [
   { file: 'docs/README.md', marker: 'docs/architecture/module-map.md' },
   { file: 'docs/README.md', marker: 'docs/decisions/README.md' },
   { file: 'docs/README.md', marker: 'docs/workflows/testing-workflow.md' },
@@ -72,8 +89,8 @@ export const REQUIRED_DOC_INDEX_REFERENCES = [
   { file: 'docs/README.md', marker: 'ops/ci/github-actions-plan.md' }
 ];
 
-export function findPlaceholderScripts(manifests) {
-  const findings = [];
+export function findPlaceholderScripts(manifests: PackageManifest[]): PlaceholderScriptFinding[] {
+  const findings: PlaceholderScriptFinding[] = [];
 
   for (const manifest of manifests) {
     const scripts = manifest.json.scripts || {};
@@ -100,13 +117,19 @@ export function findPlaceholderScripts(manifests) {
   return findings;
 }
 
-export function findMissingRootScripts(packageJson, requiredScripts = REQUIRED_ROOT_SCRIPTS) {
+export function findMissingRootScripts(
+  packageJson: Record<string, any>,
+  requiredScripts: string[] = REQUIRED_ROOT_SCRIPTS
+): string[] {
   const scripts = packageJson.scripts || {};
   return requiredScripts.filter((scriptName) => !(scriptName in scripts));
 }
 
-export function findMissingLifecycleReferences(fileContents, marker = LIFECYCLE_SKILL_MARKER) {
-  const missing = [];
+export function findMissingLifecycleReferences(
+  fileContents: Map<string, string>,
+  marker = LIFECYCLE_SKILL_MARKER
+): string[] {
+  const missing: string[] = [];
 
   for (const file of REQUIRED_LIFECYCLE_REFERENCE_FILES) {
     const content = fileContents.get(file);
@@ -118,14 +141,17 @@ export function findMissingLifecycleReferences(fileContents, marker = LIFECYCLE_
   return missing;
 }
 
-export function findMissingMarkers(fileContents, requirements) {
+export function findMissingMarkers(
+  fileContents: Map<string, string>,
+  requirements: MarkerRequirement[]
+): MarkerRequirement[] {
   return requirements.filter((requirement) => {
     const content = fileContents.get(requirement.file);
     return !content || !content.includes(requirement.marker);
   });
 }
 
-async function pathExists(filePath) {
+async function pathExists(filePath: string): Promise<boolean> {
   try {
     await fs.access(filePath);
     return true;
@@ -134,12 +160,12 @@ async function pathExists(filePath) {
   }
 }
 
-async function readJson(filePath) {
+async function readJson(filePath: string): Promise<any> {
   return JSON.parse(await fs.readFile(filePath, 'utf8'));
 }
 
-async function readWorkspacePackageManifests(rootDir) {
-  const manifests = [];
+async function readWorkspacePackageManifests(rootDir: string): Promise<PackageManifest[]> {
+  const manifests: PackageManifest[] = [];
   const rootPackagePath = path.join(rootDir, 'package.json');
 
   manifests.push({
@@ -168,7 +194,7 @@ async function readWorkspacePackageManifests(rootDir) {
   return manifests;
 }
 
-async function readRequiredLifecycleFiles(rootDir) {
+async function readRequiredLifecycleFiles(rootDir: string): Promise<Map<string, string>> {
   const fileContents = new Map();
   const requiredFiles = new Set([
     ...REQUIRED_LIFECYCLE_REFERENCE_FILES,
@@ -187,9 +213,13 @@ async function readRequiredLifecycleFiles(rootDir) {
   return fileContents;
 }
 
-export async function evaluateLifecycle(rootDir) {
+export async function evaluateLifecycle(rootDir: string) {
   const manifests = await readWorkspacePackageManifests(rootDir);
-  const rootPackage = manifests.find((manifest) => manifest.path === 'package.json').json;
+  const rootManifest = manifests.find((manifest) => manifest.path === 'package.json');
+  if (!rootManifest) {
+    throw new Error('Missing root package.json manifest');
+  }
+  const rootPackage = rootManifest.json;
   const fileContents = await readRequiredLifecycleFiles(rootDir);
   const lifecycleSkillPath = path.join(rootDir, '.agent/skills/miraichi-delivery-lifecycle/SKILL.md');
 
@@ -204,7 +234,11 @@ export async function evaluateLifecycle(rootDir) {
   };
 }
 
-function printIssueList(title, items, formatItem = (item) => `  - ${item}`) {
+function printIssueList<T>(
+  title: string,
+  items: T[],
+  formatItem: (item: T) => string = (item) => `  - ${item}`
+) {
   if (items.length === 0) return;
 
   console.error(title);

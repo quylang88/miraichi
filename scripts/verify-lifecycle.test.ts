@@ -143,7 +143,7 @@ describe('verify-lifecycle helpers', () => {
       ),
       packageScripts: {
         test: 'vitest run',
-        lint: 'node ../../scripts/check-js-syntax.js .'
+        lint: 'tsx ../../scripts/check-js-syntax.ts .'
       },
       filesWithLifecycleMarker: REQUIRED_LIFECYCLE_REFERENCE_FILES,
       includeLifecycleSkill: true,

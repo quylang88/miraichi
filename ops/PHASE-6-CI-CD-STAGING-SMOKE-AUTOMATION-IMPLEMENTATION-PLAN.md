@@ -8,6 +8,8 @@
 
 **Tech Stack:** Node.js 18+ global `fetch`, Vitest, pnpm, GitHub Actions, PowerShell-compatible commands.
 
+**Supersession note:** This plan was written before the owner explicitly requested repo-wide JavaScript-to-TypeScript migration. Historical code blocks that mention `.js` source files are retained as audit context, but the current repo state uses `.ts` source under `apps/`, `packages/`, and `scripts/`; browser-facing `.js` URLs remain compatibility surfaces.
+
 ---
 
 ## 1. Source Decisions
@@ -39,23 +41,23 @@ The original CI/smoke hardening scope did not include JavaScript-to-TypeScript m
 
 Reason: root verification scripts are currently JavaScript, and Phase 6.2 approved CI/smoke hardening only. Miraichi rules require JS-to-TS migration to be its own approved slice with exact files, behavior-preservation tests, and verification commands. Do not convert root scripts opportunistically inside the smoke-check or CI workflow slices.
 
-Owner later requested one explicit migration slice after CI. That slice is added as Task 5 and is limited to the PWA service-worker registration module and its test. It does not authorize bulk repository migration.
+Owner later requested repo-wide JavaScript-to-TypeScript migration. That request superseded the narrow PWA-only Task 5 and is recorded in `ops/PHASE-6-REPO-WIDE-TYPESCRIPT-MIGRATION-REVIEW.md`.
 
 ## 2. File Structure
 
 Create:
 
-* `scripts/staging-smoke-check.js` - Node CLI and testable helpers for staging smoke checks.
-* `scripts/staging-smoke-check.test.js` - Vitest unit tests for URL normalization, smoke check success, marker failures, manifest JSON failures, and CLI script wiring.
+* `scripts/staging-smoke-check.ts` - Node CLI and testable helpers for staging smoke checks.
+* `scripts/staging-smoke-check.test.ts` - Vitest unit tests for URL normalization, smoke check success, marker failures, manifest JSON failures, and CLI script wiring.
 * `.github/workflows/ci.yml` - GitHub Actions workflow for install, lifecycle, unit, syntax, typecheck, and audit checks only.
-* `scripts/github-actions-ci-workflow.test.js` - Vitest unit tests that enforce CI workflow checks and block deploy/secrets usage.
+* `scripts/github-actions-ci-workflow.test.ts` - Vitest unit tests that enforce CI workflow checks and block deploy/secrets usage.
 
 Modify:
 
 * `package.json` - Add `smoke:staging` script.
-* `apps/web/src/pwa/register-service-worker.js` - Planned Task 5 migration target; rename to `.ts` only in the migration slice.
-* `apps/web/src/pwa/register-service-worker.test.js` - Planned Task 5 migration target; rename to `.test.ts` only in the migration slice.
-* `scripts/pwa-verify.js` - Planned Task 5 update to verify the `.ts` source path.
+* `apps/web/src/pwa/register-service-worker.ts` - Completed TypeScript source after repo-wide migration.
+* `apps/web/src/pwa/register-service-worker.test.ts` - Completed TypeScript behavior test after repo-wide migration.
+* `scripts/pwa-verify.ts` - Completed verifier update to check TypeScript source paths while preserving served `.js` URLs.
 * `ops/ci/github-actions-plan.md` - Record CI check-only workflow boundary after implementation.
 * `ops/deploy/staging-plan.md` - Record smoke-check command after implementation.
 * `ops/PHASE-6-TESTING-DEPLOYMENT-HARDENING-PLAN.md` - Mark implementation planning as created.
@@ -73,7 +75,7 @@ Do not create:
 * provider config
 * auth or cloud sync code
 * secret values
-* bulk JavaScript-to-TypeScript migration outside the exact Task 5 files
+* automatic Cloudflare deployment or production promotion
 
 ## 3. Task 1: Staging Smoke-Check Script
 
@@ -231,7 +233,7 @@ describe('staging smoke check helpers', () => {
   it('wires the root package smoke:staging script to the smoke checker', () => {
     const packageJson = JSON.parse(fs.readFileSync(path.resolve('package.json'), 'utf8'));
 
-    expect(packageJson.scripts['smoke:staging']).toBe('node scripts/staging-smoke-check.js');
+    expect(packageJson.scripts['smoke:staging']).toBe('tsx scripts/staging-smoke-check.ts');
   });
 });
 ```
@@ -436,7 +438,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 Modify `package.json` scripts:
 
 ```json
-"smoke:staging": "node scripts/staging-smoke-check.js"
+"smoke:staging": "tsx scripts/staging-smoke-check.ts"
 ```
 
 Keep the existing `deploy:staging:local` script unchanged.
@@ -780,195 +782,19 @@ If this code-slice adds a Phase 6 review document, place it under `ops/` and inc
 * known risks
 * next lifecycle phase
 
-## 7. Task 5: Narrow JavaScript To TypeScript Migration Slice
+## 7. Task 5: Repo-Wide JavaScript To TypeScript Migration Slice
 
-**Files:**
+**Status:** Superseded and completed by owner request.
 
-* Rename: `apps/web/src/pwa/register-service-worker.js` -> `apps/web/src/pwa/register-service-worker.ts`
-* Rename: `apps/web/src/pwa/register-service-worker.test.js` -> `apps/web/src/pwa/register-service-worker.test.ts`
-* Modify: `scripts/pwa-verify.js`
+The original narrow PWA-only migration was not enough after the owner asked to migrate the whole repo. The completed slice renamed tracked `.js` implementation source under `apps/`, `packages/`, and `scripts/` to `.ts`, added `tsx` runtime wiring, preserved browser `.js` URLs, and updated verification scripts.
 
-This slice is intentionally narrow. It migrates one browser module that already has behavior coverage and is already served through the existing `.js` URL compatibility path in `apps/web/src/index.js` and `apps/web/scripts/build-static.js`.
-
-Do not migrate API, worker, local-ai, shared package, config package, UI package, root scripts, or build scripts in this slice.
-
-- [ ] **Step 1: Write the failing TypeScript behavior test**
-
-Create `apps/web/src/pwa/register-service-worker.test.ts` with the same localhost cleanup behavior as the existing JavaScript test, but import the TypeScript source:
-
-```ts
-import { afterEach, describe, expect, it, vi } from 'vitest';
-
-async function importFreshRegisterModule() {
-  await import('./register-service-worker.ts?test-localhost-cleanup');
-}
-
-describe('PWA service worker registration', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
-
-  it('removes service workers and caches on localhost instead of registering a cache-first shell', async () => {
-    const unregister = vi.fn(() => Promise.resolve(true));
-    const registration = { unregister };
-    const deleteCache = vi.fn(() => Promise.resolve(true));
-    const addEventListener = vi.fn((_event: string, callback: () => void) => callback());
-    const register = vi.fn(() => Promise.resolve({ scope: 'http://localhost:3011/' }));
-    const getRegistrations = vi.fn(() => Promise.resolve([registration]));
-
-    vi.stubGlobal('window', {
-      addEventListener,
-      location: {
-        hostname: 'localhost'
-      }
-    });
-    vi.stubGlobal('navigator', {
-      serviceWorker: {
-        getRegistrations,
-        register
-      }
-    });
-    vi.stubGlobal('caches', {
-      keys: vi.fn(() => Promise.resolve(['miraichi-shell-v4-phase-5-9-production'])),
-      delete: deleteCache
-    });
-
-    await importFreshRegisterModule();
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(register).not.toHaveBeenCalled();
-    expect(getRegistrations).toHaveBeenCalledTimes(1);
-    expect(unregister).toHaveBeenCalledTimes(1);
-    expect(deleteCache).toHaveBeenCalledWith('miraichi-shell-v4-phase-5-9-production');
-  });
-});
-```
-
-Keep `apps/web/src/pwa/register-service-worker.js` in place for this RED step so the new `.ts` import fails because the TypeScript source does not exist yet.
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run:
-
-```powershell
-pnpm exec vitest run apps/web/src/pwa/register-service-worker.test.ts
-```
-
-Expected: FAIL because `apps/web/src/pwa/register-service-worker.ts` does not exist.
-
-- [ ] **Step 3: Rename the implementation to TypeScript**
-
-Rename the source file:
-
-```powershell
-Move-Item -LiteralPath apps/web/src/pwa/register-service-worker.js -Destination apps/web/src/pwa/register-service-worker.ts
-Remove-Item -LiteralPath apps/web/src/pwa/register-service-worker.test.js
-```
-
-Add explicit TypeScript types to the migrated source:
-
-```ts
-const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]', '0.0.0.0']);
-const DEV_SW_RESET_KEY = 'miraichi-dev-service-worker-reset';
-
-function isLocalDevHost(): boolean {
-  return LOCAL_DEV_HOSTS.has(window.location.hostname);
-}
-
-async function removeLocalServiceWorkerState(): Promise<boolean> {
-  const registrations = typeof navigator.serviceWorker.getRegistrations === 'function'
-    ? await navigator.serviceWorker.getRegistrations()
-    : [];
-  const cacheNames = 'caches' in globalThis ? await globalThis.caches.keys() : [];
-
-  await Promise.all([
-    ...registrations.map((registration) => registration.unregister()),
-    ...cacheNames.map((cacheName) => globalThis.caches.delete(cacheName))
-  ]);
-
-  return registrations.length > 0 || cacheNames.length > 0;
-}
-
-function reloadAfterDevCleanup(cleanedState: boolean): void {
-  if (!cleanedState || typeof window.location.reload !== 'function') {
-    return;
-  }
-
-  if (window.sessionStorage?.getItem(DEV_SW_RESET_KEY) === 'done') {
-    return;
-  }
-
-  window.sessionStorage?.setItem(DEV_SW_RESET_KEY, 'done');
-  window.location.reload();
-}
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    if (isLocalDevHost()) {
-      removeLocalServiceWorkerState()
-        .then((cleanedState) => {
-          console.log('[PWA] Local dev mode: service workers and shell caches disabled.');
-          reloadAfterDevCleanup(cleanedState);
-        })
-        .catch((err: unknown) => {
-          console.log('[PWA] Local dev service worker cleanup failed: ', err);
-        });
-      return;
-    }
-
-    navigator.serviceWorker.register('/service-worker.js')
-      .then((registration) => {
-        console.log('[PWA] ServiceWorker registration successful with scope: ', registration.scope);
-      })
-      .catch((err: unknown) => {
-        console.log('[PWA] ServiceWorker registration failed: ', err);
-      });
-  });
-}
-```
-
-- [ ] **Step 4: Update PWA verification paths**
-
-Modify `scripts/pwa-verify.js` so `filesToVerify`, `serviceWorkerRegistrationPath`, and `filesToScan` reference:
+Review evidence lives in:
 
 ```text
-apps/web/src/pwa/register-service-worker.ts
+ops/PHASE-6-REPO-WIDE-TYPESCRIPT-MIGRATION-REVIEW.md
 ```
 
-Keep the HTML script URL in `apps/web/src/index.js` as `/apps/web/src/pwa/register-service-worker.js`; the dev server and static build already map the served `.js` URL to the TypeScript source.
-
-- [ ] **Step 5: Run focused migration checks**
-
-Run:
-
-```powershell
-pnpm exec vitest run apps/web/src/pwa/register-service-worker.test.ts
-pnpm run typecheck
-pnpm run build:web-static
-pnpm run pwa:verify
-```
-
-Expected: PASS. The static build must emit `apps/web/dist/apps/web/src/pwa/register-service-worker.js`.
-
-- [ ] **Step 6: Commit if auto commit is enabled**
-
-Check `.agent/config.yml`:
-
-```powershell
-if (Test-Path '.agent/config.yml') { Get-Content '.agent/config.yml' } else { 'auto_commit config absent; default true.' }
-```
-
-If `auto_commit: true` or config is absent:
-
-```powershell
-git add apps/web/src/pwa/register-service-worker.ts apps/web/src/pwa/register-service-worker.test.ts scripts/pwa-verify.js
-git add -u apps/web/src/pwa/register-service-worker.js apps/web/src/pwa/register-service-worker.test.js
-git commit -m "refactor: migrate service worker registration to typescript"
-```
-
-If `auto_commit: false`: skip commit and print `Skipping commit (auto_commit: false).`
+Do not execute the old PWA-only steps. Future migration work should focus on type hardening, reducing `any`, and removing compatibility bridges only when runtime verification proves the served/browser contract is unchanged.
 
 ## 8. Execution Gate
 
@@ -987,10 +813,10 @@ Do not start with `.github/workflows/ci.yml`. The workflow test must fail first.
 
 Do not add Cloudflare deployment from CI in Phase 6.2. Any later CI deployment needs a separate owner-approved plan for secrets and branch protection.
 
-Do not start Task 5 until the owner explicitly runs:
+Task 5 has already run under the owner's explicit repo-wide migration request. The next lifecycle command is:
 
 ```text
-phase:code-slice Phase 6 migrate PWA service-worker registration JS to TS
+phase:staging Phase 6 hardened staging process
 ```
 
 ## 9. Self-Review
@@ -1013,6 +839,6 @@ Placeholder scan:
 
 Type consistency:
 
-* `runStagingSmokeCheck`, `buildStagingSmokeChecks`, and `normalizeBaseUrl` are defined in `scripts/staging-smoke-check.js` and imported from the same file by `scripts/staging-smoke-check.test.js`.
-* The `smoke:staging` package script calls the same CLI file tested by Vitest.
-* `.github/workflows/ci.yml` is verified by `scripts/github-actions-ci-workflow.test.js`.
+* `runStagingSmokeCheck`, `buildStagingSmokeChecks`, and `normalizeBaseUrl` are defined in `scripts/staging-smoke-check.ts` and imported from the same module by `scripts/staging-smoke-check.test.ts`.
+* The `smoke:staging` package script calls the same CLI file tested by Vitest through `tsx`.
+* `.github/workflows/ci.yml` is verified by `scripts/github-actions-ci-workflow.test.ts`.

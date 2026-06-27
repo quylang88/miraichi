@@ -3,6 +3,10 @@
  * Fully competition-agnostic. No business logic.
  */
 class MemoryIngestionRepository {
+  matches: Map<string, any>;
+  markets: Map<string, any>;
+  runs: any[];
+
   constructor() {
     this.matches = new Map();
     this.markets = new Map();

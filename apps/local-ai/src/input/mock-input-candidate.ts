@@ -1,5 +1,5 @@
 /**
- * mock-input-candidate.js
+ * mock-input-candidate.ts
  * Exports a generic, competition-agnostic mock input candidate payload.
  * Strictly adheres to project guardrails: no real team names, real leagues,
  * prediction labels, or wagers.

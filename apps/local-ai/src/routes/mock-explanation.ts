@@ -1,5 +1,5 @@
 /**
- * mock-explanation.js
+ * mock-explanation.ts
  * Router endpoint for POST /ai/v1/mock/explain.
  * Enforces LLM explanation/refusal logic.
  */
