@@ -10,13 +10,14 @@ describe('TypeScript strictness policy', () => {
   it('enables source-level compiler flags (strict subset)', () => {
     const tsconfig = readJson('tsconfig.base.json');
 
-    // Due to massive legacy codebase debt, the full strict mode is temporarily disabled.
-    // The type-safety audit script enforces 'any' removal, but implicit anys remain unflagged by tsc.
-    // Future slice: Enable strict: true and fix all implicit anys.
-    expect(tsconfig.compilerOptions.strict).toBe(false);
+    expect(tsconfig.compilerOptions.strict).toBe(true);
     expect(tsconfig.compilerOptions.allowJs).toBe(false);
-    expect(tsconfig.compilerOptions.noImplicitAny).toBe(false);
-    expect(tsconfig.compilerOptions.useUnknownInCatchVariables).toBe(false);
+    expect(tsconfig.compilerOptions.noImplicitAny).toBe(true);
+    expect(tsconfig.compilerOptions.useUnknownInCatchVariables).toBe(true);
+    expect(tsconfig.compilerOptions.exactOptionalPropertyTypes).toBe(true);
+    expect(tsconfig.compilerOptions.noPropertyAccessFromIndexSignature).toBe(false); // Documented exceptions allowed for index signatures
+    expect(tsconfig.compilerOptions.noUncheckedIndexedAccess).toBe(false); // Documented exceptions allowed for index signatures
+    expect(tsconfig.compilerOptions.skipLibCheck).toBe(true); // Documented exception due to stdlib lib.webworker.d.ts conflicts
   });
 
   it('wires type-safety audit into local verification', () => {

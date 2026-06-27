@@ -12,7 +12,7 @@ export async function handlePredict(req: import('http').IncomingMessage, res: im
   }
 
   let body = '';
-  req.on('data', chunk => {
+  req.on('data', (chunk: unknown) => {
     body += chunk;
   });
 
@@ -27,7 +27,7 @@ export async function handlePredict(req: import('http').IncomingMessage, res: im
 
       console.log(`[local-ai] Calculating mock statistics/probabilities for match ${matchId}...`);
 
-      const basePrediction = MOCK_PREDICTIONS[matchId] || {
+      const basePrediction = MOCK_PREDICTIONS[matchId as keyof typeof MOCK_PREDICTIONS] || {
         matchId,
         predictionId: "pred_2026_9999",
         generatedAt: new Date().toISOString(),
@@ -108,7 +108,7 @@ export async function handleExplain(req: import('http').IncomingMessage, res: im
           }
         };
       } else {
-        responsePayload = MOCK_EXPLANATIONS[predictionId as keyof typeof MOCK_PREDICTIONS] || {
+        responsePayload = MOCK_EXPLANATIONS[predictionId as keyof typeof MOCK_EXPLANATIONS] || {
           predictionId,
           reply: "Based on the mock historical trace, the model favors Team A due to their higher average home scoring rate (2.1 vs 1.2) and a strong head-to-head record.",
           trace: {

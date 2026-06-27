@@ -301,7 +301,7 @@ const forbiddenKeywords = [
   'world cup', 'fifa', 'premier league'
 ];
 
-function scanContent(filePath) {
+function scanContent(filePath: string) {
   const content = fs.readFileSync(filePath, 'utf8').toLowerCase();
   for (const keyword of forbiddenKeywords) {
     if (content.includes(keyword)) {

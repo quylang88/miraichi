@@ -5,7 +5,7 @@
  * score teams, generate probabilities, or produce betting signals.
  */
 
-import type { InputCandidateValidation } from '../contracts/mock-prediction-contracts.js';
+import type { InputCandidate, InputCandidateValidation } from '../contracts/mock-prediction-contracts.js';
 import { isRecord, readString, readStringArray } from '../contracts/mock-prediction-contracts.js';
 
 export function validateInputCandidate(candidate: unknown): InputCandidateValidation {
@@ -61,25 +61,27 @@ export function validateInputCandidate(candidate: unknown): InputCandidateValida
     return { valid: false, errors, warnings };
   }
 
+  const candidateResult: InputCandidate = {
+    inputCandidateId: readString(candidate, 'inputCandidateId')!,
+    matchId: readString(candidate, 'matchId')!,
+    competitionId: readString(candidate, 'competitionId')!,
+    seasonId: readString(candidate, 'seasonId')!,
+    sourceProviderId: readString(candidate, 'sourceProviderId')!,
+    ingestedAt: readString(candidate, 'ingestedAt')!,
+    freshnessStatus: readString(candidate, 'freshnessStatus')!,
+    validationStatus: readString(candidate, 'validationStatus') as 'passed' | 'warning' | 'failed',
+    trace: {
+      workerRunId: readString(trace, 'workerRunId')!,
+      ...(readString(trace, 'adapterVersion') ? { adapterVersion: readString(trace, 'adapterVersion') as string } : {})
+    },
+    ...(readStringArray(candidate, 'availableMarkets') ? { availableMarkets: readStringArray(candidate, 'availableMarkets') as string[] } : {}),
+    ...(dataQualityIssues ? { dataQualityIssues: dataQualityIssues as string[] } : {})
+  };
+
   return {
     valid: true,
     errors,
     warnings,
-    candidate: {
-      inputCandidateId: readString(candidate, 'inputCandidateId')!,
-      matchId: readString(candidate, 'matchId')!,
-      competitionId: readString(candidate, 'competitionId')!,
-      seasonId: readString(candidate, 'seasonId')!,
-      sourceProviderId: readString(candidate, 'sourceProviderId')!,
-      ingestedAt: readString(candidate, 'ingestedAt')!,
-      freshnessStatus: readString(candidate, 'freshnessStatus')!,
-      validationStatus: readString(candidate, 'validationStatus') as 'passed' | 'warning' | 'failed',
-      availableMarkets: readStringArray(candidate, 'availableMarkets'),
-      dataQualityIssues,
-      trace: {
-        workerRunId: readString(trace, 'workerRunId')!,
-        adapterVersion: readString(trace, 'adapterVersion')
-      }
-    }
+    candidate: candidateResult
   };
 }

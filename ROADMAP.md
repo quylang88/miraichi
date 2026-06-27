@@ -60,7 +60,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices for shared contracts, form state, memory persistence, IndexedDB persistence, and versioned draft backup/import helpers.
 - Complete Phase 5.12 owner-requested UI/UX quality-up, staging redeploy, and Phase 5 closeout.
 
-### Milestone 7: Testing/Deployment Hardening (Active Implementation)
+#### Milestone 7: Testing/Deployment Hardening (Completed)
 - Plan CI/CD workflow hardening and staging deployment automation.
 - Plan security and secrets checks without committing credentials.
 - Draft repeatable smoke-check automation, rollback notes, and monitoring plans.
@@ -121,6 +121,6 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Complete `phase:code-slice Phase 6 CI check workflow`.
 - [x] Complete owner-requested `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration`.
 - [x] Create `phase:implementation-plan Phase 6 TypeScript Strictness Hardening`.
-- [ ] Start `phase:code-slice Phase 6 type-safety audit gate`.
-- [ ] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
-- [ ] Keep real AI training out of Phase 6; reserve it for future Phase 7 and Phase 8 planning.
+- [x] Start `phase:code-slice Phase 6 type-safety audit gate`.
+- [x] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
+- [x] Keep real AI training out of Phase 6; reserve it for future Phase 7 and Phase 8 planning.

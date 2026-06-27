@@ -6,12 +6,12 @@ function createMockResponse() {
     statusCode: undefined as number | undefined,
     headers: undefined as Record<string, string> | undefined,
     body: undefined as string | undefined,
-    writeHead(statusCode, headers) {
+    writeHead(statusCode: number, headers?: Record<string, string>) {
       this.statusCode = statusCode;
-      this.headers = headers;
+      this.headers = headers as Record<string, string> | undefined;
     },
-    end(body) {
-      this.body = body;
+    end(body?: unknown) {
+      this.body = typeof body === 'string' ? body : String(body);
     }
   };
 }

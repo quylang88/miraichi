@@ -55,7 +55,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 ### Phase 6: Testing/Deployment Hardening
 - **Goal**: Perform end-to-end integration, security audits, staging deployment hardening, CI/CD automation planning, TypeScript strictness hardening, and non-production release readiness work.
 - **Deliverables**: Accepted CI/CD workflows, repeatable staging deployment artifacts, smoke-check automation, owner-approved repo-wide JavaScript-to-TypeScript source migration, TypeScript strictness hardening plan and code slices, rollback notes, and monitoring plan drafts.
-- **Status**: Active Implementation.
+- **Status**: Completed.
 
 ### Phase 7: Real Data Provider, Dataset, and Evaluation Planning
 - **Goal**: Plan real provider selection, dataset construction, data quality, evaluation methodology, and governance for future real prediction work. The first provider target may be full FIFA World Cup fixture coverage, but implementation must remain competition-agnostic and adapter-based.
@@ -111,6 +111,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete `phase:code-slice Phase 6 CI check workflow`.
 - [x] Complete owner-requested `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration`.
 - [x] Create `phase:implementation-plan Phase 6 TypeScript Strictness Hardening`.
-- [ ] Start `phase:code-slice Phase 6 type-safety audit gate`.
-- [ ] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
-- [ ] Keep real AI training out of Phase 6; plan it only through future Phase 7 and Phase 8 ADRs.
+- [x] Start `phase:code-slice Phase 6 type-safety audit gate`.
+- [x] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
+- [x] Keep real AI training out of Phase 6; plan it only through future Phase 7 and Phase 8 ADRs.

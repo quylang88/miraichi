@@ -16,6 +16,7 @@ Central index for cross-cutting Miraichi documentation. Do not move module-speci
 - Phase 6 CI check workflow review: `ops/PHASE-6-CI-CHECK-WORKFLOW-REVIEW.md`
 - Phase 6 repo-wide TypeScript migration review: `ops/PHASE-6-REPO-WIDE-TYPESCRIPT-MIGRATION-REVIEW.md`
 - Phase 6 TypeScript strictness hardening implementation plan: `ops/PHASE-6-TYPESCRIPT-STRICTNESS-HARDENING-IMPLEMENTATION-PLAN.md`
+- Phase 6 TypeScript strictness hardening review: `ops/PHASE-6-TYPESCRIPT-STRICTNESS-HARDENING-REVIEW.md`
 
 ## Application Docs
 - API architecture: `apps/api/docs/api-architecture.md`

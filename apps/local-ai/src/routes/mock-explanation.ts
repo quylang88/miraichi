@@ -34,8 +34,9 @@ export function handleMockExplain(req: import('http').IncomingMessage, res: impo
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(explanationPayload));
     } catch (err) {
+      const errMessage = err instanceof Error ? err.message : String(err);
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message || 'Invalid JSON request body' }));
+      res.end(JSON.stringify({ error: errMessage || 'Invalid JSON request body' }));
     }
   });
 }

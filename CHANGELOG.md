@@ -44,9 +44,13 @@ Includes all directories and apps under this monorepo.
 - Added check-only GitHub Actions CI workflow for lifecycle, unit, syntax, typecheck, and audit gates.
 - Added owner-approved Phase 6 repo-wide JavaScript-to-TypeScript migration review evidence.
 - Added Phase 6 TypeScript Strictness Hardening implementation plan to convert TypeScript source migration into enforced source-level type safety.
+- Added Type-safety audit gate script (`scripts/type-safety-audit.ts`) and strictness policy tests (`scripts/typescript-strictness-policy.test.ts`).
+- Added strictly-typed contracts, validators, and builders for Local AI prediction and API route boundaries, completely eliminating explicit `any` and `@ts-ignore` suppressions from source.
 
 ### Changed
 - Promoted Phase 1 ADRs (ADR-0002, 0004-0011) to Accepted status and ADR-0003 to Proposed status based on project owner decisions.
+- Updated `tsconfig.base.json` to enable strict compiler options (`strict`, `noImplicitAny`, `useUnknownInCatchVariables`, `exactOptionalPropertyTypes`) and resolved all type issues across scripts and modules.
+- Integrated `audit:type-safety` as a required local check in the `verify:local` script pipeline.
 - Updated root architecture planning documents (README, ARCHITECTURE.md, PROJECT_PLAN.md, ROADMAP.md) to reflect approved Phase 1 status.
 - Added Phase 1 Completion Review ([PHASE-1-COMPLETION-REVIEW.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REVIEW.md)) executing the milestone verification.
 - Added Phase 1 Completion Report ([PHASE-1-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REPORT.md)) summarizing Phase 1 milestones and status.

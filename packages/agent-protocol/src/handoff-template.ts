@@ -41,10 +41,11 @@ export function createHandoffPacket({ fromAgent, toAgent, taskId, payload }: {fr
  * @param {object} packet
  * @returns {boolean}
  */
-export function validateHandoff(packet) {
-  if (!packet || typeof packet !== 'object') {
+export function validateHandoff(packetInput: unknown) {
+  if (!packetInput || typeof packetInput !== 'object') {
     throw new Error('[Agent Protocol] Invalid handoff packet: payload must be an object.');
   }
+  const packet = packetInput as Record<string, unknown>;
   
   for (const [key, type] of Object.entries(HANDOFF_SCHEMA)) {
     if (!(key in packet)) {

@@ -66,10 +66,11 @@ function normalizeSettings(
 ): ShellSettings {
   return {
     ...DEFAULT_SETTINGS,
-    locale: resolveLocale({
-      storedLocale: rawSettings.locale,
-      navigatorLanguages
-    }),
+    locale: resolveLocale(
+      rawSettings.locale
+        ? { storedLocale: rawSettings.locale, navigatorLanguages }
+        : { navigatorLanguages }
+    ),
     theme: rawSettings.theme === 'dark' ? rawSettings.theme : DEFAULT_SETTINGS.theme,
     displayDensity: rawSettings.displayDensity === 'compact' ? 'compact' : DEFAULT_SETTINGS.displayDensity
   };

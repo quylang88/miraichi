@@ -36,7 +36,7 @@ const RULES = [
 
 let violationsCount = 0;
 
-function scanDir(dirPath) {
+function scanDir(dirPath: string) {
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
   for (const entry of entries) {

@@ -172,6 +172,12 @@ async function createWorkspaceFixture({
   filesWithLifecycleMarker,
   includeLifecycleSkill,
   includeRequiredMarkers
+}: {
+  rootScripts: Record<string, string>;
+  packageScripts: Record<string, string>;
+  filesWithLifecycleMarker: string[];
+  includeLifecycleSkill: boolean;
+  includeRequiredMarkers: boolean;
 }) {
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'miraichi-lifecycle-'));
 
@@ -240,7 +246,7 @@ async function createWorkspaceFixture({
   return rootDir;
 }
 
-async function writeJson(filePath, value) {
+async function writeJson(filePath: string, value: unknown) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }

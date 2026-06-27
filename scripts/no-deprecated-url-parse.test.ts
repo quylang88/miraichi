@@ -17,7 +17,7 @@ describe('deprecated URL parsing guard', () => {
   });
 });
 
-function scanJavaScriptFiles(dirPath, offenders, deprecatedPattern) {
+function scanJavaScriptFiles(dirPath: string, offenders: string[], deprecatedPattern: string) {
   for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
     if (entry.name === 'node_modules' || entry.name === 'coverage') continue;
 

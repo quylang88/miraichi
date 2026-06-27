@@ -43,8 +43,9 @@ export async function handlePredictions(req: import('http').IncomingMessage, res
     }
     throw new Error(`local-ai service returned status ${aiRes.status}`);
   } catch (err) {
-    console.warn(`[API Gateway] downstream local-ai failed (${err.message}). Using fallback mock.`);
-    const prediction = MOCK_PREDICTIONS[matchId] || {
+    const errMessage = err instanceof Error ? err.message : String(err);
+    console.warn(`[API Gateway] downstream local-ai failed (${errMessage}). Using fallback mock.`);
+    const prediction = MOCK_PREDICTIONS[matchId as keyof typeof MOCK_PREDICTIONS] || {
       matchId,
       predictionId: "pred_2026_9999",
       generatedAt: new Date().toISOString(),

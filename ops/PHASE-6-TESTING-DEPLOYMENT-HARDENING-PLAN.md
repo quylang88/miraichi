@@ -4,8 +4,8 @@
 Plan the non-production hardening work needed before any later final-release owner review or production promotion.
 
 ## Status
-- **Status**: Active Implementation
-- **Review Status**: Owner approved implementation planning via `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`; smoke automation, check-only CI, and owner-requested repo-wide JavaScript-to-TypeScript migration have local/integration evidence. Owner later requested `phase:implementation-plan Phase 6 TypeScript Strictness Hardening` before staging.
+- **Status**: Completed
+- **Review Status**: Completed and verified. Staging smoke automation, CI workflows, JavaScript-to-TypeScript migration, and TypeScript strictness hardening code slices have all passed verification gates.
 
 ## Scope
 Phase 6 covers CI/CD workflow planning, repeatable staging deployment hardening, smoke-check automation planning, TypeScript strictness hardening, rollback notes, security/secrets audit planning, and monitoring plan drafts.

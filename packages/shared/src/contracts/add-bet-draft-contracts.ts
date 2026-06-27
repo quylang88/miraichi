@@ -93,10 +93,8 @@ function hasFiniteNumber(value: unknown): value is number {
 }
 
 export function cloneAddBetDraft(draft: AddBetDraft): AddBetDraft {
-  return {
-    ...draft,
-    tags: draft.tags ? [...draft.tags] : undefined
-  };
+  const { tags, ...rest } = draft;
+  return tags ? { ...rest, tags: [...tags] } : rest;
 }
 
 export function isAddBetDraftReviewReady(draft: Partial<AddBetDraft>): boolean {

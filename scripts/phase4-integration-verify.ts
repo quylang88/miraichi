@@ -34,7 +34,7 @@ const spawnOptions = { stdio: 'inherit' as const };
 const apiProcess = spawn(process.execPath, [tsxCli, 'apps/api/src/index.ts'], spawnOptions);
 const aiProcess = spawn(process.execPath, [tsxCli, 'apps/local-ai/src/index.ts'], spawnOptions);
 
-function cleanupAndExit(exitCode) {
+function cleanupAndExit(exitCode: number) {
   console.log('[Phase 4 Integration Verify] Shutting down background processes...');
   try {
     apiProcess.kill();
@@ -54,7 +54,7 @@ process.on('SIGTERM', () => cleanupAndExit(1));
 setTimeout(async () => {
   let failed = false;
 
-  function assert(condition, message) {
+  function assert(condition: boolean, message: string) {
     if (!condition) {
       console.error(`  ❌ FAIL: ${message}`);
       failed = true;

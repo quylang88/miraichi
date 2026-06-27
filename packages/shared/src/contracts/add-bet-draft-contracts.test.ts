@@ -29,7 +29,8 @@ describe('add bet draft contracts', () => {
   });
 
   it('rejects review readiness when required draft fields are missing', () => {
-    const draft = createCompleteDraft({ stakePoints: undefined });
+    const { stakePoints, ...rest } = createCompleteDraft();
+    const draft = rest as unknown as AddBetDraft;
 
     expect(isAddBetDraftReviewReady(draft)).toBe(false);
   });
