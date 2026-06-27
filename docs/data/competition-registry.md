@@ -6,7 +6,7 @@ Data registry details for registering tournaments in the system.
 Explains how to configure new football tournaments dynamically without changing core application code.
 
 ## Status
-- **Status**: Draft / Active Planning
+- **Status**: Active
 
 ## Scope
 Defines the dynamic records shape in the configuration layer. Storage of this registry is restricted to local configuration files during Phase 3; database tables are deferred.

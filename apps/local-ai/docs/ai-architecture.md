@@ -6,7 +6,7 @@ Inference runtime, model architectures, and LLM orchestration strategies.
 Establishes model serving, prompt pipelines, runtime packages (e.g. PyTorch, llama.cpp), and memory configurations.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Directly governs apps/local-ai script setups, ML pipelines, and LLM API integrations.

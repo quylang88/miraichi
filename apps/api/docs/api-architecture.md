@@ -6,7 +6,7 @@ Backend structure and design patterns for the Miraichi API.
 Establishes system flows, data layers, caching strategies, and integration points for backend modules.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Directly governs backend codebase layouts, microservice contracts, and dependency injection patterns in apps/api.

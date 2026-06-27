@@ -6,7 +6,7 @@ External sports data providers integration guidelines.
 Identifies criteria for selecting future sports APIs (odds, fixtures, stats) and details abstraction design.
 
 ## Status
-- **Status**: Draft / Active Planning
+- **Status**: Active
 
 ## Scope
 Guidelines for provider selection and mock data adapter specifications.

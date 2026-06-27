@@ -7,6 +7,7 @@ Exposes terminal actions for cleanups, migrations, and local verification steps.
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred until Phase 6 planning.
 
 ## Scope
 Developer scripts, database initialization runners, and environment setup commands.

@@ -6,7 +6,7 @@ Prediction engines, statistical models, and LLM interfaces.
 Processes sport datasets, executes inference steps, serves predictions, and provides prompt management utilities.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Python files, Hugging Face models connectivity, feature engineering pipelines, prompt routing rules, and local inference APIs.

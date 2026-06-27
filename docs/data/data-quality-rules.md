@@ -6,7 +6,7 @@ Validations and integrity rules for sports data fields.
 Prevents incorrect match results or bad odds formats from corrupting prediction models.
 
 ## Status
-- **Status**: Draft / Active Planning
+- **Status**: Active
 
 ## Scope
 Validation thresholds for teams, matches, scores, and odds.

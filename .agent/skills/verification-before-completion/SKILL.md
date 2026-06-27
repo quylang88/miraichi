@@ -124,6 +124,8 @@ From 24 failure memories:
 - Moving to next task
 - Delegating to agents
 
+For Miraichi work, `.agent/skills/miraichi-delivery-lifecycle/SKILL.md` defines which command proves the claim. Use `pnpm run verify:local`, `pnpm run test:integration`, or `pnpm run verify:release` according to the active phase.
+
 **Rule applies to:**
 - Exact phrases
 - Paraphrases and synonyms

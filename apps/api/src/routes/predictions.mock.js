@@ -1,5 +1,4 @@
 import { MOCK_PREDICTIONS } from '@miraichi/shared';
-import url from 'url';
 
 const LOCAL_AI_URL = 'http://localhost:3002';
 
@@ -8,8 +7,8 @@ const LOCAL_AI_URL = 'http://localhost:3002';
  * Proxies to local-ai statistics processor, or falls back to mock payload.
  */
 export async function handlePredictions(req, res) {
-  const parsedUrl = url.parse(req.url, true);
-  const matchId = parsedUrl.query.matchId;
+  const parsedUrl = new URL(req.url || '/', 'http://localhost');
+  const matchId = parsedUrl.searchParams.get('matchId');
 
   if (!matchId) {
     res.writeHead(400, { 'Content-Type': 'application/json' });

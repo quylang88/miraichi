@@ -1,6 +1,6 @@
 # Prediction Traceability Boundary
 
-* **Status**: Draft
+* **Status**: Active
 * **Date**: June 23, 2026
 
 ---

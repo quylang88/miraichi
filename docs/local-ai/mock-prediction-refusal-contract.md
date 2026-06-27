@@ -1,6 +1,6 @@
 # Mock Prediction Refusal Contract
 
-* **Status**: Draft
+* **Status**: Active
 * **Date**: June 23, 2026
 
 ---

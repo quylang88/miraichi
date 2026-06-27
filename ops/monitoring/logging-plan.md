@@ -7,6 +7,7 @@ Establishes standard format (JSON) and levels for application logs.
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred until Phase 6 planning.
 
 ## Scope
 Directly plans runtime logging across all monorepo apps.

@@ -5,7 +5,9 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "test": "node -e \"console.log('config test pass')\"",
-    "lint": "node -e \"console.log('config lint pass')\""
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:unit:coverage": "vitest run --coverage",
+    "lint": "node ../../scripts/check-js-syntax.js ."
   }
 }

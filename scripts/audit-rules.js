@@ -47,7 +47,11 @@ function scanDir(dirPath) {
       if (entry.name !== 'node_modules' && entry.name !== '.git' && entry.name !== 'docs') {
         scanDir(fullPath);
       }
-    } else if (entry.isFile() && entry.name.endsWith('.js') && relativePath !== 'scripts/audit-rules.js') {
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith('.js') || entry.name.endsWith('.ts')) &&
+      relativePath !== 'scripts/audit-rules.js'
+    ) {
       const content = fs.readFileSync(fullPath, 'utf8');
       
       for (const rule of RULES) {

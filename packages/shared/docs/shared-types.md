@@ -6,7 +6,7 @@ Common data model interfaces and definitions.
 Defines interfaces for Match, Player, Market, Prediction, and Bet Slips.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Governs data modeling and type safety across all apps.

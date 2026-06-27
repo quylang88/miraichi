@@ -6,7 +6,7 @@ This document details the architecture and roadmap for ingesting sports data und
 Establishes the integration strategy for ingestion feeds, outlining provider abstraction boundaries and mock-first design.
 
 ## Status
-- **Status**: Draft / Active Planning Gateway
+- **Status**: Closed
 - **Revisit Phase**: Phase 3 (Early Planning Gateway)
 
 ## Ingestion Architecture & Roadmap

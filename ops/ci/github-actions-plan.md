@@ -7,6 +7,7 @@ Establishes the steps for building and testing PRs automatically.
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred until Phase 6 planning.
 
 ## Scope
 Directly plans the YAML pipeline configurations under `.github/workflows/` (when implemented).

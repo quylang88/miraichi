@@ -4,7 +4,7 @@
 Define Phase 1 as an architecture discovery phase for Miraichi. This document explains what the project should explore before implementation, what remains intentionally undecided, and which planning deliverables should guide later decisions.
 
 ## Status
-- **Status**: Draft
+- **Status**: Closed
 - **Phase**: Phase 1 - Architecture Planning
 - **Date**: 2026-06-23
 

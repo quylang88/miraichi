@@ -1,5 +1,4 @@
 import http from 'http';
-import url from 'url';
 import { handleHealth } from './routes/health.js';
 import { handlePredict, handleExplain } from './routes/prediction-candidates.mock.js';
 import { handleMockPredict } from './routes/mock-prediction.js';
@@ -8,7 +7,7 @@ import { handleMockExplain } from './routes/mock-explanation.js';
 const PORT = 3002;
 
 const server = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url, true);
+  const parsedUrl = new URL(req.url || '/', 'http://localhost');
   const pathname = parsedUrl.pathname;
 
   console.log(`[local-ai] Received ${req.method} ${req.url}`);

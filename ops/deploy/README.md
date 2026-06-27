@@ -7,6 +7,7 @@ Governs deployment targets, ports allocation, environment keys mappings, and sta
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred until Phase 6 planning.
 
 ## Scope
 Directly plans host infrastructure configurations.

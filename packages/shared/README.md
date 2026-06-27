@@ -6,7 +6,7 @@ Common TypeScript types, utility libraries, and helper methods.
 Enforces domain standard interfaces, date parses, validation helpers, and mathematical utility functions.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Shared monorepo helper libraries, data model type definitions, and core football schemas.

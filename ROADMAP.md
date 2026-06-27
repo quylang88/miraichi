@@ -6,7 +6,7 @@ Milestones and timeline for the development of Miraichi.
 This document provides visibility into planned feature rollouts and releases.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Outlines high-level roadmap milestones across multiple phases.
@@ -54,8 +54,10 @@ Outlines high-level roadmap milestones across multiple phases.
 - Complete Phase 5.7A Black Apple Ledger PWA UI preview as an adjustable production baseline direction.
 - Defer Phase 5.7B production UI implementation until separately approved.
 - Plan future app settings and language/i18n support, including English and Vietnamese (Phase 5.8).
-- Recommend Phase 5.9 Production PWA Shell Implementation next, reusing the Black Apple Ledger baseline.
-- Defer Local-First Persistence and Backup Planning/Adapter Boundary to Phase 5.10 (after production shell readiness).
+- Complete Phase 5.9 Production PWA Shell Implementation using TypeScript-first shell modules and production-baseline Black Apple Ledger structure.
+- Clean document statuses before starting Phase 5.10.
+- Keep Phase 5.10 planned but not active until docs hygiene is complete.
+- Defer Local-First Persistence Implementation to Phase 5.11 after Phase 5.10 planning and owner approval.
 
 ### Milestone 7: Real Data Provider, Dataset, and Evaluation Planning (Future)
 - Plan real data provider selection and dataset boundaries.
@@ -88,6 +90,9 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Complete Phase 5.7A Black Apple Ledger PWA UI preview as a provisional preview baseline only (adjustable).
 - [x] Defer Phase 5.7B PWA Navigation Shell and Forms implementation until the owner explicitly approves a production UI implementation plan.
 - [x] Plan App Settings and Language/i18n, including English and Vietnamese support plus additional owner-requested app settings (Phase 5.8).
-- [ ] Recommend Phase 5.9 Production PWA Shell Implementation next, reusing the Black Apple Ledger baseline.
-- [ ] Defer Local-First Persistence and Backup Planning/Adapter Boundary to Phase 5.10 (after production shell readiness).
+- [x] Complete Phase 5.9 Production PWA Shell Implementation using TypeScript-first shell modules and production-baseline Black Apple Ledger structure.
+- [x] Start pre-Phase 5.10 document status hygiene cleanup.
+- [x] Complete Phase 1, Phase 3, Phase 4, app/package, and ops docs hygiene slices.
+- [ ] Recommend Phase 5.10 Add Bet Draft/Form State + Persistence Planning next.
+- [ ] Defer Local-First Persistence Implementation to Phase 5.11 after Phase 5.10 planning and owner approval.
 - [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.

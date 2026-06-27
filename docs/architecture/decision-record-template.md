@@ -6,7 +6,7 @@ Standard structure for recording architectural changes and key design choices.
 Ensures that all decisions are logged with context, options considered, and consequences.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Format template for future ADR files under docs/decisions/.

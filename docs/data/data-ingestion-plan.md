@@ -6,7 +6,7 @@ Workflows for scheduled sport data polling and validation.
 Ensures that fixtures and match updates are processed reliably.
 
 ## Status
-- **Status**: Draft / Active Planning
+- **Status**: Active
 
 ## Scope
 Outlines ingestion task flow in `apps/worker` using mock provider sources.

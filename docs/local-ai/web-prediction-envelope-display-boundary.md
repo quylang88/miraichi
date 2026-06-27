@@ -1,6 +1,6 @@
 # Web Prediction Envelope Display Boundary
 
-* **Status**: Draft
+* **Status**: Active
 * **Date**: June 23, 2026
 
 ---

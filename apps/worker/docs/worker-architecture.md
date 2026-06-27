@@ -6,7 +6,7 @@ Queue scaling patterns, message passing structures, and job distributions.
 Establishes consumer groups, error retry schedules, and memory management guidelines.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Directly governs apps/worker code structures, task dependencies, and concurrency properties.

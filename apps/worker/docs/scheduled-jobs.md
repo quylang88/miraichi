@@ -6,7 +6,7 @@ Planned cron jobs, trigger schedules, and batch definitions.
 Visualizes background intervals for feeds fetching, audit compilation, and database cleanup.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Schedules, intervals, execution times, and target task names in apps/worker.

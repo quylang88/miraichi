@@ -6,7 +6,7 @@ Strategy for managing configurations across local, staging, and production envir
 Specifies schemas, loading rules, and safety fallbacks.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Directly outlines runtime validation parameters across all monorepo apps.

@@ -1,6 +1,6 @@
 # Input Candidate to Prediction Envelope Flow
 
-* **Status**: Draft
+* **Status**: Active
 * **Date**: June 23, 2026
 
 ---

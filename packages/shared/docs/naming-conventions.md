@@ -6,7 +6,7 @@ Coding conventions and key domain term standards.
 Ensures consistent naming styles across TypeScript, Python, SQL, and Markdown.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Coding symbols, classes, files, database tables, and configuration parameters.

@@ -3,6 +3,7 @@
 * **Date**: 2026-06-26
 * **Phase**: 5.7A
 * **Status**: Updated for Provisional Option E Closure
+* **Latest Update**: 2026-06-27 - Match-scoped Add Bet preview refinement with read-only Today
 
 This guide explains how to inspect the revised **Black Apple Ledger** preview as a temporary baseline.
 
@@ -26,7 +27,7 @@ This guide explains how to inspect the revised **Black Apple Ledger** preview as
 
 3. **Check mobile viewport**:
    * Use `390px x 844px` or `375px x 812px`.
-   * Confirm the first viewport shows the Today header, summary rows, Match Ledger, Add Bet action, and bottom navigation without overlap.
+   * Confirm the first viewport shows the Today header, summary rows, match snapshot, and bottom navigation without overlap.
 
 4. **Check desktop viewport**:
    * Use `1280px x 900px`.
@@ -42,7 +43,8 @@ Review the preview as a real app workflow, not as a theme comparison.
 * **Hierarchy**: Are title, summary rows, ledger rows, tabs, and sheets clearly prioritized?
 * **Color restraint**: Does blue appear only where interaction needs it?
 * **Tab behavior**: Do all five tabs feel like the same design system?
-* **Sheet behavior**: Do Add Bet and Review sheets feel compact, readable, and preview-safe?
+* **Match-scoped entry**: Does adding a bet through an opened match group feel clearer than choosing a match from a form dropdown?
+* **Sheet behavior**: Do Add Bet, Edit, and Review sheets feel compact, readable, and preview-safe?
 * **Boundary safety**: Does the UI avoid prediction, confidence, ranking, stake advice, and return calculation language?
 
 ### Black Apple Ledger Design Elements
@@ -65,11 +67,14 @@ Verify:
 Inside the preview:
 
 * Click `Matches`, `Bets`, `Bankroll`, and `Miraichi` in the bottom navigation.
-* Click `Add Bet` and confirm the preview sheet opens.
+* Confirm `Today` does not expose an Add Bet action; it is only a quick summary surface.
+* Open a match from `Matches` or choose a match from `Bets` and confirm it opens the match detail sub-view.
+* From match detail, click `Add Bet` and confirm the sheet opens with read-only match context and no match dropdown.
 * Enter mock-valid Add Bet fields and confirm `Save Draft` becomes enabled.
 * Close the Add Bet sheet and confirm no data is saved.
-* Expand and collapse match ledger rows.
-* Click `Review` and confirm the Review sheet opens.
+* Expand and collapse Today match snapshot rows.
+* Click `Edit` on an ongoing/draft bet and confirm the Edit sheet opens.
+* Click `Review` on a settled/review-only bet and confirm the Review sheet opens.
 * Search in `Matches` and confirm generic rows filter locally.
 
 All interactions are preview-only.
@@ -82,7 +87,8 @@ Useful feedback:
 
 * Whether the UI is now too sparse, still too dense, or correctly focused.
 * Whether iOS-like blue should remain the only accent.
-* Whether Add Bet should remain a floating action or move into the top bar later.
+* Whether the match detail sub-view has enough context before the user opens Add Bet.
+* Whether top-level `Bets` feels correctly focused on ongoing/draft/settled management rather than new-bet creation.
 * Whether the Bankroll tab should stay as a points-only snapshot or be renamed later.
 * Whether the assistant inbox should be more prominent in the real app shell.
 * Whether later color, layout, typography, navigation treatment, settings, language, and design style should change.

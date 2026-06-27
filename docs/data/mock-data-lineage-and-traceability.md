@@ -1,6 +1,6 @@
 # Mock Data Lineage and Traceability
 
-* **Status**: Draft
+* **Status**: Active
 * **Date**: 2026-06-23
 
 ---

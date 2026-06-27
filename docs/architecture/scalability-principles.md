@@ -6,7 +6,7 @@ Standards for horizontal scaling, database queries, and caching.
 Ensures that the app handles high concurrency during match events.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Defines data structures, caching layers, and worker queue scalability guidelines.

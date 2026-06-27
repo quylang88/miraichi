@@ -15,6 +15,9 @@ Defines the coordination framework for all subagents active in development.
 - All agent interactions must follow the communication schema in packages/agent-protocol.
 - Subagents must not exceed their designated boundaries without handoff to the appropriate specialist.
 - All agents must read, load, and utilize the skills defined in the [.agent/skills](file:///c:/CODE/miraichi/.agent/skills/) directory. This ensures consistent execution of workflows, code reviews, plans, and developer behaviors.
+- All agents must read [.agent/skills/miraichi-delivery-lifecycle/SKILL.md](file:///c:/CODE/miraichi/.agent/skills/miraichi-delivery-lifecycle/SKILL.md) and `.agent/skills/miraichi-project-guardrails/SKILL.md` before planning, coding, testing, staging, production promotion, or maintenance work.
+- Phase commands are authoritative: `phase:plan`, `phase:implementation-plan`, `phase:code-slice`, `phase:integration-test`, `phase:staging`, `phase:owner-feedback`, `phase:production`, and `phase:maintenance`.
+- No agent may treat local tests as production approval. Production requires release verification, staging smoke evidence, and explicit owner approval.
 
 ## Subagent Directory
 

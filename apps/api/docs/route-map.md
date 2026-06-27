@@ -6,7 +6,7 @@ Backend HTTP endpoint layouts and definitions.
 Exposes planned routing paths, query options, and response structures.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Maps all public, authenticated, and service-to-service endpoints in apps/api.

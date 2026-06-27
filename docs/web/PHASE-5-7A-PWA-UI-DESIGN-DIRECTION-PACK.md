@@ -12,14 +12,14 @@ This document records the provisional Phase 5.7A preview direction for the Mirai
 
 ### Option E: Black Apple Ledger (Temporary Preview Baseline)
 
-* **Design Intent**: Show a real daily app surface instead of a theme picker. The preview focuses on `Today`, grouped match ledger work, manual record review, assistant context, Add Bet access, and the fixed five-tab navigation.
+* **Design Intent**: Show a real daily app surface instead of a theme picker. The preview focuses on read-first `Today`, grouped match snapshot work, manual record review, assistant context, match-scoped Add Bet access outside Today, and the fixed five-tab navigation.
 * **Decision Status**: Accepted only as a provisional visual direction for preview continuity. It is not final production UI approval.
 * **Visual Personality**: Pure black, restrained, high-clarity, and iOS-inspired. The UI should feel like a serious mobile tool, not a betting promo screen.
 * **Typography**: System font stack only: `-apple-system`, `BlinkMacSystemFont`, `SF Pro Text`, `Segoe UI`, and sans-serif fallbacks. No external Google Fonts and no serif display header.
 * **Palette**: Pure black and near-black base (`#000000`, `#050505`), charcoal surfaces (`#111113`, `#1c1c1e`), hairline borders (`rgba(255,255,255,0.08)`), white/gray text, and restrained iOS-like blue (`#0a84ff`) for interaction.
-* **Layout Model**: One realistic mobile app viewport with a compact top bar, preview notice, summary list, segmented filters, ledger rows, assistant note, non-glowing Add Bet action, bottom navigation, and iOS-style sheets.
+* **Layout Model**: One realistic mobile app viewport with a compact top bar, preview notice, summary list, segmented filters, match snapshot rows, assistant note, bottom navigation, match detail sub-view, and iOS-style sheets.
 * **Screens Covered**: `Today`, `Matches`, `Bets`, `Bankroll`, and `Miraichi`.
-* **Modal Coverage**: Add Bet bottom sheet and Review bottom sheet are preview-only, local UI state only, and do not save data.
+* **Modal Coverage**: Match-scoped Add Bet, Edit, and Review bottom sheets are preview-only, local UI state only, and do not save data.
 * **Boundary Copy**: Uses safe labels such as `Points snapshot`, `Manual ledger`, `No formula run`, and `Preview only`.
 
 > [!IMPORTANT]

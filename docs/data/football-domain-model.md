@@ -6,7 +6,7 @@ Logical schemas and relationships for football matches.
 Establishes logical data structures and relationships.
 
 ## Status
-- **Status**: Draft / Active Planning
+- **Status**: Active
 
 ## Scope
 Describes document-level contracts and TypeScript interfaces implemented in `packages/shared`. This represents logical constraints only; no database tables or ORM schemas are created.

@@ -3,6 +3,7 @@
 * **Date**: 2026-06-26
 * **Phase**: 5.7A
 * **Status**: Completed - Accepted Production Baseline Direction (Adjustable)
+* **Latest Update**: 2026-06-27 - Match-scoped Add Bet preview refinement with read-only Today
 
 This report documents the revised Phase 5.7A interactive visual design preview and its closure boundary.
 
@@ -13,9 +14,10 @@ This report documents the revised Phase 5.7A interactive visual design preview a
 Phase 5.7A remains visual design exploration and preview only.
 
 * **Included**: Replacing the Modern Premium preview with one realistic **Black Apple Ledger** app preview at `/preview`.
-* **Included**: Pure black background, charcoal surfaces, hairline borders, system typography, restrained iOS-like blue accent, and non-glowing Add Bet action.
+* **Included**: Pure black background, charcoal surfaces, hairline borders, system typography, and restrained iOS-like blue accent.
 * **Included**: Static mock screens for `Today`, `Matches`, `Bets`, `Bankroll`, and `Miraichi`.
-* **Included**: Preview-only Add Bet sheet, Review sheet, expandable match ledger rows, bottom tab switching, search filtering, segmented controls, and assistant note.
+* **Included**: Preview-only match detail sub-view, match-scoped Add Bet sheet, ongoing edit sheet, Review sheet, expandable match ledger rows, bottom tab switching, search filtering, segmented controls, and assistant note.
+* **Refined**: Add Bet no longer uses a global match dropdown. Users open a match group first, then add a bet inside that match context. `Today` is read-first and no longer exposes Add Bet.
 * **Removed**: Google Fonts, Playfair-style title, green glow, sparkline trend cue, financial trend copy, and potential-winnings copy.
 * **Excluded**: No business logic, prediction algorithms, staking, bankroll formulas, settlement formulas, persistence, IndexedDB, database work, bookmaker integration, real data, app settings UI, language selector, i18n framework, or translation files.
 
@@ -30,6 +32,9 @@ Phase 5.7A remains visual design exploration and preview only.
   * Keeps serving `apps/web/public/preview.html` for `/preview` and `/preview.html`.
 * `apps/web/public/preview.html`
   * Replaced the visual system with the Black Apple Ledger preview.
+  * Updated Add Bet to be match-scoped through a match detail sub-view and removed the match dropdown from the Add Bet sheet.
+* `scripts/pwa-verify.js`
+  * Adds preview invariants for match-scoped Add Bet markers and forbids the old global match dropdown markers.
 * `docs/web/PHASE-5-7A-PWA-UI-DESIGN-DIRECTION-PACK.md`
   * Records Option E as the selected direction and marks Modern Premium as superseded.
 * `docs/web/PHASE-5-7A-PWA-UI-DESIGN-OWNER-REVIEW-GUIDE.md`
@@ -57,6 +62,7 @@ The preview remains:
 1. **Standalone**: one HTML file, no new router, framework, package, or build step.
 2. **Token-driven**: key colors, radii, text colors, borders, and safe-area values are centralized in CSS variables.
 3. **Preview-only**: all interactions are local UI state. No storage, network call, formula, prediction, or recommendation behavior exists.
+4. **Match-scoped Add Bet**: Add Bet starts from a selected match group in the preview outside `Today`. The Add sheet displays match context as read-only and does not contain a match selector dropdown.
 
 ---
 
@@ -114,7 +120,10 @@ Rendered verification should also confirm:
 * `/preview` returns HTTP `200`.
 * The page title is `Miraichi - Black Apple Ledger Preview`.
 * `Today`, `Matches`, `Bets`, `Bankroll`, and `Miraichi` tabs switch visible content.
-* Add Bet and Review sheets open and close.
+* Match rows open the match detail sub-view without adding a sixth primary tab.
+* `Today` shows quick summary and match snapshot content only; it does not show Add Bet.
+* Scoped Add Bet, ongoing edit, and Review sheets open and close.
+* The Add Bet sheet contains no `match-field` dropdown.
 * The browser console has no relevant errors.
 * Mobile and desktop screenshots have no clipped text, overlapping controls, or framework overlay.
 

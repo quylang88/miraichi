@@ -6,15 +6,16 @@ An AI-driven football prediction and betting management application.
 Miraichi provides an extensible platform for AI football prediction, betting management, risk limits, bankroll tracking, and collaborative agent workflows.
 
 ## Status
-- **Status**: Draft
-- **Current Phase**: Phase 1 - Architecture Planning
+- **Status**: Active
+- **Current Phase**: Pre-Phase 5.10 - Docs Hygiene Complete, Phase 5.10 Review Pending
+- **Phase Source of Truth**: `PROJECT_PLAN.md`
 
 ## Scope
 This repository houses the entire monorepo system, including frontend, backend API, local AI modules, worker queues, and operational files. 
 
 > [!IMPORTANT]
-> **No business logic, production database schemas, prediction algorithms, betting calculations, or real app code is implemented in Phase 1.**
-> Current work is limited to architecture discovery, open questions, candidate options, draft boundaries, and planning documents.
+> Miraichi work must follow `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
+> Business logic, production database schemas, prediction algorithms, betting calculations, secrets, and hard-coded competition logic still require explicit owner-approved ADRs and implementation plans before coding.
 
 ## Main Folder Structure
 The repository keeps a clean root structure with exactly 4 main folders:
@@ -30,6 +31,6 @@ While the initial launch targets World Cup use cases, the domain language, data 
 - Football domain concepts (competitions, seasons, teams, matches, markets, bets, bankrolls) are modeled abstractly.
 
 ## TODO / Next Steps
-- [ ] Review the Phase 1 architecture planning package.
-- [ ] Decide which architecture options need follow-up ADRs.
-- [ ] Approve implementation boundaries before starting app skeleton work.
+- [ ] Review draft Phase 5.10 planning after docs status hygiene cleanup.
+- [ ] Use `phase:plan`, `phase:implementation-plan`, `phase:code-slice`, `phase:integration-test`, `phase:staging`, `phase:owner-feedback`, `phase:production`, or `phase:maintenance` to make the active gate explicit.
+- [ ] Run `pnpm run verify:release` before staging or production promotion.

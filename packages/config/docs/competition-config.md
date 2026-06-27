@@ -6,7 +6,7 @@ Format specifications for adding new sport competitions dynamically.
 Ensures that all competitions are treated as configuration data rather than code.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Competition metadata schemas, season templates, and tournament rules definitions.

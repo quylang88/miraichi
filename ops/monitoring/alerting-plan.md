@@ -7,6 +7,7 @@ Establishes the severity levels and pager routing for exceptions.
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred until Phase 6 planning.
 
 ## Scope
 Directly plans pager channels and alert parameters.

@@ -1,7 +1,7 @@
 # Phase 4 Local AI Guardrails
 
 * **Date**: June 23, 2026
-* **Status**: **Active Guardrails**
+* **Status**: Active Guardrails
 
 ---
 

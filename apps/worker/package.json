@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "node src/index.js",
-    "test": "node -e \"console.log('worker test pass')\"",
-    "lint": "node -e \"console.log('worker lint pass')\""
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:unit:coverage": "vitest run --coverage",
+    "lint": "node ../../scripts/check-js-syntax.js ."
   },
   "dependencies": {
     "@miraichi/shared": "workspace:*"

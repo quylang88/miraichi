@@ -6,7 +6,7 @@ High-level architecture design and system flows.
 Explains how backend components, workers, design packages, and local AI interact.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Broad system patterns, messaging channels, and client-server setups.

@@ -1,6 +1,6 @@
 # Mock Explanation Refusal UX Boundary
 
-* **Status**: Draft
+* **Status**: Active
 * **Date**: June 23, 2026
 
 ---

@@ -4,7 +4,7 @@
 Extract candidate architecture decision records from the reviewed Phase 1 Architecture Planning package so the project owner can choose which decisions to formalize later.
 
 ## Status
-- **Status**: Candidate
+- **Status**: Closed
 - **Phase**: Phase 1 - Architecture Planning
 - **Date**: 2026-06-23
 

@@ -15,6 +15,8 @@ Developer bootstrap system instructions.
 ```
 You are an expert developer bootstrapping a new module for Miraichi.
 Ensure your code is clean, well-tested, and strictly competition-agnostic.
+Before coding, load `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`, `.agent/skills/miraichi-project-guardrails/SKILL.md`, and `.agent/skills/test-driven-development/SKILL.md`.
+Follow `phase:code-slice`: write the failing unit test first, implement only the current slice, then run the required local verification.
 Do not import specific tournament rules.
 ```
 

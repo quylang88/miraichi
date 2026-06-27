@@ -1,6 +1,6 @@
 # LLM Explanation Mock Flow
 
-* **Status**: Draft
+* **Status**: Active
 * **Date**: June 23, 2026
 
 ---

@@ -7,6 +7,7 @@ Establishes the key performance indicators (KPIs) to monitor.
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred until Phase 6 planning.
 
 ## Scope
 Tracks routes latency, database connections pools, worker task sizes, and AI model predictions confidence accuracy.

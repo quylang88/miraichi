@@ -4,7 +4,7 @@
 Draft high-level ownership boundaries for Miraichi apps and packages. These boundaries are planning inputs and should be refined before implementation.
 
 ## Status
-- **Status**: Draft
+- **Status**: Closed
 - **Phase**: Phase 1 - Architecture Planning
 - **Date**: 2026-06-23
 
