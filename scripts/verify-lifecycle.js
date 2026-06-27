@@ -29,6 +29,42 @@ export const REQUIRED_LIFECYCLE_REFERENCE_FILES = [
   '.agent/skills/miraichi-project-guardrails/SKILL.md'
 ];
 
+export const REQUIRED_TEST_ORGANIZATION_MARKERS = [
+  { file: 'docs/workflows/testing-workflow.md', marker: '*.test.{js,ts}' },
+  { file: 'docs/workflows/testing-workflow.md', marker: 'tests/integration/' },
+  { file: 'docs/workflows/testing-workflow.md', marker: 'tests/e2e/' },
+  { file: 'docs/workflows/testing-workflow.md', marker: 'colocated' },
+  { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: '*.test.{js,ts}' },
+  { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: 'tests/integration/' },
+  { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: 'tests/e2e/' }
+];
+
+export const REQUIRED_TYPESCRIPT_DIRECTION_MARKERS = [
+  { file: 'docs/workflows/testing-workflow.md', marker: 'ADR-0034' },
+  { file: 'docs/workflows/testing-workflow.md', marker: '*.test.ts' },
+  { file: 'docs/workflows/testing-workflow.md', marker: 'big-bang migration' },
+  { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: 'gradual TypeScript' },
+  { file: '.agent/skills/miraichi-delivery-lifecycle/SKILL.md', marker: '*.test.ts' },
+  { file: 'docs/architecture/module-map.md', marker: 'TypeScript migration order' }
+];
+
+export const REQUIRED_DOC_INDEX_REFERENCES = [
+  { file: 'docs/README.md', marker: 'docs/architecture/module-map.md' },
+  { file: 'docs/README.md', marker: 'docs/decisions/README.md' },
+  { file: 'docs/README.md', marker: 'docs/workflows/testing-workflow.md' },
+  { file: 'docs/README.md', marker: 'docs/governance/OWNER-DECISION-GATES.md' },
+  { file: 'docs/README.md', marker: 'apps/api/docs/api-architecture.md' },
+  { file: 'docs/README.md', marker: 'apps/web/docs/frontend-architecture.md' },
+  { file: 'docs/README.md', marker: 'apps/local-ai/docs/ai-architecture.md' },
+  { file: 'docs/README.md', marker: 'apps/worker/docs/worker-architecture.md' },
+  { file: 'docs/README.md', marker: 'packages/ui/docs/design-system.md' },
+  { file: 'docs/README.md', marker: 'packages/config/docs/environment-strategy.md' },
+  { file: 'docs/README.md', marker: 'packages/shared/docs/shared-types.md' },
+  { file: 'docs/README.md', marker: 'packages/agent-protocol/docs/agent-communication.md' },
+  { file: 'docs/README.md', marker: 'ops/deploy/staging-plan.md' },
+  { file: 'docs/README.md', marker: 'ops/ci/github-actions-plan.md' }
+];
+
 export function findPlaceholderScripts(manifests) {
   const findings = [];
 
@@ -73,6 +109,13 @@ export function findMissingLifecycleReferences(fileContents, marker = LIFECYCLE_
   }
 
   return missing;
+}
+
+export function findMissingMarkers(fileContents, requirements) {
+  return requirements.filter((requirement) => {
+    const content = fileContents.get(requirement.file);
+    return !content || !content.includes(requirement.marker);
+  });
 }
 
 async function pathExists(filePath) {
@@ -120,8 +163,14 @@ async function readWorkspacePackageManifests(rootDir) {
 
 async function readRequiredLifecycleFiles(rootDir) {
   const fileContents = new Map();
+  const requiredFiles = new Set([
+    ...REQUIRED_LIFECYCLE_REFERENCE_FILES,
+    ...REQUIRED_TEST_ORGANIZATION_MARKERS.map((requirement) => requirement.file),
+    ...REQUIRED_TYPESCRIPT_DIRECTION_MARKERS.map((requirement) => requirement.file),
+    ...REQUIRED_DOC_INDEX_REFERENCES.map((requirement) => requirement.file)
+  ]);
 
-  for (const file of REQUIRED_LIFECYCLE_REFERENCE_FILES) {
+  for (const file of requiredFiles) {
     const absolutePath = path.join(rootDir, file);
     if (await pathExists(absolutePath)) {
       fileContents.set(file, await fs.readFile(absolutePath, 'utf8'));
@@ -141,6 +190,9 @@ export async function evaluateLifecycle(rootDir) {
     missingRootScripts: findMissingRootScripts(rootPackage),
     placeholderScripts: findPlaceholderScripts(manifests),
     missingLifecycleReferences: findMissingLifecycleReferences(fileContents),
+    missingTestOrganizationMarkers: findMissingMarkers(fileContents, REQUIRED_TEST_ORGANIZATION_MARKERS),
+    missingTypeScriptDirectionMarkers: findMissingMarkers(fileContents, REQUIRED_TYPESCRIPT_DIRECTION_MARKERS),
+    missingDocIndexReferences: findMissingMarkers(fileContents, REQUIRED_DOC_INDEX_REFERENCES),
     lifecycleSkillExists: await pathExists(lifecycleSkillPath)
   };
 }
@@ -168,6 +220,21 @@ async function main() {
     '[Lifecycle Verify] Files missing lifecycle skill reference:',
     result.missingLifecycleReferences
   );
+  printIssueList(
+    '[Lifecycle Verify] Missing test organization markers:',
+    result.missingTestOrganizationMarkers,
+    (item) => `  - ${item.file} missing "${item.marker}"`
+  );
+  printIssueList(
+    '[Lifecycle Verify] Missing TypeScript direction markers:',
+    result.missingTypeScriptDirectionMarkers,
+    (item) => `  - ${item.file} missing "${item.marker}"`
+  );
+  printIssueList(
+    '[Lifecycle Verify] Missing docs index references:',
+    result.missingDocIndexReferences,
+    (item) => `  - ${item.file} missing "${item.marker}"`
+  );
 
   if (!result.lifecycleSkillExists) {
     console.error('[Lifecycle Verify] Missing .agent/skills/miraichi-delivery-lifecycle/SKILL.md');
@@ -177,6 +244,9 @@ async function main() {
     result.missingRootScripts.length > 0 ||
     result.placeholderScripts.length > 0 ||
     result.missingLifecycleReferences.length > 0 ||
+    result.missingTestOrganizationMarkers.length > 0 ||
+    result.missingTypeScriptDirectionMarkers.length > 0 ||
+    result.missingDocIndexReferences.length > 0 ||
     !result.lifecycleSkillExists;
 
   if (failed) {

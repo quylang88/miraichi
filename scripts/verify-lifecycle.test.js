@@ -3,9 +3,13 @@ import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import {
+  REQUIRED_DOC_INDEX_REFERENCES,
   REQUIRED_LIFECYCLE_REFERENCE_FILES,
   REQUIRED_ROOT_SCRIPTS,
+  REQUIRED_TEST_ORGANIZATION_MARKERS,
+  REQUIRED_TYPESCRIPT_DIRECTION_MARKERS,
   evaluateLifecycle,
+  findMissingMarkers,
   findMissingLifecycleReferences,
   findMissingRootScripts,
   findPlaceholderScripts
@@ -72,6 +76,33 @@ describe('verify-lifecycle helpers', () => {
     );
   });
 
+  it('detects missing test organization and TypeScript direction markers', () => {
+    const fileContents = new Map([
+      ['docs/workflows/testing-workflow.md', 'unit tests run with Vitest'],
+      ['.agent/skills/miraichi-delivery-lifecycle/SKILL.md', 'test policy'],
+      ['docs/README.md', 'Architecture docs only']
+    ]);
+
+    const missing = findMissingMarkers(fileContents, [
+      ...REQUIRED_TEST_ORGANIZATION_MARKERS,
+      ...REQUIRED_TYPESCRIPT_DIRECTION_MARKERS,
+      ...REQUIRED_DOC_INDEX_REFERENCES
+    ]);
+
+    expect(missing).toContainEqual({
+      file: 'docs/workflows/testing-workflow.md',
+      marker: '*.test.{js,ts}'
+    });
+    expect(missing).toContainEqual({
+      file: 'docs/workflows/testing-workflow.md',
+      marker: 'ADR-0034'
+    });
+    expect(missing).toContainEqual({
+      file: 'docs/README.md',
+      marker: 'apps/api/docs/api-architecture.md'
+    });
+  });
+
   it('evaluates missing lifecycle wiring from workspace package manifests and files', async () => {
     const rootDir = await createWorkspaceFixture({
       rootScripts: {
@@ -81,7 +112,8 @@ describe('verify-lifecycle helpers', () => {
         test: 'node -e "console.log(\'api test pass\')"'
       },
       filesWithLifecycleMarker: ['AGENTS.md'],
-      includeLifecycleSkill: false
+      includeLifecycleSkill: false,
+      includeRequiredMarkers: false
     });
 
     try {
@@ -96,6 +128,9 @@ describe('verify-lifecycle helpers', () => {
       ]);
       expect(result.placeholderScripts).toHaveLength(1);
       expect(result.missingLifecycleReferences).toContain('WORKFLOW.md');
+      expect(result.missingTestOrganizationMarkers.length).toBeGreaterThan(0);
+      expect(result.missingTypeScriptDirectionMarkers.length).toBeGreaterThan(0);
+      expect(result.missingDocIndexReferences.length).toBeGreaterThan(0);
     } finally {
       await fs.rm(rootDir, { recursive: true, force: true });
     }
@@ -111,7 +146,8 @@ describe('verify-lifecycle helpers', () => {
         lint: 'node ../../scripts/check-js-syntax.js .'
       },
       filesWithLifecycleMarker: REQUIRED_LIFECYCLE_REFERENCE_FILES,
-      includeLifecycleSkill: true
+      includeLifecycleSkill: true,
+      includeRequiredMarkers: true
     });
 
     try {
@@ -119,6 +155,9 @@ describe('verify-lifecycle helpers', () => {
         missingRootScripts: [],
         placeholderScripts: [],
         missingLifecycleReferences: [],
+        missingTestOrganizationMarkers: [],
+        missingTypeScriptDirectionMarkers: [],
+        missingDocIndexReferences: [],
         lifecycleSkillExists: true
       });
     } finally {
@@ -131,7 +170,8 @@ async function createWorkspaceFixture({
   rootScripts,
   packageScripts,
   filesWithLifecycleMarker,
-  includeLifecycleSkill
+  includeLifecycleSkill,
+  includeRequiredMarkers
 }) {
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'miraichi-lifecycle-'));
 
@@ -146,19 +186,55 @@ async function createWorkspaceFixture({
     scripts: packageScripts
   });
 
+  const fileContentByPath = new Map();
+
   for (const file of REQUIRED_LIFECYCLE_REFERENCE_FILES) {
-    const filePath = path.join(rootDir, file);
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
     const content = filesWithLifecycleMarker.includes(file)
       ? 'miraichi-delivery-lifecycle'
       : 'existing content';
-    await fs.writeFile(filePath, content);
+    fileContentByPath.set(file, content);
+  }
+
+  const requiredMarkerFiles = new Set([
+    ...REQUIRED_TEST_ORGANIZATION_MARKERS,
+    ...REQUIRED_TYPESCRIPT_DIRECTION_MARKERS,
+    ...REQUIRED_DOC_INDEX_REFERENCES
+  ].map((requirement) => requirement.file));
+
+  for (const file of includeRequiredMarkers ? requiredMarkerFiles : []) {
+    if (file === '.agent/skills/miraichi-delivery-lifecycle/SKILL.md' && !includeLifecycleSkill) {
+      continue;
+    }
+
+    const markerContent = [
+      ...REQUIRED_TEST_ORGANIZATION_MARKERS,
+      ...REQUIRED_TYPESCRIPT_DIRECTION_MARKERS,
+      ...REQUIRED_DOC_INDEX_REFERENCES
+    ]
+      .filter((requirement) => requirement.file === file)
+      .map((requirement) => requirement.marker)
+      .join('\n');
+
+    fileContentByPath.set(
+      file,
+      [fileContentByPath.get(file), markerContent].filter(Boolean).join('\n')
+    );
   }
 
   if (includeLifecycleSkill) {
-    const skillPath = path.join(rootDir, '.agent/skills/miraichi-delivery-lifecycle/SKILL.md');
-    await fs.mkdir(path.dirname(skillPath), { recursive: true });
-    await fs.writeFile(skillPath, '---\nname: miraichi-delivery-lifecycle\n---\n');
+    const skillFile = '.agent/skills/miraichi-delivery-lifecycle/SKILL.md';
+    fileContentByPath.set(
+      skillFile,
+      ['---\nname: miraichi-delivery-lifecycle\n---', fileContentByPath.get(skillFile)]
+        .filter(Boolean)
+        .join('\n')
+    );
+  }
+
+  for (const [file, content] of fileContentByPath) {
+    const filePath = path.join(rootDir, file);
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.writeFile(filePath, content);
   }
 
   return rootDir;

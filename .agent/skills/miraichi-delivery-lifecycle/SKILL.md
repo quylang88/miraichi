@@ -90,6 +90,11 @@ Do not deploy to staging unless it passes.
 ## Test Policy
 
 - Unit tests must use the real test runner.
+- Unit tests are colocated beside source as `*.test.{js,ts}`.
+- New tests for TypeScript modules must use `*.test.ts`.
+- Integration suites belong in `tests/integration/` unless an existing `scripts/*integration*` verifier is intentionally kept as an orchestrated phase check.
+- E2E browser or user-flow suites belong in `tests/e2e/`.
+- Miraichi uses gradual TypeScript adoption. Do not migrate the whole repo in one pass; prefer TypeScript first for shared contracts, config, validators, and pure domain helpers.
 - New or modified behavior needs meaningful unit coverage, not only integration smoke coverage.
 - Coverage target for new/changed code is 80% as a review gate. Do not fake global repo coverage while legacy files are still untested.
 - Integration tests do not replace unit tests.
