@@ -27,6 +27,7 @@ Includes all directories and apps under this monorepo.
 - Added draft Phase 5.10 Add Bet Draft/Form State and Persistence Planning docs for future owner review.
 - Added document status taxonomy and docs status hygiene review to prevent fake `Accepted` promotions.
 - Completed document status hygiene slices for Phase 1, Phase 3, Phase 4, app/package docs, and ops docs.
+- Added Miraichi phase transition recommendation skill so phase closeouts must name the next safe phase and owner questions with recommendations.
 
 ### Changed
 - Promoted Phase 1 ADRs (ADR-0002, 0004-0011) to Accepted status and ADR-0003 to Proposed status based on project owner decisions.

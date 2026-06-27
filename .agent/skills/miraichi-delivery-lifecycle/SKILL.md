@@ -19,6 +19,7 @@ No phase may skip its exit gate. A fast shortcut that removes evidence is a brok
 2. Read `miraichi-project-guardrails`.
 3. Check the active phase in `PROJECT_PLAN.md`; if another root doc disagrees, treat `PROJECT_PLAN.md` as the current source and flag the mismatch.
 4. Decide the requested lifecycle phase from the user prompt. If no phase is explicit, choose the earliest safe phase.
+5. When closing, reviewing, or handing off a phase, read `miraichi-phase-transition-recommendation` before giving the final next-phase recommendation.
 
 ## Phase Commands
 

@@ -37,6 +37,14 @@ All skills are symlinked into `.agent/skills/` and are automatically available.
 | `writing-skills` | When creating new skills |
 | `using-superpowers` | When starting any conversation — find and use skills |
 
+### Miraichi Project Workflow
+
+| Skill | When to Use |
+|---|---|
+| `miraichi-delivery-lifecycle` | Planning, coding, testing, staging, releasing, maintenance, owner review, or production promotion |
+| `miraichi-project-guardrails` | Checking scope boundaries before plans, code, docs, or phase changes |
+| `miraichi-phase-transition-recommendation` | Closing, reviewing, handing off, or preparing to start a phase; identifying next phase and owner questions |
+
 ### Technical Roles
 
 | Skill | When to Use |
@@ -81,4 +89,3 @@ Example: `.agent/skills/brainstorming/SKILL.md`
 - **TDD always**: Write failing tests first, then code
 - **Systematic over ad-hoc**: Follow the skill process, don't guess
 - **Evidence over claims**: Verify before declaring success
-
