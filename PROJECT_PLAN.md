@@ -15,6 +15,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 1. No implementation of business logic, prediction algorithms, betting calculations, or production database schemas during Phase 0 or Phase 1.
 2. Maintain strict competition-agnostic architecture throughout all phases.
 3. Every phase must pass verification guidelines defined in the workflow files.
+4. All implementation and release work must follow `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
+5. `PROJECT_PLAN.md` is the source of truth for the current project phase when root docs disagree.
 
 ## Project Phases
 

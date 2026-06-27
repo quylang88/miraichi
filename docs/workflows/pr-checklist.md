@@ -12,6 +12,11 @@ Guarantees code quality, safety, and architectural compliance.
 Pull Request submission files reviews.
 
 ## Checklist Items
+- [ ] `.agent/skills/miraichi-delivery-lifecycle/SKILL.md` phase was followed.
+- [ ] Each code slice has a unit test that failed before implementation and passed after.
+- [ ] `pnpm run verify:local` passes.
+- [ ] `pnpm run test:integration` passes before staging.
+- [ ] Staging owner approval is recorded before production promotion.
 - [ ] Code builds without errors.
 - [ ] All automated tests pass successfully.
 - [ ] The change is competition-agnostic.

@@ -21,6 +21,8 @@ Write the test first. Watch it fail. Write minimal code to pass.
 - Refactoring
 - Behavior changes
 
+For Miraichi, also load `.agent/skills/miraichi-delivery-lifecycle/SKILL.md` before implementation. Every `phase:code-slice` must follow this TDD cycle before integration or staging.
+
 **Exceptions (ask your human partner):**
 - Throwaway prototypes
 - Generated code

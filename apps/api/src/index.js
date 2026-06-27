@@ -1,5 +1,4 @@
 import http from 'http';
-import url from 'url';
 import { handleHealth } from './routes/health.js';
 import { handlePredictions } from './routes/predictions.mock.js';
 import { handleExplanations } from './routes/explanations.mock.js';
@@ -12,7 +11,7 @@ import { MOCK_MATCHES } from '@miraichi/shared';
 const PORT = 3001;
 
 const server = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url, true);
+  const parsedUrl = new URL(req.url || '/', 'http://localhost');
   const pathname = parsedUrl.pathname;
 
   // Global CORS headers for dev frontend communication

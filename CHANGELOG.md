@@ -18,6 +18,7 @@ Includes all directories and apps under this monorepo.
 ## [Unreleased]
 
 ### Added
+- Added Miraichi delivery lifecycle enforcement through `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`, real Vitest unit tests, lifecycle verification, and release gate scripts.
 - Created monorepo directory layout (`apps/`, `packages/`, `docs/`, `ops/`).
 - Initialized configuration defaults (`.gitignore`, `.editorconfig`, `.gitattributes`, `.env.example`).
 - Added root and module-level architectural guidelines and documentation drafts.

@@ -11,8 +11,14 @@
     "dev:local-ai": "pnpm --filter local-ai run dev",
     "dev:worker": "pnpm --filter worker run dev",
     "check": "node scripts/check-files.js",
-    "test": "pnpm -r run test",
-    "lint": "pnpm -r run lint",
+    "test": "pnpm run test:unit",
+    "test:unit": "vitest run",
+    "test:unit:coverage": "vitest run --coverage",
+    "lint": "node scripts/check-js-syntax.js .",
+    "verify:lifecycle": "node scripts/verify-lifecycle.js",
+    "test:integration": "pnpm run phase3:verify && pnpm run phase4:verify && pnpm run phase4:integration && pnpm run test:e2e && pnpm run pwa:verify",
+    "verify:local": "pnpm run verify:lifecycle && pnpm run test:unit && pnpm run lint && pnpm run typecheck && pnpm run audit",
+    "verify:release": "pnpm run verify:local && pnpm run test:integration",
     "test:e2e": "node scripts/test-endpoints.js",
     "audit": "node scripts/audit-rules.js",
     "phase2:check-rules": "node scripts/phase2-verify.js",
@@ -27,6 +33,8 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "@vitest/coverage-v8": "^4.1.9",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   }
 }

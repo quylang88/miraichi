@@ -19,9 +19,10 @@ Use this skill at the beginning of every task analysis, plan creation, or before
 - User requests, current project phase, and target files list.
 
 ## Process
-1. Inspect the incoming request for out-of-scope targets (e.g. database setup, prediction algorithms, frontend code).
-2. Cross-reference the proposal against the project scope guidelines.
-3. Reject or flag any tasks that attempt to introduce actual business logic.
+1. Load `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
+2. Inspect the incoming request for out-of-scope targets (e.g. database setup, prediction algorithms, frontend code).
+3. Cross-reference the proposal against the project scope guidelines.
+4. Reject or flag any tasks that attempt to introduce actual business logic.
 
 ## Output Format
 - Verification summary or scope check reports.

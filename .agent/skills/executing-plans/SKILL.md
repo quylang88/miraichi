@@ -18,9 +18,11 @@ Load plan, review critically, execute all tasks, report when complete.
 ### Step 1: Load and Review Plan
 
 1. Read plan file
-2. Review critically - identify any questions or concerns about the plan
-3. If concerns: Raise them with your human partner before starting
-4. If no concerns: Create TodoWrite and proceed
+2. Read `.agent/skills/miraichi-delivery-lifecycle/SKILL.md` and `.agent/skills/miraichi-project-guardrails/SKILL.md`
+3. Confirm the plan maps to the correct lifecycle phase and does not skip TDD, integration, staging, or owner approval gates
+4. Review critically - identify any questions or concerns about the plan
+5. If concerns: Raise them with your human partner before starting
+6. If no concerns: Create TodoWrite and proceed
 
 ### Step 2: Execute Tasks
 
@@ -31,6 +33,8 @@ For each task:
 3. Follow each step exactly (plan has bite-sized steps)
 4. Run verifications as specified
 5. Mark as completed
+
+For Miraichi work, each implementation task must comply with `miraichi-delivery-lifecycle` and treat `phase:code-slice` as the default coding unit.
 
 ### Step 3: Complete Development
 
