@@ -4,7 +4,7 @@
 Describe candidate architecture options for Miraichi without choosing a final architecture. These options are planning inputs for later owner decisions and ADRs.
 
 ## Status
-- **Status**: Draft
+- **Status**: Closed
 - **Phase**: Phase 1 - Architecture Planning
 - **Date**: 2026-06-23
 

@@ -7,6 +7,7 @@ Ensures that all pushes to master/main are built, tested, and audited.
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred until Phase 6 planning.
 
 ## Scope
 Maps trigger scenarios, lint parameters, and testing jobs.

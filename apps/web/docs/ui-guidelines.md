@@ -6,7 +6,7 @@ Layout standards and responsiveness rules for the frontend client.
 Prevent the first web scaffold from drifting away from the owner-approved Phase 5 UX direction.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 - **Source of truth**: `docs/decisions/ADR-0031-pwa-betting-journal-ux-boundary.md`. Earlier wording that listed `Add`, `Reports`, or `AI` as primary navigation is superseded.
 
 ## Scope

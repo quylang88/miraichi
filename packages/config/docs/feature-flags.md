@@ -6,7 +6,7 @@ Toggles and rules for releasing features incrementally.
 Establishes runtime flags definitions and target user cohorts.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Maps available feature keys, testing buckets, and rollout rules.

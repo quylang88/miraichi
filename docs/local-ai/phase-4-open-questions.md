@@ -1,5 +1,6 @@
 # Phase 4 Open Questions
 
+* **Status**: Active Backlog
 * **Date**: June 23, 2026
 
 ---

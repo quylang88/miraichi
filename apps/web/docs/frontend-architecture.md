@@ -6,7 +6,7 @@ Technical guidelines and directory guidelines for the Miraichi web client.
 Establishes the state management, routing system, and api fetching guidelines for client development.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Governs directory layouts, component design patterns, and routing setups in apps/web.

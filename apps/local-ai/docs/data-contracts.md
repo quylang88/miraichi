@@ -6,7 +6,7 @@ Format rules for inputs and outputs in apps/local-ai.
 Ensures consistent schemas for external statistical providers, API requests, and model responses.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Defines model input features and output predictions payload shapes.

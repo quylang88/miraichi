@@ -1,10 +1,10 @@
 # Phase 5.10 Add Bet Draft/Form State and Persistence Readiness Review
 
-* **Status**: Active Review
+* **Status**: Proposed
 * **Date**: 2026-06-27
-* **Phase**: 5.10
+* **Phase**: Future Phase 5.10
 
-This review verifies that Phase 5.10 starts as planning-only work and records the approvals required before implementation.
+This proposed review records the intended readiness checks for future Phase 5.10. Phase 5.10 is not active until document status hygiene closes and the owner approves the transition.
 
 ---
 
@@ -12,7 +12,7 @@ This review verifies that Phase 5.10 starts as planning-only work and records th
 
 | Requirement | Status | Evidence |
 | :--- | :---: | :--- |
-| Phase 5.10 source of truth is documented | Pass | `PROJECT_PLAN.md` and `ROADMAP.md` point to Phase 5.10 planning as the next active work. |
+| Phase 5.10 source of truth is documented | Planned | `PROJECT_PLAN.md` and `ROADMAP.md` keep Phase 5.10 planned but not active until docs hygiene closes. |
 | Add Bet draft/form-state planning exists | Pass | `docs/betting/PHASE-5-10-ADD-BET-DRAFT-PERSISTENCE-PLAN.md` defines planning boundaries. |
 | Local-first persistence remains planning-only | Pass | Persistence adapter capabilities are described as future interfaces only. |
 | IndexedDB implementation is excluded | Pass | Phase 5.10 plan explicitly blocks IndexedDB code and object-store creation. |
@@ -52,6 +52,6 @@ Phase 5.11 should begin as `phase:implementation-plan`, not `phase:code-slice`, 
 
 ## 4. Current Review Conclusion
 
-Phase 5.10 is ready to proceed as planning-only work.
+Phase 5.10 is proposed as the next planning-only phase after docs hygiene.
 
 No production implementation is authorized by this review.

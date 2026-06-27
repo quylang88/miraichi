@@ -4,7 +4,7 @@
 Review and classify the Phase 1 ADR candidates before any candidate becomes a Draft or Accepted ADR.
 
 ## Status
-- **Status**: Draft
+- **Status**: Completed
 - **Review date**: 2026-06-23
 
 ## Scope

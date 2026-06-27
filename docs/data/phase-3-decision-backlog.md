@@ -1,5 +1,7 @@
 # Phase 3 Decision Backlog
 
+* **Status**: Completed
+
 Tracks unresolved architectural, data model, and ingestion decisions during Phase 3 planning.
 
 ---

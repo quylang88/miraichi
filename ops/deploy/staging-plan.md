@@ -7,6 +7,7 @@ Establishes the parameters for automated deployment of PRs to a staging environm
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred until Phase 6 planning.
 
 ## Scope
 Maps sandbox URLs, mock databases, and staging test suites.

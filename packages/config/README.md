@@ -6,7 +6,7 @@ Global environment parameters, feature flags, and competition configurations.
 Ensures single source of truth for runtime configurations and application toggles.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Schema checks for environment variables, competition config formats, feature flags.

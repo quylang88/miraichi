@@ -6,7 +6,7 @@ Data layout schemas for agent task specifications.
 Enforces details required when delegating coding, testing, or research items to subagents.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Format details of task payloads.

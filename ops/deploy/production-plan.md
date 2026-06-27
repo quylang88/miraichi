@@ -7,6 +7,7 @@ Establishes the steps for zero-downtime rolling releases of application images.
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred until Phase 6 planning.
 
 ## Scope
 Directly plans live system releases, failovers, and backup schemes.

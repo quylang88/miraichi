@@ -6,7 +6,7 @@ Task separation between ML predictions and LLM chat features.
 Sets limits on LLM decision making vs automated ML statistical checks.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Directs prompt routing templates, response rules, and API safety nets.

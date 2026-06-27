@@ -6,7 +6,7 @@ Schemas and interfaces for subagent-to-subagent coordination.
 Defines standard payload formats and messaging interfaces so agents can delegate, check status, and hand off tasks.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Communication interfaces, message schemas, and handoff protocols.

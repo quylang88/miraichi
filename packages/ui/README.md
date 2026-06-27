@@ -6,7 +6,7 @@ Shared style tokens, UI components, and design assets for Miraichi.
 Ensures consistent visual branding, layout standards, and accessibility across frontends.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Design system variables, UI components (buttons, dropdowns, dashboards), vanilla CSS stylesheets.

@@ -6,7 +6,7 @@ Scheduled cron executions, queue processing, and data sync workers.
 Manages task consumption (polling sports APIs, trigger-based predictions updates, email notifications, and bankroll audit summaries).
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Defines Redis queue connections, cron schedule tables, email engines, and batch processors.

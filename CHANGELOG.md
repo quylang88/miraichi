@@ -24,8 +24,9 @@ Includes all directories and apps under this monorepo.
 - Added root and module-level architectural guidelines and documentation drafts.
 - Added Phase 0 Completion Report ([PHASE-0-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-0-COMPLETION-REPORT.md)).
 - Added Phase 1 architecture planning package and ADR-0002 for architecture discovery.
-- Added Phase 5.10 Add Bet Draft/Form State and Persistence Planning docs.
+- Added draft Phase 5.10 Add Bet Draft/Form State and Persistence Planning docs for future owner review.
 - Added document status taxonomy and docs status hygiene review to prevent fake `Accepted` promotions.
+- Completed document status hygiene slices for Phase 1, Phase 3, Phase 4, app/package docs, and ops docs.
 
 ### Changed
 - Promoted Phase 1 ADRs (ADR-0002, 0004-0011) to Accepted status and ADR-0003 to Proposed status based on project owner decisions.
@@ -37,7 +38,7 @@ Includes all directories and apps under this monorepo.
 - Added Phase 5.7A provisional UI closure documentation, clarifying that the Black Apple Ledger preview is temporary, Phase 5.7B remains deferred, and settings/language planning is future work.
 - Added Phase 5.9 Production PWA Shell implementation with TypeScript-first shell modules, five approved primary tabs, shell-only settings/i18n stubs, production-baseline Black Apple Ledger UI structure, retired preview route, concise tab headers, and expanded PWA verification.
 - Added lifecycle, guardrail, workflow, and frontend docs rules requiring new app modules to be TypeScript-first unless they are explicit legacy/runtime bridges.
-- Updated root phase docs to mark Phase 5.10 as active planning and keep Phase 5.11 persistence implementation gated behind owner approval.
+- Updated root phase docs to run document status hygiene before Phase 5.10 and keep Phase 5.11 persistence implementation gated behind owner approval.
 
 ## TODO / Next Steps
-- [ ] Complete owner review of Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
+- [ ] Review draft Phase 5.10 Add Bet Draft/Form State + Persistence Planning after docs hygiene closes.

@@ -7,6 +7,7 @@ Specifies multi-stage build hierarchies and registry release targets.
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred until Phase 6 planning.
 
 ## Scope
 Maps build targets for web, api, local-ai, and background worker images.

@@ -7,6 +7,7 @@ Ensures that developers and staging runners execute applications in identical ru
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred until Phase 6 planning.
 
 ## Scope
 Directly maps out Dockerfiles, compose files, and registry tags strategies.

@@ -7,7 +7,7 @@ Miraichi provides an extensible platform for AI football prediction, betting man
 
 ## Status
 - **Status**: Active
-- **Current Phase**: Phase 5.10 - Add Bet Draft/Form State and Persistence Planning
+- **Current Phase**: Pre-Phase 5.10 - Docs Hygiene Complete, Phase 5.10 Review Pending
 - **Phase Source of Truth**: `PROJECT_PLAN.md`
 
 ## Scope
@@ -31,6 +31,6 @@ While the initial launch targets World Cup use cases, the domain language, data 
 - Football domain concepts (competitions, seasons, teams, matches, markets, bets, bankrolls) are modeled abstractly.
 
 ## TODO / Next Steps
-- [ ] Continue Phase 5.10 as planning/contract work only until owner review closes it.
+- [ ] Review draft Phase 5.10 planning after docs status hygiene cleanup.
 - [ ] Use `phase:plan`, `phase:implementation-plan`, `phase:code-slice`, `phase:integration-test`, `phase:staging`, `phase:owner-feedback`, `phase:production`, or `phase:maintenance` to make the active gate explicit.
 - [ ] Run `pnpm run verify:release` before staging or production promotion.

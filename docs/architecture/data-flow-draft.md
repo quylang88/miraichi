@@ -4,7 +4,7 @@
 Draft the expected high-level Miraichi data flow from external football data to user-facing prediction review and chat explanation.
 
 ## Status
-- **Status**: Draft
+- **Status**: Closed
 - **Phase**: Phase 1 - Architecture Planning
 - **Date**: 2026-06-23
 

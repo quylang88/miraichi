@@ -6,7 +6,7 @@ Separation of concerns and interfaces between monorepo apps.
 Enforces boundaries so that code under `apps/` is decoupled.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Directly governs apps/api, apps/web, apps/local-ai, and apps/worker code interfaces.

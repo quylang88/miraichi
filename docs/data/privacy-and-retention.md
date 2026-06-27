@@ -7,6 +7,7 @@ Ensures GDPR compliance and limits storage sizes.
 
 ## Status
 - **Status**: Draft
+- **Review Status**: Deferred; not accepted for implementation.
 
 ## Scope
 User bet slips history, login logs, and old sports fixtures datasets.

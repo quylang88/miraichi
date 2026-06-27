@@ -6,7 +6,7 @@ Directives for building reusable, accessible UI elements.
 Establishes the structural rules for custom UI components.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Governs components files structure, state passing, and styling rules.

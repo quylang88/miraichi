@@ -1,6 +1,6 @@
 # Mock Ingestion Flow
 
-* **Status**: Draft
+* **Status**: Active
 * **Date**: 2026-06-23
 
 ---

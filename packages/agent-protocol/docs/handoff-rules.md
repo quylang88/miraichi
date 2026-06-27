@@ -6,7 +6,7 @@ Standards for transitioning work between specialist subagents.
 Ensures that state, errors, and current files context are preserved when handing off tasks.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Directly governs transitions between the nine specialist subagents.

@@ -6,7 +6,7 @@ Sitemap and view boundaries for the Miraichi web client.
 Keep the first scaffold aligned with the owner-approved Phase 5 mobile-first PWA betting journal UX.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 - **Source of truth**: `docs/decisions/ADR-0031-pwa-betting-journal-ux-boundary.md`. Earlier wording that listed `Add`, `Reports`, or `AI` as primary navigation is superseded.
 
 ## Scope

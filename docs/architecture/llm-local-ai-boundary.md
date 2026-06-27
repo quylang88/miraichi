@@ -4,7 +4,7 @@
 Clarify the planned boundary between Miraichi's conversational LLM layer and the structured local AI engine.
 
 ## Status
-- **Status**: Draft
+- **Status**: Closed
 - **Phase**: Phase 1 - Architecture Planning
 - **Date**: 2026-06-23
 

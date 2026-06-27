@@ -6,7 +6,7 @@ Central gateway and business logic orchestrator for Miraichi.
 Exposes data ingestion ports, serves client request endpoints, orchestrates AI predictions, and logs betting transaction histories.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Defines core backend route logic, database query structures, external sports APIs interface, and client communication hooks.

@@ -4,7 +4,7 @@
 Collect the major questions Miraichi must answer before implementation begins. The questions are intentionally open-ended so later decisions can be made with context rather than locked during planning.
 
 ## Status
-- **Status**: Draft
+- **Status**: Closed
 - **Phase**: Phase 1 - Architecture Planning
 - **Date**: 2026-06-23
 

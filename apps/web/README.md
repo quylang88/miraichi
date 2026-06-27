@@ -6,7 +6,7 @@ User interface and web experience for Miraichi.
 Provides the mobile-first PWA betting journal experience for manual bet entry, daily review, match-grouped history, reports, and safe AI recommendation presentation.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 - **Current UX direction**: `docs/decisions/ADR-0031-pwa-betting-journal-ux-boundary.md`; earlier wording that listed `Add`, `Reports`, or `AI` as primary navigation is superseded.
 
 ## Scope

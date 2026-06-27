@@ -46,8 +46,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Status**: Completed.
 
 ### Phase 5: Betting History, Bankroll, Reports, AI Recommendation Boundary, and Extensible Business Logic Discovery
-- **Goal**: Gather owner requirements, formulate open questions, design extensible domain boundaries, accept Wave A foundation ADRs, plan future implementation, establish approved TypeScript tooling, add type-only shared contracts, add static typechecked market config for accepted Wave A boundaries, establish accepted UI design baseline, plan settings/localization/i18n, implement the production PWA shell, and plan Add Bet draft/form-state plus local-first persistence boundaries.
-- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, accepted ADR-0034 TypeScript technical direction, Phase 5.3 Wave A implementation planning documents, Phase 5.4 TypeScript tooling setup, Phase 5.5 Typed Shared Domain Contracts, Phase 5.6 Market Catalog and Line Preset Config, Phase 5.7A Black Apple Ledger PWA UI preview closure, Phase 5.8 App Settings, Language/i18n, and UI Flexibility Planning package, Phase 5.9 Production PWA Shell Implementation, and Phase 5.10 Add Bet Draft/Form State plus Persistence Planning.
+- **Goal**: Gather owner requirements, formulate open questions, design extensible domain boundaries, accept Wave A foundation ADRs, plan future implementation, establish approved TypeScript tooling, add type-only shared contracts, add static typechecked market config for accepted Wave A boundaries, establish accepted UI design baseline, plan settings/localization/i18n, implement the production PWA shell, and clean document statuses before Phase 5.10 starts.
+- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, accepted ADR-0034 TypeScript technical direction, Phase 5.3 Wave A implementation planning documents, Phase 5.4 TypeScript tooling setup, Phase 5.5 Typed Shared Domain Contracts, Phase 5.6 Market Catalog and Line Preset Config, Phase 5.7A Black Apple Ledger PWA UI preview closure, Phase 5.8 App Settings, Language/i18n, and UI Flexibility Planning package, Phase 5.9 Production PWA Shell Implementation, and pre-Phase 5.10 document status hygiene.
 - **Status**: Active.
 
 ### Phase 6: Testing/Deployment
@@ -88,7 +88,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Defer Phase 5.7B PWA Navigation Shell and Forms implementation until the owner explicitly approves a production UI implementation plan.
 - [x] Plan App Settings and Language/i18n, including English and Vietnamese support plus additional owner-requested app settings (Phase 5.8).
 - [x] Complete Phase 5.9 Production PWA Shell Implementation, using production-baseline Black Apple Ledger structure with TypeScript-first shell modules.
-- [x] Start Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
-- [ ] Complete owner review of Phase 5.10 planning before any persistence implementation.
+- [x] Start pre-Phase 5.10 document status hygiene cleanup.
+- [x] Complete Phase 1, Phase 3, Phase 4, app/package, and ops docs hygiene slices.
+- [ ] Recommend Phase 5.10 Add Bet Draft/Form State + Persistence Planning next.
 - [ ] Defer Local-First Persistence Implementation to Phase 5.11 after Phase 5.10 planning and owner approval.
 - [ ] Keep real AI training out of Phase 5; plan it only through future Phase 7 and Phase 8 ADRs.

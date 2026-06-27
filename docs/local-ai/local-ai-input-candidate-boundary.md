@@ -1,6 +1,6 @@
 # Local AI Input Candidate Boundary
 
-* **Status**: Draft
+* **Status**: Active
 * **Date**: June 23, 2026
 
 ---

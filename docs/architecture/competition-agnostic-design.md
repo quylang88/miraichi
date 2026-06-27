@@ -6,7 +6,7 @@ Architectural principles to prevent coupling with specific football competitions
 Ensures that adding a new football tournament or league (e.g. World Cup, Premier League, Champions League) does not require changing core application logic.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Directly governs database modeling, api payloads, predictions pipelines, and backend routing.

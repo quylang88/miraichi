@@ -6,7 +6,7 @@ Code file mapping guidelines.
 Specifies where components and modules belong in the monorepo.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 File structures for packages and applications.

@@ -6,7 +6,7 @@ Channel layouts and protocol definitions for subagent messages.
 Specifies JSON schemas and properties for message validation.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Directly governs messages exchanged in packages/agent-protocol.

@@ -1,16 +1,16 @@
 # Phase 5.10 Add Bet Draft/Form State and Persistence Planning
 
-* **Status**: Active Planning
+* **Status**: Proposed
 * **Date**: 2026-06-27
-* **Phase**: 5.10
+* **Phase**: Future Phase 5.10
 
-This document starts Phase 5.10 as a planning-only phase for Add Bet draft state, form-state contracts, and local-first persistence boundaries. It does not implement storage, forms, calculations, APIs, schemas, or runtime user flows.
+This document drafts the future Phase 5.10 planning scope for Add Bet draft state, form-state contracts, and local-first persistence boundaries. Phase 5.10 is not active until document status hygiene is complete and the owner approves the phase transition.
 
 ---
 
 ## 1. Purpose
 
-Phase 5.10 prepares the next implementation boundary after the completed Phase 5.9 production PWA shell.
+Future Phase 5.10 prepares the next implementation boundary after the completed Phase 5.9 production PWA shell.
 
 The phase must answer these questions before any Phase 5.11 code slice starts:
 
@@ -24,7 +24,7 @@ The phase must answer these questions before any Phase 5.11 code slice starts:
 
 ## 2. Source Decisions
 
-Phase 5.10 is constrained by these accepted boundaries:
+Future Phase 5.10 is constrained by these accepted boundaries:
 
 * `ADR-0023`: user-entered real bet record boundary.
 * `ADR-0024`: match-centric betting history grouping.
@@ -85,7 +85,7 @@ The key rule is strict: structural form completeness is allowed; betting calcula
 
 ## 5. Local-First Persistence Planning Boundary
 
-Phase 5.10 may plan the future persistence adapter but must not implement it.
+Future Phase 5.10 may plan the future persistence adapter but must not implement it.
 
 Future persistence adapter capabilities to plan:
 
@@ -136,7 +136,7 @@ No import, export, parser, validator, or storage code is authorized in Phase 5.1
 
 ## 7. Explicit Exclusions
 
-Phase 5.10 must not add:
+Future Phase 5.10 must not add:
 
 * IndexedDB implementation.
 * `localStorage` betting-history persistence.
@@ -158,7 +158,7 @@ Phase 5.10 must not add:
 
 ## 8. TypeScript Migration Backlog
 
-Phase 5.10 should keep future implementation TypeScript-first without forcing a full migration.
+Future Phase 5.10 should keep future implementation TypeScript-first without forcing a full migration.
 
 Recommended migration order:
 
@@ -168,13 +168,13 @@ Recommended migration order:
 4. Migrate touched web shell helpers only when the change already requires editing them.
 5. Leave existing API, local-ai, worker, package runtime bridges, service worker files, and scripts in JavaScript until a focused migration slice is approved.
 
-Do not run a bulk JS-to-TS migration. It would create a large regression surface without advancing Phase 5.10 planning.
+Do not run a bulk JS-to-TS migration. It would create a large regression surface without advancing future Phase 5.10 planning.
 
 ---
 
 ## 9. Phase 5.10 Exit Criteria
 
-Phase 5.10 can close only when:
+Future Phase 5.10 can close only when:
 
 * Add Bet draft and form-state planning boundaries are documented.
 * Local-first persistence adapter boundaries are documented.

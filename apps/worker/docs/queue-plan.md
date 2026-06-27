@@ -6,7 +6,7 @@ Message broker definitions, queue hierarchies, and failover workflows.
 Establishes how tasks are distributed across Redis channels.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Queue channels, priority structures, message schemas, and retry policies.

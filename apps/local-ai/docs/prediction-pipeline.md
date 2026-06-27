@@ -6,7 +6,7 @@ Feature engineering, model inference, and output caching workflows.
 Specifies the flow of match history variables from initial database query to prediction vector generation.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 ML features pipeline, model input prep, prediction execution, and confidence calibration.

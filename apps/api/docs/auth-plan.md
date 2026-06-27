@@ -6,7 +6,7 @@ User security and access policies.
 Establishes the identity management system, JWT workflows, role management, and endpoint validation procedures.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 User authentication, session tracking, backend authorization, and key permissions in apps/api.

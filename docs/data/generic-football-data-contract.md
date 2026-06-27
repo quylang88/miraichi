@@ -1,6 +1,6 @@
 # Generic Football Data Contract
 
-* **Status**: Draft
+* **Status**: Active
 * **Date**: 2026-06-23
 
 ---

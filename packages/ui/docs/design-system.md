@@ -6,7 +6,7 @@ Aesthetic standards, CSS tokens, and component guidelines for Miraichi.
 Establishes the design language (colors, layouts, interactions) to achieve a modern, premium user experience.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active
 
 ## Scope
 Design system variables, color palettes, dark modes, typography, and animation tokens.
