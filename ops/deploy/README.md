@@ -7,7 +7,7 @@ Governs deployment targets, ports allocation, environment keys mappings, and sta
 
 ## Status
 - **Status**: Active
-- **Review Status**: Phase 5.11 Railway staging target selected.
+- **Review Status**: Phase 5.11 Cloudflare Pages staging target selected.
 
 ## Scope
 Directly plans host infrastructure configurations.
@@ -15,14 +15,14 @@ Directly plans host infrastructure configurations.
 ## Guidelines
 - Separate staging and production environments clearly (different API endpoints, databases).
 - Automate deployment checks before releasing images.
-- Phase 5.11 staging target: **Railway**, using a dedicated staging project named `miraichi-staging` and service `miraichi-web-staging`.
-- Phase 5.11 staging deployment mode: Git-connected or CLI Railway deployment after `pnpm run verify:release` passes.
+- Phase 5.11 staging target: **Cloudflare Pages**, using a dedicated staging project named `miraichi-web-staging`.
+- Phase 5.11 staging deployment mode: Direct Upload with Wrangler after `pnpm run verify:release` and `pnpm run build:web-static` pass.
 - Production deployment remains blocked until staging smoke checks pass and the owner gives explicit approval.
 - Do not deploy API, local-ai, worker, database, auth, cloud sync, or production schemas for Phase 5.11 staging.
 
 ## TODO / Next Steps
-- [x] Select Railway as the Phase 5.11 web/PWA staging target.
-- [ ] Create the Railway project `miraichi-staging`.
-- [ ] Create the Railway service `miraichi-web-staging`.
-- [ ] Configure a Railway project/service token outside the repository.
+- [x] Select Cloudflare Pages as the Phase 5.11 web/PWA staging target.
+- [x] Add `apps/web` static export for Cloudflare Pages.
+- [ ] Create the Cloudflare Pages project `miraichi-web-staging`.
+- [ ] Configure `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` outside the repository.
 - [ ] Record the real staging URL after the first successful deployment.

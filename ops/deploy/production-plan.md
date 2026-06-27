@@ -18,7 +18,7 @@ Directly plans live system releases, failovers, and backup schemes.
 - Local verification alone is not production approval.
 - Releases must use tag versions (e.g. `v1.0.0`) approved in staging.
 - Set up automatic database backup before running schema migrations.
-- Phase 5.11 Railway staging target selection does not select a production target.
+- Phase 5.11 Cloudflare Pages staging target selection does not select a production target.
 - Do not promote Phase 5.11 to production until a real staging URL exists, smoke checks pass, and owner approval is explicit.
 
 ## TODO / Next Steps

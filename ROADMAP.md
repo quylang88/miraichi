@@ -99,5 +99,5 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices.
 - [x] Run `phase:integration-test Phase 5.11` before staging or owner-feedback promotion.
 - [ ] Run `phase:staging Phase 5.11` before owner-feedback promotion.
-- [ ] Create/link Railway project `miraichi-staging`, service `miraichi-web-staging`, deployment token, public domain, and smoke check before retrying staging.
+- [ ] Create/link Cloudflare Pages project `miraichi-web-staging`, deployment token, Pages URL, and smoke check before retrying staging.
 - [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.

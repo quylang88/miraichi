@@ -101,11 +101,13 @@ function serveStaticFile(res, filePath, contentType) {
   fs.createReadStream(filePath).pipe(res);
 }
 
-server.listen(PORT, () => {
-  console.log(`[Web Server] Running at http://localhost:${PORT}`);
-});
+if (process.argv[1] === __filename) {
+  server.listen(PORT, () => {
+    console.log(`[Web Server] Running at http://localhost:${PORT}`);
+  });
+}
 
-function getIndexHtml() {
+export function getIndexHtml() {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>

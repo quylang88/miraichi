@@ -8,6 +8,7 @@
     "dev": "pnpm --filter \"./apps/*\" --parallel run dev",
     "dev:web": "pnpm --filter web run dev",
     "start:web": "pnpm --filter web run start",
+    "build:web-static": "pnpm --filter web run build:static",
     "dev:api": "pnpm --filter api run dev",
     "dev:local-ai": "pnpm --filter local-ai run dev",
     "dev:worker": "pnpm --filter worker run dev",

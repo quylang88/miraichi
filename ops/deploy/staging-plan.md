@@ -7,7 +7,7 @@ Establishes the parameters for automated deployment of PRs to a staging environm
 
 ## Status
 - **Status**: Active
-- **Review Status**: Phase 5.11 Railway staging target selected; deployment pending Railway project, service, token, and public domain.
+- **Review Status**: Phase 5.11 Cloudflare Pages staging target selected; deployment pending Cloudflare project, token, and Pages URL.
 
 ## Scope
 Maps sandbox URLs, mock databases, and staging test suites.
@@ -16,24 +16,23 @@ Phase 5.11 staging scope is web/PWA only. It validates the local-first Add Bet d
 
 ## Selected Staging Target
 
-- **Provider**: Railway.
-- **Project**: `miraichi-staging`.
-- **Service**: `miraichi-web-staging`.
-- **Deployment mode**: Git-connected Railway deployment or Railway CLI deployment.
-- **Staging URL**: Pending first successful deployment; expected shape is a Railway public domain for `miraichi-web-staging`.
-- **Runtime**: Node.js using Railway-provided `PORT`.
-- **Build command**: `pnpm install --frozen-lockfile`.
-- **Start command**: `pnpm --filter web run start`.
+- **Provider**: Cloudflare Pages.
+- **Project**: `miraichi-web-staging`.
+- **Deployment mode**: Direct Upload with Wrangler.
+- **Staging URL**: Pending first successful deployment; expected shape is `https://miraichi-web-staging.pages.dev`.
+- **Build command**: `pnpm run build:web-static`.
+- **Build artifact**: `apps/web/dist`.
 - **Required local/CI secrets**:
-  - `RAILWAY_TOKEN` for CLI/CI deployment.
+  - `CLOUDFLARE_ACCOUNT_ID`
+  - `CLOUDFLARE_API_TOKEN`
 
-Do not commit actual Railway credentials.
+Do not commit actual Cloudflare credentials.
 
 ## Staging Rules
 - Follow `.agent/skills/miraichi-delivery-lifecycle/SKILL.md` before any staging action.
 - `pnpm run verify:release` must pass before staging deployment.
 - If staging targets, credentials, or sandbox URLs are not configured, fail fast and report the missing target instead of pretending a deployment happened.
-- For Phase 5.11, deploy only the web/PWA staging surface to Railway.
+- For Phase 5.11, deploy only the web/PWA staging surface to Cloudflare Pages.
 - Execute staging smoke checks before promoting to owner feedback.
 - Prepare an owner review pack with changed scope, test evidence, staging URL, known risks, and rollback notes.
 
@@ -45,19 +44,25 @@ Run release verification first:
 pnpm run verify:release
 ```
 
-Then deploy the web service after Railway credentials, project, service, and public domain exist:
+Export the static web artifact:
 
 ```powershell
-pnpm dlx @railway/cli up --service miraichi-web-staging
+pnpm run build:web-static
 ```
 
-Set the Railway service start command to:
+Confirm Cloudflare authentication before attempting deployment:
 
-```text
-pnpm --filter web run start
+```powershell
+pnpm dlx wrangler whoami
 ```
 
-If a static build/export pipeline is added later, revisit the target and command before running staging.
+Then deploy the static artifact after Cloudflare credentials and project exist:
+
+```powershell
+pnpm dlx wrangler pages deploy apps/web/dist --project-name miraichi-web-staging
+```
+
+If the static export path changes later, update this command before running staging.
 
 ## Phase 5.11 Smoke Checks
 
@@ -73,14 +78,14 @@ After deployment, verify:
 
 ## References
 
-- Railway monorepo deployment docs: https://docs.railway.com/deployments/monorepo
-- Railway start command docs: https://docs.railway.com/deployments/start-command
-- Railway build and start command docs: https://docs.railway.com/builds/build-and-start-commands
+- Cloudflare Pages Direct Upload docs: https://developers.cloudflare.com/pages/get-started/direct-upload/
+- Cloudflare Pages Wrangler deploy command docs: https://developers.cloudflare.com/workers/wrangler/commands/#deploy-2
+- Cloudflare Pages limits: https://developers.cloudflare.com/pages/platform/limits/
 
 ## TODO / Next Steps
-- [x] Select Railway as Phase 5.11 staging target.
-- [ ] Create Railway project `miraichi-staging`.
-- [ ] Create Railway service `miraichi-web-staging`.
-- [ ] Configure Railway deployment token outside the repository.
+- [x] Select Cloudflare Pages as Phase 5.11 staging target.
+- [x] Add `apps/web` static export command.
+- [ ] Create Cloudflare Pages project `miraichi-web-staging`.
+- [ ] Configure Cloudflare deployment credentials outside the repository.
 - [ ] Run Phase 5.11 staging deploy command.
 - [ ] Record staging URL and smoke-check evidence.
