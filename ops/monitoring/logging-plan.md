@@ -7,7 +7,7 @@ Establishes standard format (JSON) and levels for application logs.
 
 ## Status
 - **Status**: Draft
-- **Review Status**: Deferred until Phase 6 planning.
+- **Review Status**: Phase 6 planning active; implementation pending owner approval.
 
 ## Scope
 Directly plans runtime logging across all monorepo apps.
@@ -17,4 +17,4 @@ Directly plans runtime logging across all monorepo apps.
 - Sanitizer middleware must filter out auth headers.
 
 ## TODO / Next Steps
-- [ ] Configure standard logging packages (e.g., Winston, Winston-syslog).
+- [ ] Define no-secret log sanitization checks before choosing logging packages.

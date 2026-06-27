@@ -55,7 +55,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 ### Phase 6: Testing/Deployment Hardening
 - **Goal**: Perform end-to-end integration, security audits, staging deployment hardening, CI/CD automation planning, and non-production release readiness work.
 - **Deliverables**: Accepted CI/CD workflows, repeatable staging deployment artifacts, smoke-check automation, rollback notes, and monitoring plan drafts.
-- **Status**: TODO - Recommended Next.
+- **Status**: Active Planning.
 
 ### Phase 7: Real Data Provider, Dataset, and Evaluation Planning
 - **Goal**: Plan real provider selection, dataset construction, data quality, evaluation methodology, and governance for future real prediction work. The first provider target may be full FIFA World Cup fixture coverage, but implementation must remain competition-agnostic and adapter-based.
@@ -103,5 +103,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete `phase:quality-up ui-ux-improve Phase 5.12 Owner Requested Shell Cleanup` staging redeploy before Phase 5 closeout.
 - [x] After Phase 5.12 staging passes, decide whether Phase 5 can close or whether another explicit Phase 5 quality-up item exists.
 - [x] Close Phase 5 with staging smoke evidence and recommend Phase 6 planning.
-- [ ] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
+- [x] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
+- [ ] Owner review Phase 6 Testing/Deployment Hardening Plan before implementation planning.
+- [ ] After owner approval, start `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`.
 - [ ] Keep real AI training out of Phase 5; plan it only through future Phase 7 and Phase 8 ADRs.

@@ -7,7 +7,7 @@ Ensures that server exceptions, slow routes, or ML prediction errors are caught.
 
 ## Status
 - **Status**: Draft
-- **Review Status**: Deferred until Phase 6 planning.
+- **Review Status**: Phase 6 planning active; provider selection pending owner approval.
 
 ## Scope
 Directly plans monitoring structures, tracking metrics, and alert routing levels.
@@ -17,4 +17,5 @@ Directly plans monitoring structures, tracking metrics, and alert routing levels
 - Group metrics by application tags (web, api, worker, local-ai).
 
 ## TODO / Next Steps
-- [ ] Connect monitor services (e.g. Sentry, Datadog).
+- [ ] Review `ops/PHASE-6-TESTING-DEPLOYMENT-HARDENING-PLAN.md`.
+- [ ] Keep paid monitoring provider selection blocked until owner approval.

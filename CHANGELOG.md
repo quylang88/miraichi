@@ -36,6 +36,7 @@ Includes all directories and apps under this monorepo.
 - Added Phase 5.12 owner-requested shell quality-up review with local, release, static artifact, and browser QA evidence.
 - Added local Cloudflare Pages staging deploy support through `scripts/deploy-staging-local.ps1`, `.env.local`, and `pnpm run deploy:staging:local`.
 - Added Phase 5 closeout review with staging redeploy evidence and Phase 6 recommendation.
+- Added Phase 6 Testing/Deployment Hardening planning package under `ops/`.
 
 ### Changed
 - Promoted Phase 1 ADRs (ADR-0002, 0004-0011) to Accepted status and ADR-0003 to Proposed status based on project owner decisions.
@@ -53,6 +54,7 @@ Includes all directories and apps under this monorepo.
 - Recorded Phase 5.11 staging closeout evidence and deferred formal owner-feedback/production until all planned release phases are complete.
 - Implemented Phase 5.12 shell quality-up cleanup locally: removed top shell status sections, changed Today date tile to current date, removed redundant choose-match CTA, switched Matches icon to stadium style, and trimmed unnecessary sample rows.
 - Recorded Phase 5.12 Cloudflare Pages staging redeploy and smoke evidence, then closed Phase 5 with `phase:plan Phase 6 Testing/Deployment Hardening` as the recommended next command.
+- Started Phase 6 planning with CI/CD, staging hardening, smoke-check automation, security/secrets audit, rollback, and monitoring workstreams.
 
 ## TODO / Next Steps
 - [x] Review draft Phase 5.10 Add Bet Draft/Form State + Persistence Planning after docs hygiene closes.
@@ -63,4 +65,5 @@ Includes all directories and apps under this monorepo.
 - [x] Create/link Cloudflare Pages project `miraichi-staging`, deployment token, Pages URL, and smoke-check evidence.
 - [x] Complete `phase:quality-up ui-ux-improve Phase 5.12 Owner Requested Shell Cleanup` staging redeploy.
 - [x] Close Phase 5 with staging smoke evidence and recommend Phase 6 planning.
-- [ ] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
+- [x] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
+- [ ] Owner review Phase 6 Testing/Deployment Hardening Plan before implementation planning.

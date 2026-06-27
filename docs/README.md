@@ -10,6 +10,7 @@ Central index for cross-cutting Miraichi documentation. Do not move module-speci
 - Document status taxonomy: `docs/governance/DOCUMENT-STATUS-TAXONOMY.md`
 - Docs status hygiene review: `docs/governance/DOCS-STATUS-HYGIENE-REVIEW.md`
 - Phase 5 closeout review: `docs/betting/PHASE-5-CLOSEOUT-REVIEW.md`
+- Phase 6 testing/deployment hardening plan: `ops/PHASE-6-TESTING-DEPLOYMENT-HARDENING-PLAN.md`
 
 ## Application Docs
 - API architecture: `apps/api/docs/api-architecture.md`

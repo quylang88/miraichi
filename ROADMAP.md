@@ -60,7 +60,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices for shared contracts, form state, memory persistence, IndexedDB persistence, and versioned draft backup/import helpers.
 - Complete Phase 5.12 owner-requested UI/UX quality-up, staging redeploy, and Phase 5 closeout.
 
-### Milestone 7: Testing/Deployment Hardening (Recommended Next)
+### Milestone 7: Testing/Deployment Hardening (Active Planning)
 - Plan CI/CD workflow hardening and staging deployment automation.
 - Plan security and secrets checks without committing credentials.
 - Draft repeatable smoke-check automation, rollback notes, and monitoring plans.
@@ -111,5 +111,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Defer formal owner-feedback and production promotion until all planned release phases are complete.
 - [x] Complete `phase:quality-up ui-ux-improve Phase 5.12 Owner Requested Shell Cleanup` staging redeploy before Phase 5 closeout.
 - [x] Close Phase 5 with staging smoke evidence and recommend Phase 6 planning.
-- [ ] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
+- [x] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
+- [ ] Owner review Phase 6 Testing/Deployment Hardening Plan before implementation planning.
+- [ ] After owner approval, start `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`.
 - [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.
