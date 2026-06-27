@@ -60,7 +60,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices for shared contracts, form state, memory persistence, IndexedDB persistence, and versioned draft backup/import helpers.
 - Complete Phase 5.12 owner-requested UI/UX quality-up, staging redeploy, and Phase 5 closeout.
 
-#### Milestone 7: Testing/Deployment Hardening (Completed)
+### Milestone 7: Testing/Deployment Hardening (Completed)
 - Plan CI/CD workflow hardening and staging deployment automation.
 - Plan security and secrets checks without committing credentials.
 - Draft repeatable smoke-check automation, rollback notes, and monitoring plans.
@@ -68,7 +68,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Harden TypeScript strictness so future source code cannot regress to explicit `any`, tracked `.js` source, or TypeScript suppression comments.
 - Keep production promotion blocked until final-release owner approval.
 
-### Milestone 8: Real Data Provider, Dataset, and Evaluation Planning (Future)
+### Milestone 8: Real Data Provider, Dataset, and Evaluation Planning (Completed)
 - Plan real data provider selection and dataset boundaries.
 - Use full FIFA World Cup fixture coverage as the first provider target if accepted, while keeping the ingestion adapter competition-agnostic.
 - Define model evaluation criteria before any real training.
