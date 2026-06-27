@@ -24,7 +24,7 @@ Includes all directories and apps under this monorepo.
 - Added root and module-level architectural guidelines and documentation drafts.
 - Added Phase 0 Completion Report ([PHASE-0-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-0-COMPLETION-REPORT.md)).
 - Added Phase 1 architecture planning package and ADR-0002 for architecture discovery.
-- Added draft Phase 5.10 Add Bet Draft/Form State and Persistence Planning docs for future owner review.
+- Added Phase 5.10 Add Bet Draft/Form State and Persistence Planning docs for owner review.
 - Added document status taxonomy and docs status hygiene review to prevent fake `Accepted` promotions.
 - Completed document status hygiene slices for Phase 1, Phase 3, Phase 4, app/package docs, and ops docs.
 - Added Miraichi phase transition recommendation skill so phase closeouts must name the next safe phase and owner questions with recommendations.
@@ -40,6 +40,8 @@ Includes all directories and apps under this monorepo.
 - Added Phase 5.9 Production PWA Shell implementation with TypeScript-first shell modules, five approved primary tabs, shell-only settings/i18n stubs, production-baseline Black Apple Ledger UI structure, retired preview route, concise tab headers, and expanded PWA verification.
 - Added lifecycle, guardrail, workflow, and frontend docs rules requiring new app modules to be TypeScript-first unless they are explicit legacy/runtime bridges.
 - Updated root phase docs to run document status hygiene before Phase 5.10 and keep Phase 5.11 persistence implementation gated behind owner approval.
+- Recorded owner approval of Phase 5.10 Add Bet Draft/Form State + Persistence Planning and gated Phase 5.11 to implementation planning before code.
 
 ## TODO / Next Steps
-- [ ] Review draft Phase 5.10 Add Bet Draft/Form State + Persistence Planning after docs hygiene closes.
+- [x] Review draft Phase 5.10 Add Bet Draft/Form State + Persistence Planning after docs hygiene closes.
+- [ ] Start Phase 5.11 Local-First Add Bet Draft Persistence Implementation Planning.

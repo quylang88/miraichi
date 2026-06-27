@@ -1,10 +1,10 @@
 # Phase 5.10 Add Bet Draft/Form State and Persistence Readiness Review
 
-* **Status**: Proposed
+* **Status**: Completed - Owner Approved Planning Boundary
 * **Date**: 2026-06-27
-* **Phase**: Future Phase 5.10
+* **Phase**: Phase 5.10
 
-This proposed review records the intended readiness checks for future Phase 5.10. Phase 5.10 is not active until document status hygiene closes and the owner approves the transition.
+This review records the readiness checks and owner approval for Phase 5.10. Phase 5.10 is closed as a planning boundary only; it does not authorize runtime persistence, formulas, schemas, APIs, or Add Bet implementation code.
 
 ---
 
@@ -12,7 +12,7 @@ This proposed review records the intended readiness checks for future Phase 5.10
 
 | Requirement | Status | Evidence |
 | :--- | :---: | :--- |
-| Phase 5.10 source of truth is documented | Planned | `PROJECT_PLAN.md` and `ROADMAP.md` keep Phase 5.10 planned but not active until docs hygiene closes. |
+| Phase 5.10 source of truth is documented | Pass | `PROJECT_PLAN.md` and `ROADMAP.md` record Phase 5.10 as owner-approved planning and point to Phase 5.11 implementation planning next. |
 | Add Bet draft/form-state planning exists | Pass | `docs/betting/PHASE-5-10-ADD-BET-DRAFT-PERSISTENCE-PLAN.md` defines planning boundaries. |
 | Local-first persistence remains planning-only | Pass | Persistence adapter capabilities are described as future interfaces only. |
 | IndexedDB implementation is excluded | Pass | Phase 5.10 plan explicitly blocks IndexedDB code and object-store creation. |
@@ -25,16 +25,16 @@ This proposed review records the intended readiness checks for future Phase 5.10
 
 ---
 
-## 2. Required Owner Approvals Before Phase 5.11
+## 2. Owner Approvals Recorded Before Phase 5.11
 
-Phase 5.11 must not start until the owner explicitly approves:
+The owner explicitly approved the following Phase 5.10 recommendations on 2026-06-27:
 
-* The Add Bet draft contract fields.
-* The form-state contract fields.
-* The persistence adapter scope.
-* The chosen browser storage implementation plan.
-* The backup envelope and import conflict behavior.
-* The exact files and tests for the first implementation slice.
+* Add Bet draft fields are approved as type/structure only, with no formulas.
+* Form-state fields are approved for UI and structural completeness only.
+* Persistence scope is approved as adapter boundary first, runtime implementation later.
+* IndexedDB is approved as the implementation storage direction; `localStorage` must not be used for real betting history.
+* Backup/import direction is approved as versioned JSON, rejecting malformed or unsupported schema data, with no silent overwrite.
+* Phase 5.11 must start by writing an implementation plan with exact `.ts` files, `*.test.ts` tests, and verification commands before any code slice.
 
 Approval of this Phase 5.10 planning package does not approve formulas, cloud sync, auth, production databases, provider integrations, AI recommendation behavior, or prediction logic.
 
@@ -42,7 +42,7 @@ Approval of this Phase 5.10 planning package does not approve formulas, cloud sy
 
 ## 3. Recommended Next Phase
 
-After owner approval, the next phase should be:
+After owner approval, the next phase is:
 
 **Phase 5.11: Local-First Add Bet Draft Persistence Implementation Plan**
 
@@ -52,6 +52,6 @@ Phase 5.11 should begin as `phase:implementation-plan`, not `phase:code-slice`, 
 
 ## 4. Current Review Conclusion
 
-Phase 5.10 is proposed as the next planning-only phase after docs hygiene.
+Phase 5.10 is closed as an owner-approved planning-only phase.
 
 No production implementation is authorized by this review.

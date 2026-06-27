@@ -1,10 +1,10 @@
 # Phase 5.10 Add Bet Draft/Form State and Persistence Planning
 
-* **Status**: Proposed
+* **Status**: Closed - Owner Approved Planning Boundary
 * **Date**: 2026-06-27
-* **Phase**: Future Phase 5.10
+* **Phase**: Phase 5.10
 
-This document drafts the future Phase 5.10 planning scope for Add Bet draft state, form-state contracts, and local-first persistence boundaries. Phase 5.10 is not active until document status hygiene is complete and the owner approves the phase transition.
+This document records the Phase 5.10 planning scope for Add Bet draft state, form-state contracts, and local-first persistence boundaries. The owner approved this planning boundary on 2026-06-27. Phase 5.10 does not authorize runtime storage code; Phase 5.11 must begin with an implementation plan.
 
 ---
 
@@ -28,7 +28,7 @@ The purpose of this phase is to make Phase 5.11 safe to implement by deciding ex
 
 ## 2. Source Decisions
 
-Future Phase 5.10 is constrained by these accepted boundaries:
+Phase 5.10 is constrained by these accepted boundaries:
 
 * `ADR-0023`: user-entered real bet record boundary.
 * `ADR-0024`: match-centric betting history grouping.
@@ -44,9 +44,9 @@ Accepted ADRs authorize planning and bounded implementation only where a later i
 
 ## 3. Add Bet Draft Boundary
 
-The future draft contract should represent user input before it becomes a saved bet record.
+The Phase 5.11 draft contract should represent user input before it becomes a saved bet record.
 
-Recommended type-only contract fields:
+Owner-approved type-only contract fields:
 
 | Field | Planning intent | Boundary |
 | :--- | :--- | :--- |
@@ -69,9 +69,9 @@ The draft contract must stay separate from the final saved bet envelope. A futur
 
 ## 4. Form State Boundary
 
-The future form-state contract should describe UI interaction state without becoming business logic.
+The Phase 5.11 form-state contract should describe UI interaction state without becoming business logic.
 
-Recommended type-only form-state fields:
+Owner-approved type-only form-state fields:
 
 | Field | Planning intent | Boundary |
 | :--- | :--- | :--- |
@@ -89,9 +89,9 @@ The key rule is strict: structural form completeness is allowed; betting calcula
 
 ## 5. Local-First Persistence Planning Boundary
 
-Future Phase 5.10 may plan the future persistence adapter but must not implement it.
+Phase 5.10 planned the future persistence adapter but did not implement it.
 
-Future persistence adapter capabilities to plan:
+Owner-approved persistence adapter capabilities for Phase 5.11 planning:
 
 | Capability | Future purpose | Phase 5.10 boundary |
 | :--- | :--- | :--- |
@@ -109,9 +109,9 @@ IndexedDB remains the preferred future local-first persistence option under ADR-
 
 ## 6. Backup Envelope and Import/Export Failure States
 
-Future backup payloads should be versioned and explicit.
+Phase 5.11 backup payload planning should be versioned and explicit.
 
-Recommended backup envelope planning shape:
+Owner-approved backup envelope planning shape:
 
 | Field | Planning intent |
 | :--- | :--- |
@@ -122,7 +122,7 @@ Recommended backup envelope planning shape:
 | `drafts` | Optional in-progress drafts if later approved. |
 | `settings` | Optional shell/app settings if later approved. |
 
-Future import/export failure states to plan before implementation:
+Owner-approved import/export failure states to plan before implementation:
 
 * Unsupported `schemaVersion`.
 * Malformed JSON.
@@ -140,7 +140,7 @@ No import, export, parser, validator, or storage code is authorized in Phase 5.1
 
 ## 7. Explicit Exclusions
 
-Future Phase 5.10 must not add:
+Phase 5.10 must not add:
 
 * IndexedDB implementation.
 * `localStorage` betting-history persistence.
@@ -162,7 +162,7 @@ Future Phase 5.10 must not add:
 
 ## 8. TypeScript Migration Backlog
 
-Future Phase 5.10 should keep future implementation TypeScript-first without forcing a full migration.
+Phase 5.10 should keep future implementation TypeScript-first without forcing a full migration.
 
 Recommended migration order:
 
@@ -178,7 +178,7 @@ Do not run a bulk JS-to-TS migration. It would create a large regression surface
 
 ## 9. Phase 5.10 Exit Criteria
 
-Future Phase 5.10 can close only when:
+Phase 5.10 can close only when:
 
 * Add Bet draft and form-state planning boundaries are documented.
 * Local-first persistence adapter boundaries are documented.
@@ -187,4 +187,13 @@ Future Phase 5.10 can close only when:
 * TypeScript migration policy is explicit in lifecycle and guardrail docs.
 * Readiness review confirms no storage, formulas, schemas, APIs, or runtime Add Bet implementation started.
 
-After Phase 5.10 closes, Phase 5.11 may be proposed as a separate owner-approved local-first persistence implementation plan.
+Phase 5.10 is closed after owner approval of these recommendations:
+
+* Approve draft fields as type/structure only, with no formulas.
+* Approve form-state fields for UI and structural completeness only.
+* Approve persistence scope as adapter boundary first, runtime implementation later.
+* Use IndexedDB for implementation; do not use `localStorage` for betting history.
+* Use versioned JSON backup/import behavior that rejects malformed or unsupported schema data and never overwrites silently.
+* Start Phase 5.11 as `phase:implementation-plan` with exact `.ts` files, `*.test.ts` tests, and verification commands before any code slice.
+
+Phase 5.11 may now begin as a separate local-first persistence implementation plan. It must not begin as a code slice.

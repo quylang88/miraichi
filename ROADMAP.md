@@ -55,9 +55,9 @@ Outlines high-level roadmap milestones across multiple phases.
 - Defer Phase 5.7B production UI implementation until separately approved.
 - Plan future app settings and language/i18n support, including English and Vietnamese (Phase 5.8).
 - Complete Phase 5.9 Production PWA Shell Implementation using TypeScript-first shell modules and production-baseline Black Apple Ledger structure.
-- Clean document statuses before starting Phase 5.10.
-- Keep Phase 5.10 planned but not active until docs hygiene is complete.
-- Defer Local-First Persistence Implementation to Phase 5.11 after Phase 5.10 planning and owner approval.
+- Complete document status hygiene before Phase 5.10.
+- Complete owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
+- Start Phase 5.11 as Local-First Add Bet Draft Persistence Implementation Planning before any code slice.
 
 ### Milestone 7: Real Data Provider, Dataset, and Evaluation Planning (Future)
 - Plan real data provider selection and dataset boundaries.
@@ -93,6 +93,6 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Complete Phase 5.9 Production PWA Shell Implementation using TypeScript-first shell modules and production-baseline Black Apple Ledger structure.
 - [x] Start pre-Phase 5.10 document status hygiene cleanup.
 - [x] Complete Phase 1, Phase 3, Phase 4, app/package, and ops docs hygiene slices.
-- [ ] Recommend Phase 5.10 Add Bet Draft/Form State + Persistence Planning next.
-- [ ] Defer Local-First Persistence Implementation to Phase 5.11 after Phase 5.10 planning and owner approval.
+- [x] Complete owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
+- [ ] Start Phase 5.11 Local-First Add Bet Draft Persistence Implementation Planning; do not start code slices until exact `.ts` files, `*.test.ts` tests, implementation steps, and verification commands are approved.
 - [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.
