@@ -58,9 +58,11 @@ Outlines high-level roadmap milestones across multiple phases.
 - Complete document status hygiene before Phase 5.10.
 - Complete owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
 - Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices for shared contracts, form state, memory persistence, IndexedDB persistence, and versioned draft backup/import helpers.
+- Complete Phase 5.12 owner-requested UI/UX quality-up before Phase 5 closeout.
 
 ### Milestone 7: Real Data Provider, Dataset, and Evaluation Planning (Future)
 - Plan real data provider selection and dataset boundaries.
+- Use full FIFA World Cup fixture coverage as the first provider target if accepted, while keeping the ingestion adapter competition-agnostic.
 - Define model evaluation criteria before any real training.
 - Keep provider choice, datasets, and evaluation gates under owner-approved ADRs.
 
@@ -101,5 +103,6 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Run `phase:staging Phase 5.11` and record closeout evidence before the next phase.
 - [x] Create/link Cloudflare Pages project `miraichi-staging`, deployment token, Pages URL, and smoke-check evidence.
 - [x] Defer formal owner-feedback and production promotion until all planned release phases are complete.
-- [ ] Start `phase:plan Phase 6 Testing/Deployment Hardening`.
+- [ ] Complete `phase:quality-up ui-ux-improve Phase 5.12 Owner Requested Shell Cleanup` staging redeploy before Phase 5 closeout.
+- [ ] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
 - [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.

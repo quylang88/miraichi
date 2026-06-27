@@ -48,8 +48,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Status**: Completed.
 
 ### Phase 5: Betting History, Bankroll, Reports, AI Recommendation Boundary, and Extensible Business Logic Discovery
-- **Goal**: Gather owner requirements, formulate open questions, design extensible domain boundaries, accept Wave A foundation ADRs, plan future implementation, establish approved TypeScript tooling, add type-only shared contracts, add static typechecked market config for accepted Wave A boundaries, establish accepted UI design baseline, plan settings/localization/i18n, implement the production PWA shell, clean document statuses before Phase 5.10 starts, close Phase 5.10 Add Bet draft/form-state persistence planning, and implement the Phase 5.11 local-first Add Bet draft persistence boundary.
-- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, accepted ADR-0034 TypeScript technical direction, Phase 5.3 Wave A implementation planning documents, Phase 5.4 TypeScript tooling setup, Phase 5.5 Typed Shared Domain Contracts, Phase 5.6 Market Catalog and Line Preset Config, Phase 5.7A Black Apple Ledger PWA UI preview closure, Phase 5.8 App Settings, Language/i18n, and UI Flexibility Planning package, Phase 5.9 Production PWA Shell Implementation, pre-Phase 5.10 document status hygiene, owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning, and Phase 5.11 local-first Add Bet draft persistence and backup/import code slices.
+- **Goal**: Gather owner requirements, formulate open questions, design extensible domain boundaries, accept Wave A foundation ADRs, plan future implementation, establish approved TypeScript tooling, add type-only shared contracts, add static typechecked market config for accepted Wave A boundaries, establish accepted UI design baseline, plan settings/localization/i18n, implement the production PWA shell, clean document statuses before Phase 5.10 starts, close Phase 5.10 Add Bet draft/form-state persistence planning, implement the Phase 5.11 local-first Add Bet draft persistence boundary, and complete Phase 5.12 owner-requested UI/UX quality-up before Phase 5 closeout.
+- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, accepted ADR-0034 TypeScript technical direction, Phase 5.3 Wave A implementation planning documents, Phase 5.4 TypeScript tooling setup, Phase 5.5 Typed Shared Domain Contracts, Phase 5.6 Market Catalog and Line Preset Config, Phase 5.7A Black Apple Ledger PWA UI preview closure, Phase 5.8 App Settings, Language/i18n, and UI Flexibility Planning package, Phase 5.9 Production PWA Shell Implementation, pre-Phase 5.10 document status hygiene, owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning, Phase 5.11 local-first Add Bet draft persistence and backup/import code slices, and Phase 5.12 quality-up UI/UX improvements.
 - **Status**: Active.
 
 ### Phase 6: Testing/Deployment Hardening
@@ -58,8 +58,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Status**: TODO.
 
 ### Phase 7: Real Data Provider, Dataset, and Evaluation Planning
-- **Goal**: Plan real provider selection, dataset construction, data quality, evaluation methodology, and governance for future real prediction work.
-- **Deliverables**: Owner-approved ADRs for data provider strategy, dataset boundaries, evaluation criteria, and model-readiness gates.
+- **Goal**: Plan real provider selection, dataset construction, data quality, evaluation methodology, and governance for future real prediction work. The first provider target may be full FIFA World Cup fixture coverage, but implementation must remain competition-agnostic and adapter-based.
+- **Deliverables**: Owner-approved ADRs for data provider strategy, full World Cup fixture source coverage, dataset boundaries, evaluation criteria, provider adapter contracts, and model-readiness gates.
 - **Status**: Future.
 
 ### Phase 8: Model Training and Prediction Engine R&D
@@ -100,5 +100,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Run `phase:staging Phase 5.11` and record closeout evidence before the next phase.
 - [x] Create/link Cloudflare Pages project `miraichi-staging`, deployment token, Pages URL, and smoke-check evidence.
 - [x] Defer formal owner-feedback and production promotion until all planned release phases are complete.
-- [ ] Start `phase:plan Phase 6 Testing/Deployment Hardening`.
+- [ ] Complete `phase:quality-up ui-ux-improve Phase 5.12 Owner Requested Shell Cleanup` staging redeploy before Phase 5 closeout.
+- [ ] After Phase 5.12 staging passes, decide whether Phase 5 can close or whether another explicit Phase 5 quality-up item exists.
+- [ ] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
 - [ ] Keep real AI training out of Phase 5; plan it only through future Phase 7 and Phase 8 ADRs.

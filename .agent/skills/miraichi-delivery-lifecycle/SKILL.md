@@ -9,7 +9,7 @@ description: Use when planning, coding, testing, staging, releasing, or maintain
 
 Treat Miraichi like a real production project:
 
-`plan -> implementation plan -> code slice with TDD -> full integration -> staging -> phase closeout -> next phase`
+`plan -> implementation plan -> code slice with TDD -> full integration -> staging -> quality-up ui-ux-improve when owner requests it -> phase closeout -> next phase`
 
 Formal owner feedback and production promotion are final-release gates, not mandatory after every intermediate phase. Intermediate phases must still produce evidence and a next-phase recommendation.
 
@@ -32,6 +32,7 @@ No phase may skip its exit gate. A fast shortcut that removes evidence is a brok
 | `phase:code-slice <task>` | One small implementation slice | Failing unit test observed, minimal code written, unit test passes, relevant local checks pass; do not run integration or endpoint E2E unless this slice closes a large feature boundary |
 | `phase:integration-test` | Full local and cross-boundary verification after a large feature boundary is complete | `pnpm run verify:local` and `pnpm run test:integration` pass |
 | `phase:staging` | Staging deployment and staging smoke checks | `pnpm run verify:release` passes and staging target is configured; otherwise fail fast |
+| `phase:quality-up ui-ux-improve <scope>` | Owner-requested UI/UX polish, visible copy cleanup, redundant control removal, and small interaction fixes after staging feedback | Targeted tests pass, `pnpm run verify:release` passes, staging is redeployed, and staging smoke evidence is refreshed |
 | `phase:owner-feedback` | Final-release owner review, or an explicit owner-requested review checkpoint | Owner gives explicit approval or requested changes become new lifecycle work |
 | `phase:production` | Final-release production promotion | All planned phases for the release are complete, staging smoke passed, owner approval is explicit, rollback path is known |
 | `phase:maintenance <change>` | Bugfixes and extensions after release | Same lifecycle as normal work; no hotfix bypass |
@@ -101,6 +102,7 @@ Do not deploy to staging unless it passes.
 
 - If no staging target is configured, stop and report the missing target. Do not pretend a deploy happened.
 - Staging must produce a phase closeout pack: changed scope, test evidence, staging URL or explicit missing-target reason, known risks, and the recommended next phase.
+- If the owner requests UI/UX or small functional corrections after staging, run `phase:quality-up ui-ux-improve` before closing the phase or recommending final review.
 - Intermediate phases do not automatically enter `phase:owner-feedback` or `phase:production`.
 - Production requires all planned release phases to be complete and explicit owner approval after final-release review. Local pass or intermediate staging pass alone is not production approval.
 - Maintenance and feature expansion must start again at `phase:plan` or `phase:code-slice`, depending on whether the owner already approved the exact change.
@@ -109,6 +111,7 @@ Do not deploy to staging unless it passes.
 
 - Do not recommend `phase:owner-feedback` after an intermediate phase unless the owner explicitly asks for a review checkpoint.
 - Do not recommend `phase:production` until the project plan marks all planned release phases complete or explicitly out of scope.
+- Do not recommend `phase:production` while owner-requested `phase:quality-up ui-ux-improve` work is pending.
 - Phase closeout responses must still recommend the next phase and list any owner decisions that would block that next phase.
 - Guardrail-sensitive decisions remain blocked without explicit owner direction even when formal owner review is deferred. This includes business logic, prediction algorithms, betting calculations, real provider selection, cloud sync, auth, production database schemas, paid infrastructure, and secrets.
 

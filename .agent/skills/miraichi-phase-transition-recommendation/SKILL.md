@@ -17,6 +17,8 @@ Do not say a phase is ready to advance unless the exit gate is satisfied and req
 
 Formal `phase:owner-feedback` and `phase:production` are final-release gates by default. For intermediate phase closeouts, recommend the earliest safe next implementation/planning/testing phase instead of owner feedback, unless the owner explicitly asks for a review checkpoint.
 
+If the owner requests post-staging UI/UX polish or small functional corrections, recommend and complete `phase:quality-up ui-ux-improve` before phase closeout, final owner review, or production.
+
 ## Required Inputs
 - Current or closing phase.
 - `PROJECT_PLAN.md` active phase and TODO state.
@@ -44,6 +46,7 @@ Use the user's language and include these sections:
 - Never treat local tests, a proposed document, or an agent recommendation as owner approval.
 - Never recommend `phase:owner-feedback` after an intermediate phase unless the owner explicitly requests it or the project plan says this is the final release review.
 - Never recommend `phase:production` until all planned release phases are complete or explicitly removed from scope.
+- Never recommend `phase:production` while requested `phase:quality-up ui-ux-improve` work is incomplete.
 - Never recommend `phase:code-slice` when the implementation plan lacks exact files, failing test, implementation step, and verification command.
 - Never recommend Phase 5.11 while Phase 5.10 is incomplete, unreviewed, or unapproved.
 - If multiple next phases are possible, choose the earliest safe lifecycle phase and explain why.

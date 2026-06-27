@@ -34,7 +34,7 @@ Checks the production shell implementation, retired preview route, TypeScript-fi
 
 * The no-build TypeScript bridge is acceptable for this phase but should not be mistaken for a production bundling strategy.
 * The shell content is intentionally static and boundary-focused. The Add/Edit/Review sheets are production shell surfaces, not persistent Add Bet workflows.
-* Full browser E2E and visual regression checks are still better suited for Phase 5.12 hardening.
+* Full browser E2E and visual regression checks are better suited for post-staging quality-up phases such as Phase 5.12.
 
 ## 3. Closure Recommendation
 

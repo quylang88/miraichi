@@ -10,6 +10,7 @@ import { renderAppShell } from './components/app-shell.js';
 import { renderBottomNavigation } from './components/bottom-navigation.js';
 import { createSettingsService } from './services/settings-service.js';
 import { resolveLocale, t } from './services/i18n-service.js';
+import { getTodayDateTileParts } from './components/app-shell.js';
 
 function createMemoryStorage(initial: Record<string, string> = {}): Storage {
   const store = new Map(Object.entries(initial));
@@ -75,8 +76,8 @@ describe('production PWA shell rendering', () => {
   it('keeps production aligned with the accepted Black Apple Ledger shell structure', () => {
     const html = renderAppShell({ activeTabId: 'today', translate: t });
 
-    expect(html).toContain('class="top-bar"');
-    expect(html).toContain('class="notice"');
+    expect(html).not.toContain('class="top-bar"');
+    expect(html).not.toContain('class="notice"');
     expect(html).toContain('class="main-scroll"');
     expect(html).toContain('class="screen active" id="screen-today"');
     expect(html).toContain('class="summary-list"');
@@ -92,6 +93,23 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('id="match-summary-readonly"');
     expect(html).not.toContain('id="match-field"');
     expect(html).not.toContain('data-primary-add');
+  });
+
+  it('renders the current date in the Today header without phase labels', () => {
+    const html = renderAppShell({ activeTabId: 'today', translate: t });
+    const today = getTodayDateTileParts();
+
+    expect(html).toContain(`aria-label="Current date ${today.day} ${today.month}"`);
+    expect(html).toContain(`<span class="date-day">${today.day}</span>`);
+    expect(html).toContain(`<span class="date-month">${today.month}</span>`);
+    expect(html).not.toContain('5.9');
+    expect(html).not.toContain('PWA</span>');
+  });
+
+  it('removes the redundant choose-match-to-add action from the Bets tab', () => {
+    const html = renderAppShell({ activeTabId: 'bets', translate: t });
+
+    expect(html).not.toContain('Choose Match to Add');
   });
 
   it('does not render detail copy under primary tab titles', () => {
@@ -125,6 +143,16 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('data-screen="bets"');
     expect(html).toContain('aria-current="page"');
     expect(html).toContain('Bets');
+  });
+
+  it('uses a stadium-style icon for the Matches tab', () => {
+    const html = renderBottomNavigation({
+      activeTabId: 'matches',
+      tabs: navigationTabs,
+      translate: t
+    });
+
+    expect(html).toContain('data-icon="stadium"');
   });
 });
 

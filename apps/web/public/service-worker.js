@@ -1,4 +1,4 @@
-const CACHE_NAME = 'miraichi-shell-v4-phase-5-9-production';
+const CACHE_NAME = 'miraichi-shell-v5-phase-5-12-quality-up';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

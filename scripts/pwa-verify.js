@@ -112,7 +112,7 @@ const serviceWorkerPath = path.join(ROOT_DIR, 'apps/web/public/service-worker.js
 if (fs.existsSync(serviceWorkerPath)) {
   const content = fs.readFileSync(serviceWorkerPath, 'utf8');
   const requiredCacheMarkers = [
-    "miraichi-shell-v4-phase-5-9-production",
+    "miraichi-shell-v5-phase-5-12-quality-up",
     "/apps/web/src/shell-entry.js",
     "/apps/web/src/config/navigation-tabs.js",
     "/apps/web/src/components/app-shell.js"
@@ -120,10 +120,10 @@ if (fs.existsSync(serviceWorkerPath)) {
 
   for (const marker of requiredCacheMarkers) {
     if (!content.includes(marker)) {
-      console.error(`  ❌ Service worker missing Phase 5.9 cache marker: ${marker}`);
+      console.error(`  ❌ Service worker missing Phase 5.12 cache marker: ${marker}`);
       failed = true;
     } else {
-      console.log(`  ✅ Service worker Phase 5.9 cache marker found: ${marker}`);
+      console.log(`  ✅ Service worker Phase 5.12 cache marker found: ${marker}`);
     }
   }
 }
@@ -181,8 +181,6 @@ if (fs.existsSync(appShellPath)) {
     'data-production-baseline="black-apple-ledger"',
     'data-settings-entry="miraichi-tab"',
     'data-add-bet-boundary="planned"',
-    'class="top-bar"',
-    'class="notice"',
     'class="main-scroll"',
     'id="screen-today"',
     'id="screen-match-detail"',
@@ -200,6 +198,22 @@ if (fs.existsSync(appShellPath)) {
       failed = true;
     } else {
       console.log(`  ✅ Production shell marker found: ${marker}`);
+    }
+  }
+
+  const forbiddenShellMarkers = [
+    'class="top-bar"',
+    'class="notice"',
+    'Choose Match to Add',
+    'aria-label="Phase 5.9"'
+  ];
+
+  for (const marker of forbiddenShellMarkers) {
+    if (content.includes(marker)) {
+      console.error(`  ❌ Production shell contains removed UI marker: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Production shell omits removed UI marker: ${marker}`);
     }
   }
 }
