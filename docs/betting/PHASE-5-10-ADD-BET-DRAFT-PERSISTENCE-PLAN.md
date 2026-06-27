@@ -10,15 +10,19 @@ This document drafts the future Phase 5.10 planning scope for Add Bet draft stat
 
 ## 1. Purpose
 
-Future Phase 5.10 prepares the next implementation boundary after the completed Phase 5.9 production PWA shell.
+Phase 5.10 defines the planning boundary for turning the completed Phase 5.9 production PWA shell into an implementation-ready Add Bet workflow plan.
 
-The phase must answer these questions before any Phase 5.11 code slice starts:
+This phase must produce owner-reviewable contracts and boundaries for:
 
-* What type-only draft shape should represent an in-progress Add Bet entry?
-* What form-state shape should track touched fields, warnings, draft validity, and review readiness?
-* What persistence adapter boundary should protect future local-first storage work?
-* What backup envelope should future export/import flows use?
-* Which failure states must be planned before writing IndexedDB, import, or export code?
+* in-progress Add Bet draft state;
+* Add/Edit/Review form interaction state;
+* local-first persistence adapter responsibilities;
+* backup, import, export envelope planning;
+* failure states that must be handled before any storage implementation starts.
+
+Phase 5.10 does not implement runtime form behavior, IndexedDB, localStorage betting history, export/import code, API routes, database schemas, betting calculations, odds conversion, settlement logic, bankroll/risk rules, prediction algorithms, or AI recommendation behavior.
+
+The purpose of this phase is to make Phase 5.11 safe to implement by deciding exactly what the first persistence/form-state implementation slice may build, what it must test, and what remains deferred.
 
 ---
 
