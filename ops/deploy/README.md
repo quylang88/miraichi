@@ -23,6 +23,6 @@ Directly plans host infrastructure configurations.
 ## TODO / Next Steps
 - [x] Select Cloudflare Pages as the Phase 5.11 web/PWA staging target.
 - [x] Add `apps/web` static export for Cloudflare Pages.
-- [ ] Create the Cloudflare Pages project `miraichi-staging`.
-- [ ] Configure `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` outside the repository.
-- [ ] Record the real staging URL after the first successful deployment.
+- [x] Create the Cloudflare Pages project `miraichi-staging`.
+- [x] Configure `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` outside the repository.
+- [x] Record the real staging URL after the first successful deployment: `https://eff8f868.miraichi-staging.pages.dev`.

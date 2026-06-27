@@ -4,7 +4,7 @@
 Record the Phase 5.11 staging gate result after release verification and staging target inspection.
 
 ## Status
-- **Status**: Blocked - Missing Cloudflare Pages Project, Token, and Pages URL
+- **Status**: Passed - Cloudflare Pages Staging Deployed and Smoke-Checked
 
 ## Scope
 This review covers the staging attempt for the Phase 5.11 local-first Add Bet draft persistence boundary.
@@ -18,13 +18,13 @@ This review does not deploy to staging, does not promote owner feedback, does no
 | Requirement | Result | Evidence |
 | :--- | :---: | :--- |
 | `pnpm run verify:release` passes before staging | PASS | Release verification passed. |
-| Staging target is configured | PARTIAL | Cloudflare Pages is selected in `ops/deploy/`, but the project, token, and Pages URL are not present locally. |
+| Staging target is configured | PASS | Cloudflare Pages project `miraichi-staging` exists and deploys through Wrangler Direct Upload. |
 | Static export artifact is generated | PASS | `pnpm run build:web-static` wrote `apps/web/dist`. |
 | Static export artifact is locally smoke-tested | PASS | Local static server returned the Miraichi shell, manifest, service worker, shell modules, and CSS from `apps/web/dist`. |
-| Staging URL is available for owner review | FAIL | No Cloudflare Pages URL is configured or deployed yet. |
-| Cloudflare authentication is available | FAIL | `pnpm dlx wrangler whoami` reported that Wrangler is not authenticated. |
-| Staging deployment was performed | NOT RUN | Deployment is blocked by missing Cloudflare Pages project/token/URL. |
-| Staging smoke evidence exists | NOT RUN | Smoke checks require a real staging URL. |
+| Staging URL is available for owner review | PASS | `https://eff8f868.miraichi-staging.pages.dev`. |
+| Cloudflare authentication is available | PASS | Owner configured Cloudflare credentials outside the repository; no token is stored in repo. |
+| Staging deployment was performed | PASS | `pnpm dlx wrangler pages deploy apps/web/dist --project-name miraichi-staging`. |
+| Staging smoke evidence exists | PASS | Public staging URL and core PWA assets returned HTTP 200. |
 
 ---
 
@@ -53,27 +53,31 @@ Result:
 
 ## 3. Missing Staging Configuration
 
-The staging gate is blocked until these are explicitly configured:
+No Phase 5.11 staging configuration blocker remains.
 
-* Cloudflare Pages project `miraichi-staging`.
-* Staging deployment command or workflow.
-* Cloudflare Pages URL.
-* `CLOUDFLARE_ACCOUNT_ID`.
-* `CLOUDFLARE_API_TOKEN`.
-* Staging smoke-check command or documented smoke checklist.
+Configured staging target:
 
-Current deployment docs now select Cloudflare Pages for Phase 5.11 staging, but deployment still requires owner-provided Cloudflare access:
+* Cloudflare Pages project: `miraichi-staging`.
+* Deployment mode: Wrangler Direct Upload.
+* Public staging URL: `https://eff8f868.miraichi-staging.pages.dev`.
+* Credentials: configured outside the repository through Cloudflare environment variables.
 
-* `ops/deploy/staging-plan.md` selects Cloudflare Pages and names the project.
-* `ops/deploy/deployment-targets.md` selects Cloudflare Pages for web staging.
-* `ops/deploy/README.md` records the Cloudflare Pages staging target.
+Smoke evidence captured on 2026-06-27:
+
+| URL | Result |
+| :--- | :--- |
+| `https://eff8f868.miraichi-staging.pages.dev/` | HTTP 200, shell HTML contains `Miraichi`, `Dashboard`, and `shell-entry`. |
+| `https://eff8f868.miraichi-staging.pages.dev/manifest.webmanifest` | HTTP 200. |
+| `https://eff8f868.miraichi-staging.pages.dev/service-worker.js` | HTTP 200. |
+| `https://eff8f868.miraichi-staging.pages.dev/apps/web/src/shell-entry.js` | HTTP 200. |
+| `https://eff8f868.miraichi-staging.pages.dev/packages/ui/src/index.css` | HTTP 200. |
 
 ---
 
 ## 4. Conclusion
 
-Phase 5.11 staging is blocked until Cloudflare Pages project/token/Pages URL exist.
+Phase 5.11 staging passed.
 
-Do not proceed to `phase:owner-feedback` or `phase:production` until a real staging target exists and staging smoke evidence is produced.
+Do not proceed to `phase:production` until owner feedback is completed and explicit production approval is recorded.
 
-Earliest safe next action: create/link the Cloudflare Pages staging project, then retry `phase:staging Phase 5.11`.
+Earliest safe next action: `phase:owner-feedback Phase 5.11`.

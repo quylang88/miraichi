@@ -95,6 +95,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Owner review Phase 5.11 implementation plan before `phase:code-slice`.
 - [x] Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices.
 - [x] Run `phase:integration-test Phase 5.11` before staging or owner-feedback promotion.
-- [ ] Run `phase:staging Phase 5.11` before owner-feedback promotion.
-- [ ] Create/link Cloudflare Pages project `miraichi-staging`, deployment token, Pages URL, and smoke check before retrying staging.
+- [x] Run `phase:staging Phase 5.11` before owner-feedback promotion.
+- [x] Create/link Cloudflare Pages project `miraichi-staging`, deployment token, Pages URL, and smoke-check evidence.
 - [ ] Keep real AI training out of Phase 5; plan it only through future Phase 7 and Phase 8 ADRs.

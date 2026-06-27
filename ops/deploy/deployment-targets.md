@@ -40,6 +40,6 @@ Constraints:
 ## TODO / Next Steps
 - [x] Select Cloudflare Pages for Phase 5.11 web staging.
 - [x] Add static export artifact generation through `pnpm run build:web-static`.
-- [ ] Create Cloudflare Pages project `miraichi-staging`.
-- [ ] Configure `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` outside the repository.
-- [ ] Record the actual Pages URL after first deployment.
+- [x] Create Cloudflare Pages project `miraichi-staging`.
+- [x] Configure `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` outside the repository.
+- [x] Record the actual Pages URL after first deployment: `https://eff8f868.miraichi-staging.pages.dev`.

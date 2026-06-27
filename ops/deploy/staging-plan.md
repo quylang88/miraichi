@@ -7,7 +7,7 @@ Establishes the parameters for automated deployment of PRs to a staging environm
 
 ## Status
 - **Status**: Active
-- **Review Status**: Phase 5.11 Cloudflare Pages staging target selected; deployment pending Cloudflare project, token, and Pages URL.
+- **Review Status**: Phase 5.11 Cloudflare Pages staging deployed and smoke-checked.
 
 ## Scope
 Maps sandbox URLs, mock databases, and staging test suites.
@@ -19,7 +19,7 @@ Phase 5.11 staging scope is web/PWA only. It validates the local-first Add Bet d
 - **Provider**: Cloudflare Pages.
 - **Project**: `miraichi-staging`.
 - **Deployment mode**: Direct Upload with Wrangler.
-- **Staging URL**: Pending first successful deployment; expected shape is `https://miraichi-staging.pages.dev`.
+- **Staging URL**: `https://eff8f868.miraichi-staging.pages.dev`.
 - **Build command**: `pnpm run build:web-static`.
 - **Build artifact**: `apps/web/dist`.
 - **Required local/CI secrets**:
@@ -85,7 +85,7 @@ After deployment, verify:
 ## TODO / Next Steps
 - [x] Select Cloudflare Pages as Phase 5.11 staging target.
 - [x] Add `apps/web` static export command.
-- [ ] Create Cloudflare Pages project `miraichi-staging`.
-- [ ] Configure Cloudflare deployment credentials outside the repository.
-- [ ] Run Phase 5.11 staging deploy command.
-- [ ] Record staging URL and smoke-check evidence.
+- [x] Create Cloudflare Pages project `miraichi-staging`.
+- [x] Configure Cloudflare deployment credentials outside the repository.
+- [x] Run Phase 5.11 staging deploy command.
+- [x] Record staging URL and smoke-check evidence.
