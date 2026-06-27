@@ -52,4 +52,4 @@ Includes all directories and apps under this monorepo.
 - [x] Owner review Phase 5.11 implementation plan before any code slice.
 - [x] Run Phase 5.11 integration-test boundary verification before staging or owner-feedback promotion.
 - [ ] Run Phase 5.11 staging gate before owner-feedback promotion.
-- [ ] Create/link Cloudflare Pages project `miraichi-web-staging`, deployment token, and Pages URL before retrying staging.
+- [ ] Create/link Cloudflare Pages project `miraichi-staging`, deployment token, and Pages URL before retrying staging.

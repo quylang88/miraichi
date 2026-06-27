@@ -55,7 +55,7 @@ Result:
 
 The staging gate is blocked until these are explicitly configured:
 
-* Cloudflare Pages project `miraichi-web-staging`.
+* Cloudflare Pages project `miraichi-staging`.
 * Staging deployment command or workflow.
 * Cloudflare Pages URL.
 * `CLOUDFLARE_ACCOUNT_ID`.

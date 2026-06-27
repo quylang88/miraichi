@@ -17,9 +17,9 @@ Phase 5.11 staging scope is web/PWA only. It validates the local-first Add Bet d
 ## Selected Staging Target
 
 - **Provider**: Cloudflare Pages.
-- **Project**: `miraichi-web-staging`.
+- **Project**: `miraichi-staging`.
 - **Deployment mode**: Direct Upload with Wrangler.
-- **Staging URL**: Pending first successful deployment; expected shape is `https://miraichi-web-staging.pages.dev`.
+- **Staging URL**: Pending first successful deployment; expected shape is `https://miraichi-staging.pages.dev`.
 - **Build command**: `pnpm run build:web-static`.
 - **Build artifact**: `apps/web/dist`.
 - **Required local/CI secrets**:
@@ -59,7 +59,7 @@ pnpm dlx wrangler whoami
 Then deploy the static artifact after Cloudflare credentials and project exist:
 
 ```powershell
-pnpm dlx wrangler pages deploy apps/web/dist --project-name miraichi-web-staging
+pnpm dlx wrangler pages deploy apps/web/dist --project-name miraichi-staging
 ```
 
 If the static export path changes later, update this command before running staging.
@@ -85,7 +85,7 @@ After deployment, verify:
 ## TODO / Next Steps
 - [x] Select Cloudflare Pages as Phase 5.11 staging target.
 - [x] Add `apps/web` static export command.
-- [ ] Create Cloudflare Pages project `miraichi-web-staging`.
+- [ ] Create Cloudflare Pages project `miraichi-staging`.
 - [ ] Configure Cloudflare deployment credentials outside the repository.
 - [ ] Run Phase 5.11 staging deploy command.
 - [ ] Record staging URL and smoke-check evidence.

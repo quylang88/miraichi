@@ -13,7 +13,7 @@ Specifies hosting services, load balancers, and network structures.
 Infrastructure details for web, api, local-ai, and background workers.
 
 ## Target Architecture
-- **Web App Staging**: Cloudflare Pages project `miraichi-web-staging`.
+- **Web App Staging**: Cloudflare Pages project `miraichi-staging`.
 - **Web App Production**: Deferred until staging smoke evidence and owner approval.
 - **Backend API & Workers**: AWS ECS / GCP Cloud Run / VPS.
 - **Local AI Inference**: Dedicated GPU instance (AWS EC2 / RunPod) or serverless CPU environments.
@@ -40,6 +40,6 @@ Constraints:
 ## TODO / Next Steps
 - [x] Select Cloudflare Pages for Phase 5.11 web staging.
 - [x] Add static export artifact generation through `pnpm run build:web-static`.
-- [ ] Create Cloudflare Pages project `miraichi-web-staging`.
+- [ ] Create Cloudflare Pages project `miraichi-staging`.
 - [ ] Configure `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` outside the repository.
 - [ ] Record the actual Pages URL after first deployment.
