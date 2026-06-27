@@ -94,5 +94,6 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Start pre-Phase 5.10 document status hygiene cleanup.
 - [x] Complete Phase 1, Phase 3, Phase 4, app/package, and ops docs hygiene slices.
 - [x] Complete owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
-- [ ] Start Phase 5.11 Local-First Add Bet Draft Persistence Implementation Planning; do not start code slices until exact `.ts` files, `*.test.ts` tests, implementation steps, and verification commands are approved.
+- [x] Create Phase 5.11 Local-First Add Bet Draft Persistence Implementation Plan.
+- [ ] Owner review Phase 5.11 implementation plan before `phase:code-slice`.
 - [ ] Keep real AI training out of Phase 5; reserve it for future Phase 7 and Phase 8 planning.

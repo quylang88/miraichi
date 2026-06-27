@@ -41,7 +41,9 @@ Includes all directories and apps under this monorepo.
 - Added lifecycle, guardrail, workflow, and frontend docs rules requiring new app modules to be TypeScript-first unless they are explicit legacy/runtime bridges.
 - Updated root phase docs to run document status hygiene before Phase 5.10 and keep Phase 5.11 persistence implementation gated behind owner approval.
 - Recorded owner approval of Phase 5.10 Add Bet Draft/Form State + Persistence Planning and gated Phase 5.11 to implementation planning before code.
+- Added Phase 5.11 Local-First Add Bet Draft Persistence implementation plan with TDD slices for shared contracts, form state, memory adapter, IndexedDB adapter, and backup helpers.
 
 ## TODO / Next Steps
 - [x] Review draft Phase 5.10 Add Bet Draft/Form State + Persistence Planning after docs hygiene closes.
-- [ ] Start Phase 5.11 Local-First Add Bet Draft Persistence Implementation Planning.
+- [x] Start Phase 5.11 Local-First Add Bet Draft Persistence Implementation Planning.
+- [ ] Owner review Phase 5.11 implementation plan before any code slice.
