@@ -68,11 +68,11 @@ Outlines high-level roadmap milestones across multiple phases.
 - Harden TypeScript strictness so future source code cannot regress to explicit `any`, tracked `.js` source, or TypeScript suppression comments.
 - Keep production promotion blocked until final-release owner approval.
 
-### Milestone 8: Real Data Provider, Dataset, and Evaluation Planning (Draft Owner Review Required)
+### Milestone 8: Real Data Provider, Dataset, and Evaluation Planning (Partial ADR Acceptance)
 - Plan real data provider selection and dataset boundaries.
 - Use full FIFA World Cup fixture coverage as the first provider target if accepted, while keeping the ingestion adapter competition-agnostic.
 - Define model evaluation criteria before any real training.
-- Keep provider choice, datasets, and evaluation gates under owner-approved ADRs.
+- Keep provider choice and model-readiness gates under remaining owner-approved ADR review. ADR-0036, ADR-0037, ADR-0038, and ADR-0039 are accepted as planning boundaries only.
 
 ### Milestone 9: Model Training and Prediction Engine R&D (Future)
 - Begin real model training research only after Phase 7 planning is accepted.
@@ -126,5 +126,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Keep real AI training out of Phase 6; reserve it for future Phase 7 and Phase 8 planning.
 - [x] Open Phase 7 planning and draft candidate ADRs.
 - [x] Split Phase 7 ADR candidates into standalone draft ADR files and record draft review.
-- [ ] Owner review Phase 7 planning package and ADR candidates before acceptance.
+- [x] Accept ADR-0036, ADR-0037, ADR-0038, and ADR-0039 as Phase 7 planning boundaries only.
+- [ ] Complete owner review for ADR-0035 provider strategy, starting with owner-only free-tier usage.
+- [ ] Complete owner review for ADR-0040 model-readiness gates before Phase 8 model R&D.
 - [ ] Complete Phase 7 only after owner-approved ADRs exist.

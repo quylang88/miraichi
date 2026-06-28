@@ -1,11 +1,13 @@
 # ADR-0038: Prediction Evaluation Criteria and Metrics
 
-* **Status**: Draft - Owner Review Required
+* **Status**: Accepted
 * **Date**: 2026-06-28
+* **Accepted Date**: 2026-06-28
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved by project owner
 * **Implementation Status**: Not started
 * **Source Candidate**: [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md)
-* **Note**: This draft defines evaluation metric categories only. Thresholds and promotion gates belong in ADR-0040.
+* **Note**: This accepted ADR defines evaluation metric categories only. Thresholds and promotion gates belong in ADR-0040.
 
 ---
 
@@ -14,14 +16,14 @@ Outcome accuracy alone is not enough for probabilistic football predictions. A m
 
 ## 2. Options Considered
 * **Option A**: Evaluate predictions only by win/draw/loss accuracy.
-* **Option B (Draft Recommended)**: Evaluate probabilistic forecasts using Brier Score and Expected Calibration Error, compared with a bookmaker-implied baseline.
+* **Option B (Accepted)**: Evaluate probabilistic forecasts using Brier Score and Expected Calibration Error, compared with a bookmaker-implied baseline.
 
-## 3. Draft Recommendation
-Recommend **Option B**.
+## 3. Decision
+Accept **Option B**.
 
 Use Brier Score to measure probability error and Expected Calibration Error to measure whether predicted confidence matches observed frequency. Compare model outputs with a bookmaker-implied probability baseline where odds are available.
 
-This ADR should not set final pass/fail thresholds. Thresholds, sample-size gates, and promotion authority belong in ADR-0040.
+This ADR does not set final pass/fail thresholds. Thresholds, sample-size gates, and promotion authority belong in ADR-0040.
 
 ## 4. Owner Decisions Required
 | Question | Recommended Answer | Reason | Risk If Chosen Otherwise |
@@ -45,5 +47,5 @@ This ADR should not set final pass/fail thresholds. Thresholds, sample-size gate
 * No model algorithm or training method is approved.
 * No production promotion workflow is approved.
 
-## 8. Draft Readiness
-This ADR is ready to become a draft if it stays limited to metric categories and leaves gates to ADR-0040.
+## 8. Acceptance Notes
+Accepted by the project owner on 2026-06-28 as a Phase 7 metric-category boundary only. This decision authorizes Brier Score, Expected Calibration Error, and bookmaker-implied baseline comparison as evaluation categories. It does not approve threshold values, model promotion gates, betting profitability metrics, prediction algorithms, or production deployment.

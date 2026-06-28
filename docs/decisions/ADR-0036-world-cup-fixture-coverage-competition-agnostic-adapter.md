@@ -1,11 +1,13 @@
 # ADR-0036: World Cup Fixture Coverage and Competition-Agnostic Adapter Design
 
-* **Status**: Draft - Owner Review Required
+* **Status**: Accepted
 * **Date**: 2026-06-28
+* **Accepted Date**: 2026-06-28
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved by project owner
 * **Implementation Status**: Not started
 * **Source Candidate**: [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md)
-* **Note**: This draft treats World Cup coverage as the first use case only. It does not allow hard-coded tournament logic.
+* **Note**: This accepted ADR treats World Cup coverage as the first use case only. It does not allow hard-coded tournament logic.
 
 ---
 
@@ -16,10 +18,10 @@ Miraichi must remain competition-agnostic: the same ingestion and normalization 
 
 ## 2. Options Considered
 * **Option A**: Write World Cup-specific parsers, tables, and routes.
-* **Option B (Draft Recommended)**: Use a generic provider adapter and map provider competition IDs to internal generic competition IDs through configuration.
+* **Option B (Accepted)**: Use a generic provider adapter and map provider competition IDs to internal generic competition IDs through configuration.
 
-## 3. Draft Recommendation
-Recommend **Option B**.
+## 3. Decision
+Accept **Option B**.
 
 Provider-specific IDs such as a World Cup league ID should be supplied through configuration or a later owner-approved registry store. Parser and downstream contracts should only use generic concepts such as `competitionId`, `seasonId`, `teamId`, `matchId`, and `marketId`.
 
@@ -44,5 +46,5 @@ Provider-specific IDs such as a World Cup league ID should be supplied through c
 * No exact environment variable names or production configuration values are approved.
 * No prediction algorithm or betting logic is approved.
 
-## 8. Draft Readiness
-This ADR is ready to become a draft. It is one of the cleaner Phase 7 drafts because it strengthens an existing project guardrail instead of selecting a vendor or formula.
+## 8. Acceptance Notes
+Accepted by the project owner on 2026-06-28 as a Phase 7 planning boundary only. This decision authorizes competition-agnostic adapter design constraints, not live provider integration, production registry storage, World Cup-specific code, prediction algorithms, or betting logic.

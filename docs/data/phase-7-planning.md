@@ -1,6 +1,6 @@
 # Phase 7 Planning: Real Data Provider, Dataset, and Evaluation Plan
 
-* **Status**: Draft - Owner Review Required
+* **Status**: Partial ADR Acceptance - Remaining Provider/Gate Review Required
 * **Date**: 2026-06-28
 * **Project**: Miraichi
 * **Phase**: Phase 7 Planning
@@ -11,7 +11,9 @@
 
 This document establishes the architecture, methodology, and evaluation framework for integrating real-world sports data feeds into the Miraichi prediction pipeline.
 
-To maintain the core principles of the Miraichi architecture, all data integrations remain adapter-based and competition-agnostic. While the immediate target is full coverage of international football tournament fixtures (such as the FIFA World Cup), the parser structures, datasets, evaluation metrics, and model-readiness gates are defined generically. This ensures that any football league, cup, or tournament can be ingested, evaluated, and predicted without code modifications.
+To maintain the core principles of the Miraichi architecture, all data integrations remain adapter-based and competition-agnostic. While the immediate target is full coverage of international football tournament fixtures (such as the FIFA World Cup), the parser structures, datasets, and evaluation metrics are defined generically. This ensures that any football league, cup, or tournament can be ingested and evaluated without code modifications.
+
+Owner review on 2026-06-28 accepted ADR-0036, ADR-0037, ADR-0038, and ADR-0039 as planning boundaries only. ADR-0035 provider selection and ADR-0040 model-readiness gates remain draft.
 
 ---
 
@@ -24,10 +26,10 @@ To support fixture ingestion and model evaluation, three candidate sports data p
 | Feature / Dimension | API-Football (RapidAPI) | Football-Data.org | TheOdds-API |
 | :--- | :--- | :--- | :--- |
 | **Primary Data Focus** | Deep match statistics, historical lineups, events, and bookmaker odds | Standard fixtures, schedules, league standings, and basic scores | Multi-bookmaker pre-match and live odds across sports |
-| **Free Tier Quota** | 100 requests per day | 10 requests per minute | 500 requests per month |
-| **Credit Card Required?** | No (for standard free tier on RapidAPI) | No (standard free signup) | No (basic registration) |
-| **Rate / Concurrency Limits** | 10 requests/min, 1 request/sec concurrency | 10 requests/min | 120 requests/min |
-| **Historical Depth** | Extends back to 2018 for major competitions | Limited historical access on free tier | Primarily current and near-term odds |
+| **Free Tier Quota** | Owner must confirm current free-tier quota and terms | 10 calls/minute on the official free plan | 500 credits/month on the official Starter plan |
+| **Free Plan Cost Position** | Owner must confirm | Free plan shown at EUR 0/month | Starter plan shown as FREE |
+| **Rate / Concurrency Limits** | Owner must confirm | 10 calls/minute | Credit-based quota; exact request cost depends on endpoint and parameters |
+| **Historical Depth** | Owner must confirm | Limited on free tier | No historical odds on the free Starter plan |
 | **Unified Coverage** | Both fixture metadata and odds under one API | Fixture metadata only; odds are omitted on free tier | Odds data only; lacks match stats or scores |
 | **Draft Recommendation** | **Primary Candidate** | **Secondary/Backup Candidate (Fixtures only)** | **Secondary/Backup Candidate (Odds only)** |
 
@@ -37,14 +39,16 @@ Provider limits, coverage, and pricing can change. The current candidate matrix 
 * Football-Data.org pricing and coverage: [pricing](https://www.football-data.org/pricing), [coverage](https://www.football-data.org/coverage).
 * The Odds API plan and feature pages: [home/pricing](https://the-odds-api.com/), [API guide](https://the-odds-api.com/liveapi/guides/v4/).
 
-### 2.3 API-Football Free Tier Characteristics
-If confirmed by owner review, the free tier of API-Football via RapidAPI appears suited for the development and offline testing phases of Miraichi:
-* **Quota**: 100 requests per day allows for regular, structured test runs and offline mock cache updates without incurring financial costs.
-* **No Credit Card Requirement**: Protects against unexpected overage charges during initial development iterations.
-* **Rate Limits**: Configured at 10 requests per minute and a strict concurrency limit of 1 request per second. The ingestion engine's scheduler must implement throttling and queuing to respect these limits.
+### 2.3 Owner-Only Free Pilot Constraints
+If owner review confirms API-Football's current free tier is usable, the first implementation plan should still be restricted to a one-person owner pilot:
+* **Usage Scope**: One project owner user only. No public users and no multi-user usage.
+* **Cost Scope**: Free tier only. No paid plan or automatic upgrade without a separate owner decision.
+* **Quota Controls**: Hard daily/monthly quota guards, throttling, and batch checkpoints are mandatory.
+* **Cache Controls**: Raw responses must be cached locally before any normalization or dataset build.
+* **Promotion Boundary**: Provider data can support internal dataset construction and reports only. It does not authorize live prediction recommendations.
 
 ### 2.4 Provider Recommendation
-**API-Football** is the primary provider candidate for owner review, not an accepted provider selection. It appears to provide a unified API interface for fixture metadata (teams, schedules, lineups, live status, final scores) and bookmaker odds (implied odds from multiple bookmakers). If verified and accepted, using a single provider reduces the complexity of joining disparate match identifiers, which would be required if merging Football-Data.org fixtures with TheOdds-API odds.
+**API-Football** is the primary owner-only free-tier provider candidate for owner review, not an accepted provider selection. If verified and accepted, using a single provider reduces the complexity of joining disparate match identifiers, which would be required if merging Football-Data.org fixtures with TheOdds-API odds. If API-Football's current free tier is not acceptable, Football-Data.org should be used as a fixture/results fallback and The Odds API should be used as an odds-only fallback.
 
 ---
 
@@ -72,7 +76,7 @@ The ingestion pipeline follows a strict normalization flow:
 
 ```mermaid
 graph TD
-    RawPayload[API-Football Raw JSON Payload] --> IngestAdapter[API-Football Ingestion Adapter]
+    RawPayload[Provider Raw JSON Payload] --> IngestAdapter[Provider Ingestion Adapter]
     Config[Ingestion Configuration] -->|Injects providerLeagueId & competitionId| IngestAdapter
     IngestAdapter -->|Map Match Data| MatchParser[NormalizedMatch Parser]
     IngestAdapter -->|Map Odds Data| MarketParser[NormalizedMarket Parser]
@@ -81,7 +85,7 @@ graph TD
 ```
 
 1. **Raw Payload Ingestion**: The raw JSON API response should be fetched and immediately written to the local cache.
-2. **Parser Translation**: The API-Football adapter processes the raw JSON, converting fields into the standard TypeScript interfaces defined in [contracts](file:///c:/CODE/miraichi/packages/shared/src/contracts):
+2. **Parser Translation**: The provider adapter processes the raw JSON, converting fields into the standard TypeScript interfaces defined in [contracts](file:///c:/CODE/miraichi/packages/shared/src/contracts):
    * **[normalized-match-contract.ts](file:///c:/CODE/miraichi/packages/shared/src/contracts/normalized-match-contract.ts)**: Maps the provider's fixture object (teams, kickoff time, venue, scores, status).
    * **[normalized-market-contract.ts](file:///c:/CODE/miraichi/packages/shared/src/contracts/normalized-market-contract.ts)**: Maps the provider's odds object (market name such as `1X2`, outcomes, and decimal odds values).
 3. **Internal Registry Mapping**: The provider's team IDs and league IDs should be translated into internal generic keys (`team-alpha`, `competition-beta`) using a dynamic registry configuration or store approved in a later implementation plan.
@@ -160,7 +164,7 @@ Backtests must simulate real-world conditions to prevent look-ahead bias (data l
 
 ## 6. Model-Readiness Gates
 
-Before a trained model can be promoted to staging or used to generate live suggestions in the PWA, it must satisfy owner-approved quantitative verification gates on the out-of-sample Test Set. The thresholds below are candidate thresholds only.
+ADR-0040 remains draft. The thresholds below are candidate owner-only R&D report gates only. They do not authorize staging promotion, live suggestions in the PWA, public predictions, betting recommendations, stake sizing, bankroll logic, or automated model promotion.
 
 ```mermaid
 graph TD
@@ -169,7 +173,7 @@ graph TD
     Gate1 -->|Failed| Reject[Reject Model]
     Gate2 -->|Candidate: N >= 100| Gate3{Gate 3: ECE}
     Gate2 -->|Failed| Reject
-    Gate3 -->|Candidate: ECE < 5%| Approve[Eligible for Owner Review]
+    Gate3 -->|Candidate: ECE < 5%| Approve[Eligible for Owner Review Only]
     Gate3 -->|Failed| Reject
 ```
 
@@ -185,4 +189,4 @@ graph TD
 ### 6.3 Gate 3: Expected Calibration Error (ECE) Constraint
 * **Candidate Requirement**: The Expected Calibration Error (ECE) on the out-of-sample Test Set should be strictly less than 5%:
   $$ECE < 0.05$$
-* **Rationale**: If the model is poorly calibrated (e.g., claiming 80% confidence for outcomes that only happen 50% of the time), any downstream bankroll simulator or betting advice algorithm (like the Kelly Criterion) will miscalculate risk, leading to rapid bankroll depletion. A calibration error under 5% guarantees that predicted probabilities map accurately to actual outcome frequencies.
+* **Rationale**: If the model is poorly calibrated, downstream explanations and future risk workflows become misleading. A calibration error under 5% is only a candidate review target; it does not guarantee that predicted probabilities map accurately to actual outcome frequencies.

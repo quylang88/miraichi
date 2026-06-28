@@ -46,10 +46,10 @@ Index list of records.
 - [ADR-0034-typescript-adoption-and-typed-domain-contracts-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0034-typescript-adoption-and-typed-domain-contracts-boundary.md) - TypeScript Adoption and Typed Domain Contracts Boundary. (Status: Accepted)
 - [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md) - Candidate decisions for real data provider selection, competition-agnostic fixture coverage, dataset boundaries, evaluation metrics, provider adapter validation, and model-readiness gates. (Status: Candidate)
 - [ADR-0035-real-data-provider-selection-and-integration-strategy-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0035-real-data-provider-selection-and-integration-strategy-draft.md) - Real data provider selection and integration strategy. (Status: Draft - Owner Review Required)
-- [ADR-0036-world-cup-fixture-coverage-competition-agnostic-adapter-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0036-world-cup-fixture-coverage-competition-agnostic-adapter-draft.md) - World Cup fixture coverage and competition-agnostic adapter design. (Status: Draft - Owner Review Required)
-- [ADR-0037-dataset-boundaries-and-schema-for-prediction-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0037-dataset-boundaries-and-schema-for-prediction-draft.md) - Dataset boundaries and schema for prediction. (Status: Draft - Owner Review Required)
-- [ADR-0038-prediction-evaluation-criteria-and-metrics-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0038-prediction-evaluation-criteria-and-metrics-draft.md) - Prediction evaluation criteria and metrics. (Status: Draft - Owner Review Required)
-- [ADR-0039-provider-adapter-contract-and-data-validation-schema-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0039-provider-adapter-contract-and-data-validation-schema-draft.md) - Provider adapter contract and data validation schema. (Status: Draft - Owner Review Required)
+- [ADR-0036-world-cup-fixture-coverage-competition-agnostic-adapter.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0036-world-cup-fixture-coverage-competition-agnostic-adapter.md) - World Cup fixture coverage and competition-agnostic adapter design. (Status: Accepted)
+- [ADR-0037-dataset-boundaries-and-schema-for-prediction.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0037-dataset-boundaries-and-schema-for-prediction.md) - Dataset boundaries and schema for prediction. (Status: Accepted)
+- [ADR-0038-prediction-evaluation-criteria-and-metrics.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0038-prediction-evaluation-criteria-and-metrics.md) - Prediction evaluation criteria and metrics. (Status: Accepted)
+- [ADR-0039-provider-adapter-contract-and-data-validation-schema.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0039-provider-adapter-contract-and-data-validation-schema.md) - Provider adapter contract and data validation schema. (Status: Accepted)
 - [ADR-0040-model-readiness-gates-and-deployment-governance-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0040-model-readiness-gates-and-deployment-governance-draft.md) - Model-readiness gates and deployment governance. (Status: Draft - Owner Review Required)
  
  
@@ -58,6 +58,7 @@ Index list of records.
 - [ADR-ACCEPTANCE-SUMMARY-PHASE-1.md](file:///c:/CODE/miraichi/docs/decisions/ADR-ACCEPTANCE-SUMMARY-PHASE-1.md) - Acceptance summary for Phase 1 architecture planning decisions.
 - [PHASE-1-COMPLETION-REVIEW.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REVIEW.md) - Completion review for Phase 1 (Architecture Planning).
 - [ADR-DRAFT-REVIEW-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-DRAFT-REVIEW-PHASE-7.md) - Draft review for Phase 7 ADR-0035 through ADR-0040.
+- [ADR-ACCEPTANCE-SUMMARY-PHASE-7-PARTIAL.md](file:///c:/CODE/miraichi/docs/decisions/ADR-ACCEPTANCE-SUMMARY-PHASE-7-PARTIAL.md) - Partial acceptance summary for Phase 7 ADR-0036, ADR-0037, ADR-0038, and ADR-0039, with remaining review notes for ADR-0035 and ADR-0040.
 - [PHASE-1-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REPORT.md) - Completion report for Phase 1 (Architecture Planning).
 - [PHASE-1-DECISION-BACKLOG.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-DECISION-BACKLOG.md) - Decision backlog for unresolved Phase 1 candidates.
 - [ADR-0003-PHASE-2-OWNER-REVIEW.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0003-PHASE-2-OWNER-REVIEW.md) - Product boundary Phase 2 owner review gateway.

@@ -5,7 +5,7 @@
 * **Owner Approval Required**: Yes
 * **Implementation Status**: Not started
 * **Source Candidate**: [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md)
-* **Note**: This draft proposes candidate gates for R&D and staging eligibility only. It does not approve production promotion or betting advice.
+* **Note**: This draft proposes candidate gates for R&D and owner-only experimental review only. It does not approve production promotion, public recommendations, or betting advice.
 
 ---
 
@@ -17,14 +17,14 @@ A model that is overfit, uncalibrated, or weaker than the market baseline should
 * **Option B (Draft Recommended)**: Require automated model-readiness gates plus explicit owner approval before promotion.
 
 ## 3. Draft Recommendation
-Recommend **Option B** with candidate R&D/staging gates:
+Recommend **Option B** with candidate owner-only R&D review gates:
 
 1. **Brier Improvement Gate**: Candidate model Brier Score should be at least 1% lower than the bookmaker-implied baseline on the out-of-sample set.
 2. **Data Sufficiency Gate**: Candidate model should be evaluated on at least 100 out-of-sample fixtures.
 3. **Calibration Gate**: Candidate model Expected Calibration Error should be under 5%.
 4. **Owner Approval Gate**: Passing automated gates makes a model eligible for owner review only. It does not auto-promote the model.
 
-These values are draft thresholds, not accepted production thresholds.
+These values are draft thresholds, not accepted production thresholds. For the first owner-only phase, the system should generate experimental evaluation reports only. It should not present a model as production-ready, recommend wagers, suggest stakes, or expose prediction recommendations to public users.
 
 ## 4. Owner Decisions Required
 | Question | Recommended Answer | Reason | Risk If Chosen Otherwise |
@@ -32,11 +32,13 @@ These values are draft thresholds, not accepted production thresholds.
 | Who approves model promotion if gates pass? | The project owner gives final approval. Automated gates are necessary but not sufficient. | Model output affects product trust and future betting-adjacent workflows. | Auto-promotion can surface weak or misleading recommendations. |
 | Should calibration gates be separate per market type? | Yes. Start with `1X2`; add Over/Under and other markets only after enough market-specific data exists. | Different markets have different distributions and liquidity. | A model can pass on one market while failing another. |
 | Should 1% Brier improvement, 100 fixtures, and ECE < 5% be accepted now? | Keep them as draft-only R&D/staging candidate gates until Phase 8 produces empirical evidence. | These thresholds are plausible but not yet validated on Miraichi data. | Premature production thresholds create false certainty and may block useful research or approve weak models. |
+| What should owner-only usage allow before production governance is accepted? | Allow private experimental reports for the project owner only. Do not allow public predictions, model-ready labels, betting recommendations, or stake advice. | Owner-only reports support learning without creating product trust or responsible-use exposure. | Treating private experiments as recommendations will blur the safety boundary and invite bad decisions from weak evidence. |
 
 ## 5. Consequences
 * Model promotion becomes evidence-driven.
 * Passing gates creates a review checkpoint, not automatic deployment.
 * Betting profitability remains explicitly outside model-readiness gates.
+* Owner-only experiments can proceed later only as reports, not production recommendations.
 
 ## 6. Risks
 * The candidate thresholds may be too strict or too weak once real data is available.
@@ -49,6 +51,7 @@ These values are draft thresholds, not accepted production thresholds.
 * No betting recommendation, stake sizing, bankroll rule, ROI, CLV, or Kelly Criterion logic is approved.
 * No model algorithm, feature formula, or training implementation is approved.
 * No production promotion is approved.
+* No public prediction surface, model-ready badge, or automated recommendation workflow is approved.
 
 ## 8. Draft Readiness
-This ADR can become a draft, but it should not be accepted as production governance until owner approval and Phase 8 evidence exist.
+This ADR remains draft. It should be reviewed again after Phase 8 produces empirical evaluation evidence. For now, the safest recommendation is to keep the candidate gates as owner-only R&D report gates, not production acceptance gates.

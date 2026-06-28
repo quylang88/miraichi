@@ -60,7 +60,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 ### Phase 7: Real Data Provider, Dataset, and Evaluation Planning
 - **Goal**: Plan real provider selection, dataset construction, data quality, evaluation methodology, and governance for future real prediction work. The first provider target may be full FIFA World Cup fixture coverage, but implementation must remain competition-agnostic and adapter-based.
 - **Deliverables**: Owner-approved ADRs for data provider strategy, full World Cup fixture source coverage, dataset boundaries, evaluation criteria, provider adapter contracts, and model-readiness gates.
-- **Status**: Active - Draft Owner Review Required.
+- **Status**: Active - Partial ADR Acceptance; ADR-0035 and ADR-0040 remain Draft Owner Review Required.
 
 ### Phase 8: Model Training and Prediction Engine R&D
 - **Goal**: Research and prototype real model training and prediction engine approaches only after Phase 7 planning is accepted.
@@ -116,5 +116,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Keep real AI training out of Phase 6; plan it only through future Phase 7 and Phase 8 ADRs.
 - [x] Open Phase 7 planning and draft candidate ADRs.
 - [x] Split Phase 7 ADR candidates into standalone draft ADR files and record draft review.
-- [ ] Owner review Phase 7 planning package and ADR candidates before acceptance.
+- [x] Accept ADR-0036, ADR-0037, ADR-0038, and ADR-0039 as Phase 7 planning boundaries only.
+- [ ] Complete owner review for ADR-0035 provider strategy, with owner-only free-tier provider confirmation before acceptance.
+- [ ] Complete owner review for ADR-0040 model-readiness gates, with Phase 8 evidence or narrower owner-only R&D report authority before acceptance.
 - [ ] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning only after owner-approved ADRs exist.

@@ -1,11 +1,13 @@
 # ADR-0039: Provider Adapter Contract and Data Validation Schema
 
-* **Status**: Draft - Owner Review Required
+* **Status**: Accepted
 * **Date**: 2026-06-28
+* **Accepted Date**: 2026-06-28
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved by project owner
 * **Implementation Status**: Not started
 * **Source Candidate**: [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md)
-* **Note**: This draft defines validation boundaries only. It does not approve dependency installation or provider integration code.
+* **Note**: This accepted ADR defines validation boundaries only. It does not approve dependency installation or provider integration code.
 
 ---
 
@@ -14,10 +16,10 @@ Third-party sports data can be incomplete, malformed, stale, or internally incon
 
 ## 2. Options Considered
 * **Option A**: Store raw payloads and defer validation to prediction runtime.
-* **Option B (Draft Recommended)**: Validate provider payloads at the parser boundary before normalization and dataset generation.
+* **Option B (Accepted)**: Validate provider payloads at the parser boundary before normalization and dataset generation.
 
-## 3. Draft Recommendation
-Recommend **Option B**.
+## 3. Decision
+Accept **Option B**.
 
 Define provider adapter validation schemas at the parser boundary. Zod is a reasonable candidate for runtime validation, but installing or wiring Zod must wait for an owner-approved implementation plan.
 
@@ -46,5 +48,5 @@ Validation should classify fields into critical required fields and optional war
 * No production database schema or table index is approved.
 * No import recovery script is approved.
 
-## 8. Draft Readiness
-This ADR is ready to become a draft. It is a guardrail-strengthening decision and does not require accepting a provider or model threshold.
+## 8. Acceptance Notes
+Accepted by the project owner on 2026-06-28 as a Phase 7 validation-boundary decision only. This decision authorizes parser-boundary validation requirements and dead-letter evidence planning. It does not approve package installation, live provider adapter code, logging vendors, production database schema, or import recovery scripts.

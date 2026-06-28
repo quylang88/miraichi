@@ -1,11 +1,13 @@
 # ADR-0037: Dataset Boundaries and Schema for Prediction
 
-* **Status**: Draft - Owner Review Required
+* **Status**: Accepted
 * **Date**: 2026-06-28
+* **Accepted Date**: 2026-06-28
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved by project owner
 * **Implementation Status**: Not started
 * **Source Candidate**: [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md)
-* **Note**: This draft defines dataset boundaries only. It does not approve feature formulas, model training code, or production storage.
+* **Note**: This accepted ADR defines dataset boundaries only. It does not approve feature formulas, model training code, or production storage.
 
 ---
 
@@ -14,10 +16,10 @@ Future prediction R&D needs reproducible datasets built from fixtures, results, 
 
 ## 2. Options Considered
 * **Option A**: Train models by querying raw operational database records at runtime.
-* **Option B (Draft Recommended)**: Build static, versioned offline datasets from raw provider snapshots and normalized records.
+* **Option B (Accepted)**: Build static, versioned offline datasets from raw provider snapshots and normalized records.
 
-## 3. Draft Recommendation
-Recommend **Option B**.
+## 3. Decision
+Accept **Option B**.
 
 Store raw provider responses separately from normalized records and derived feature datasets. Dataset builds should be reproducible from source snapshots, schema versions, and feature-spec versions.
 
@@ -46,5 +48,5 @@ Initial dataset artifacts should prefer JSON Lines for machine processing and op
 * No production database schema is approved.
 * No model training implementation is approved.
 
-## 8. Draft Readiness
-This ADR is ready to become a draft. It defines a boundary and defers the high-risk mathematical decisions correctly.
+## 8. Acceptance Notes
+Accepted by the project owner on 2026-06-28 as a Phase 7 planning boundary only. This decision authorizes offline, versioned dataset boundaries and reproducibility metadata, not feature formulas, model training implementation, cloud storage, production database schema, or live provider ingestion.
