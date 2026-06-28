@@ -129,6 +129,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete Phase 8.2 Feature Spec and Leakage Audit.
 - [x] Create `phase:implementation-plan Phase 8.3 Evaluation Harness and Baselines`.
 - [x] Complete Phase 8.3 Evaluation Harness and Baselines, using pure TypeScript metric functions in `apps/local-ai` for Brier, Calibration/ECE, and log loss, reporting sample count and bookmaker/simple baseline comparison without blocking harness construction on additional national-team competitions.
+- [x] Create `phase:implementation-plan Phase 8.3A National-Team Dataset Expansion`.
+- [ ] Complete Phase 8.3A National-Team Dataset Expansion before Phase 8.4, with provider-confirmed national-team competitions and aggregate evaluation readiness evidence.
 - [ ] Create and complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.
   - **Blocker**: Phase 8.4 is strictly blocked until the national-team dataset is expanded (including World Cup qualifiers, Euro, Copa America, and other national team tournaments supported by clean provider sources) or the owner explicitly overrides this block. Club/Premier League expansion remains blocked.
   - **Constraints**: Do not treat high-variance Phase 8.4 outcomes as model-selection evidence due to potential sample size limits. Do not create model-ready labels, no runtime prediction routes, and no betting recommendations.
