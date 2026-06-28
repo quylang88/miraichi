@@ -127,7 +127,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Review and correct Phase 8.1 to make World Cup/national-team competitions the explicit first data target before Phase 8.2.
 - [x] Create `phase:implementation-plan Phase 8.2 Feature Spec and Leakage Audit`.
 - [x] Complete Phase 8.2 Feature Spec and Leakage Audit.
-- [ ] Create and complete Phase 8.3 Evaluation Harness and Baselines, using pure TypeScript metric functions in `apps/local-ai` for Brier, Calibration/ECE, and log loss, reporting sample count and bookmaker/simple baseline comparison without blocking harness construction on additional national-team competitions.
+- [x] Create `phase:implementation-plan Phase 8.3 Evaluation Harness and Baselines`.
+- [ ] Complete Phase 8.3 Evaluation Harness and Baselines, using pure TypeScript metric functions in `apps/local-ai` for Brier, Calibration/ECE, and log loss, reporting sample count and bookmaker/simple baseline comparison without blocking harness construction on additional national-team competitions.
 - [ ] Create and complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.
 - [ ] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
