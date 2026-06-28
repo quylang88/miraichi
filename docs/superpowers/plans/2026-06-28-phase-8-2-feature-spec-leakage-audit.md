@@ -679,7 +679,7 @@ const metadata = {
   datasetId: 'dataset-comp-int-world-cup-2026-06-28',
   competitionId: 'comp-int-world-cup',
   schemaVersion: '1.0.0',
-  featureSpecVersion: '0.1.0',
+  featureSpecVersion: 'feature-spec-v0.1.0',
   sourceProviderId: 'soccerdata-fbref',
   sourceSnapshotHash: 'hash',
   builtAt: '2026-06-28T00:00:00Z',

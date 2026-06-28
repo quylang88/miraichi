@@ -104,15 +104,21 @@ Phase 8 must proceed as R&D, not as production inference work.
 
 - Use chronological split or rolling walk-forward evaluation.
 - Report Brier Score, Expected Calibration Error, log loss, class accuracy, sample count, and calibration bin counts.
+- Implement Brier Score, Expected Calibration Error, and log loss as pure TypeScript functions in `apps/local-ai`; do not add an external metrics library for these basic formulas.
+- Make ECE binning, multiclass Brier definition, and log-loss epsilon clipping explicit and test-covered.
 - Compare against a bookmaker-implied probability baseline when odds exist.
+- When odds are missing, report missing bookmaker-baseline counts instead of treating missing odds as model evidence.
 - Include non-market baselines: home/draw/away frequency, home-advantage prior, Elo/Poisson-style simple baseline.
 - Treat ADR-0040 gates as non-blocking report indicators, not build blockers.
+- Do not block harness construction on adding more competitions before Phase 8.3 starts. The current World Cup snapshot is enough to verify harness formulas and report plumbing.
+- Do not treat World Cup-only metrics as reliable calibration evidence. Add related national-team competitions before Phase 8.4 candidate model bake-off or any serious model-selection claim.
 
 **Exit gate:**
 
 - A report can be generated without LightGBM or any advanced model.
 - The report clearly shows whether a candidate beats simple baselines and bookmaker baseline.
-- At least 100 out-of-sample fixtures are reported as a weak minimum; more is required before trusting calibration.
+- At least 100 out-of-sample fixtures are reported as a weak minimum for candidate review; more is required before trusting calibration.
+- If the World Cup-only snapshot is below that minimum, the report must say so plainly and remain audit/plumbing evidence only.
 
 ### Phase 8.4: Candidate Model Bake-Off
 

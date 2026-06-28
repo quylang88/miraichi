@@ -1,8 +1,9 @@
-import type { FeatureDefinition, FeatureSpec } from './feature-spec.js';
+import { APPROVED_FEATURE_SPEC, type FeatureDefinition, type FeatureSpec } from './feature-spec.js';
 
 export type LeakageViolationCode =
   | 'forbidden_source_column'
   | 'forbidden_row_field'
+  | 'unapproved_row_field'
   | 'non_pre_match_feature'
   | 'target_match_window';
 
@@ -43,6 +44,7 @@ const FORBIDDEN_EXACT_FIELDS = new Set([
 ]);
 
 const FORBIDDEN_SUBSTRINGS = [
+  'score',
   'postmatch',
   'fulltime',
   'targetlabel',
@@ -50,6 +52,8 @@ const FORBIDDEN_SUBSTRINGS = [
   'profitloss',
   'kellyfraction'
 ];
+
+const APPROVED_FEATURE_ROW_METADATA_FIELDS = new Set(['matchId']);
 
 export function normalizeFieldName(field: string): string {
   return field.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -110,7 +114,16 @@ export function auditFeatureSpec(spec: FeatureSpec): LeakageAuditResult {
   };
 }
 
-export function auditFeatureRowCandidate(row: Record<string, unknown>): LeakageAuditResult {
+function isApprovedFeatureRowField(field: string, spec: FeatureSpec): boolean {
+  if (APPROVED_FEATURE_ROW_METADATA_FIELDS.has(field)) return true;
+
+  return spec.features.some((feature) => feature.name === field);
+}
+
+export function auditFeatureRowCandidate(
+  row: Record<string, unknown>,
+  spec: FeatureSpec = APPROVED_FEATURE_SPEC
+): LeakageAuditResult {
   const violations: LeakageViolation[] = [];
 
   for (const field of Object.keys(row)) {
@@ -120,12 +133,21 @@ export function auditFeatureRowCandidate(row: Record<string, unknown>): LeakageA
         field,
         message: `Candidate feature row contains forbidden field "${field}".`
       });
+      continue;
+    }
+
+    if (!isApprovedFeatureRowField(field, spec)) {
+      violations.push({
+        code: 'unapproved_row_field',
+        field,
+        message: `Candidate feature row contains unapproved field "${field}".`
+      });
     }
   }
 
   return {
     ok: violations.length === 0,
-    checkedFeatureCount: 0,
+    checkedFeatureCount: spec.features.length,
     violations
   };
 }

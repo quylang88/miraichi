@@ -109,8 +109,37 @@ describe('Phase 8.2 leakage audit', () => {
     expect(result.violations).toEqual([]);
   });
 
+  it('rejects candidate feature rows with unapproved team, tournament, or source shortcuts', () => {
+    const result = auditFeatureRowCandidate({
+      matchId: 'match-wc-2022-sample-1',
+      home_prior_match_count: 8,
+      worldCupStageShortcut: 'final',
+      teamFranceBoost: 1,
+      homePriorMatchCount: 8
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.violations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'unapproved_row_field',
+          field: 'worldCupStageShortcut'
+        }),
+        expect.objectContaining({
+          code: 'unapproved_row_field',
+          field: 'teamFranceBoost'
+        }),
+        expect.objectContaining({
+          code: 'unapproved_row_field',
+          field: 'homePriorMatchCount'
+        })
+      ])
+    );
+  });
+
   it('normalizes common leaked field spellings', () => {
     expect(isForbiddenLeakageField('homeScore')).toBe(true);
+    expect(isForbiddenLeakageField('finalHomeScore')).toBe(true);
     expect(isForbiddenLeakageField('full_time_result')).toBe(true);
     expect(isForbiddenLeakageField('postMatchOdds')).toBe(true);
     expect(isForbiddenLeakageField('homePriorGoalDifferencePerMatch')).toBe(false);

@@ -37,6 +37,7 @@ def test_build_dataset_valid(tmp_path):
     with open(processed_dir / "metadata.json", 'r') as f:
         meta = json.load(f)
         assert meta["competitionId"] == "comp-int-world-cup"
+        assert meta["featureSpecVersion"] == "feature-spec-v0.1.0"
         assert meta["trainCount"] == 1
         assert meta["valCount"] == 1
         assert meta["testCount"] == 1

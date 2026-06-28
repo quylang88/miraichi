@@ -8,6 +8,8 @@ from typing import Optional
 from scripts.config import INITIAL_COMPETITION_ID, get_competition_config
 from scripts.team_mapper import TeamMapper
 
+FEATURE_SPEC_VERSION = "feature-spec-v0.1.0"
+
 class MatchScores(BaseModel):
     homeScore: int = Field(..., ge=0)
     awayScore: int = Field(..., ge=0)
@@ -142,7 +144,7 @@ def build_dataset(competition_id: str, raw_path: Optional[str] = None, output_di
             "datasetId": f"dataset-{competition_id}-{datetime.date.today().isoformat()}",
             "competitionId": competition_id,
             "schemaVersion": "1.0.0",
-            "featureSpecVersion": "0.1.0",
+            "featureSpecVersion": FEATURE_SPEC_VERSION,
             "sourceProviderId": "soccerdata-fbref",
             "sourceSnapshotHash": snapshot_hash,
             "builtAt": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),

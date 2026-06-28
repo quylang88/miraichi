@@ -6,6 +6,8 @@
   "competitionId": "comp-int-world-cup",
   "targetCompetitionScope": "world-cup-national-team-first",
   "featureSpecVersion": "feature-spec-v0.1.0",
+  "metadataFeatureSpecVersion": "feature-spec-v0.1.0",
+  "featureSpecVersionMatchesMetadata": true,
   "checkedFeatureCount": 13,
   "datasetSampleCount": 3,
   "rejectedRecordCount": 0,
