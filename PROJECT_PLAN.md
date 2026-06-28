@@ -125,7 +125,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Create `phase:implementation-plan Phase 8.1 Dataset Snapshot and Provenance`.
 - [x] Complete Phase 8.1 reproducible offline dataset snapshot and data quality report.
 - [x] Review and correct Phase 8.1 to make World Cup/national-team competitions the explicit first data target before Phase 8.2.
-- [ ] Create and complete Phase 8.2 Feature Spec and Leakage Audit.
+- [x] Create `phase:implementation-plan Phase 8.2 Feature Spec and Leakage Audit`.
+- [ ] Complete Phase 8.2 Feature Spec and Leakage Audit.
 - [ ] Create and complete Phase 8.3 Evaluation Harness and Baselines, including Brier, Calibration/ECE, log loss, sample count, and bookmaker/simple baseline comparison.
 - [ ] Create and complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.
 - [ ] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
