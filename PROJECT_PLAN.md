@@ -63,8 +63,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Status**: Completed.
 
 ### Phase 8: Model Training and Prediction Engine R&D
-- **Goal**: Research and prototype real model training and prediction engine approaches only after Phase 7 planning is accepted.
-- **Deliverables**: Owner-approved R&D plans, model experiment boundaries, evaluation reports, and prediction algorithm ADRs.
+- **Goal**: Research and prototype owner-only, free-tier model training approaches through reproducible datasets, leakage-safe feature specs, chronological evaluation, and model comparison reports before any real inference runtime is selected.
+- **Deliverables**: Phase 8 owner-only R&D subphase plan, dataset snapshot/provenance plan, feature spec and leakage audit plan, evaluation harness and baseline reports, candidate model bake-off report, owner-approved model-selection ADR, and optional runtime packaging plan only if evidence justifies it.
 - **Status**: Active.
 
 ## TODO / Next Steps
@@ -120,6 +120,12 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete owner review for ADR-0035 provider strategy, with owner-only free-tier provider confirmation before acceptance.
 - [x] Complete owner review for ADR-0040 model-readiness gates, with Phase 8 evidence or narrower owner-only R&D report authority before acceptance.
 - [x] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning only after owner-approved ADRs exist.
-- [ ] Start Phase 8 Model Training and Prediction Engine R&D planning.
-- [ ] Design and prototype model training pipelines using historical datasets.
-- [ ] Implement model evaluation report scripts to output Brier and Calibration metrics.
+- [x] Create Phase 8 Owner-Only Model R&D plan and split Phase 8 into smaller gated subphases.
+- [ ] Owner review Phase 8.0 R&D boundary split before Phase 8.1 implementation planning.
+- [ ] Create `phase:implementation-plan Phase 8.1 Dataset Snapshot and Provenance`.
+- [ ] Complete Phase 8.1 reproducible offline dataset snapshot and data quality report.
+- [ ] Create and complete Phase 8.2 Feature Spec and Leakage Audit.
+- [ ] Create and complete Phase 8.3 Evaluation Harness and Baselines, including Brier, Calibration/ECE, log loss, sample count, and bookmaker/simple baseline comparison.
+- [ ] Create and complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.
+- [ ] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
+- [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
