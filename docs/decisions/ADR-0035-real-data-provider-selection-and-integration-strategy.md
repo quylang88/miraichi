@@ -1,27 +1,29 @@
 # ADR-0035: Real Data Provider Selection and Integration Strategy
 
-* **Status**: Draft - Owner Review Required
+* **Status**: Accepted
 * **Date**: 2026-06-28
+* **Accepted Date**: 2026-06-28
 * **Owner Approval Required**: Yes
+* **Owner Approval**: Approved by project owner
 * **Implementation Status**: Not started
 * **Source Candidate**: [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md)
-* **Note**: This draft does not select a production vendor, approve paid billing, add credentials, authorize live provider code, or authorize public/multi-user rollout.
+* **Note**: This accepted ADR selects the hybrid ingestion strategy for owner-only free-tier development. It does not authorize live production keys, paid subscriptions, or public traffic rollout.
 
 ---
 
 ## 1. Context
 Miraichi needs real football fixture, result, statistics, lineup, and odds data for future dataset construction and model evaluation.
 
-Phase 3 accepted a provider adapter boundary without selecting a real provider. Phase 7 may now draft a real provider selection strategy, but final provider approval remains owner-controlled under [OWNER-DECISION-GATES.md](file:///c:/CODE/miraichi/docs/governance/OWNER-DECISION-GATES.md).
+Phase 3 accepted a provider adapter boundary without selecting a real provider. Phase 7 select a real provider selection strategy, but final provider approval remains owner-controlled under [OWNER-DECISION-GATES.md](file:///c:/CODE/miraichi/docs/governance/OWNER-DECISION-GATES.md).
 
 ## 2. Options Considered
 * **Option A**: Direct scraping/parsing of bookmaker sites and sports directories.
 * **Option B**: Use API-Football as the primary owner-only free-tier development provider candidate behind a replaceable adapter.
 * **Option C**: Use Football-Data.org as a fixture/results fallback and The Odds API as an odds-only fallback or supplement.
-* **Option D (Draft Recommended)**: Hybrid Ingestion Strategy (Offline Historical Scraping via `soccerdata` + Online Live/Matchday Free APIs).
+* **Option D (Accepted)**: Hybrid Ingestion Strategy (Offline Historical Scraping via `soccerdata` + Online Live/Matchday Free APIs).
 
-## 3. Draft Recommendation
-Recommend **Option D as the most optimal, 100% free solution for a single-user pilot**.
+## 3. Decision
+Accept **Option D as the most optimal, 100% free solution for a single-user pilot**.
 
 ### Why Option D is the Optimal Choice:
 1. **Historical Scaling (Free & Unlimited)**: Training prediction models requires years of historical data across multiple leagues. Doing this via API-Football's free tier (100 requests/day) is impossible. Option D uses `soccerdata` (FBref, Understat, Football-Data.co.uk) locally on the owner's machine to generate bulk offline historical datasets instantly and for free, without API quota constraints.
@@ -51,7 +53,7 @@ The owner must recheck current pricing, quota, coverage, and terms before accept
 * The Odds API pricing: [https://the-odds-api.com/](https://the-odds-api.com/)
 * SoccerData documentation: [https://soccerdata.readthedocs.io/](https://soccerdata.readthedocs.io/)
 
-This recommendation is not a production provider selection. It only prepares the project to draft an implementation plan after owner approval.
+This decision is not a production provider selection. It only prepares the project to draft an implementation plan after owner approval.
 
 ## 4. Owner Decisions Required
 | Question | Recommended Answer | Reason | Risk If Chosen Otherwise |
@@ -75,11 +77,10 @@ This recommendation is not a production provider selection. It only prepares the
 * Live API free tiers can be exhausted if the user polls too frequently.
 
 ## 7. Explicit Exclusions
-* No production provider is accepted by this draft.
 * No API key, credential, `.env`, secret, or paid subscription is approved.
 * No live HTTP client, poller, scraper, or ingestion job is approved.
 * No production database, schema, or provider credential storage is approved.
 * No public users, multi-user rollout, paid plan, or traffic scaling is approved.
 
-## 8. Draft Readiness
-This ADR can move to owner review as a draft. It should not be accepted until the owner confirms provider source facts and explicitly approves the provider strategy.
+## 8. Acceptance Notes
+Accepted by the project owner on 2026-06-28 as a Phase 7 planning boundary only. This decision authorizes the hybrid ingestion strategy for development, not live provider integration, paid subscriptions, or production promotion.
