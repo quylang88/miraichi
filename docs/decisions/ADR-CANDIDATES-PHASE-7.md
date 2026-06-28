@@ -2,11 +2,20 @@
 
 This document compiles the candidate Architectural Decision Records (ADRs) for Phase 7 (Real Data Provider, Dataset, and Evaluation Planning). These candidates must be reviewed, finalized, and approved before implementing live data feed pollers, dataset generation pipelines, or evaluation frameworks.
 
+Standalone draft and accepted files have been created for owner review:
+* [ADR-0035-real-data-provider-selection-and-integration-strategy-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0035-real-data-provider-selection-and-integration-strategy-draft.md)
+* [ADR-0036-world-cup-fixture-coverage-competition-agnostic-adapter.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0036-world-cup-fixture-coverage-competition-agnostic-adapter.md)
+* [ADR-0037-dataset-boundaries-and-schema-for-prediction.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0037-dataset-boundaries-and-schema-for-prediction.md)
+* [ADR-0038-prediction-evaluation-criteria-and-metrics.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0038-prediction-evaluation-criteria-and-metrics.md)
+* [ADR-0039-provider-adapter-contract-and-data-validation-schema.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0039-provider-adapter-contract-and-data-validation-schema.md)
+* [ADR-0040-model-readiness-gates-and-deployment-governance-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0040-model-readiness-gates-and-deployment-governance-draft.md)
+* [ADR-ACCEPTANCE-SUMMARY-PHASE-7-PARTIAL.md](file:///c:/CODE/miraichi/docs/decisions/ADR-ACCEPTANCE-SUMMARY-PHASE-7-PARTIAL.md)
+
 ---
 
 ## ADR-0035: Real Data Provider Selection and Integration Strategy
 
-* **Status**: Candidate
+* **Status**: Draft - Owner Review Required
 * **Date**: 2026-06-28
 
 ### Problem
@@ -18,7 +27,7 @@ Miraichi requires a reliable sports data provider to ingest real fixtures, histo
 * **Option C**: Integrate with alternative APIs such as football-data.org (which has a narrower coverage) or TheOdds-API (which lacks detailed match statistics and lineups).
 
 ### Recommended Direction
-**Option B**. API-Football is selected as the candidate provider. It covers more than 900 leagues globally (including the FIFA World Cup), provides rich match statistics, live lineups, and live/pre-match odds feeds. For development, we will utilize API-Football's free tier (100 requests/day, 10 requests/min, 1 request/sec concurrency limit) and implement local filesystem caching to avoid rate limiting and allow repeatable mock testing without API calls.
+**Option B**. API-Football is recommended as the owner-only free-tier candidate provider for review, not accepted as the production provider. Current planning assumes API-Football may provide broad football coverage, match statistics, lineups, and live/pre-match odds feeds, but quota and coverage claims must be rechecked against official provider pages before acceptance. If accepted for development, the adapter must implement local filesystem caching, quota guards, and owner-only usage limits to reduce rate-limit pressure and avoid accidental public scaling.
 
 ### Risks
 * API format updates or schema changes from the provider could break the parser.
@@ -26,8 +35,10 @@ Miraichi requires a reliable sports data provider to ingest real fixtures, histo
 * Dependency on a specific RapidAPI subscription plan if query volumes increase.
 
 ### Open Questions
+* Whether API-Football's current free tier is acceptable for one owner-only pilot user.
 * How to smoothly transition from the free tier to a paid production tier as traffic scales without rewriting integration code.
 * What strategy we should use to handle concurrency limits when executing bulk historical data ingestion.
+* Whether current official provider pricing, quota, and coverage pages still match the assumptions in [phase-7-planning.md](file:///c:/CODE/miraichi/docs/data/phase-7-planning.md).
 
 ### What It Must Not Decide Yet
 * Production API keys and credentials.
@@ -38,7 +49,7 @@ Miraichi requires a reliable sports data provider to ingest real fixtures, histo
 
 ## ADR-0036: FIFA World Cup Fixture Source Coverage & Competition-Agnostic Adapter Design
 
-* **Status**: Candidate
+* **Status**: Accepted
 * **Date**: 2026-06-28
 
 ### Problem
@@ -48,8 +59,8 @@ The immediate priority for Miraichi is to cover the FIFA World Cup fixtures, sta
 * **Option A**: Write World Cup-specific parser scripts, database tables, and routes.
 * **Option B**: Model a generic ingestion pipeline and map the World Cup using a dynamic registry configuration.
 
-### Recommended Direction
-**Option B**. Use API-Football's generic league and fixture endpoints via a unified parser adapter. The parser will normalize incoming payloads into standard internal structures, specifically `NormalizedMatch` and `NormalizedMarket` shapes. The World Cup competition ID (e.g., league ID `1` for World Cup) and season identifier will not be hardcoded in TypeScript files; instead, they will be supplied via environment variables or stored as dynamic configuration records in the registry database.
+### Accepted Direction
+**Option B**. Use generic league and fixture endpoints via a unified parser adapter if a provider is later accepted. The parser should normalize incoming payloads into standard internal structures, specifically `NormalizedMatch` and `NormalizedMarket` shapes. World Cup competition IDs and season identifiers must not be hardcoded in TypeScript files; instead, they should be supplied via environment variables or dynamic registry configuration approved in a later implementation plan.
 
 ### Risks
 * Differences in cup-specific tournament rules (such as extra time, penalty shootouts, and neutral venues) may require custom metadata fields in the normalized schemas.
@@ -57,7 +68,7 @@ The immediate priority for Miraichi is to cover the FIFA World Cup fixtures, sta
 
 ### Open Questions
 * How should we handle team name variations (e.g., "Vietnam" vs "Viet Nam") across different sports data providers and bookmakers?
-* Should the registry database support multiple active seasons for the same tournament?
+* Should the future registry configuration or store support multiple active seasons for the same tournament?
 
 ### What It Must Not Decide Yet
 * Specific database schemas or table indexes for the registry.
@@ -67,7 +78,7 @@ The immediate priority for Miraichi is to cover the FIFA World Cup fixtures, sta
 
 ## ADR-0037: Dataset Boundaries & Schema for Prediction
 
-* **Status**: Candidate
+* **Status**: Accepted
 * **Date**: 2026-06-28
 
 ### Problem
@@ -77,8 +88,8 @@ Constructing training datasets for the prediction engines requires compiling his
 * **Option A**: Train models by querying raw JSON database tables on the fly at runtime.
 * **Option B**: Extract structured feature vectors and save them as static dataset files (e.g., CSV or JSON Lines) in partitioned local directories.
 
-### Recommended Direction
-**Option B**. Extract and compile feature vectors offline, then save them as static dataset files in chronological folders under `apps/local-ai/data/datasets/`. Perform feature engineering (rolling average stats, goal differentials, head-to-head records) ahead of model training. Evaluating and training models on static, versioned datasets ensures reproducibility and isolates model R&D from changes in the operational database.
+### Accepted Direction
+**Option B**. Extract and compile feature vectors offline, then save them as static dataset files in chronological folders under `apps/local-ai/data/datasets/`. Feature engineering details remain unapproved. Evaluating and training models on static, versioned datasets ensures reproducibility and isolates model R&D from changes in the operational database.
 
 ### Risks
 * Accumulating static datasets over many seasons may require substantial local or cloud storage.
@@ -96,7 +107,7 @@ Constructing training datasets for the prediction engines requires compiling his
 
 ## ADR-0038: Prediction Evaluation Criteria & Metrics
 
-* **Status**: Candidate
+* **Status**: Accepted
 * **Date**: 2026-06-28
 
 ### Problem
@@ -106,8 +117,8 @@ To evaluate probabilistic predictions, traditional classification metrics like r
 * **Option A**: Evaluate prediction models based solely on outcome prediction accuracy (win/draw/loss success rate).
 * **Option B**: Evaluate prediction models using Brier Score and Expected Calibration Error (ECE) compared to the bookmaker odds baseline.
 
-### Recommended Direction
-**Option B**. Evaluate probabilistic forecasts using Brier Score (to measure overall mean squared error of probability forecasts) and Expected Calibration Error (to measure whether predicted probabilities match real-world frequencies). We will compare these metrics against a baseline derived from implied bookmaker odds, normalized to sum to 1.0 (with the bookmaker's overround margin removed via normalization techniques).
+### Accepted Direction
+**Option B**. Evaluate probabilistic forecasts using Brier Score and Expected Calibration Error. Compare these metrics against a baseline derived from implied bookmaker odds, normalized to sum to 1.0. This acceptance covers metric categories only, not thresholds or production gates.
 
 ### Risks
 * Tournaments with a small number of total matches, like the World Cup, have high statistical variance which can skew calibration evaluation.
@@ -125,7 +136,7 @@ To evaluate probabilistic predictions, traditional classification metrics like r
 
 ## ADR-0039: Provider Adapter Contract & Data Validation Schema
 
-* **Status**: Candidate
+* **Status**: Accepted
 * **Date**: 2026-06-28
 
 ### Problem
@@ -135,8 +146,8 @@ API responses from third-party sports providers are external to our codebase and
 * **Option A**: Accept and store raw payloads directly in the database, deferring data validation to the prediction runtime.
 * **Option B**: Enforce strict data validation schemas at the provider adapter parser boundary.
 
-### Recommended Direction
-**Option B**. Define and enforce Zod validation schemas in `packages/shared/src/contracts` at the parser boundary. The adapter must validate incoming payloads and filter out corrupt or anomalous records (e.g., decimal odds less than or equal to 1.0, negative match goals, or missing timestamps) before normalization. The parser should throw structured validation errors for corrupt payloads while logging issues.
+### Accepted Direction
+**Option B**. Define runtime validation schemas at the parser boundary. Zod remains a reasonable candidate, but dependency installation is not approved by this ADR. The adapter must validate incoming payloads and filter out corrupt or anomalous records before normalization. The parser should throw structured validation errors for corrupt payloads while preserving evidence for review.
 
 ### Risks
 * Overly strict schemas might drop valid data during extreme market events or format updates.
@@ -154,7 +165,7 @@ API responses from third-party sports providers are external to our codebase and
 
 ## ADR-0040: Model-Readiness Gates & Deployment Governance
 
-* **Status**: Candidate
+* **Status**: Draft - Owner Review Required
 * **Date**: 2026-06-28
 
 ### Problem
@@ -165,10 +176,10 @@ To protect the integrity of recommendations, we must establish strict, objective
 * **Option B**: Enforce automated model-readiness verification gates based on out-of-sample Test Set performance.
 
 ### Recommended Direction
-**Option B**. A candidate model must pass three automated gates on an out-of-sample test set before it can be marked as ready for recommendation usage:
-1. **Accuracy/Error Gate**: The model's Brier score must be at least 1% lower (indicating higher precision) than the bookmaker odds baseline.
-2. **Data Sufficiency Gate**: The model must be tested and evaluated on at least 100 historical out-of-sample fixtures.
-3. **Calibration Gate**: The model's Expected Calibration Error (ECE) must be strictly under 5%.
+**Option B**. A candidate model must pass owner-approved automated gates on an out-of-sample test set before it can be marked as ready for recommendation usage. Candidate thresholds for owner review:
+1. **Accuracy/Error Gate**: The model's Brier score should be at least 1% lower than the bookmaker odds baseline.
+2. **Data Sufficiency Gate**: The model should be tested and evaluated on at least 100 historical out-of-sample fixtures.
+3. **Calibration Gate**: The model's Expected Calibration Error (ECE) should be strictly under 5%.
 
 ### Risks
 * Strict gates might slow down the development lifecycle if initial model architectures struggle to beat the bookmaker baseline.
@@ -177,6 +188,7 @@ To protect the integrity of recommendations, we must establish strict, objective
 ### Open Questions
 * Who has the authority to approve promoting a model to production if it passes all automated gates?
 * Should we track separate calibration gates for different market types (e.g., 1X2 vs Over/Under)?
+* Should the proposed 1% Brier improvement, 100-match sample, and ECE < 5% thresholds be accepted, revised, or kept as draft-only R&D gates?
 
 ### What It Must Not Decide Yet
 * The production model hosting platform (e.g., Hugging Face, local model registry).

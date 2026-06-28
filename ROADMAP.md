@@ -70,13 +70,15 @@ Outlines high-level roadmap milestones across multiple phases.
 
 ### Milestone 8: Real Data Provider, Dataset, and Evaluation Planning (Completed)
 - Plan real data provider selection and dataset boundaries.
-- Use full FIFA World Cup fixture coverage as the first provider target if accepted, while keeping the ingestion adapter competition-agnostic.
+- Use full FIFA World Cup fixture coverage as the first provider target while keeping the ingestion adapter competition-agnostic.
 - Define model evaluation criteria before any real training.
-- Keep provider choice, datasets, and evaluation gates under owner-approved ADRs.
+- Accept ADR-0035 through ADR-0040 as Phase 7 planning boundaries only.
 
-### Milestone 9: Model Training and Prediction Engine R&D (Future)
-- Begin real model training research only after Phase 7 planning is accepted.
-- Draft prediction algorithm and model runtime ADRs before implementation.
+### Milestone 9: Model Training and Prediction Engine R&D (Active)
+- Split Phase 8 into owner-only R&D subphases before training implementation.
+- Build reproducible offline datasets, leakage-safe feature specs, chronological evaluation, and baseline reports before selecting any model.
+- Compare simple baselines, Elo/Poisson-style models, calibrated logistic regression, LightGBM, CatBoost, and XGBoost before model selection.
+- Draft a model-selection ADR before any runtime packaging such as ONNX.
 - Keep betting recommendation and stake advice separate from prediction model R&D.
 
 ## TODO / Next Steps
@@ -124,3 +126,11 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Start `phase:code-slice Phase 6 type-safety audit gate`.
 - [x] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
 - [x] Keep real AI training out of Phase 6; reserve it for future Phase 7 and Phase 8 planning.
+- [x] Open Phase 7 planning and draft candidate ADRs.
+- [x] Split Phase 7 ADR candidates into standalone draft ADR files and record draft review.
+- [x] Accept ADR-0036, ADR-0037, ADR-0038, and ADR-0039 as Phase 7 planning boundaries only.
+- [x] Complete owner review for ADR-0035 provider strategy, starting with owner-only free-tier usage.
+- [x] Complete owner review for ADR-0040 model-readiness gates before Phase 8 model R&D.
+- [x] Complete Phase 7 after owner-approved ADRs exist.
+- [x] Create Phase 8 Owner-Only Model R&D plan and split Phase 8 into smaller gated subphases.
+- [ ] Owner review Phase 8.0 R&D boundary split before Phase 8.1 implementation planning.

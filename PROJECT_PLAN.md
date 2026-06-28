@@ -63,9 +63,9 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Status**: Completed.
 
 ### Phase 8: Model Training and Prediction Engine R&D
-- **Goal**: Research and prototype real model training and prediction engine approaches only after Phase 7 planning is accepted.
-- **Deliverables**: Owner-approved R&D plans, model experiment boundaries, evaluation reports, and prediction algorithm ADRs.
-- **Status**: Future.
+- **Goal**: Research and prototype owner-only, free-tier model training approaches through reproducible datasets, leakage-safe feature specs, chronological evaluation, and model comparison reports before any real inference runtime is selected.
+- **Deliverables**: Phase 8 owner-only R&D subphase plan, dataset snapshot/provenance plan, feature spec and leakage audit plan, evaluation harness and baseline reports, candidate model bake-off report, owner-approved model-selection ADR, and optional runtime packaging plan only if evidence justifies it.
+- **Status**: Active.
 
 ## TODO / Next Steps
 - [x] Review Phase 1 architecture planning package.
@@ -115,4 +115,17 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
 - [x] Keep real AI training out of Phase 6; plan it only through future Phase 7 and Phase 8 ADRs.
 - [x] Open Phase 7 planning and draft candidate ADRs.
-- [x] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning.
+- [x] Split Phase 7 ADR candidates into standalone draft ADR files and record draft review.
+- [x] Accept ADR-0036, ADR-0037, ADR-0038, and ADR-0039 as Phase 7 planning boundaries only.
+- [x] Complete owner review for ADR-0035 provider strategy, with owner-only free-tier provider confirmation before acceptance.
+- [x] Complete owner review for ADR-0040 model-readiness gates, with Phase 8 evidence or narrower owner-only R&D report authority before acceptance.
+- [x] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning only after owner-approved ADRs exist.
+- [x] Create Phase 8 Owner-Only Model R&D plan and split Phase 8 into smaller gated subphases.
+- [ ] Owner review Phase 8.0 R&D boundary split before Phase 8.1 implementation planning.
+- [ ] Create `phase:implementation-plan Phase 8.1 Dataset Snapshot and Provenance`.
+- [ ] Complete Phase 8.1 reproducible offline dataset snapshot and data quality report.
+- [ ] Create and complete Phase 8.2 Feature Spec and Leakage Audit.
+- [ ] Create and complete Phase 8.3 Evaluation Harness and Baselines, including Brier, Calibration/ECE, log loss, sample count, and bookmaker/simple baseline comparison.
+- [ ] Create and complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.
+- [ ] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
+- [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
