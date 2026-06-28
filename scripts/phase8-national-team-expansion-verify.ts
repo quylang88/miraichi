@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { loadEvaluationDatasets } from '../apps/local-ai/src/evaluation/evaluation-dataset.js';
+import { loadEvaluationDataset } from '../apps/local-ai/src/evaluation/evaluation-dataset.js';
 
 export const MIN_TEST_SAMPLE_COUNT = 100;
 export const MIN_ENABLED_COMPETITIONS = 2;
@@ -13,6 +13,20 @@ type RegistryCompetition = {
   provider_status: 'supported' | 'unsupported';
   enabled: boolean;
 };
+
+type QualityReport = {
+  rejectedCount: number;
+  warnings: string[];
+};
+
+function readQualityReport(processedDir: string): QualityReport | null {
+  const qualityReportPath = path.join(processedDir, 'quality_report.json');
+  if (!fs.existsSync(qualityReportPath)) {
+    return null;
+  }
+
+  return JSON.parse(fs.readFileSync(qualityReportPath, 'utf8')) as QualityReport;
+}
 
 export function generateExpansionReport(rootDir: string) {
   const registryPath = path.join(rootDir, 'apps/local-ai/config/competition-registry.json');
@@ -30,14 +44,49 @@ export function generateExpansionReport(rootDir: string) {
     path.join(processedRoot, competition.competition_id)
   );
   const missingProcessedDirs = processedDirs.filter((processedDir) => !fs.existsSync(processedDir));
-
-  const dataset = missingProcessedDirs.length === 0
-    ? loadEvaluationDatasets(processedDirs)
-    : null;
-
-  const totalTestCount = dataset ? dataset.test.length : 0;
-  const phase84DataReady = missingProcessedDirs.length === 0 && totalTestCount >= MIN_TEST_SAMPLE_COUNT;
   const warnings = [];
+  const loadedDatasets = [];
+
+  for (const competition of enabledCompetitions) {
+    const processedDir = path.join(processedRoot, competition.competition_id);
+    if (!fs.existsSync(processedDir)) {
+      continue;
+    }
+
+    const dataset = loadEvaluationDataset(processedDir);
+    loadedDatasets.push(dataset);
+
+    if (dataset.train.length === 0) {
+      warnings.push(`${competition.competition_id} train split has 0 scored fixtures.`);
+    }
+
+    if (dataset.validation.length === 0) {
+      warnings.push(`${competition.competition_id} validation split has 0 scored fixtures.`);
+    }
+
+    if (dataset.test.length === 0) {
+      warnings.push(`${competition.competition_id} test split has 0 scored fixtures.`);
+    }
+
+    const qualityReport = readQualityReport(processedDir);
+    if (!qualityReport) {
+      warnings.push(`${competition.competition_id} quality report is missing.`);
+      continue;
+    }
+
+    if (qualityReport.rejectedCount > 0) {
+      warnings.push(`${competition.competition_id} quality report has ${qualityReport.rejectedCount} rejected records.`);
+    }
+
+    if (qualityReport.warnings.length > 0) {
+      const label = qualityReport.warnings.length === 1 ? 'warning' : 'warnings';
+      warnings.push(`${competition.competition_id} quality report has ${qualityReport.warnings.length} ${label}.`);
+    }
+  }
+
+  const totalTrainCount = loadedDatasets.reduce((sum, dataset) => sum + dataset.train.length, 0);
+  const totalValidationCount = loadedDatasets.reduce((sum, dataset) => sum + dataset.validation.length, 0);
+  const totalTestCount = loadedDatasets.reduce((sum, dataset) => sum + dataset.test.length, 0);
 
   if (enabledCompetitions.length < MIN_ENABLED_COMPETITIONS) {
     warnings.push('Fewer than two enabled national-team competitions are available.');
@@ -51,13 +100,19 @@ export function generateExpansionReport(rootDir: string) {
     warnings.push(`Aggregate national-team test sample count is below ${MIN_TEST_SAMPLE_COUNT}; Phase 8.4 remains blocked for meaningful model comparison.`);
   }
 
+  const phase84DataReady =
+    missingProcessedDirs.length === 0 &&
+    enabledCompetitions.length >= MIN_ENABLED_COMPETITIONS &&
+    totalTestCount >= MIN_TEST_SAMPLE_COUNT &&
+    warnings.length === 0;
+
   const report = {
     reportId: 'phase-8-3a-national-team-dataset-expansion',
     phase: '8.3A',
     status: phase84DataReady ? 'pass' : 'blocked_for_phase_8_4',
     enabledCompetitionIds: enabledCompetitions.map((competition) => competition.competition_id),
-    totalTrainCount: dataset ? dataset.train.length : 0,
-    totalValidationCount: dataset ? dataset.validation.length : 0,
+    totalTrainCount,
+    totalValidationCount,
     totalTestCount,
     missingProcessedDirs,
     phase84DataReady,

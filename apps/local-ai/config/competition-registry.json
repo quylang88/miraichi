@@ -15,9 +15,9 @@
     {
       "competition_id": "comp-int-euro",
       "soccerdata_league": "INT-European Championship",
-      "seasons": [2016, 2021, 2024],
+      "seasons": [2016, 2020, 2024],
       "train_split": [2016],
-      "val_split": [2021],
+      "val_split": [2020],
       "test_split": [2024],
       "competition_type": "national_team",
       "provider_status": "supported",
@@ -36,4 +36,3 @@
     }
   ]
 }
-

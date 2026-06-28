@@ -1,15 +1,23 @@
 {
-  "reportId": "phase-8-3-evaluation-harness-comp-int-world-cup",
+  "reportId": "phase-8-3-evaluation-harness-aggregate-national-team",
   "phase": "8.3",
   "status": "pass",
-  "datasetId": "dataset-comp-int-world-cup-2026-06-28",
-  "competitionId": "comp-int-world-cup",
+  "datasetId": "dataset-national-team-aggregate-comp-int-world-cup__comp-int-euro",
+  "datasetIds": [
+    "dataset-comp-int-world-cup-2026-06-28",
+    "dataset-comp-int-euro-2026-06-28"
+  ],
+  "competitionId": "aggregate-national-team",
+  "competitionIds": [
+    "comp-int-world-cup",
+    "comp-int-euro"
+  ],
   "featureSpecVersion": "feature-spec-v0.1.0",
   "evaluationSplit": "test",
   "sampleCount": 107,
   "trainSampleCount": 108,
-  "validationSampleCount": 60,
-  "skippedRecordCount": 19,
+  "validationSampleCount": 107,
+  "skippedRecordCount": 23,
   "missingBookmakerBaselineCount": 107,
   "baselines": [
     {
@@ -225,9 +233,7 @@
       }
     }
   ],
-  "warnings": [
-    "World Cup-only evaluation must not be treated as statistically strong until related national-team competitions are added."
-  ],
+  "warnings": [],
   "nonBlockingGates": {
     "sampleCountAtLeast100": true,
     "bookmakerBaselineAvailable": false

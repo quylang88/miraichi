@@ -172,4 +172,39 @@ describe('Phase 8.3 evaluation report', () => {
     expect(markdown).toContain('- `pnpm run verify:local`: Required external verification');
     expect(markdown).toContain('- `pnpm run test:integration`: Required external verification');
   });
+
+  it('reports aggregate national-team provenance without World Cup-only warnings', () => {
+    const aggregateDataset = {
+      ...dataset,
+      metadata: {
+        ...dataset.metadata,
+        datasetId: 'dataset-national-team-aggregate-comp-int-world-cup__comp-int-euro',
+        competitionId: 'aggregate-national-team',
+        trainCount: 3,
+        valCount: 1,
+        testCount: 100
+      },
+      competitionId: 'aggregate-national-team',
+      competitionIds: ['comp-int-world-cup', 'comp-int-euro'],
+      test: Array.from({ length: 100 }, (_, index) => ({
+        matchId: `match-test-${index}`,
+        split: 'test' as const,
+        competitionId: index < 50 ? 'comp-int-world-cup' : 'comp-int-euro',
+        kickoffTime: '2024-06-10T20:00:00Z',
+        actualOutcome: 'home' as const
+      }))
+    };
+
+    const report = buildEvaluationReport(aggregateDataset, { eceBinCount: 5 });
+    const markdown = generateReportMarkdown(report);
+
+    expect(report.reportId).toBe('phase-8-3-evaluation-harness-aggregate-national-team');
+    expect(report.competitionId).toBe('aggregate-national-team');
+    expect(report.competitionIds).toEqual(['comp-int-world-cup', 'comp-int-euro']);
+    expect(report.warnings).not.toContain(
+      'World Cup-only evaluation must not be treated as statistically strong until related national-team competitions are added.'
+    );
+    expect(markdown).toContain('- Competitions: `comp-int-world-cup`, `comp-int-euro`');
+    expect(markdown).not.toContain('World Cup-only snapshot is too small');
+  });
 });

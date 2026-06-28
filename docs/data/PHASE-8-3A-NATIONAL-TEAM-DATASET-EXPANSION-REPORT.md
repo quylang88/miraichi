@@ -8,7 +8,7 @@
 ## Evidence
 - Enabled national-team competitions: `comp-int-world-cup`, `comp-int-euro`
 - Total train count: 108
-- Total validation count: 60
+- Total validation count: 107
 - Total test count: 107
 - Phase 8.4 data ready: yes
 

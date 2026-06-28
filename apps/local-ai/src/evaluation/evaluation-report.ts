@@ -30,7 +30,9 @@ export type EvaluationReport = {
   phase: '8.3';
   status: 'pass' | 'fail';
   datasetId: string;
+  datasetIds: string[];
   competitionId: string;
+  competitionIds: string[];
   featureSpecVersion: string;
   evaluationSplit: 'test';
   sampleCount: number;
@@ -129,6 +131,8 @@ export function buildEvaluationReport(
 ): EvaluationReport {
   const eceBinCount = options.eceBinCount ?? 10;
   const evaluationFixtures = dataset.test;
+  const competitionIds = dataset.competitionIds ?? [dataset.competitionId];
+  const datasetIds = dataset.datasetIds ?? [dataset.metadata.datasetId];
   const warnings: string[] = [];
 
   if (evaluationFixtures.length === 0) {
@@ -141,7 +145,7 @@ export function buildEvaluationReport(
     );
   }
 
-  if (dataset.competitionId === 'comp-int-world-cup') {
+  if (competitionIds.length === 1 && competitionIds[0] === 'comp-int-world-cup') {
     warnings.push(
       'World Cup-only evaluation must not be treated as statistically strong until related national-team competitions are added.'
     );
@@ -163,7 +167,9 @@ export function buildEvaluationReport(
     phase: '8.3',
     status: 'pass',
     datasetId: dataset.metadata.datasetId,
+    datasetIds,
     competitionId: dataset.competitionId,
+    competitionIds,
     featureSpecVersion: dataset.metadata.featureSpecVersion,
     evaluationSplit: 'test',
     sampleCount: evaluationFixtures.length,
@@ -187,6 +193,14 @@ export function buildEvaluationReport(
 
 export function generateReportMarkdown(report: EvaluationReport): string {
   const dateStr = '2026-06-28'; // static or dynamically calculated, static 2026-06-28 is fine.
+  const isWorldCupOnly = report.competitionIds.length === 1 && report.competitionIds[0] === 'comp-int-world-cup';
+  const directConclusion = isWorldCupOnly
+    ? 'Phase 8.3 can generate baseline metrics, but the current World Cup-only snapshot is too small for model-readiness or calibration confidence.'
+    : 'Phase 8.3 can generate aggregate national-team baseline metrics across provider-confirmed competitions; this is still owner-only R&D evidence, not model-selection approval.';
+  const recommendation = isWorldCupOnly
+    ? 'Do not start Phase 8.4 candidate model bake-off until related national-team competitions are added or the owner accepts that Phase 8.4 will run as a high-variance experiment only.'
+    : 'Phase 8.4 may proceed only as a gated candidate model bake-off plan; do not treat baseline or candidate results as model-selection approval without the later ADR.';
+
   return `# Phase 8.3 Evaluation Harness and Baselines Report
 
 ## Status
@@ -195,11 +209,12 @@ export function generateReportMarkdown(report: EvaluationReport): string {
 - **Scope**: Owner-only World Cup/national-team-first evaluation harness and baseline report.
 
 ## Direct Conclusion
-Phase 8.3 can generate baseline metrics, but the current World Cup-only snapshot is too small for model-readiness or calibration confidence.
+${directConclusion}
 
 ## Evidence
 - Dataset: \`${report.datasetId}\`
 - Competition: \`${report.competitionId}\`
+- Competitions: ${report.competitionIds.map((competitionId) => `\`${competitionId}\``).join(', ')}
 - Feature spec version: \`${report.featureSpecVersion}\`
 - Evaluation split: \`${report.evaluationSplit}\`
 - Test sample count: ${report.sampleCount}
@@ -225,7 +240,7 @@ ${report.warnings.map((warning) => `- ${warning}`).join('\n')}
 - No club competition expansion.
 
 ## Recommendation
-Do not start Phase 8.4 candidate model bake-off until related national-team competitions are added or the owner accepts that Phase 8.4 will run as a high-variance experiment only.
+${recommendation}
 
 ## Verification
 - \`pnpm --filter local-ai test\`: Run separately
