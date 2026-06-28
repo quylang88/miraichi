@@ -3,6 +3,7 @@ import {
   brierScore,
   expectedCalibrationError,
   logLoss,
+  classAccuracy,
   type EvaluationSample
 } from './evaluation-metrics.js';
 
@@ -57,5 +58,21 @@ describe('Phase 8.3 pure TypeScript evaluation metrics', () => {
         }
       ])
     ).toThrow('Predicted probabilities must sum to 1.');
+  });
+
+  it('calculates class accuracy from argmax probability predictions', () => {
+    expect(classAccuracy(samples)).toBeCloseTo(1, 10);
+    expect(
+      classAccuracy([
+        {
+          actualOutcome: 'home',
+          probabilities: { home: 0.2, draw: 0.7, away: 0.1 }
+        },
+        {
+          actualOutcome: 'away',
+          probabilities: { home: 0.1, draw: 0.2, away: 0.7 }
+        }
+      ])
+    ).toBeCloseTo(0.5, 10);
   });
 });

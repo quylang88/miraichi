@@ -32,7 +32,9 @@ const RULES = [
       'apps/local-ai/src/features/leakage-audit.ts',
       'apps/local-ai/src/features/leakage-audit.test.ts',
       'apps/local-ai/src/features/feature-audit-report.ts',
-      'apps/local-ai/src/features/feature-audit-report.test.ts'
+      'apps/local-ai/src/features/feature-audit-report.test.ts',
+      'apps/local-ai/src/evaluation/evaluation-dataset.ts',
+      'apps/local-ai/src/evaluation/evaluation-dataset.test.ts'
     ]
   },
   {

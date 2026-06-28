@@ -165,3 +165,13 @@ export function expectedCalibrationError(
     bins
   };
 }
+
+export function classAccuracy(samples: readonly EvaluationSample[]): number {
+  assertValidSamples(samples);
+
+  const correctCount = samples.reduce((count, sample) => {
+    return count + (predictedOutcome(sample.probabilities) === sample.actualOutcome ? 1 : 0);
+  }, 0);
+
+  return correctCount / samples.length;
+}

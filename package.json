@@ -34,6 +34,7 @@
     "phase4:verify": "tsx scripts/phase4-verify.ts",
     "phase4:integration": "tsx scripts/phase4-integration-verify.ts",
     "phase8:feature-audit": "tsx scripts/phase8-feature-leakage-verify.ts",
+    "phase8:evaluation-harness": "tsx scripts/phase8-evaluation-harness-verify.ts",
     "pwa:verify": "tsx scripts/pwa-verify.ts",
     "typecheck": "tsc -p tsconfig.base.json --noEmit"
   },
