@@ -19,6 +19,15 @@ As of this opening report, the new Phase 7 planning documents have been outlined
 - **Phase 7 Planning Documents**:
   - [phase-7-planning.md](file:///c:/CODE/miraichi/docs/data/phase-7-planning.md) (Status: Draft - Owner Review Required)
   - [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md) (Status: Candidate)
+  - [ADR-DRAFT-REVIEW-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-DRAFT-REVIEW-PHASE-7.md) (Status: Draft Review - Owner Review Required)
+
+- **Standalone Draft ADR Files**:
+  - [ADR-0035-real-data-provider-selection-and-integration-strategy-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0035-real-data-provider-selection-and-integration-strategy-draft.md)
+  - [ADR-0036-world-cup-fixture-coverage-competition-agnostic-adapter-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0036-world-cup-fixture-coverage-competition-agnostic-adapter-draft.md)
+  - [ADR-0037-dataset-boundaries-and-schema-for-prediction-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0037-dataset-boundaries-and-schema-for-prediction-draft.md)
+  - [ADR-0038-prediction-evaluation-criteria-and-metrics-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0038-prediction-evaluation-criteria-and-metrics-draft.md)
+  - [ADR-0039-provider-adapter-contract-and-data-validation-schema-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0039-provider-adapter-contract-and-data-validation-schema-draft.md)
+  - [ADR-0040-model-readiness-gates-and-deployment-governance-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0040-model-readiness-gates-and-deployment-governance-draft.md)
 
 
 ---

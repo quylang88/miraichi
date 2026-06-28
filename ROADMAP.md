@@ -125,5 +125,6 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
 - [x] Keep real AI training out of Phase 6; reserve it for future Phase 7 and Phase 8 planning.
 - [x] Open Phase 7 planning and draft candidate ADRs.
+- [x] Split Phase 7 ADR candidates into standalone draft ADR files and record draft review.
 - [ ] Owner review Phase 7 planning package and ADR candidates before acceptance.
 - [ ] Complete Phase 7 only after owner-approved ADRs exist.

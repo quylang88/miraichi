@@ -2,6 +2,14 @@
 
 This document compiles the candidate Architectural Decision Records (ADRs) for Phase 7 (Real Data Provider, Dataset, and Evaluation Planning). These candidates must be reviewed, finalized, and approved before implementing live data feed pollers, dataset generation pipelines, or evaluation frameworks.
 
+Standalone draft files have been created for owner review:
+* [ADR-0035-real-data-provider-selection-and-integration-strategy-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0035-real-data-provider-selection-and-integration-strategy-draft.md)
+* [ADR-0036-world-cup-fixture-coverage-competition-agnostic-adapter-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0036-world-cup-fixture-coverage-competition-agnostic-adapter-draft.md)
+* [ADR-0037-dataset-boundaries-and-schema-for-prediction-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0037-dataset-boundaries-and-schema-for-prediction-draft.md)
+* [ADR-0038-prediction-evaluation-criteria-and-metrics-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0038-prediction-evaluation-criteria-and-metrics-draft.md)
+* [ADR-0039-provider-adapter-contract-and-data-validation-schema-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0039-provider-adapter-contract-and-data-validation-schema-draft.md)
+* [ADR-0040-model-readiness-gates-and-deployment-governance-draft.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0040-model-readiness-gates-and-deployment-governance-draft.md)
+
 ---
 
 ## ADR-0035: Real Data Provider Selection and Integration Strategy

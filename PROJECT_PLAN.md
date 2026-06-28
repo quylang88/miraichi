@@ -115,5 +115,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
 - [x] Keep real AI training out of Phase 6; plan it only through future Phase 7 and Phase 8 ADRs.
 - [x] Open Phase 7 planning and draft candidate ADRs.
+- [x] Split Phase 7 ADR candidates into standalone draft ADR files and record draft review.
 - [ ] Owner review Phase 7 planning package and ADR candidates before acceptance.
 - [ ] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning only after owner-approved ADRs exist.
