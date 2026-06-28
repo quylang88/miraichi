@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { THEME, renderButton, renderCard } from './primitives.js';
+import { THEME, createBadge, createCard } from './primitives.js';
 
 describe('ui primitives', () => {
-  it('renders buttons with stable Miraichi classes and attributes', () => {
-    expect(renderButton('Save', 'save-button', 'primary')).toBe(
+  it('renders badges with stable Miraichi classes and attributes', () => {
+    expect(createBadge('Save', 'save-button', 'primary')).toBe(
       '<button id="save-button" class="miraichi-btn primary">Save</button>'
     );
   });
 
   it('renders cards with title and body slots', () => {
-    const html = renderCard('Title', '<p>Body</p>', 'compact');
+    const html = createCard('Title', '<p>Body</p>', 'compact');
 
     expect(html).toContain('miraichi-card compact');
     expect(html).toContain('<h3 class="miraichi-card-title">Title</h3>');

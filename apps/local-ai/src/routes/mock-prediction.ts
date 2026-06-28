@@ -7,7 +7,7 @@
 import { runMockPrediction } from '../engines/mock-prediction-engine.js';
 import { mockInputCandidate } from '../input/mock-input-candidate.js';
 
-export function handleMockPredict(req, res) {
+export function handleMockPredict(req: import('http').IncomingMessage, res: import('http').ServerResponse) {
   if (req.method !== 'POST') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Method Not Allowed' }));
@@ -15,7 +15,7 @@ export function handleMockPredict(req, res) {
   }
 
   let body = '';
-  req.on('data', chunk => {
+  req.on('data', (chunk: unknown) => {
     body += chunk;
   });
 
@@ -35,8 +35,9 @@ export function handleMockPredict(req, res) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(predictionEnvelope));
     } catch (err) {
+      const errMessage = err instanceof Error ? err.message : String(err);
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message || 'Invalid JSON request body' }));
+      res.end(JSON.stringify({ error: errMessage || 'Invalid JSON request body' }));
     }
   });
 }

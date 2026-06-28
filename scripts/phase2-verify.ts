@@ -4,7 +4,7 @@ console.log('[Phase 2 Verify] Running automated scope enforcement test suite...'
 
 let failed = false;
 
-function assert(condition, message) {
+function assert(condition: boolean, message: string) {
   if (!condition) {
     console.error(`  ❌ FAIL: ${message}`);
     failed = true;
@@ -19,26 +19,26 @@ try {
   const valid = validateConfig({ competitionId: 'comp_1', seasonId: '2026' });
   assert(valid === true, 'validateConfig accepts valid configuration keys');
 } catch (err) {
-  assert(false, `validateConfig rejected valid configuration: ${err.message}`);
+  assert(false, `validateConfig rejected valid configuration: ${err instanceof Error ? err.message : String(err)}`);
 }
 
 try {
   validateConfig({ competitionId: 'comp_1', name: 'World Cup Tournament' });
   assert(false, 'validateConfig should reject hardcoded "World Cup" tournament references');
 } catch (err) {
-  assert(err.message.includes('strictly forbidden'), 'validateConfig successfully rejects "World Cup" keyword');
+  assert((err instanceof Error ? err.message : String(err)).includes('strictly forbidden'), 'validateConfig successfully rejects "World Cup" keyword');
 }
 
 try {
   validateConfig({ competitionId: 'comp_1', invalidField: 'hack' });
   assert(false, 'validateConfig should reject unapproved/invalid config keys');
 } catch (err) {
-  assert(err.message.includes('Invalid configuration key'), 'validateConfig successfully rejects invalid key "invalidField"');
+  assert((err instanceof Error ? err.message : String(err)).includes('Invalid configuration key'), 'validateConfig successfully rejects invalid key "invalidField"');
 }
 
 // 2. Chatbot Refusal Checks (ADR-0007 Rule Compliance)
 console.log('\n--- 2. Testing Chatbot Sports Refusal Bounds ---');
-const checkSportsQuery = (msg) => /predict|win|team|score|match|odds|play|ratio|history|average|stats/i.test(msg);
+const checkSportsQuery = (msg: string) => /predict|win|team|score|match|odds|play|ratio|history|average|stats/i.test(msg);
 
 assert(checkSportsQuery('Why does the model predict Team A win?') === true, 'Approved sports queries match query pattern');
 assert(checkSportsQuery('What is the recipe for cheese pizza?') === false, 'Non-sports queries are marked as out-of-scope (pizza)');

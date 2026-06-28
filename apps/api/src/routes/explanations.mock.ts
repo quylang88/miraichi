@@ -6,7 +6,7 @@ const LOCAL_AI_URL = 'http://localhost:3002';
  * Handles POST /api/v1/chat.
  * Proxies to local-ai /ai/v1/explain, or returns mock/refusal payload.
  */
-export async function handleExplanations(req, res) {
+export async function handleExplanations(req: import('http').IncomingMessage, res: import('http').ServerResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -24,14 +24,15 @@ export async function handleExplanations(req, res) {
   }
 
   let body = '';
-  req.on('data', chunk => {
+  req.on('data', (chunk: unknown) => {
     body += chunk;
   });
 
   req.on('end', async () => {
     try {
-      const payload = JSON.parse(body);
-      const { predictionId, message } = payload;
+      const payload = JSON.parse(body) as Record<string, unknown>;
+      const predictionId = payload['predictionId'] as string | undefined;
+      const message = payload['message'] as string | undefined;
 
       if (!predictionId || !message) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -56,7 +57,8 @@ export async function handleExplanations(req, res) {
         }
         throw new Error(`local-ai service returned status ${aiRes.status}`);
       } catch (err) {
-        console.warn(`[API Gateway] Downstream local-ai explanation request failed (${err.message}). Using fallback.`);
+        const errMessage = err instanceof Error ? err.message : String(err);
+        console.warn(`[API Gateway] Downstream local-ai explanation request failed (${errMessage}). Using fallback.`);
 
         // Rule Check: Refuse non-sports questions (ADR-0007)
         const isSportsQuery = /predict|win|team|score|match|odds|play|ratio|history|average|stats/i.test(message);
@@ -74,7 +76,7 @@ export async function handleExplanations(req, res) {
             }
           };
         } else {
-          responsePayload = MOCK_EXPLANATIONS[predictionId] || {
+          responsePayload = MOCK_EXPLANATIONS[predictionId as keyof typeof MOCK_EXPLANATIONS] || {
             predictionId,
             reply: "Based on the mock historical trace, the model favors Team A due to their higher average home scoring rate (2.1 vs 1.2) and a strong head-to-head record.",
             trace: {

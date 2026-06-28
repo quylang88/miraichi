@@ -40,4 +40,7 @@ describe('mock prediction engine', () => {
       /Invalid input candidate/
     );
   });
+  it('rejects non-object input candidates without using loose any payloads', () => {
+    expect(() => runMockPrediction(null)).toThrow('Input candidate must be a non-null object.');
+  });
 });

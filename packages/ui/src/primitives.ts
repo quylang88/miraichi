@@ -23,7 +23,7 @@ export const THEME = {
  * @param {string} className
  * @returns {string} HTML string
  */
-export function renderButton(label, id = '', className = '') {
+export function createBadge(label: string, id: string = '', className: string = '') {
   return `<button id="${id}" class="miraichi-btn ${className}">${label}</button>`;
 }
 
@@ -31,11 +31,11 @@ export function renderButton(label, id = '', className = '') {
  * Creates a styled card HTML string.
  *
  * @param {string} title
- * @param {string} content
+ * @param {string|HTMLElement} content
  * @param {string} className
  * @returns {string} HTML string
  */
-export function renderCard(title, content, className = '') {
+export function createCard(title: string, content: string | HTMLElement, className: string = '') {
   return `
     <div class="miraichi-card ${className}">
       <h3 class="miraichi-card-title">${title}</h3>

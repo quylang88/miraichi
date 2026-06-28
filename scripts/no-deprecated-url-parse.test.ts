@@ -6,7 +6,7 @@ const SCANNED_DIRS = ['apps', 'packages', 'scripts'];
 
 describe('deprecated URL parsing guard', () => {
   it('does not use url.parse in application or verification code', () => {
-    const offenders = [];
+    const offenders: string[] = [];
     const deprecatedPattern = ['url', 'parse('].join('.');
 
     for (const dir of SCANNED_DIRS) {
@@ -17,7 +17,7 @@ describe('deprecated URL parsing guard', () => {
   });
 });
 
-function scanJavaScriptFiles(dirPath, offenders, deprecatedPattern) {
+function scanJavaScriptFiles(dirPath: string, offenders: string[], deprecatedPattern: string) {
   for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
     if (entry.name === 'node_modules' || entry.name === 'coverage') continue;
 

@@ -5,7 +5,7 @@ import { sendChatQuery } from '../mock-client.js';
  *
  * @param {HTMLElement} container
  */
-export function renderExplanationView(container) {
+export function renderExplanationView(container: HTMLElement) {
   container.innerHTML = `
     <h2>AI Prediction Explanations</h2>
     <p style="color: var(--miraichi-text-muted);">Ask the statistical assistant to explain confidence results. (ADR-0007 Refusal Rule applies).</p>
@@ -28,15 +28,15 @@ export function renderExplanationView(container) {
     <div id="chat-response-container" style="margin-top: 1.5rem;"></div>
   `;
   
-  const submitBtn = container.querySelector('#chat-submit-btn');
-  submitBtn.addEventListener('click', async () => {
-    const predId = container.querySelector('#chat-pred-id').value;
-    const message = container.querySelector('#chat-message').value;
+  const submitBtn = container.querySelector('#chat-submit-btn') as HTMLButtonElement | null;
+  submitBtn?.addEventListener('click', async () => {
+    const predId = (container.querySelector('#chat-pred-id') as HTMLInputElement | null)?.value || '';
+    const message = (container.querySelector('#chat-message') as HTMLInputElement | null)?.value || '';
     const responseContainer = container.querySelector('#chat-response-container');
     
     if (!message.trim()) return;
     
-    responseContainer.innerHTML = '<div style="color: var(--miraichi-primary); padding: 1rem;">Generating response...</div>';
+    if (responseContainer) responseContainer.innerHTML = '<div style="color: var(--miraichi-primary); padding: 1rem;">Generating response...</div>';
     
     try {
       const response = await sendChatQuery(predId, message);
@@ -44,7 +44,7 @@ export function renderExplanationView(container) {
       const isRefused = response.trace && response.trace.refusalCheck && !response.trace.refusalCheck.passed;
       const borderClr = isRefused ? 'var(--miraichi-danger)' : 'var(--miraichi-accent)';
       
-      responseContainer.innerHTML = `
+      if (responseContainer) responseContainer.innerHTML = `
         <div class="miraichi-card" style="border-left: 4px solid ${borderClr};">
           <h3 class="miraichi-card-title">${isRefused ? 'Refusal Notice (Safety Out-of-Scope)' : 'Assistant Reply'}</h3>
           <div class="miraichi-card-body">
@@ -57,7 +57,7 @@ export function renderExplanationView(container) {
         </div>
       `;
     } catch (err) {
-      responseContainer.innerHTML = `<div style="color: var(--miraichi-danger); padding: 1rem;">Error communicating with AI: ${err.message}</div>`;
+      if (responseContainer) responseContainer.innerHTML = `<div style="color: var(--miraichi-danger); padding: 1rem;">Error communicating with AI: ${err instanceof Error ? err.message : String(err)}</div>`;
     }
   });
 }

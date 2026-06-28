@@ -2,6 +2,25 @@
  * Ingestion Run Contract Object Schema.
  * Fully competition-agnostic. No business logic.
  */
+
+export type IngestionRunStatus = 'success' | 'partial_failure' | 'failed';
+
+export type IngestionRunMetrics = {
+  processedCount: number;
+  successCount: number;
+  skippedCount: number;
+};
+
+export type IngestionRun = {
+  id: string;
+  providerId: string;
+  status: IngestionRunStatus;
+  startTime: string;
+  endTime: string;
+  metrics: IngestionRunMetrics;
+  errorMessage?: string;
+};
+
 export const INGESTION_RUN_CONTRACT = {
   id: "string",         // Unique run tracker ID (e.g. run-alpha-001)
   providerId: "string", // Source provider ID (e.g. provider-mock-alpha)

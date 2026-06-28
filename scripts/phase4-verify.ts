@@ -111,7 +111,7 @@ async function verifyPhase4() {
   console.log('\n[Phase 4 Verify] Phase 4.3 Mock Prediction Scaffold verification tests PASSED successfully.');
 }
 
-async function scanDir(dirPath, keywords) {
+async function scanDir(dirPath: string, keywords: string[]) {
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
   for (const entry of entries) {

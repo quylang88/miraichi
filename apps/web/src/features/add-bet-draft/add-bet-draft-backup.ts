@@ -97,12 +97,18 @@ export function parseAddBetDraftBackup(rawBackupJson: string): ParseAddBetDraftB
     };
   }
 
+  const envelope: AddBetBackupEnvelope = {
+    schemaVersion: parsed.schemaVersion,
+    exportedAt: parsed.exportedAt,
+    sourceApp: parsed.sourceApp,
+    records: parsed.records,
+    ...(parsed.settings ? { settings: parsed.settings } : {}),
+    ...(parsed.drafts ? { drafts: parsed.drafts.map(cloneAddBetDraft) } : {})
+  };
+
   return {
     ok: true,
-    envelope: {
-      ...parsed,
-      drafts: parsed.drafts?.map(cloneAddBetDraft)
-    }
+    envelope
   };
 }
 

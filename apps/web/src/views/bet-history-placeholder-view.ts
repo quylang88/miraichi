@@ -5,7 +5,7 @@ import { getBetHistory } from '../mock-client.js';
  *
  * @param {HTMLElement} container
  */
-export async function renderBetHistoryPlaceholderView(container) {
+export async function renderBetHistoryPlaceholderView(container: HTMLElement) {
   container.innerHTML = `
     <h2>Betting History (Read-Only)</h2>
     <p style="color: var(--miraichi-text-muted);">Simulated placing logs (Option B Product Boundary). Live placing, bankroll allocation, and risk management are disabled.</p>
@@ -40,6 +40,6 @@ export async function renderBetHistoryPlaceholderView(container) {
     html += '</div>';
     container.innerHTML = html;
   } catch (err) {
-    container.innerHTML = `<div style="color: var(--miraichi-danger); padding: 1rem;">Failed to load bet history: ${err.message}</div>`;
+    container.innerHTML = `<div style="color: var(--miraichi-danger); padding: 1rem;">Failed to load bet history: ${err instanceof Error ? err.message : String(err)}</div>`;
   }
 }

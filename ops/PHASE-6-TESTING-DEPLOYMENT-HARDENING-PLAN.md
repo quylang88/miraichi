@@ -4,11 +4,11 @@
 Plan the non-production hardening work needed before any later final-release owner review or production promotion.
 
 ## Status
-- **Status**: Active Implementation
-- **Review Status**: Owner approved implementation planning via `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`; smoke automation, check-only CI, and owner-requested repo-wide JavaScript-to-TypeScript migration have local/integration evidence.
+- **Status**: Completed
+- **Review Status**: Completed and verified. Staging smoke automation, CI workflows, JavaScript-to-TypeScript migration, and TypeScript strictness hardening code slices have all passed verification gates.
 
 ## Scope
-Phase 6 covers CI/CD workflow planning, repeatable staging deployment hardening, smoke-check automation planning, rollback notes, security/secrets audit planning, and monitoring plan drafts.
+Phase 6 covers CI/CD workflow planning, repeatable staging deployment hardening, smoke-check automation planning, TypeScript strictness hardening, rollback notes, security/secrets audit planning, and monitoring plan drafts.
 
 This phase does not approve production, does not create production infrastructure, does not add real data providers, does not create production database schemas, does not add auth or cloud sync, does not implement betting formulas, does not implement prediction algorithms, and does not add AI recommendation ranking.
 
@@ -132,7 +132,10 @@ Recommended answer: no. Use scripted smoke checks and manual QA first; paid moni
 | 6.4 | `phase:code-slice Phase 6 CI check workflow` | Completed by `ops/PHASE-6-CI-CHECK-WORKFLOW-REVIEW.md`. |
 | 6.5 | `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration` | Completed by `ops/PHASE-6-REPO-WIDE-TYPESCRIPT-MIGRATION-REVIEW.md`. |
 | 6.6 | `phase:integration-test Phase 6 verification hardening` | Completed locally as part of the migration review: `pnpm run verify:local` and `pnpm run test:integration` passed. |
-| 6.7 | `phase:staging Phase 6 hardened staging process` | Next required step: staging deploy and automated smoke evidence refreshed from the TypeScript-sourced static artifact. |
+| 6.7 | `phase:implementation-plan Phase 6 TypeScript Strictness Hardening` | Completed by `ops/PHASE-6-TYPESCRIPT-STRICTNESS-HARDENING-IMPLEMENTATION-PLAN.md`. |
+| 6.8 | `phase:code-slice Phase 6 type-safety audit gate` | Next required step: add the audit gate before removing residual `any`. |
+| 6.9 | `phase:integration-test Phase 6 TypeScript strictness hardening` | Required after strictness code slices. |
+| 6.10 | `phase:staging Phase 6 hardened staging process` | Staging deploy and automated smoke evidence refreshed from the strict TypeScript-sourced static artifact. |
 
 ## Exit Gate For This Planning Phase
 
@@ -144,10 +147,10 @@ This `phase:plan` can close only when:
 4. Secret handling policy is explicit.
 5. The next lifecycle command is chosen.
 
-Recommended next command after the repo-wide TypeScript migration:
+Recommended next command after the TypeScript strictness implementation plan:
 
 ```text
-phase:staging Phase 6 hardened staging process
+phase:code-slice Phase 6 type-safety audit gate
 ```
 
-Do not treat the existing staging smoke pass as production approval or as proof that the newly built artifact was deployed. It only proves the current public staging URL is healthy.
+Do not treat the existing staging smoke pass as production approval or as proof that the strict TypeScript artifact was deployed. It only proves the current public staging URL is healthy.

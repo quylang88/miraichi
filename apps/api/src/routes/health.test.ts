@@ -6,12 +6,12 @@ function createMockResponse() {
     statusCode: undefined as number | undefined,
     headers: undefined as Record<string, string> | undefined,
     body: undefined as string | undefined,
-    writeHead(statusCode, headers) {
+    writeHead(statusCode: number, headers?: Record<string, string>) {
       this.statusCode = statusCode;
-      this.headers = headers;
+      this.headers = headers as Record<string, string> | undefined;
     },
-    end(body) {
-      this.body = body;
+    end(body?: unknown) {
+      this.body = typeof body === 'string' ? body : String(body);
     }
   };
 }
@@ -20,7 +20,10 @@ describe('api health route', () => {
   it('returns an ok health payload', () => {
     const response = createMockResponse();
 
-    handleHealth({}, response);
+    handleHealth(
+      {} as unknown as import('http').IncomingMessage,
+      response as unknown as import('http').ServerResponse
+    );
 
     expect(response.statusCode).toBe(200);
     expect(response.headers).toEqual({ 'Content-Type': 'application/json' });

@@ -11,7 +11,7 @@ const IGNORED_DIRS = new Set([
   'node_modules'
 ]);
 
-async function collectJavaScriptFiles(dirPath, files: string[] = []) {
+async function collectJavaScriptFiles(dirPath: string, files: string[] = []) {
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
   for (const entry of entries) {

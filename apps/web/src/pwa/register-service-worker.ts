@@ -19,7 +19,7 @@ async function removeLocalServiceWorkerState() {
   return registrations.length > 0 || cacheNames.length > 0;
 }
 
-function reloadAfterDevCleanup(cleanedState) {
+function reloadAfterDevCleanup(cleanedState: unknown) {
   if (!cleanedState || typeof window.location.reload !== 'function') {
     return;
   }
@@ -36,7 +36,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     if (isLocalDevHost()) {
       removeLocalServiceWorkerState()
-        .then((cleanedState) => {
+        .then((cleanedState: unknown) => {
           console.log('[PWA] Local dev mode: service workers and shell caches disabled.');
           reloadAfterDevCleanup(cleanedState);
         })

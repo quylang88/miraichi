@@ -7,7 +7,7 @@
 
 import { getMockPrediction, getMockExplanation } from '../mock-client.js';
 
-export async function renderMockExplanationRefusalView(container) {
+export async function renderMockExplanationRefusalView(container: HTMLElement) {
   container.innerHTML = `
     <h2>Local AI Explanation Refusal View</h2>
     <div style="background: var(--miraichi-bg-card); border: 1px solid var(--miraichi-border); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
@@ -67,6 +67,6 @@ export async function renderMockExplanationRefusalView(container) {
       </div>
     `;
   } catch (err) {
-    container.innerHTML = `<div style="color: var(--miraichi-danger); padding: 1rem;">Failed to load explanation refusal: ${err.message}</div>`;
+    container.innerHTML = `<div style="color: var(--miraichi-danger); padding: 1rem;">Failed to load explanation refusal: ${err instanceof Error ? err.message : String(err)}</div>`;
   }
 }

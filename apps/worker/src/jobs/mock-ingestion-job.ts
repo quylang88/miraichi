@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import type { IngestionRun } from '../../../../packages/shared/src/contracts/index.js';
 import { MockProviderAdapter } from '../adapters/mock-provider-adapter.js';
 import { validateMatch, validateMarket } from '../validators/ingestion-validator.js';
 import { memoryIngestionRepository } from '../repositories/memory-ingestion-repository.js';
@@ -35,14 +36,9 @@ export async function runMockIngestionJob() {
     const normalizedMatches = adapter.parseMatches(rawMatches);
     const normalizedMarkets = adapter.parseMarkets(rawMarkets);
 
-    const ingestedAt = new Date().toISOString();
-
     // 3. Process & Validate Matches
     for (const match of normalizedMatches) {
       processedCount++;
-      // Inject trace metadata
-      match.ingestedAt = ingestedAt;
-      match.sourceProviderId = providerId;
 
       const validation = validateMatch(match);
       if (validation.valid) {
@@ -57,9 +53,6 @@ export async function runMockIngestionJob() {
     // 4. Process & Validate Markets
     for (const market of normalizedMarkets) {
       processedCount++;
-      // Inject trace metadata
-      market.ingestedAt = ingestedAt;
-      market.sourceProviderId = providerId;
 
       const validation = validateMarket(market);
       if (validation.valid) {
@@ -73,9 +66,9 @@ export async function runMockIngestionJob() {
 
     // 5. Ingestion Run Status Summary
     const endTime = new Date().toISOString();
-    const runStatus = skippedCount > 0 ? 'partial_failure' : 'success';
+    const runStatus: 'success' | 'partial_failure' = skippedCount > 0 ? 'partial_failure' : 'success';
 
-    const runReport = {
+    const runReport: IngestionRun = {
       id: runId,
       providerId,
       status: runStatus,
@@ -94,9 +87,9 @@ export async function runMockIngestionJob() {
 
   } catch (error) {
     const endTime = new Date().toISOString();
-    console.error(`[Ingestion Job] Critical failure in run ${runId}:`, error.message);
+    console.error(`[Ingestion Job] Critical failure in run ${runId}:`, error instanceof Error ? error.message : String(error));
 
-    const runReport = {
+    const runReport: IngestionRun = {
       id: runId,
       providerId,
       status: 'failed',
@@ -107,7 +100,7 @@ export async function runMockIngestionJob() {
         successCount,
         skippedCount
       },
-      errorMessage: error.message
+      errorMessage: error instanceof Error ? error.message : String(error)
     };
 
     memoryIngestionRepository.saveRun(runReport);

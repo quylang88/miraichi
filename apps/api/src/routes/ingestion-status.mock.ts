@@ -2,7 +2,7 @@
  * Mock Ingestion Status Route returning static tracking run metadata.
  * Fully competition-agnostic. No business logic.
  */
-export function handleIngestionStatus(req, res) {
+export function handleIngestionStatus(req: import('http').IncomingMessage, res: import('http').ServerResponse) {
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({
     status: "active",

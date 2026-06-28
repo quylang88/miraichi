@@ -17,10 +17,18 @@ const validCandidate = {
 
 describe('input candidate validator', () => {
   it('accepts a complete traceable input candidate', () => {
-    expect(validateInputCandidate(validCandidate)).toEqual({
-      valid: true,
-      errors: [],
-      warnings: []
+    const result = validateInputCandidate(validCandidate);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(result.candidate).toMatchObject({
+      inputCandidateId: 'input-candidate-alpha-001',
+      matchId: 'match-alpha-001',
+      competitionId: 'competition-alpha',
+      seasonId: 'season-alpha-2026',
+      sourceProviderId: 'provider-mock-alpha',
+      validationStatus: 'passed',
+      trace: { workerRunId: 'run-alpha-001' }
     });
   });
 

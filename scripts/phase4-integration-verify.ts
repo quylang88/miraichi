@@ -34,7 +34,7 @@ const spawnOptions = { stdio: 'inherit' as const };
 const apiProcess = spawn(process.execPath, [tsxCli, 'apps/api/src/index.ts'], spawnOptions);
 const aiProcess = spawn(process.execPath, [tsxCli, 'apps/local-ai/src/index.ts'], spawnOptions);
 
-function cleanupAndExit(exitCode) {
+function cleanupAndExit(exitCode: number) {
   console.log('[Phase 4 Integration Verify] Shutting down background processes...');
   try {
     apiProcess.kill();
@@ -54,7 +54,7 @@ process.on('SIGTERM', () => cleanupAndExit(1));
 setTimeout(async () => {
   let failed = false;
 
-  function assert(condition, message) {
+  function assert(condition: boolean, message: string) {
     if (!condition) {
       console.error(`  ❌ FAIL: ${message}`);
       failed = true;
@@ -105,7 +105,7 @@ setTimeout(async () => {
       assert(!serializedEnvelope.includes(label), `Envelope does not contain forbidden outcome keyword "${label}"`);
     }
   } catch (err) {
-    assert(false, `POST /api/v1/mock/predict failed: ${err.message}`);
+    assert(false, `POST /api/v1/mock/predict failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // Test POST /api/v1/mock/explain (Gateway to Local-AI proxy)
@@ -132,7 +132,7 @@ setTimeout(async () => {
     assert(explanation.text.includes('No prediction data is available'), 'Returns correct refusal text');
     assert(explanation.references.predictionId === 'pred-mock-test-id-123', 'Propagates correct prediction references');
   } catch (err) {
-    assert(false, `POST /api/v1/mock/explain failed: ${err.message}`);
+    assert(false, `POST /api/v1/mock/explain failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   if (failed) {

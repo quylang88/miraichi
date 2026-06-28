@@ -14,7 +14,7 @@ export class BasePredictionStrategy {
    * @returns {Object} A partial prediction envelope dataset.
    * @throws {Error} If execution fails or is not implemented.
    */
-  evaluate(inputCandidate) {
+  evaluate(inputCandidate: unknown) {
     throw new Error(
       'evaluate() must be implemented by concrete strategy subclasses. Real strategy execution requires owner-approved ADR.'
     );
@@ -24,10 +24,10 @@ export class BasePredictionStrategy {
 /**
  * Validator helper to check if a strategy object implements the interface correctly.
  */
-export function isValidStrategy(strategy) {
-  return (
-    strategy &&
-    typeof strategy === 'object' &&
-    typeof strategy.evaluate === 'function'
-  );
+export function isValidStrategy(strategyInput: unknown) {
+  if (!strategyInput || typeof strategyInput !== 'object') {
+    return false;
+  }
+  const strategy = strategyInput as Record<string, unknown>;
+  return typeof strategy.evaluate === 'function';
 }

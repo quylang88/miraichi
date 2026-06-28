@@ -6,7 +6,7 @@
 
 import { generateMockExplanation } from '../explainability/mock-explanation-refusal.js';
 
-export function handleMockExplain(req, res) {
+export function handleMockExplain(req: import('http').IncomingMessage, res: import('http').ServerResponse) {
   if (req.method !== 'POST') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Method Not Allowed' }));
@@ -14,8 +14,8 @@ export function handleMockExplain(req, res) {
   }
 
   let body = '';
-  req.on('data', chunk => {
-    body += chunk;
+  req.on('data', (chunk: unknown) => {
+    body += String(chunk);
   });
 
   req.on('end', () => {
@@ -34,8 +34,9 @@ export function handleMockExplain(req, res) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(explanationPayload));
     } catch (err) {
+      const errMessage = err instanceof Error ? err.message : String(err);
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message || 'Invalid JSON request body' }));
+      res.end(JSON.stringify({ error: errMessage || 'Invalid JSON request body' }));
     }
   });
 }

@@ -2,6 +2,26 @@
  * Normalized Match Data Contract Object Schema.
  * Fully competition-agnostic. No business logic.
  */
+
+export type NormalizedMatchStatus = 'scheduled' | 'in_play' | 'completed';
+
+export type NormalizedScore = {
+  homeScore: number;
+  awayScore: number;
+};
+
+export type NormalizedMatch = {
+  id: string;
+  competitionId: string;
+  seasonId: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  status: NormalizedMatchStatus;
+  kickoffTime: string;
+  scores?: NormalizedScore;
+  venueName?: string;
+};
+
 export const NORMALIZED_MATCH_CONTRACT = {
   id: "string",          // Unique ID (e.g. match-alpha-001)
   competitionId: "string", // Generic ID (e.g. competition-alpha)

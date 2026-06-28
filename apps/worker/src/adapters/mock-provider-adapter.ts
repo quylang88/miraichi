@@ -2,20 +2,47 @@
  * Mock Provider Adapter mapping raw feeds into normalized contracts.
  * Fully competition-agnostic. No business logic.
  */
+import type { NormalizedMarket, NormalizedMatch, NormalizedMatchStatus } from '../../../../packages/shared/src/contracts/index.js';
+
+type RawProviderMatch = {
+  fixture_id: string;
+  comp_name: string;
+  season_year: string;
+  home_team_tag: string;
+  away_team_tag: string;
+  match_status: NormalizedMatchStatus;
+  start_utc: string;
+  venue?: string;
+  score_result?: {
+    home: number;
+    away: number;
+  };
+};
+
+type RawProviderMarketSelection = {
+  id: string;
+  label: string;
+  odds_value: number;
+};
+
+type RawProviderMarket = {
+  market_id: string;
+  fixture_ref: string;
+  name_type: string;
+  timestamp_utc: string;
+  selections: RawProviderMarketSelection[];
+};
+
 export class MockProviderAdapter {
-  providerId: string;
+  providerId = 'provider-mock-alpha';
 
-  constructor() {
-    this.providerId = "provider-mock-alpha";
-  }
-
-  parseMatches(rawMatches): Array<Record<string, any>> {
+  parseMatches(rawMatches: RawProviderMatch[]): NormalizedMatch[] {
     if (!Array.isArray(rawMatches)) {
-      throw new Error("Raw matches must be an array");
+      throw new Error('Raw matches must be an array');
     }
 
     return rawMatches.map((raw) => {
-      const normalized: Record<string, any> = {
+      const normalized: NormalizedMatch = {
         id: raw.fixture_id,
         competitionId: raw.comp_name,
         seasonId: raw.season_year,
@@ -40,24 +67,22 @@ export class MockProviderAdapter {
     });
   }
 
-  parseMarkets(rawMarkets): Array<Record<string, any>> {
+  parseMarkets(rawMarkets: RawProviderMarket[]): NormalizedMarket[] {
     if (!Array.isArray(rawMarkets)) {
-      throw new Error("Raw markets must be an array");
+      throw new Error('Raw markets must be an array');
     }
 
-    return rawMarkets.map((raw) => {
-      return {
-        id: raw.market_id,
-        matchId: raw.fixture_ref,
-        marketName: raw.name_type,
-        providerId: this.providerId,
-        updatedAt: raw.timestamp_utc,
-        outcomes: raw.selections.map((sel) => ({
-          outcomeId: sel.id,
-          name: sel.label,
-          odds: sel.odds_value
-        }))
-      };
-    });
+    return rawMarkets.map((raw) => ({
+      id: raw.market_id,
+      matchId: raw.fixture_ref,
+      marketName: raw.name_type,
+      providerId: this.providerId,
+      updatedAt: raw.timestamp_utc,
+      outcomes: raw.selections.map((selection) => ({
+        outcomeId: selection.id,
+        name: selection.label,
+        odds: selection.odds_value
+      }))
+    }));
   }
 }

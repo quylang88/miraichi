@@ -4,9 +4,12 @@
  * Proxies to local-ai /ai/v1/mock/explain, falling back to a safe refusal if unreachable.
  */
 
+import type { IncomingMessage, ServerResponse } from 'http';
+import { isJsonObject, parseJsonObjectBody, readNestedStringField, readStringField, type JsonObject } from './json-body.js';
+
 const LOCAL_AI_URL = 'http://localhost:3002';
 
-export function handleMockExplain(req, res) {
+export function handleMockExplain(req: IncomingMessage, res: ServerResponse): void {
   if (req.method !== 'POST') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Method Not Allowed' }));
@@ -18,23 +21,15 @@ export function handleMockExplain(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
-    return;
-  }
-
   let body = '';
-  req.on('data', chunk => {
-    body += chunk;
+  req.on('data', (chunk: unknown) => {
+    body += String(chunk);
   });
 
   req.on('end', async () => {
-    let envelope: Record<string, any> = {};
+    let envelope: JsonObject = {};
     try {
-      if (body.trim()) {
-        envelope = JSON.parse(body);
-      }
+      envelope = parseJsonObjectBody(body);
     } catch {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Invalid JSON request body' }));
@@ -57,16 +52,17 @@ export function handleMockExplain(req, res) {
       }
       throw new Error(`local-ai returned status ${aiRes.status}`);
     } catch (err) {
-      console.warn(`[API Gateway] downstream local-ai mock explain failed (${err.message}). Using safe refusal fallback.`);
-      
+      const errMessage = err instanceof Error ? err.message : String(err);
+      console.warn(`[API Gateway] downstream local-ai mock explain failed (${errMessage}). Using safe refusal fallback.`);
+
       const fallbackRefusal = {
         explanationAvailable: false,
         reason: 'No owner-approved prediction algorithm is active.',
         references: {
-          predictionId: envelope.predictionId || 'unknown-prediction',
-          traceId: envelope.trace ? envelope.trace.inputCandidateId : 'unknown-trace'
+          predictionId: readStringField(envelope, 'predictionId', 'unknown-prediction'),
+          traceId: readNestedStringField(envelope, 'trace', 'inputCandidateId', 'unknown-trace')
         },
-        text: `No prediction data is available because the explanation service is unreachable. (Trace: ${envelope.predictionId || 'unreachable'})`
+        text: `No prediction data is available because the explanation service is unreachable. (Trace: ${readStringField(envelope, 'predictionId', 'unreachable')})`
       };
 
       res.writeHead(200, { 'Content-Type': 'application/json' });

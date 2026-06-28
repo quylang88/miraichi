@@ -70,12 +70,12 @@ async function verifyPhase3() {
     console.error('  ❌ Failure: In-memory repository contains 0 runs reports after execution.');
     process.exit(1);
   }
-  console.log(`  ✅ Run Logging: Recorded run report successfully. Status: ${runs[0].status}.`);
+  console.log(`  ✅ Run Logging: Recorded run report successfully. Status: ${runs[0]?.status}.`);
 
   console.log('\n[Phase 3 Verify] Phase 3 Ingestion verification tests PASSED successfully.');
 }
 
-async function scanDir(dirPath, keywords) {
+async function scanDir(dirPath: string, keywords: string[]) {
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
   for (const entry of entries) {

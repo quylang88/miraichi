@@ -43,9 +43,14 @@ Includes all directories and apps under this monorepo.
 - Added Phase 6 smoke-check script review evidence.
 - Added check-only GitHub Actions CI workflow for lifecycle, unit, syntax, typecheck, and audit gates.
 - Added owner-approved Phase 6 repo-wide JavaScript-to-TypeScript migration review evidence.
+- Added Phase 6 TypeScript Strictness Hardening implementation plan to convert TypeScript source migration into enforced source-level type safety.
+- Added Type-safety audit gate script (`scripts/type-safety-audit.ts`) and strictness policy tests (`scripts/typescript-strictness-policy.test.ts`).
+- Added strictly-typed contracts, validators, and builders for Local AI prediction and API route boundaries, completely eliminating explicit `any` and `@ts-ignore` suppressions from source.
 
 ### Changed
 - Promoted Phase 1 ADRs (ADR-0002, 0004-0011) to Accepted status and ADR-0003 to Proposed status based on project owner decisions.
+- Updated `tsconfig.base.json` to enable strict compiler options (`strict`, `noImplicitAny`, `useUnknownInCatchVariables`, `exactOptionalPropertyTypes`) and resolved all type issues across scripts and modules.
+- Integrated `audit:type-safety` as a required local check in the `verify:local` script pipeline.
 - Updated root architecture planning documents (README, ARCHITECTURE.md, PROJECT_PLAN.md, ROADMAP.md) to reflect approved Phase 1 status.
 - Added Phase 1 Completion Review ([PHASE-1-COMPLETION-REVIEW.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REVIEW.md)) executing the milestone verification.
 - Added Phase 1 Completion Report ([PHASE-1-COMPLETION-REPORT.md](file:///c:/CODE/miraichi/docs/decisions/PHASE-1-COMPLETION-REPORT.md)) summarizing Phase 1 milestones and status.
@@ -66,6 +71,7 @@ Includes all directories and apps under this monorepo.
 - Implemented Phase 6 CI check workflow with TDD and kept Cloudflare deployment automation blocked.
 - Migrated tracked implementation source under `apps/`, `packages/`, and `scripts/` from JavaScript to TypeScript, added `tsx` runtime wiring, and preserved browser-facing `.js` compatibility URLs.
 - Tightened lifecycle, guardrail, workflow, module-map, and frontend docs so new tracked implementation source stays TypeScript-first after the repo-wide migration.
+- Deferred Phase 6 staging until TypeScript strictness hardening code slices add an audit gate, remove explicit `any`, and enable stricter compiler flags.
 
 ## TODO / Next Steps
 - [x] Review draft Phase 5.10 Add Bet Draft/Form State + Persistence Planning after docs hygiene closes.
@@ -83,4 +89,6 @@ Includes all directories and apps under this monorepo.
 - [x] Complete `phase:code-slice Phase 6 staging smoke-check script`.
 - [x] Complete `phase:code-slice Phase 6 CI check workflow`.
 - [x] Complete owner-requested `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration`.
-- [ ] Run `phase:staging Phase 6 hardened staging process` to deploy the refreshed TypeScript-sourced static artifact and record new smoke evidence.
+- [x] Create `phase:implementation-plan Phase 6 TypeScript Strictness Hardening`.
+- [ ] Start `phase:code-slice Phase 6 type-safety audit gate`.
+- [ ] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
