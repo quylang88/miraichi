@@ -132,8 +132,9 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Create `phase:implementation-plan Phase 8.3A National-Team Dataset Expansion`.
 - [x] Complete Phase 8.3A National-Team Dataset Expansion before Phase 8.4, with provider-confirmed national-team competitions and aggregate evaluation readiness evidence.
 - [x] Create `phase:implementation-plan Phase 8.4 Candidate Model Bake-Off`.
-- [ ] Complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.
+- [x] Complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.
+  - **Result**: Candidate comparison report generated for the aggregate World Cup + Euro national-team dataset. No model selected.
   - **Blocker**: Lifted (Phase 8.3A completed with World Cup and Euro datasets, total test sample count = 107). Club/Premier League expansion remains blocked.
-  - **Constraints**: Do not treat high-variance Phase 8.4 outcomes as model-selection evidence due to potential sample size limits. Do not create model-ready labels, no runtime prediction routes, and no betting recommendations.
+  - **Constraints**: Do not treat high-variance Phase 8.4 outcomes as model-selection evidence due to sample size limits and missing bookmaker baseline. Do not create runtime prediction routes, model artifacts, betting recommendations, or club competition support.
 - [ ] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.

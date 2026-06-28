@@ -27,6 +27,8 @@ export type EvaluationFixture = {
   matchId: string;
   split: EvaluationSplitName;
   competitionId: string;
+  homeTeamId: string;
+  awayTeamId: string;
   kickoffTime: string;
   actualOutcome: OutcomeClass;
   marketProbabilities?: OutcomeProbabilities;
@@ -116,6 +118,8 @@ function toEvaluationFixtures(
       matchId: record.id,
       split,
       competitionId: record.competitionId,
+      homeTeamId: record.homeTeamId,
+      awayTeamId: record.awayTeamId,
       kickoffTime: record.kickoffTime,
       actualOutcome: actualOutcomeFromScores(record.scores)
     };

@@ -34,6 +34,19 @@ describe('Phase 8.3 evaluation dataset loader', () => {
     expect(dataset.test[0]).toHaveProperty('actualOutcome');
   });
 
+  it('loads team identifiers for offline candidate research without exposing scores as features', () => {
+    const dataset = loadEvaluationDataset(
+      path.resolve(__dirname, '../../data/processed/comp-int-world-cup')
+    );
+    const firstTrain = dataset.train[0];
+
+    expect(typeof firstTrain?.homeTeamId).toBe('string');
+    expect(firstTrain?.homeTeamId.length).toBeGreaterThan(0);
+    expect(typeof firstTrain?.awayTeamId).toBe('string');
+    expect(firstTrain?.awayTeamId.length).toBeGreaterThan(0);
+    expect(firstTrain).not.toHaveProperty('scores');
+  });
+
   it('skips records without completed scores instead of inventing labels', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tmp-evaluation-dataset-'));
     const record: ProcessedMatchRecord = {
