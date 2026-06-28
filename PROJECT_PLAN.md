@@ -122,8 +122,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning only after owner-approved ADRs exist.
 - [x] Create Phase 8 Owner-Only Model R&D plan and split Phase 8 into smaller gated subphases.
 - [ ] Owner review Phase 8.0 R&D boundary split before Phase 8.1 implementation planning.
-- [ ] Create `phase:implementation-plan Phase 8.1 Dataset Snapshot and Provenance`.
-- [ ] Complete Phase 8.1 reproducible offline dataset snapshot and data quality report.
+- [x] Create `phase:implementation-plan Phase 8.1 Dataset Snapshot and Provenance`.
+- [x] Complete Phase 8.1 reproducible offline dataset snapshot and data quality report.
 - [ ] Create and complete Phase 8.2 Feature Spec and Leakage Audit.
 - [ ] Create and complete Phase 8.3 Evaluation Harness and Baselines, including Brier, Calibration/ECE, log loss, sample count, and bookmaker/simple baseline comparison.
 - [ ] Create and complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.

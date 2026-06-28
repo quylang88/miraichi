@@ -8,7 +8,8 @@ const IGNORED_DIRS = new Set([
   'coverage',
   'dist',
   'build',
-  'node_modules'
+  'node_modules',
+  '.venv'
 ]);
 
 async function collectJavaScriptFiles(dirPath: string, files: string[] = []) {

@@ -12,7 +12,7 @@ export type TypeSafetyViolation = {
 };
 
 const SOURCE_ROOTS = ['apps', 'packages', 'scripts'];
-const IGNORED_DIRS = new Set(['.git', '.pnpm', 'node_modules', 'dist', 'build', 'coverage']);
+const IGNORED_DIRS = new Set(['.git', '.pnpm', 'node_modules', 'dist', 'build', 'coverage', '.venv']);
 // Self-exclusion: these files contain forbidden patterns as string/regex literals by design.
 const EXCLUDED_FILES = new Set([
   'scripts/type-safety-audit.ts',

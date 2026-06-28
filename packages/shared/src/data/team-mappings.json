@@ -1,0 +1,12 @@
+{
+  "mappings": [
+    {
+      "canonicalId": "team-eng-man-united",
+      "aliases": ["Manchester United", "Man United", "Man Utd", "Manchester Utd"]
+    },
+    {
+      "canonicalId": "team-eng-arsenal",
+      "aliases": ["Arsenal", "Arsenal FC"]
+    }
+  ]
+}

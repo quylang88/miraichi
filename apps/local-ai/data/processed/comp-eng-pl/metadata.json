@@ -1,0 +1,12 @@
+{
+  "datasetId": "dataset-comp-eng-pl-2026-06-28",
+  "competitionId": "comp-eng-pl",
+  "schemaVersion": "1.0.0",
+  "featureSpecVersion": "0.1.0",
+  "sourceProviderId": "soccerdata-fbref",
+  "sourceSnapshotHash": "2681e69dc26f912715c6e36cbd848f900805d1ba946934990562c3716acb6274",
+  "builtAt": "2026-06-28T06:38:40.224030Z",
+  "trainCount": 1,
+  "valCount": 1,
+  "testCount": 1
+}
