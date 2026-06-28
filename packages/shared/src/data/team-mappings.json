@@ -1,12 +1,28 @@
 {
   "mappings": [
     {
-      "canonicalId": "team-eng-man-united",
-      "aliases": ["Manchester United", "Man United", "Man Utd", "Manchester Utd"]
+      "canonicalId": "team-fra-national",
+      "aliases": ["France", "France National Team"]
     },
     {
-      "canonicalId": "team-eng-arsenal",
-      "aliases": ["Arsenal", "Arsenal FC"]
+      "canonicalId": "team-arg-national",
+      "aliases": ["Argentina", "Argentina National Team"]
+    },
+    {
+      "canonicalId": "team-deu-national",
+      "aliases": ["Germany", "Germany National Team"]
+    },
+    {
+      "canonicalId": "team-prt-national",
+      "aliases": ["Portugal", "Portugal National Team"]
+    },
+    {
+      "canonicalId": "team-hrv-national",
+      "aliases": ["Croatia", "Croatia National Team"]
+    },
+    {
+      "canonicalId": "team-mex-national",
+      "aliases": ["Mexico", "Mexico National Team"]
     }
   ]
 }

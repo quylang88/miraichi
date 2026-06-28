@@ -76,7 +76,8 @@ Outlines high-level roadmap milestones across multiple phases.
 
 ### Milestone 9: Model Training and Prediction Engine R&D (Active)
 - Split Phase 8 into owner-only R&D subphases before training implementation.
-- Build reproducible offline datasets, leakage-safe feature specs, chronological evaluation, and baseline reports before selecting any model.
+- Build reproducible offline datasets for World Cup and related national-team competitions first, then leakage-safe feature specs, chronological evaluation, and baseline reports before selecting any model.
+- Defer Premier League and other club competitions until the national-team-first path has dataset provenance, quality reporting, leakage review, and owner approval to expand.
 - Compare simple baselines, Elo/Poisson-style models, calibrated logistic regression, LightGBM, CatBoost, and XGBoost before model selection.
 - Draft a model-selection ADR before any runtime packaging such as ONNX.
 - Keep betting recommendation and stake advice separate from prediction model R&D.

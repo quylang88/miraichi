@@ -1,0 +1,13 @@
+{
+  "initialCompetitionId": "comp-int-world-cup",
+  "competitions": [
+    {
+      "competition_id": "comp-int-world-cup",
+      "soccerdata_league": "INT-World Cup",
+      "seasons": [2014, 2018, 2022],
+      "train_split": [2014],
+      "val_split": [2018],
+      "test_split": [2022]
+    }
+  ]
+}

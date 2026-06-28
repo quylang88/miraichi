@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED PROJECT SKILLS: read `.agent/skills/miraichi-delivery-lifecycle/SKILL.md` and `.agent/skills/miraichi-project-guardrails/SKILL.md` before any planning or code work. If implementation begins, use `superpowers:test-driven-development` for each code slice. This document is a Phase 8 R&D roadmap, not authorization for production inference, betting recommendations, stake sizing, paid providers, public traffic, or model promotion.
 
-**Goal:** Build a free, owner-only, evidence-first model research path that starts with reproducible datasets and evaluation reports before choosing any real training model or runtime.
+**Goal:** Build a free, owner-only, evidence-first model research path that starts with World Cup and national-team competition datasets, then expands to club competitions only after the national-team path is reviewed.
 
 **Architecture:** Phase 8 uses offline local data preparation and report generation first. Candidate models compete only after dataset provenance, leakage checks, chronological evaluation, and bookmaker/baseline comparisons exist. Runtime integration such as ONNX or `/ai/v1/predict` real inference is deferred until an owner-approved model-selection ADR proves a model is worth activating.
 
@@ -53,10 +53,11 @@ Phase 8 must proceed as R&D, not as production inference work.
 
 **Allowed work:**
 
-- Create local-only data snapshot scripts or adapters for `soccerdata`.
+- Create local-only data snapshot scripts or adapters for `soccerdata`, starting with World Cup and related national-team competitions.
 - Store raw snapshot metadata outside committed model artifacts unless a small sample fixture is needed for tests.
 - Emit dataset metadata: `datasetId`, `schemaVersion`, `featureSpecVersion`, `sourceProviderId`, `sourceSnapshotHash`, `builtAt`, and chronological split metadata.
-- Keep competitions configurable. Do not hard-code EPL, World Cup, or any single competition into core logic.
+- Keep competitions configurable. World Cup and national-team metadata is allowed in registry/config/data; core logic must not branch on one tournament or club league.
+- Do not start with EPL or another club league. Club competitions are expansion scope after national-team datasets, quality reports, leakage checks, and baseline evaluation exist.
 
 **Exit gate:**
 
@@ -257,6 +258,7 @@ Before that point, any "training" should be treated as exploratory notebook/scri
 - Do not choose LightGBM, CatBoost, XGBoost, or ONNX before baseline reports exist.
 - Do not use random train/test split for time-ordered football evaluation.
 - Do not treat World Cup-only evaluation as statistically strong.
+- Do not expand to club competitions before the World Cup/national-team dataset path has explicit owner review.
 - Do not add betting recommendation, stake sizing, bankroll, ROI, CLV, or Kelly logic.
 
 ---

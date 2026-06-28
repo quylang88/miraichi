@@ -12,7 +12,7 @@ This document provides instructions on how to set up, propose changes, and contr
 Applies to all code contributors, including human developers and AI subagents.
 
 ## Core Guidelines
-1. **Competition Agnosticism**: Never submit code that hard-codes a specific competition (such as the World Cup). Ensure configurations are database-driven or dynamic.
+1. **Competition Agnosticism**: World Cup and national-team competitions are the first delivery target, and their metadata belongs in registry/config/data. Never submit core parser, route, model, or business logic that only works for one competition.
 2. **Lifecycle Discipline**: Follow `.agent/skills/miraichi-delivery-lifecycle/SKILL.md` for planning, code slices, integration, staging, production, and maintenance.
 3. **TDD Requirement**: New or changed behavior needs a failing unit test before implementation and a passing test after implementation.
 4. **Monorepo Structure**: Place code only in `apps/` or `packages/`. Do not pollute the root folder.

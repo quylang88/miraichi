@@ -13,9 +13,9 @@ const RULES = [
     message: 'Database ORM/Client library import found. DB connections are strictly forbidden in Phase 2.'
   },
   {
-    name: 'World Cup/Tournament Hardcoding Check',
+    name: 'Core Logic Tournament Coupling Check',
     pattern: /['"](?:world\s*cup|fifa|premier\s*league|la\s*liga)['"]/i,
-    message: 'Hardcoded specific tournament/competition name found. Miraichi must remain competition-agnostic.',
+    message: 'Competition-specific string found in code. World Cup/national-team metadata belongs in registry/config/data, not core logic.',
     // Allowed files for this specific rule (tests and validators checking agnosticism checks)
     allowList: [
       'packages/config/src/competition-registry.mock.ts',

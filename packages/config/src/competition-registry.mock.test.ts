@@ -10,12 +10,15 @@ describe('competition registry config validation', () => {
     });
   });
 
-  it('rejects hardcoded competition names in config payloads', () => {
-    const forbiddenCompetitionName = ['World', 'Cup'].join(' ');
+  it('allows the initial World Cup target as registry metadata', () => {
+    const initialCompetitionName = ['World', 'Cup'].join(' ');
 
-    expect(() => validateConfig({ name: forbiddenCompetitionName })).toThrow(
-      /Hardcoded competition names/
-    );
+    expect(validateConfig({
+      competitionId: 'comp_int_world_cup',
+      name: initialCompetitionName,
+      sport: 'football',
+      status: 'active'
+    })).toBe(true);
   });
 
   it('rejects unknown configuration keys', () => {

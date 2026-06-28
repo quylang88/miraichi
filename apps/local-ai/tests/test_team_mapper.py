@@ -5,13 +5,16 @@ from scripts.team_mapper import TeamMapper
 
 def test_team_mapper_resolved():
     mapper = TeamMapper()
-    assert mapper.resolve("Man United") == "team-eng-man-united"
-    assert mapper.resolve("Manchester United") == "team-eng-man-united"
-    assert mapper.resolve("Arsenal") == "team-eng-arsenal"
+    assert mapper.resolve("France") == "team-fra-national"
+    assert mapper.resolve("Argentina") == "team-arg-national"
+    assert mapper.resolve("Germany") == "team-deu-national"
+    assert mapper.resolve("Portugal") == "team-prt-national"
+    assert mapper.resolve("Croatia") == "team-hrv-national"
+    assert mapper.resolve("Mexico") == "team-mex-national"
 
 def test_team_mapper_unknown():
     mapper = TeamMapper()
-    assert mapper.resolve("Unknown Team FC") == "unknown-team-fc"
+    assert mapper.resolve("Unknown National Team") == "unknown-national-team"
 
 def test_team_mapper_accented():
     mapper = TeamMapper()
@@ -19,8 +22,8 @@ def test_team_mapper_accented():
 
 def test_team_mapper_case_spacing():
     mapper = TeamMapper()
-    assert mapper.resolve("  man united  ") == "team-eng-man-united"
-    assert mapper.resolve("  MAN UNITED  ") == "team-eng-man-united"
+    assert mapper.resolve("  france  ") == "team-fra-national"
+    assert mapper.resolve("  FRANCE  ") == "team-fra-national"
 
 def test_team_mapper_file_missing():
     with patch("scripts.team_mapper.os.path.exists") as mock_exists:

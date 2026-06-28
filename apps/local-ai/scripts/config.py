@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -9,15 +11,17 @@ class IngestionConfig(BaseModel):
     val_split: List[int]
     test_split: List[int]
 
+_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "competition-registry.json"
+
+def _load_registry_payload() -> dict:
+    with _CONFIG_PATH.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+_REGISTRY_PAYLOAD = _load_registry_payload()
+INITIAL_COMPETITION_ID = _REGISTRY_PAYLOAD["initialCompetitionId"]
 COMPETITION_REGISTRY = {
-    "comp-eng-pl": IngestionConfig(
-        competition_id="comp-eng-pl",
-        soccerdata_league="ENG-Premier League",
-        seasons=[2022, 2023, 2024],
-        train_split=[2022],
-        val_split=[2023],
-        test_split=[2024]
-    )
+    item["competition_id"]: IngestionConfig(**item)
+    for item in _REGISTRY_PAYLOAD["competitions"]
 }
 
 def get_competition_config(competition_id: str) -> Optional[IngestionConfig]:

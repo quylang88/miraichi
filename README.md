@@ -25,8 +25,9 @@ The repository keeps a clean root structure with exactly 4 main folders:
 - **`ops/`**: Operational, deployment, docker, CI/CD pipelines, scripts, and monitoring infrastructure.
 
 ## Competition-Agnostic Principle
-While the initial launch targets World Cup use cases, the domain language, data contracts, predictions pipeline, and backend services must remain **strictly competition-agnostic**.
-- Do not hard-code World Cup logic, rules, or identifiers anywhere in the codebase.
+The first real data and training path targets World Cup and related national-team competitions. Club competitions are later expansion scope.
+- World Cup and national-team competition metadata may be explicit in registry/config/data artifacts.
+- Do not put World Cup-only assumptions into core parser, route, model, or business logic.
 - Treat football competition metadata as dynamic, configurable registry data.
 - Football domain concepts (competitions, seasons, teams, matches, markets, bets, bankrolls) are modeled abstractly.
 

@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 describe('Processed Dataset Integration Check', () => {
   it('should conform to the NormalizedMatch TypeScript contract structure', () => {
-    const datasetPath = path.resolve(__dirname, '../../data/processed/comp-eng-pl/train.jsonl');
+    const datasetPath = path.resolve(__dirname, '../../data/processed/comp-int-world-cup/train.jsonl');
     
     // Check if pipeline has run and file exists (fails gracefully with advice if not run)
     if (!fs.existsSync(datasetPath)) {

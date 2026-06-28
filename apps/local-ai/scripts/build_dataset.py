@@ -5,7 +5,7 @@ import hashlib
 import pandas as pd
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
-from scripts.config import get_competition_config
+from scripts.config import INITIAL_COMPETITION_ID, get_competition_config
 from scripts.team_mapper import TeamMapper
 
 class MatchScores(BaseModel):
@@ -168,4 +168,4 @@ def build_dataset(competition_id: str, raw_path: Optional[str] = None, output_di
         raise IOError(f"Failed during file write or hashing operations: {e}")
 
 if __name__ == "__main__":
-    build_dataset("comp-eng-pl")
+    build_dataset(INITIAL_COMPETITION_ID)

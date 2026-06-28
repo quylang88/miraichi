@@ -24,20 +24,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * Validates configuration profiles or keys.
- * Rejects payloads containing hardcoded "World Cup" strings or invalid config keys.
+ * Allows competition names as registry metadata and rejects invalid config keys.
  *
  * @param {unknown} config
  * @returns {boolean}
  */
 export function validateConfig(config: unknown): boolean {
   if (!isRecord(config)) return true;
-
-  const serialized = JSON.stringify(config);
-
-  // Rule Check: Hardcoded tournament names (World Cup, Premier League, etc.) are forbidden
-  if (/world\s*cup/i.test(serialized) || /premier\s*league/i.test(serialized)) {
-    throw new Error("[Config Violation] Hardcoded competition names like 'World Cup' or 'Premier League' are strictly forbidden.");
-  }
 
   // Rule Check: Validate configuration keys
   const allowedKeys = [

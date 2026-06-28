@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build reproducible offline historical datasets using Python-based `soccerdata` scrapers and validate them against competition-agnostic TypeScript contracts for Phase 8 model R&D.
+**Goal:** Build reproducible offline historical datasets for the World Cup and related national-team competitions first, then validate them against competition-agnostic TypeScript contracts for Phase 8 model R&D.
 
-**Architecture:** We use a Python-based offline data preparation layer. Scraped raw data is cached locally to prevent rate limits. Processed outputs (train, validation, and test splits) are written in JSON Lines format alongside provenance metadata and data quality reports. A TypeScript integration test verifies that the processed dataset elements map correctly to the monorepo's shared TypeScript contracts.
+**Architecture:** We use a Python-based offline data preparation layer driven by registry/config data. World Cup/national-team metadata is allowed in config and fixtures; parser, dataset builder, TypeScript contracts, and future model code stay competition-agnostic. Scraped raw data is cached locally to prevent rate limits. Processed outputs (train, validation, and test splits) are written in JSON Lines format alongside provenance metadata and data quality reports. A TypeScript integration test verifies that the processed dataset elements map correctly to the monorepo's shared TypeScript contracts.
 
 **Tech Stack:** Python 3 (with `soccerdata`, `pandas`, `pydantic`, and `pytest`), TypeScript/Node (with `vitest` for contract checking).
 
@@ -19,6 +19,9 @@ Defines Python dependencies for historical data scraping, normalization, and val
 
 #### [NEW] [config.py](file:///c:/CODE/miraichi/apps/local-ai/scripts/config.py)
 Python configuration mapping internal generic competition IDs to `soccerdata` league and season names.
+
+#### [NEW] [competition-registry.json](file:///c:/CODE/miraichi/apps/local-ai/config/competition-registry.json)
+Registry data declaring `comp-int-world-cup` as the initial Phase 8.1 target. Club competitions are not default targets in this phase.
 
 #### [NEW] [test_config.py](file:///c:/CODE/miraichi/apps/local-ai/tests/test_config.py)
 Unit tests for the Python configuration layer.
@@ -96,6 +99,7 @@ Expected: Packages installed successfully.
 ### Task 2: Ingestion & Competition Configuration
 
 **Files:**
+- Create: `apps/local-ai/config/competition-registry.json`
 - Create: `apps/local-ai/scripts/config.py`
 - Test: `apps/local-ai/tests/test_config.py`
 
@@ -104,13 +108,21 @@ Expected: Packages installed successfully.
 
 ```python
 import os
+import scripts.config as config
 from scripts.config import IngestionConfig, get_competition_config
 
 def test_get_competition_config_valid():
-    cfg = get_competition_config("comp-eng-pl")
-    assert cfg.competition_id == "comp-eng-pl"
-    assert cfg.soccerdata_league == "ENG-Premier League"
-    assert cfg.seasons == [2022, 2023, 2024]
+    cfg = get_competition_config("comp-int-world-cup")
+    assert cfg is not None
+    assert cfg.competition_id == "comp-int-world-cup"
+    assert cfg.soccerdata_league == "INT-World Cup"
+    assert cfg.seasons == [2014, 2018, 2022]
+    assert cfg.train_split == [2014]
+    assert cfg.val_split == [2018]
+    assert cfg.test_split == [2022]
+
+def test_initial_competition_targets_world_cup_research_use_case():
+    assert getattr(config, "INITIAL_COMPETITION_ID", None) == "comp-int-world-cup"
 
 def test_get_competition_config_invalid():
     cfg = get_competition_config("non-existent")
@@ -121,10 +133,31 @@ def test_get_competition_config_invalid():
   Run: `pytest apps/local-ai/tests/test_config.py -v`
   Expected: FAIL with ModuleNotFoundError or import errors.
 
-- [ ] **Step 3: Implement config script**
+- [ ] **Step 3: Implement registry data**
+  Create `apps/local-ai/config/competition-registry.json`.
+
+```json
+{
+  "initialCompetitionId": "comp-int-world-cup",
+  "competitions": [
+    {
+      "competition_id": "comp-int-world-cup",
+      "soccerdata_league": "INT-World Cup",
+      "seasons": [2014, 2018, 2022],
+      "train_split": [2014],
+      "val_split": [2018],
+      "test_split": [2022]
+    }
+  ]
+}
+```
+
+- [ ] **Step 4: Implement config script**
   Create `apps/local-ai/scripts/config.py`.
 
 ```python
+import json
+from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -136,30 +169,32 @@ class IngestionConfig(BaseModel):
     val_split: List[int]
     test_split: List[int]
 
+_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "competition-registry.json"
+
+def _load_registry_payload() -> dict:
+    with _CONFIG_PATH.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+_REGISTRY_PAYLOAD = _load_registry_payload()
+INITIAL_COMPETITION_ID = _REGISTRY_PAYLOAD["initialCompetitionId"]
 COMPETITION_REGISTRY = {
-    "comp-eng-pl": IngestionConfig(
-        competition_id="comp-eng-pl",
-        soccerdata_league="ENG-Premier League",
-        seasons=[2022, 2023, 2024],
-        train_split=[2022],
-        val_split=[2023],
-        test_split=[2024]
-    )
+    item["competition_id"]: IngestionConfig(**item)
+    for item in _REGISTRY_PAYLOAD["competitions"]
 }
 
 def get_competition_config(competition_id: str) -> Optional[IngestionConfig]:
     return COMPETITION_REGISTRY.get(competition_id)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 5: Run test to verify it passes**
   Run: `pytest apps/local-ai/tests/test_config.py -v`
   Expected: PASS
 
-- [ ] **Step 5: Commit (if auto_commit enabled)**
+- [ ] **Step 6: Commit (if auto_commit enabled)**
   Check `.agent/config.yml` for `auto_commit` setting.
   If `auto_commit: true`:
   ```bash
-  git add apps/local-ai/scripts/config.py apps/local-ai/tests/test_config.py
+  git add apps/local-ai/config/competition-registry.json apps/local-ai/scripts/config.py apps/local-ai/tests/test_config.py
   git commit -m "feat(local-ai): add competition ingestion configuration and tests"
   ```
   If `auto_commit: false`: skip commit and staging. Print: "Skipping commit (auto_commit: false)."
@@ -180,14 +215,14 @@ from unittest.mock import patch, MagicMock
 from scripts.download_snapshot import download_snapshot
 
 @patch('soccerdata.FBref')
-def test_download_snapshot_calls_soccerdata(mock_fbref):
+def test_download_snapshot_uses_initial_world_cup_config_by_default(mock_fbref):
     mock_fbref_instance = MagicMock()
     mock_fbref.return_value = mock_fbref_instance
     mock_fbref_instance.read_schedule.return_value = MagicMock()
     
-    download_snapshot("comp-eng-pl")
+    download_snapshot()
     
-    mock_fbref.assert_called_once_with(leagues="ENG-Premier League", seasons=[2022, 2023, 2024])
+    mock_fbref.assert_called_once_with(leagues="INT-World Cup", seasons=[2014, 2018, 2022])
     mock_fbref_instance.read_schedule.assert_called_once()
 ```
 
@@ -200,10 +235,12 @@ def test_download_snapshot_calls_soccerdata(mock_fbref):
 
 ```python
 import os
+from typing import Optional
 import soccerdata as sd
-from scripts.config import get_competition_config
+from scripts.config import INITIAL_COMPETITION_ID, get_competition_config
 
-def download_snapshot(competition_id: str):
+def download_snapshot(competition_id: Optional[str] = None):
+    competition_id = competition_id or INITIAL_COMPETITION_ID
     config = get_competition_config(competition_id)
     if not config:
         raise ValueError(f"No configuration found for {competition_id}")
@@ -223,7 +260,7 @@ def download_snapshot(competition_id: str):
 
 if __name__ == "__main__":
     import sys
-    comp = sys.argv[1] if len(sys.argv) > 1 else "comp-eng-pl"
+    comp = sys.argv[1] if len(sys.argv) > 1 else INITIAL_COMPETITION_ID
     download_snapshot(comp)
 ```
 
@@ -256,12 +293,28 @@ if __name__ == "__main__":
 {
   "mappings": [
     {
-      "canonicalId": "team-eng-man-united",
-      "aliases": ["Manchester United", "Man United", "Man Utd", "Manchester Utd"]
+      "canonicalId": "team-deu-national",
+      "aliases": ["Germany", "Germany National Team"]
     },
     {
-      "canonicalId": "team-eng-arsenal",
-      "aliases": ["Arsenal", "Arsenal FC"]
+      "canonicalId": "team-prt-national",
+      "aliases": ["Portugal", "Portugal National Team"]
+    },
+    {
+      "canonicalId": "team-fra-national",
+      "aliases": ["France", "France National Team"]
+    },
+    {
+      "canonicalId": "team-hrv-national",
+      "aliases": ["Croatia", "Croatia National Team"]
+    },
+    {
+      "canonicalId": "team-arg-national",
+      "aliases": ["Argentina", "Argentina National Team"]
+    },
+    {
+      "canonicalId": "team-mex-national",
+      "aliases": ["Mexico", "Mexico National Team"]
     }
   ]
 }
@@ -275,13 +328,14 @@ from scripts.team_mapper import TeamMapper
 
 def test_team_mapper_resolved():
     mapper = TeamMapper()
-    assert mapper.resolve("Man United") == "team-eng-man-united"
-    assert mapper.resolve("Manchester United") == "team-eng-man-united"
-    assert mapper.resolve("Arsenal") == "team-eng-arsenal"
+    assert mapper.resolve("Germany") == "team-deu-national"
+    assert mapper.resolve("France") == "team-fra-national"
+    assert mapper.resolve("Portugal") == "team-prt-national"
+    assert mapper.resolve("Argentina") == "team-arg-national"
 
 def test_team_mapper_unknown():
     mapper = TeamMapper()
-    assert mapper.resolve("Unknown Team FC") == "unknown-team-fc"
+    assert mapper.resolve("Unknown National Team") == "unknown-national-team"
 ```
 
 - [ ] **Step 3: Run test to verify it fails**
@@ -360,24 +414,24 @@ from scripts.build_dataset import build_dataset
 
 def test_build_dataset_valid(tmp_path):
     # Set up raw data test fixture
-    raw_csv = tmp_path / "comp-eng-pl_schedule.csv"
+    raw_csv = tmp_path / "comp-int-world-cup_schedule.csv"
     data = {
-        "season": [2022, 2023, 2024],
-        "date": ["2022-09-01", "2023-09-02", "2024-09-03"],
-        "time": ["15:00", "16:00", "17:00"],
-        "home_team": ["Manchester United", "Arsenal", "Arsenal FC"],
-        "away_team": ["Arsenal", "Manchester United", "Manchester United"],
-        "home_score": [2.0, 1.0, 3.0],
-        "away_score": [1.0, 2.0, 0.0],
-        "venue": ["Old Trafford", "Emirates", "Emirates"],
-        "game_id": ["m1", "m2", "m3"]
+        "season": [2014, 2018, 2022],
+        "date": ["2014-06-16", "2018-07-15", "2022-11-26"],
+        "time": ["13:00", "18:00", "22:00"],
+        "home_team": ["Germany", "France", "Argentina"],
+        "away_team": ["Portugal", "Croatia", "Mexico"],
+        "home_score": [4.0, 4.0, 2.0],
+        "away_score": [0.0, 2.0, 0.0],
+        "venue": ["Arena Fonte Nova", "Luzhniki Stadium", "Lusail Stadium"],
+        "game_id": ["wc-2014-sample-1", "wc-2018-sample-1", "wc-2022-sample-1"]
     }
     df = pd.DataFrame(data)
     df.to_csv(raw_csv, index=False)
     
     # Process dataset
     processed_dir = tmp_path / "processed"
-    build_dataset("comp-eng-pl", raw_path=str(raw_csv), output_dir=str(processed_dir))
+    build_dataset("comp-int-world-cup", raw_path=str(raw_csv), output_dir=str(processed_dir))
     
     assert os.path.exists(processed_dir / "train.jsonl")
     assert os.path.exists(processed_dir / "val.jsonl")
@@ -387,7 +441,7 @@ def test_build_dataset_valid(tmp_path):
     
     with open(processed_dir / "metadata.json", 'r') as f:
         meta = json.load(f)
-        assert meta["competitionId"] == "comp-eng-pl"
+        assert meta["competitionId"] == "comp-int-world-cup"
         assert meta["trainCount"] == 1
 ```
 
@@ -536,7 +590,7 @@ def build_dataset(competition_id: str, raw_path: Optional[str] = None, output_di
         json.dump(report, f, indent=2)
 
 if __name__ == "__main__":
-    build_dataset("comp-eng-pl")
+    build_dataset("comp-int-world-cup")
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -570,7 +624,7 @@ import { NormalizedMatch } from '@miraichi/shared';
 
 describe('Processed Dataset Integration Check', () => {
   it('should conform to the NormalizedMatch TypeScript contract structure', () => {
-    const datasetPath = path.resolve(__dirname, '../../data/processed/comp-eng-pl/train.jsonl');
+    const datasetPath = path.resolve(__dirname, '../../data/processed/comp-int-world-cup/train.jsonl');
     
     // Check if pipeline has run and file exists (fails gracefully with advice if not run)
     if (!fs.existsSync(datasetPath)) {
@@ -637,13 +691,13 @@ describe('Processed Dataset Integration Check', () => {
 ### Manual Verification
 1. Download a mock/sample schedule CSV using:
    ```bash
-   python apps/local-ai/scripts/download_snapshot.py comp-eng-pl
+   python apps/local-ai/scripts/download_snapshot.py comp-int-world-cup
    ```
 2. Build processed datasets:
    ```bash
-   python apps/local-ai/scripts/build_dataset.py comp-eng-pl
+   python apps/local-ai/scripts/build_dataset.py comp-int-world-cup
    ```
 3. Check generated directories:
-   - Verify `apps/local-ai/data/processed/comp-eng-pl/train.jsonl` contains valid JSON Lines.
+   - Verify `apps/local-ai/data/processed/comp-int-world-cup/train.jsonl` contains valid JSON Lines.
    - Verify `metadata.json` has valid hashes and counts.
    - Check `quality_report.json` for any parsing warnings.

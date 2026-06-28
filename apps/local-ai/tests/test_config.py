@@ -1,13 +1,20 @@
 import pytest
 from pydantic import ValidationError
+import scripts.config as config
 from scripts.config import IngestionConfig, get_competition_config
 
 def test_get_competition_config_valid():
-    cfg = get_competition_config("comp-eng-pl")
+    cfg = get_competition_config("comp-int-world-cup")
     assert cfg is not None
-    assert cfg.competition_id == "comp-eng-pl"
-    assert cfg.soccerdata_league == "ENG-Premier League"
-    assert cfg.seasons == [2022, 2023, 2024]
+    assert cfg.competition_id == "comp-int-world-cup"
+    assert cfg.soccerdata_league == "INT-World Cup"
+    assert cfg.seasons == [2014, 2018, 2022]
+    assert cfg.train_split == [2014]
+    assert cfg.val_split == [2018]
+    assert cfg.test_split == [2022]
+
+def test_initial_competition_targets_world_cup_research_use_case():
+    assert getattr(config, "INITIAL_COMPETITION_ID", None) == "comp-int-world-cup"
 
 def test_get_competition_config_invalid():
     cfg = get_competition_config("non-existent")
@@ -32,4 +39,3 @@ def test_ingestion_config_validation():
             soccerdata_league="Test League"
             # seasons is missing
         )
-

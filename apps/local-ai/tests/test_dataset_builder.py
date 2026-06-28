@@ -8,24 +8,24 @@ from scripts.config import IngestionConfig, COMPETITION_REGISTRY
 
 def test_build_dataset_valid(tmp_path):
     # Set up raw data test fixture
-    raw_csv = tmp_path / "comp-eng-pl_schedule.csv"
+    raw_csv = tmp_path / "comp-int-world-cup_schedule.csv"
     data = {
-        "season": [2022, 2023, 2024],
-        "date": ["2022-09-01", "2023-09-02", "2024-09-03"],
-        "time": ["15:00", "16:00", "17:00"],
-        "home_team": ["Manchester United", "Arsenal", "Arsenal FC"],
-        "away_team": ["Arsenal", "Manchester United", "Manchester United"],
-        "home_score": [2.0, 1.0, 3.0],
-        "away_score": [1.0, 2.0, 0.0],
-        "venue": ["Old Trafford", "Emirates", "Emirates"],
-        "game_id": ["m1", "m2", "m3"]
+        "season": [2014, 2018, 2022],
+        "date": ["2014-06-16", "2018-07-15", "2022-11-26"],
+        "time": ["13:00", "18:00", "22:00"],
+        "home_team": ["Germany", "France", "Argentina"],
+        "away_team": ["Portugal", "Croatia", "Mexico"],
+        "home_score": [4.0, 4.0, 2.0],
+        "away_score": [0.0, 2.0, 0.0],
+        "venue": ["Arena Fonte Nova", "Luzhniki Stadium", "Lusail Stadium"],
+        "game_id": ["wc-2014-sample-1", "wc-2018-sample-1", "wc-2022-sample-1"]
     }
     df = pd.DataFrame(data)
     df.to_csv(raw_csv, index=False)
     
     # Process dataset
     processed_dir = tmp_path / "processed"
-    build_dataset("comp-eng-pl", raw_path=str(raw_csv), output_dir=str(processed_dir))
+    build_dataset("comp-int-world-cup", raw_path=str(raw_csv), output_dir=str(processed_dir))
     
     assert os.path.exists(processed_dir / "train.jsonl")
     assert os.path.exists(processed_dir / "val.jsonl")
@@ -36,7 +36,7 @@ def test_build_dataset_valid(tmp_path):
     # Verify metadata
     with open(processed_dir / "metadata.json", 'r') as f:
         meta = json.load(f)
-        assert meta["competitionId"] == "comp-eng-pl"
+        assert meta["competitionId"] == "comp-int-world-cup"
         assert meta["trainCount"] == 1
         assert meta["valCount"] == 1
         assert meta["testCount"] == 1
@@ -52,14 +52,14 @@ def test_build_dataset_valid(tmp_path):
     # Verify structured record in train.jsonl
     with open(processed_dir / "train.jsonl", 'r') as f:
         record = json.loads(f.readline())
-        assert record["id"] == "match-m1"
-        assert record["competitionId"] == "comp-eng-pl"
-        assert record["homeTeamId"] == "team-eng-man-united"
-        assert record["awayTeamId"] == "team-eng-arsenal"
+        assert record["id"] == "match-wc-2014-sample-1"
+        assert record["competitionId"] == "comp-int-world-cup"
+        assert record["homeTeamId"] == "team-deu-national"
+        assert record["awayTeamId"] == "team-prt-national"
         assert record["status"] == "completed"
-        assert record["kickoffTime"] == "2022-09-01T15:00:00Z"
-        assert record["scores"] == {"homeScore": 2, "awayScore": 1}
-        assert record["venueName"] == "Old Trafford"
+        assert record["kickoffTime"] == "2014-06-16T13:00:00Z"
+        assert record["scores"] == {"homeScore": 4, "awayScore": 0}
+        assert record["venueName"] == "Arena Fonte Nova"
 
 def test_processed_match_empty_team_id():
     with pytest.raises(ValidationError):
@@ -82,13 +82,13 @@ def test_match_scores_validation():
 
 def test_build_dataset_nan_time(tmp_path):
     # Set up raw data test fixture with a NaN time
-    raw_csv = tmp_path / "comp-eng-pl_schedule.csv"
+    raw_csv = tmp_path / "comp-int-world-cup_schedule.csv"
     data = {
-        "season": [2022],
-        "date": ["2022-09-01"],
+        "season": [2014],
+        "date": ["2014-06-16"],
         "time": [None],  # Time is missing
-        "home_team": ["Manchester United"],
-        "away_team": ["Arsenal"],
+        "home_team": ["Germany"],
+        "away_team": ["Portugal"],
         "home_score": [None],
         "away_score": [None],
         "venue": [None],
@@ -98,33 +98,33 @@ def test_build_dataset_nan_time(tmp_path):
     df.to_csv(raw_csv, index=False)
     
     processed_dir = tmp_path / "processed"
-    build_dataset("comp-eng-pl", raw_path=str(raw_csv), output_dir=str(processed_dir))
+    build_dataset("comp-int-world-cup", raw_path=str(raw_csv), output_dir=str(processed_dir))
     
     # Verify kickoffTime defaults to 00:00
     with open(processed_dir / "train.jsonl", 'r') as f:
         record = json.loads(f.readline())
-        assert record["kickoffTime"] == "2022-09-01T00:00:00Z"
+        assert record["kickoffTime"] == "2014-06-16T00:00:00Z"
         assert record["scores"] is None
 
 def test_build_dataset_invalid_records(tmp_path):
     # Set up raw data with invalid fields (missing critical date or game_id)
-    raw_csv = tmp_path / "comp-eng-pl_schedule.csv"
+    raw_csv = tmp_path / "comp-int-world-cup_schedule.csv"
     data = {
-        "season": [2022, 2022, 2022],
-        "date": ["2022-09-01", None, "2022-09-03"],
+        "season": [2014, 2014, 2014],
+        "date": ["2014-06-16", None, "2014-06-20"],
         "time": ["15:00", "16:00", "17:00"],
-        "home_team": ["Manchester United", "Arsenal", "Arsenal FC"],
-        "away_team": ["Arsenal", "Manchester United", "Manchester United"],
-        "home_score": [2, 1, 3],
-        "away_score": [1, 2, 0],
-        "venue": ["Old Trafford", "Emirates", "Emirates"],
+        "home_team": ["Germany", "France", "Argentina"],
+        "away_team": ["Portugal", "Croatia", "Mexico"],
+        "home_score": [4, 4, 2],
+        "away_score": [0, 2, 0],
+        "venue": ["Arena Fonte Nova", "Luzhniki Stadium", "Lusail Stadium"],
         "game_id": ["m1", "m2", None]  # m2 lacks date, m3 lacks game_id
     }
     df = pd.DataFrame(data)
     df.to_csv(raw_csv, index=False)
     
     processed_dir = tmp_path / "processed"
-    build_dataset("comp-eng-pl", raw_path=str(raw_csv), output_dir=str(processed_dir))
+    build_dataset("comp-int-world-cup", raw_path=str(raw_csv), output_dir=str(processed_dir))
     
     with open(processed_dir / "quality_report.json", 'r') as f:
         report = json.load(f)
@@ -136,68 +136,68 @@ def test_build_dataset_invalid_records(tmp_path):
 def test_build_dataset_non_disjoint_splits(tmp_path, monkeypatch):
     # Create invalid config with overlapping splits
     invalid_config = IngestionConfig(
-        competition_id="comp-eng-pl",
-        soccerdata_league="ENG-Premier League",
-        seasons=[2022, 2023, 2024],
-        train_split=[2022, 2023],
-        val_split=[2023],  # Overlaps with train!
-        test_split=[2024]
+        competition_id="comp-int-world-cup",
+        soccerdata_league="INT-World Cup",
+        seasons=[2014, 2018, 2022],
+        train_split=[2014, 2018],
+        val_split=[2018],  # Overlaps with train!
+        test_split=[2022]
     )
     
     # Temporarily override registry
-    monkeypatch.setitem(COMPETITION_REGISTRY, "comp-eng-pl", invalid_config)
+    monkeypatch.setitem(COMPETITION_REGISTRY, "comp-int-world-cup", invalid_config)
     
-    raw_csv = tmp_path / "comp-eng-pl_schedule.csv"
+    raw_csv = tmp_path / "comp-int-world-cup_schedule.csv"
     df = pd.DataFrame({
-        "season": [2022],
-        "date": ["2022-09-01"],
+        "season": [2014],
+        "date": ["2014-06-16"],
         "time": ["15:00"],
-        "home_team": ["Manchester United"],
-        "away_team": ["Arsenal"],
-        "home_score": [2],
-        "away_score": [1],
-        "venue": ["Old Trafford"],
+        "home_team": ["Germany"],
+        "away_team": ["Portugal"],
+        "home_score": [4],
+        "away_score": [0],
+        "venue": ["Arena Fonte Nova"],
         "game_id": ["m1"]
     })
     df.to_csv(raw_csv, index=False)
     
     processed_dir = tmp_path / "processed"
     with pytest.raises(ValueError, match="Train, validation, and test splits must be disjoint"):
-        build_dataset("comp-eng-pl", raw_path=str(raw_csv), output_dir=str(processed_dir))
+        build_dataset("comp-int-world-cup", raw_path=str(raw_csv), output_dir=str(processed_dir))
 
 def test_build_dataset_non_chronological_splits(tmp_path, monkeypatch):
     # Create config with non-chronological splits
     invalid_config = IngestionConfig(
-        competition_id="comp-eng-pl",
-        soccerdata_league="ENG-Premier League",
-        seasons=[2022, 2023, 2024],
-        train_split=[2024],  # Train is in future
-        val_split=[2023],
-        test_split=[2022]
+        competition_id="comp-int-world-cup",
+        soccerdata_league="INT-World Cup",
+        seasons=[2014, 2018, 2022],
+        train_split=[2022],  # Train is in future
+        val_split=[2018],
+        test_split=[2014]
     )
     
     # Temporarily override registry
-    monkeypatch.setitem(COMPETITION_REGISTRY, "comp-eng-pl", invalid_config)
+    monkeypatch.setitem(COMPETITION_REGISTRY, "comp-int-world-cup", invalid_config)
     
-    raw_csv = tmp_path / "comp-eng-pl_schedule.csv"
+    raw_csv = tmp_path / "comp-int-world-cup_schedule.csv"
     df = pd.DataFrame({
-        "season": [2022],
-        "date": ["2022-09-01"],
+        "season": [2014],
+        "date": ["2014-06-16"],
         "time": ["15:00"],
-        "home_team": ["Manchester United"],
-        "away_team": ["Arsenal"],
-        "home_score": [2],
-        "away_score": [1],
-        "venue": ["Old Trafford"],
+        "home_team": ["Germany"],
+        "away_team": ["Portugal"],
+        "home_score": [4],
+        "away_score": [0],
+        "venue": ["Arena Fonte Nova"],
         "game_id": ["m1"]
     })
     df.to_csv(raw_csv, index=False)
     
     processed_dir = tmp_path / "processed"
     with pytest.raises(ValueError, match="Train split seasons must precede validation split seasons"):
-        build_dataset("comp-eng-pl", raw_path=str(raw_csv), output_dir=str(processed_dir))
+        build_dataset("comp-int-world-cup", raw_path=str(raw_csv), output_dir=str(processed_dir))
 
 def test_build_dataset_missing_raw_file(tmp_path):
     processed_dir = tmp_path / "processed"
     with pytest.raises(IOError, match="Failed to read raw CSV file"):
-        build_dataset("comp-eng-pl", raw_path="non_existent_file.csv", output_dir=str(processed_dir))
+        build_dataset("comp-int-world-cup", raw_path="non_existent_file.csv", output_dir=str(processed_dir))
