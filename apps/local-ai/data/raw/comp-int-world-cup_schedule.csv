@@ -1,0 +1,4 @@
+season,date,time,home_team,away_team,home_score,away_score,venue,game_id
+2014,2014-06-16,13:00,Germany,Portugal,4.0,0.0,Arena Fonte Nova,wc-2014-sample-1
+2018,2018-07-15,18:00,France,Croatia,4.0,2.0,Luzhniki Stadium,wc-2018-sample-1
+2022,2022-11-26,22:00,Argentina,Mexico,2.0,0.0,Lusail Stadium,wc-2022-sample-1

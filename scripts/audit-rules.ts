@@ -13,9 +13,9 @@ const RULES = [
     message: 'Database ORM/Client library import found. DB connections are strictly forbidden in Phase 2.'
   },
   {
-    name: 'World Cup/Tournament Hardcoding Check',
+    name: 'Core Logic Tournament Coupling Check',
     pattern: /['"](?:world\s*cup|fifa|premier\s*league|la\s*liga)['"]/i,
-    message: 'Hardcoded specific tournament/competition name found. Miraichi must remain competition-agnostic.',
+    message: 'Competition-specific string found in code. World Cup/national-team metadata belongs in registry/config/data, not core logic.',
     // Allowed files for this specific rule (tests and validators checking agnosticism checks)
     allowList: [
       'packages/config/src/competition-registry.mock.ts',
@@ -25,7 +25,15 @@ const RULES = [
   {
     name: 'Betting Calculation Check',
     pattern: /(?:kellyCriterion|calculatePayout|impliedProbability|oddsToProbability|payoutMultiplier)/i,
-    message: 'Premature betting/odds calculation function found. Betting math is forbidden in Phase 2.'
+    message: 'Premature betting/odds calculation function found. Betting math is forbidden in Phase 2.',
+    allowList: [
+      'apps/local-ai/src/features/feature-spec.ts',
+      'apps/local-ai/src/features/feature-spec.test.ts',
+      'apps/local-ai/src/features/leakage-audit.ts',
+      'apps/local-ai/src/features/leakage-audit.test.ts',
+      'apps/local-ai/src/features/feature-audit-report.ts',
+      'apps/local-ai/src/features/feature-audit-report.test.ts'
+    ]
   },
   {
     name: 'Bankroll & Risk Limit Check',

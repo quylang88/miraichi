@@ -34,8 +34,11 @@ Use this skill at the beginning of every task analysis, plan creation, or before
 - Do not implement betting calculations.
 - Do not create production database schemas.
 - Do not add secrets.
-- Do not hard-code World Cup.
-- World Cup is only the first use case.
+- World Cup is the first explicit data/training target for Phase 8.
+- National teams and national-team competitions come before club competitions.
+- Do not bury World Cup-only assumptions inside core parser, route, model, or business logic.
+- World Cup and national-team competition metadata must live in registry/config/data artifacts.
+- Club competitions are expansion scope after the national-team-first path is reviewed.
 - Miraichi must remain competition-agnostic.
 - New application modules default to TypeScript.
 - After the owner-approved repo-wide JavaScript-to-TypeScript migration, tracked implementation source under `apps/`, `packages/`, and `scripts/` must stay TypeScript-first. Do not add new tracked `.js` source files there unless an explicit owner-approved compatibility exception names the file and reason.
@@ -44,7 +47,7 @@ Use this skill at the beginning of every task analysis, plan creation, or before
 - Repository-wide JavaScript-to-TypeScript migration is allowed only when the owner explicitly requests it in the active task. It must preserve browser `.js` URLs where required, update runtime commands before verification, avoid `@ts-nocheck` as a blanket escape hatch, and pass local plus integration verification before being reported complete.
 
 ## What Not to Do
-- Never accept a task to write business logic, prediction logic, betting formulas, production schemas, secrets, or hard-coded competition logic without an accepted owner-approved lifecycle boundary.
+- Never accept a task to write business logic, prediction logic, betting formulas, production schemas, secrets, or competition-coupled core logic without an accepted owner-approved lifecycle boundary.
 - Never reintroduce tracked JavaScript implementation source as a shortcut after the repo-wide TypeScript migration.
 
 ## Definition of Done

@@ -63,8 +63,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Status**: Completed.
 
 ### Phase 8: Model Training and Prediction Engine R&D
-- **Goal**: Research and prototype owner-only, free-tier model training approaches through reproducible datasets, leakage-safe feature specs, chronological evaluation, and model comparison reports before any real inference runtime is selected.
-- **Deliverables**: Phase 8 owner-only R&D subphase plan, dataset snapshot/provenance plan, feature spec and leakage audit plan, evaluation harness and baseline reports, candidate model bake-off report, owner-approved model-selection ADR, and optional runtime packaging plan only if evidence justifies it.
+- **Goal**: Research and prototype owner-only, free-tier model training approaches through World Cup and national-team competition datasets first, then leakage-safe feature specs, chronological evaluation, and model comparison reports before any real inference runtime is selected. Club competitions are expansion scope after the national-team-first path is reviewed.
+- **Deliverables**: Phase 8 owner-only R&D subphase plan, World Cup/national-team dataset snapshot and provenance plan, feature spec and leakage audit plan, evaluation harness and baseline reports, candidate model bake-off report, owner-approved model-selection ADR, and optional runtime packaging plan only if evidence justifies it.
 - **Status**: Active.
 
 ## TODO / Next Steps
@@ -122,10 +122,13 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning only after owner-approved ADRs exist.
 - [x] Create Phase 8 Owner-Only Model R&D plan and split Phase 8 into smaller gated subphases.
 - [ ] Owner review Phase 8.0 R&D boundary split before Phase 8.1 implementation planning.
-- [ ] Create `phase:implementation-plan Phase 8.1 Dataset Snapshot and Provenance`.
-- [ ] Complete Phase 8.1 reproducible offline dataset snapshot and data quality report.
-- [ ] Create and complete Phase 8.2 Feature Spec and Leakage Audit.
-- [ ] Create and complete Phase 8.3 Evaluation Harness and Baselines, including Brier, Calibration/ECE, log loss, sample count, and bookmaker/simple baseline comparison.
+- [x] Create `phase:implementation-plan Phase 8.1 Dataset Snapshot and Provenance`.
+- [x] Complete Phase 8.1 reproducible offline dataset snapshot and data quality report.
+- [x] Review and correct Phase 8.1 to make World Cup/national-team competitions the explicit first data target before Phase 8.2.
+- [x] Create `phase:implementation-plan Phase 8.2 Feature Spec and Leakage Audit`.
+- [x] Complete Phase 8.2 Feature Spec and Leakage Audit.
+- [x] Create `phase:implementation-plan Phase 8.3 Evaluation Harness and Baselines`.
+- [ ] Complete Phase 8.3 Evaluation Harness and Baselines, using pure TypeScript metric functions in `apps/local-ai` for Brier, Calibration/ECE, and log loss, reporting sample count and bookmaker/simple baseline comparison without blocking harness construction on additional national-team competitions.
 - [ ] Create and complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.
 - [ ] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.

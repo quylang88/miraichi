@@ -23,10 +23,10 @@ try {
 }
 
 try {
-  validateConfig({ competitionId: 'comp_1', name: 'World Cup Tournament' });
-  assert(false, 'validateConfig should reject hardcoded "World Cup" tournament references');
+  const validWorldCupRegistry = validateConfig({ competitionId: 'comp_1', name: 'World Cup Tournament', sport: 'football', status: 'active' });
+  assert(validWorldCupRegistry === true, 'validateConfig accepts World Cup as explicit registry metadata');
 } catch (err) {
-  assert((err instanceof Error ? err.message : String(err)).includes('strictly forbidden'), 'validateConfig successfully rejects "World Cup" keyword');
+  assert(false, `validateConfig rejected valid World Cup registry metadata: ${err instanceof Error ? err.message : String(err)}`);
 }
 
 try {
