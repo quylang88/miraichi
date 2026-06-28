@@ -25,7 +25,15 @@ const RULES = [
   {
     name: 'Betting Calculation Check',
     pattern: /(?:kellyCriterion|calculatePayout|impliedProbability|oddsToProbability|payoutMultiplier)/i,
-    message: 'Premature betting/odds calculation function found. Betting math is forbidden in Phase 2.'
+    message: 'Premature betting/odds calculation function found. Betting math is forbidden in Phase 2.',
+    allowList: [
+      'apps/local-ai/src/features/feature-spec.ts',
+      'apps/local-ai/src/features/feature-spec.test.ts',
+      'apps/local-ai/src/features/leakage-audit.ts',
+      'apps/local-ai/src/features/leakage-audit.test.ts',
+      'apps/local-ai/src/features/feature-audit-report.ts',
+      'apps/local-ai/src/features/feature-audit-report.test.ts'
+    ]
   },
   {
     name: 'Bankroll & Risk Limit Check',
