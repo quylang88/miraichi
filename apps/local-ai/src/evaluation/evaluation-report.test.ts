@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EvaluationDataset } from './evaluation-dataset.js';
-import { buildEvaluationReport } from './evaluation-report.js';
+import { buildEvaluationReport, generateReportMarkdown } from './evaluation-report.js';
 
 const dataset: EvaluationDataset = {
   metadata: {
@@ -159,5 +159,17 @@ describe('Phase 8.3 evaluation report', () => {
     expect(report.warnings).toContain(
       'World Cup-only evaluation must not be treated as statistically strong until related national-team competitions are added.'
     );
+  });
+
+  it('generates report markdown that does not hardcode verify:local as PASS', () => {
+    const report = buildEvaluationReport(dataset, { eceBinCount: 5 });
+    const markdown = generateReportMarkdown(report);
+
+    expect(markdown).toContain('## Verification');
+    expect(markdown).toContain('- `pnpm run phase8:evaluation-harness`: PASS');
+    expect(markdown).not.toContain('- `pnpm run verify:local`: PASS');
+    expect(markdown).not.toContain('- `pnpm run test:integration`: PASS');
+    expect(markdown).toContain('- `pnpm run verify:local`: Required external verification');
+    expect(markdown).toContain('- `pnpm run test:integration`: Required external verification');
   });
 });

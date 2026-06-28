@@ -36,7 +36,7 @@ Phase 8.3 can generate baseline metrics, but the current World Cup-only snapshot
 Do not start Phase 8.4 candidate model bake-off until related national-team competitions are added or the owner accepts that Phase 8.4 will run as a high-variance experiment only.
 
 ## Verification
-- `pnpm --filter local-ai test`: PASS
+- `pnpm --filter local-ai test`: Run separately
 - `pnpm run phase8:evaluation-harness`: PASS
-- `pnpm run verify:local`: PASS
-- `pnpm run test:integration`: PASS
+- `pnpm run verify:local`: Required external verification
+- `pnpm run test:integration`: Required external verification
