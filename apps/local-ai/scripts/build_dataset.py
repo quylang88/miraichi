@@ -79,18 +79,37 @@ def build_dataset(competition_id: str, raw_path: Optional[str] = None, output_di
                 
             season_year = int(row["season"])
             
-            # Safely handle missing or NaN time field
+            # Safely handle missing or NaN time field and strip timezone descriptors (e.g. "21:00 (04:00)")
             time_val = row.get("time")
-            time_str = "00:00" if pd.isna(time_val) else str(time_val).strip()
+            if pd.isna(time_val):
+                time_str = "00:00"
+            else:
+                time_str = str(time_val).strip().split(" ")[0]
             kickoff_str = f"{row['date']}T{time_str}:00Z"
             
             # Scores extraction using Pydantic MatchScores
             scores = None
-            if not pd.isna(row.get("home_score")) and not pd.isna(row.get("away_score")):
+            has_home_away = "home_score" in row and "away_score" in row and not pd.isna(row.get("home_score")) and not pd.isna(row.get("away_score"))
+            if has_home_away:
                 scores = MatchScores(
                     homeScore=int(float(row["home_score"])),
                     awayScore=int(float(row["away_score"]))
                 )
+            elif "score" in row and not pd.isna(row.get("score")):
+                score_str = str(row["score"]).strip()
+                parts = []
+                for sep in ["\u2013", "\u2014", "-"]:
+                    if sep in score_str:
+                        parts = score_str.split(sep)
+                        break
+                if len(parts) == 2:
+                    try:
+                        scores = MatchScores(
+                            homeScore=int(float(parts[0].strip())),
+                            awayScore=int(float(parts[1].strip()))
+                        )
+                    except ValueError:
+                        pass
             
             # Map Team names
             home_id = team_mapper.resolve(str(row["home_team"]))

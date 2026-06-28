@@ -13,16 +13,15 @@ Phase 8.3 can generate baseline metrics, but the current World Cup-only snapshot
 - Competition: `comp-int-world-cup`
 - Feature spec version: `feature-spec-v0.1.0`
 - Evaluation split: `test`
-- Test sample count: 1
-- Missing bookmaker baseline count: 1
+- Test sample count: 107
+- Missing bookmaker baseline count: 107
 - Metrics implementation: pure TypeScript in `apps/local-ai`
 
 ## Baselines
-- `uniform_1x2`: Brier=0.666667, LogLoss=1.098612, Accuracy=1.000000, ECE=0.666667, N=1
-- `train_outcome_frequency_smoothed`: Brier=0.375000, LogLoss=0.693147, Accuracy=1.000000, ECE=0.500000, N=1
+- `uniform_1x2`: Brier=0.666667, LogLoss=1.098612, Accuracy=0.448598, ECE=0.115265, N=107
+- `train_outcome_frequency_smoothed`: Brier=0.644524, LogLoss=1.066064, Accuracy=0.448598, ECE=0.007157, N=107
 
 ## Warnings
-- Evaluation sample count is below 100 fixtures; this is harness/plumbing evidence only, not reliable calibration evidence.
 - World Cup-only evaluation must not be treated as statistically strong until related national-team competitions are added.
 
 ## Explicit Non-Authorizations

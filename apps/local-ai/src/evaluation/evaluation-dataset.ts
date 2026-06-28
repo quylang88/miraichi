@@ -150,3 +150,26 @@ export function loadEvaluationDataset(processedDir: string): EvaluationDataset {
       train.skippedRecordCount + validation.skippedRecordCount + test.skippedRecordCount
   };
 }
+
+export type AggregateEvaluationDataset = EvaluationDataset & {
+  competitionIds: string[];
+};
+
+export function loadEvaluationDatasets(processedDirs: readonly string[]): AggregateEvaluationDataset {
+  if (processedDirs.length === 0) {
+    throw new Error('At least one processed dataset directory is required.');
+  }
+
+  const datasets = processedDirs.map((processedDir) => loadEvaluationDataset(processedDir));
+  const first = datasets[0];
+
+  return {
+    metadata: first.metadata,
+    competitionId: first.competitionId,
+    competitionIds: datasets.map((dataset) => dataset.competitionId),
+    train: datasets.flatMap((dataset) => dataset.train),
+    validation: datasets.flatMap((dataset) => dataset.validation),
+    test: datasets.flatMap((dataset) => dataset.test),
+    skippedRecordCount: datasets.reduce((sum, dataset) => sum + dataset.skippedRecordCount, 0),
+  };
+}

@@ -7,7 +7,33 @@
       "seasons": [2014, 2018, 2022],
       "train_split": [2014],
       "val_split": [2018],
-      "test_split": [2022]
+      "test_split": [2022],
+      "competition_type": "national_team",
+      "provider_status": "supported",
+      "enabled": true
+    },
+    {
+      "competition_id": "comp-int-euro",
+      "soccerdata_league": "INT-European Championship",
+      "seasons": [2016, 2021, 2024],
+      "train_split": [2016],
+      "val_split": [2021],
+      "test_split": [2024],
+      "competition_type": "national_team",
+      "provider_status": "supported",
+      "enabled": true
+    },
+    {
+      "competition_id": "comp-int-copa-america",
+      "soccerdata_league": "INT-Copa America",
+      "seasons": [],
+      "train_split": [],
+      "val_split": [],
+      "test_split": [],
+      "competition_type": "national_team",
+      "provider_status": "unsupported",
+      "enabled": false
     }
   ]
 }
+

@@ -1,0 +1,21 @@
+{
+  "reportId": "phase-8-3a-national-team-dataset-expansion",
+  "phase": "8.3A",
+  "status": "pass",
+  "enabledCompetitionIds": [
+    "comp-int-world-cup",
+    "comp-int-euro"
+  ],
+  "totalTrainCount": 108,
+  "totalValidationCount": 60,
+  "totalTestCount": 107,
+  "missingProcessedDirs": [],
+  "phase84DataReady": true,
+  "warnings": [],
+  "blockedScope": [
+    "club_competition_expansion",
+    "candidate_model_bake_off_until_phase84DataReady",
+    "runtime_prediction",
+    "betting_recommendation"
+  ]
+}

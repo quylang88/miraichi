@@ -39,3 +39,36 @@ def test_ingestion_config_validation():
             soccerdata_league="Test League"
             # seasons is missing
         )
+
+
+def test_registry_marks_enabled_competitions_as_national_team_only():
+    enabled = config.get_enabled_national_team_configs()
+
+    assert {item.competition_id for item in enabled} == {"comp-int-world-cup", "comp-int-euro"}
+    assert all(item.competition_type == "national_team" for item in enabled)
+    assert all(item.enabled is True for item in enabled)
+
+
+def test_copa_america_is_not_enabled_without_provider_support():
+    cfg = get_competition_config("comp-int-copa-america")
+
+    assert cfg is not None
+    assert cfg.competition_type == "national_team"
+    assert cfg.enabled is False
+    assert cfg.provider_status == "unsupported"
+
+
+def test_registry_rejects_enabled_club_competitions():
+    with pytest.raises(ValidationError):
+        IngestionConfig(
+            competition_id="comp-eng-premier-league",
+            soccerdata_league="ENG-Premier League",
+            seasons=[2022, 2023, 2024],
+            train_split=[2022],
+            val_split=[2023],
+            test_split=[2024],
+            competition_type="club",
+            provider_status="supported",
+            enabled=True,
+        )
+

@@ -1,0 +1,64 @@
+{
+  "sourceProviderId": "soccerdata-fbref",
+  "competitions": [
+    {
+      "competitionId": "comp-int-world-cup",
+      "providerLeague": "INT-World Cup",
+      "competitionType": "national_team",
+      "providerStatus": "supported",
+      "enabledByDefault": true,
+      "blockedReason": null
+    },
+    {
+      "competitionId": "comp-int-euro",
+      "providerLeague": "INT-European Championship",
+      "competitionType": "national_team",
+      "providerStatus": "supported",
+      "enabledByDefault": true,
+      "blockedReason": null
+    },
+    {
+      "competitionId": "comp-int-womens-world-cup",
+      "providerLeague": "INT-Women's World Cup",
+      "competitionType": "national_team",
+      "providerStatus": "supported",
+      "enabledByDefault": false,
+      "blockedReason": null
+    },
+    {
+      "competitionId": "comp-int-copa-america",
+      "providerLeague": "INT-Copa America",
+      "competitionType": "national_team",
+      "providerStatus": "unsupported",
+      "enabledByDefault": false,
+      "blockedReason": "INT-Copa America is not available from current FBref soccerdata discovery."
+    }
+  ],
+  "blockedClubCompetitions": [
+    {
+      "providerLeague": "ENG-Premier League",
+      "competitionType": "club",
+      "blockedReason": "club_competition"
+    },
+    {
+      "providerLeague": "ESP-La Liga",
+      "competitionType": "club",
+      "blockedReason": "club_competition"
+    },
+    {
+      "providerLeague": "GER-Bundesliga",
+      "competitionType": "club",
+      "blockedReason": "club_competition"
+    },
+    {
+      "providerLeague": "ITA-Serie A",
+      "competitionType": "club",
+      "blockedReason": "club_competition"
+    },
+    {
+      "providerLeague": "FRA-Ligue 1",
+      "competitionType": "club",
+      "blockedReason": "club_competition"
+    }
+  ]
+}

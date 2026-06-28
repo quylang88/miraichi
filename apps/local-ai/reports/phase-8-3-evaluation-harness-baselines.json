@@ -6,22 +6,22 @@
   "competitionId": "comp-int-world-cup",
   "featureSpecVersion": "feature-spec-v0.1.0",
   "evaluationSplit": "test",
-  "sampleCount": 1,
-  "trainSampleCount": 1,
-  "validationSampleCount": 1,
-  "skippedRecordCount": 0,
-  "missingBookmakerBaselineCount": 1,
+  "sampleCount": 107,
+  "trainSampleCount": 108,
+  "validationSampleCount": 60,
+  "skippedRecordCount": 19,
+  "missingBookmakerBaselineCount": 107,
   "baselines": [
     {
       "id": "uniform_1x2",
-      "evaluatedSampleCount": 1,
+      "evaluatedSampleCount": 107,
       "metrics": {
-        "brierScore": 0.6666666666666667,
-        "logLoss": 1.0986122886681098,
-        "classAccuracy": 1,
+        "brierScore": 0.6666666666666662,
+        "logLoss": 1.0986122886681082,
+        "classAccuracy": 0.4485981308411215,
         "expectedCalibrationError": {
-          "ece": 0.6666666666666667,
-          "sampleCount": 1,
+          "ece": 0.1152647975077884,
+          "sampleCount": 107,
           "binCount": 10,
           "bins": [
             {
@@ -55,10 +55,10 @@
               "index": 3,
               "lowerInclusive": 0.3,
               "upperExclusive": 0.4,
-              "sampleCount": 1,
-              "averageConfidence": 0.3333333333333333,
-              "accuracy": 1,
-              "gap": 0.6666666666666667
+              "sampleCount": 107,
+              "averageConfidence": 0.3333333333333331,
+              "accuracy": 0.4485981308411215,
+              "gap": 0.1152647975077884
             },
             {
               "index": 4,
@@ -120,14 +120,14 @@
     },
     {
       "id": "train_outcome_frequency_smoothed",
-      "evaluatedSampleCount": 1,
+      "evaluatedSampleCount": 107,
       "metrics": {
-        "brierScore": 0.375,
-        "logLoss": 0.6931471805599453,
-        "classAccuracy": 1,
+        "brierScore": 0.644523786226236,
+        "logLoss": 1.0660635176738023,
+        "classAccuracy": 0.4485981308411215,
         "expectedCalibrationError": {
-          "ece": 0.5,
-          "sampleCount": 1,
+          "ece": 0.007156689399680449,
+          "sampleCount": 107,
           "binCount": 10,
           "bins": [
             {
@@ -170,19 +170,19 @@
               "index": 4,
               "lowerInclusive": 0.4,
               "upperExclusive": 0.5,
-              "sampleCount": 0,
-              "averageConfidence": 0,
-              "accuracy": 0,
-              "gap": 0
+              "sampleCount": 107,
+              "averageConfidence": 0.44144144144144104,
+              "accuracy": 0.4485981308411215,
+              "gap": 0.007156689399680449
             },
             {
               "index": 5,
               "lowerInclusive": 0.5,
               "upperExclusive": 0.6,
-              "sampleCount": 1,
-              "averageConfidence": 0.5,
-              "accuracy": 1,
-              "gap": 0.5
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
             },
             {
               "index": 6,
@@ -226,11 +226,10 @@
     }
   ],
   "warnings": [
-    "Evaluation sample count is below 100 fixtures; this is harness/plumbing evidence only, not reliable calibration evidence.",
     "World Cup-only evaluation must not be treated as statistically strong until related national-team competitions are added."
   ],
   "nonBlockingGates": {
-    "sampleCountAtLeast100": false,
+    "sampleCountAtLeast100": true,
     "bookmakerBaselineAvailable": false
   },
   "ownerDecisions": {
