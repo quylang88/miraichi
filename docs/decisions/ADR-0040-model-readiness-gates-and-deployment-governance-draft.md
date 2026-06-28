@@ -17,19 +17,20 @@ A model that is overfit, uncalibrated, or weaker than the market baseline should
 * **Option B (Draft Recommended)**: Require automated model-readiness gates plus explicit owner approval before promotion.
 
 ## 3. Draft Recommendation
-Recommend **Option B** with candidate owner-only R&D review gates:
+Recommend **Option B** with candidate owner-only R&D review gates, implemented as **non-blocking metrics in experimental reports**:
 
-1. **Brier Improvement Gate**: Candidate model Brier Score should be at least 1% lower than the bookmaker-implied baseline on the out-of-sample set.
-2. **Data Sufficiency Gate**: Candidate model should be evaluated on at least 100 out-of-sample fixtures.
-3. **Calibration Gate**: Candidate model Expected Calibration Error should be under 5%.
-4. **Owner Approval Gate**: Passing automated gates makes a model eligible for owner review only. It does not auto-promote the model.
+1. **Brier Improvement Gate**: Candidate model Brier Score should be compared against the bookmaker-implied baseline on the out-of-sample set (target: at least 1% improvement).
+2. **Data Sufficiency Gate**: Candidate model should be evaluated on at least 100 out-of-sample fixtures to ensure statistical relevance.
+3. **Calibration Gate**: Candidate model Expected Calibration Error should be calculated (target: under 5%).
+4. **Owner Manual Sign-off**: The automated gates serve as visual health indicators on a model comparison report. The owner manually decides which model version to activate based on report evidence.
 
-These values are draft thresholds, not accepted production thresholds. For the first owner-only phase, the system should generate experimental evaluation reports only. It should not present a model as production-ready, recommend wagers, suggest stakes, or expose prediction recommendations to public users.
+These values are draft guidelines, not strict automated blocking checks. For this first owner-only phase, the local-ai pipeline should output these metrics in an experimental evaluation log/report. It should not fail builds, block deployments, or automatically restrict model experimentation. It must not present a model as production-ready, recommend wagers, suggest stakes, or expose prediction recommendations to public users.
 
 ## 4. Owner Decisions Required
 | Question | Recommended Answer | Reason | Risk If Chosen Otherwise |
 | --- | --- | --- | --- |
-| Who approves model promotion if gates pass? | The project owner gives final approval. Automated gates are necessary but not sufficient. | Model output affects product trust and future betting-adjacent workflows. | Auto-promotion can surface weak or misleading recommendations. |
+| Should gates block local model execution/usage? | **No, they should be non-blocking report metrics.** They act as indicators on an experimental report rather than hard blockers. | Hard-blocking gates during initial R&D will prevent the owner from testing models or diagnosing performance issues. | Strict gates will block developer/owner iteration before we have baseline empirical datasets. |
+| Who approves model promotion if gates pass? | The project owner gives final manual approval based on the generated evaluation reports. | Model output affects product trust and future betting-adjacent workflows. | Auto-promotion can surface weak or misleading recommendations. |
 | Should calibration gates be separate per market type? | Yes. Start with `1X2`; add Over/Under and other markets only after enough market-specific data exists. | Different markets have different distributions and liquidity. | A model can pass on one market while failing another. |
 | Should 1% Brier improvement, 100 fixtures, and ECE < 5% be accepted now? | Keep them as draft-only R&D/staging candidate gates until Phase 8 produces empirical evidence. | These thresholds are plausible but not yet validated on Miraichi data. | Premature production thresholds create false certainty and may block useful research or approve weak models. |
 | What should owner-only usage allow before production governance is accepted? | Allow private experimental reports for the project owner only. Do not allow public predictions, model-ready labels, betting recommendations, or stake advice. | Owner-only reports support learning without creating product trust or responsible-use exposure. | Treating private experiments as recommendations will blur the safety boundary and invite bad decisions from weak evidence. |
