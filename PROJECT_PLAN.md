@@ -60,7 +60,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 ### Phase 7: Real Data Provider, Dataset, and Evaluation Planning
 - **Goal**: Plan real provider selection, dataset construction, data quality, evaluation methodology, and governance for future real prediction work. The first provider target may be full FIFA World Cup fixture coverage, but implementation must remain competition-agnostic and adapter-based.
 - **Deliverables**: Owner-approved ADRs for data provider strategy, full World Cup fixture source coverage, dataset boundaries, evaluation criteria, provider adapter contracts, and model-readiness gates.
-- **Status**: Completed.
+- **Status**: Active - Draft Owner Review Required.
 
 ### Phase 8: Model Training and Prediction Engine R&D
 - **Goal**: Research and prototype real model training and prediction engine approaches only after Phase 7 planning is accepted.
@@ -115,4 +115,5 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
 - [x] Keep real AI training out of Phase 6; plan it only through future Phase 7 and Phase 8 ADRs.
 - [x] Open Phase 7 planning and draft candidate ADRs.
-- [x] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning.
+- [ ] Owner review Phase 7 planning package and ADR candidates before acceptance.
+- [ ] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning only after owner-approved ADRs exist.

@@ -44,6 +44,7 @@ Index list of records.
 - [ADR-0031-pwa-betting-journal-ux-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0031-pwa-betting-journal-ux-boundary.md) - PWA Betting Journal UX Boundary. (Status: Accepted)
 - [ADR-0033-local-first-betting-data-persistence-and-backup-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0033-local-first-betting-data-persistence-and-backup-boundary.md) - Local-First Betting Data Persistence and Backup Boundary. (Status: Accepted)
 - [ADR-0034-typescript-adoption-and-typed-domain-contracts-boundary.md](file:///c:/CODE/miraichi/docs/decisions/ADR-0034-typescript-adoption-and-typed-domain-contracts-boundary.md) - TypeScript Adoption and Typed Domain Contracts Boundary. (Status: Accepted)
+- [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md) - Candidate decisions for real data provider selection, competition-agnostic fixture coverage, dataset boundaries, evaluation metrics, provider adapter validation, and model-readiness gates. (Status: Candidate)
  
  
  ## Reports & Summaries

@@ -68,7 +68,7 @@ Outlines high-level roadmap milestones across multiple phases.
 - Harden TypeScript strictness so future source code cannot regress to explicit `any`, tracked `.js` source, or TypeScript suppression comments.
 - Keep production promotion blocked until final-release owner approval.
 
-### Milestone 8: Real Data Provider, Dataset, and Evaluation Planning (Completed)
+### Milestone 8: Real Data Provider, Dataset, and Evaluation Planning (Draft Owner Review Required)
 - Plan real data provider selection and dataset boundaries.
 - Use full FIFA World Cup fixture coverage as the first provider target if accepted, while keeping the ingestion adapter competition-agnostic.
 - Define model evaluation criteria before any real training.
@@ -124,3 +124,6 @@ Outlines high-level roadmap milestones across multiple phases.
 - [x] Start `phase:code-slice Phase 6 type-safety audit gate`.
 - [x] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
 - [x] Keep real AI training out of Phase 6; reserve it for future Phase 7 and Phase 8 planning.
+- [x] Open Phase 7 planning and draft candidate ADRs.
+- [ ] Owner review Phase 7 planning package and ADR candidates before acceptance.
+- [ ] Complete Phase 7 only after owner-approved ADRs exist.

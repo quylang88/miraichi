@@ -18,7 +18,7 @@ Miraichi requires a reliable sports data provider to ingest real fixtures, histo
 * **Option C**: Integrate with alternative APIs such as football-data.org (which has a narrower coverage) or TheOdds-API (which lacks detailed match statistics and lineups).
 
 ### Recommended Direction
-**Option B**. API-Football is selected as the candidate provider. It covers more than 900 leagues globally (including the FIFA World Cup), provides rich match statistics, live lineups, and live/pre-match odds feeds. For development, we will utilize API-Football's free tier (100 requests/day, 10 requests/min, 1 request/sec concurrency limit) and implement local filesystem caching to avoid rate limiting and allow repeatable mock testing without API calls.
+**Option B**. API-Football is recommended as the candidate provider for owner review, not accepted as the production provider. Current planning assumes API-Football may provide broad football coverage, match statistics, lineups, and live/pre-match odds feeds, but quota and coverage claims must be rechecked against official provider pages before acceptance. If accepted for development, the adapter must implement local filesystem caching to reduce rate-limit pressure and allow repeatable mock testing without API calls.
 
 ### Risks
 * API format updates or schema changes from the provider could break the parser.
@@ -28,6 +28,7 @@ Miraichi requires a reliable sports data provider to ingest real fixtures, histo
 ### Open Questions
 * How to smoothly transition from the free tier to a paid production tier as traffic scales without rewriting integration code.
 * What strategy we should use to handle concurrency limits when executing bulk historical data ingestion.
+* Whether current official provider pricing, quota, and coverage pages still match the assumptions in [phase-7-planning.md](file:///c:/CODE/miraichi/docs/data/phase-7-planning.md).
 
 ### What It Must Not Decide Yet
 * Production API keys and credentials.
@@ -49,7 +50,7 @@ The immediate priority for Miraichi is to cover the FIFA World Cup fixtures, sta
 * **Option B**: Model a generic ingestion pipeline and map the World Cup using a dynamic registry configuration.
 
 ### Recommended Direction
-**Option B**. Use API-Football's generic league and fixture endpoints via a unified parser adapter. The parser will normalize incoming payloads into standard internal structures, specifically `NormalizedMatch` and `NormalizedMarket` shapes. The World Cup competition ID (e.g., league ID `1` for World Cup) and season identifier will not be hardcoded in TypeScript files; instead, they will be supplied via environment variables or stored as dynamic configuration records in the registry database.
+**Option B**. Use API-Football's generic league and fixture endpoints via a unified parser adapter if the provider is later accepted. The parser should normalize incoming payloads into standard internal structures, specifically `NormalizedMatch` and `NormalizedMarket` shapes. The World Cup competition ID (e.g., league ID `1` for World Cup) and season identifier must not be hardcoded in TypeScript files; instead, they should be supplied via environment variables or dynamic registry configuration approved in a later implementation plan.
 
 ### Risks
 * Differences in cup-specific tournament rules (such as extra time, penalty shootouts, and neutral venues) may require custom metadata fields in the normalized schemas.
@@ -57,7 +58,7 @@ The immediate priority for Miraichi is to cover the FIFA World Cup fixtures, sta
 
 ### Open Questions
 * How should we handle team name variations (e.g., "Vietnam" vs "Viet Nam") across different sports data providers and bookmakers?
-* Should the registry database support multiple active seasons for the same tournament?
+* Should the future registry configuration or store support multiple active seasons for the same tournament?
 
 ### What It Must Not Decide Yet
 * Specific database schemas or table indexes for the registry.
@@ -165,10 +166,10 @@ To protect the integrity of recommendations, we must establish strict, objective
 * **Option B**: Enforce automated model-readiness verification gates based on out-of-sample Test Set performance.
 
 ### Recommended Direction
-**Option B**. A candidate model must pass three automated gates on an out-of-sample test set before it can be marked as ready for recommendation usage:
-1. **Accuracy/Error Gate**: The model's Brier score must be at least 1% lower (indicating higher precision) than the bookmaker odds baseline.
-2. **Data Sufficiency Gate**: The model must be tested and evaluated on at least 100 historical out-of-sample fixtures.
-3. **Calibration Gate**: The model's Expected Calibration Error (ECE) must be strictly under 5%.
+**Option B**. A candidate model must pass owner-approved automated gates on an out-of-sample test set before it can be marked as ready for recommendation usage. Candidate thresholds for owner review:
+1. **Accuracy/Error Gate**: The model's Brier score should be at least 1% lower than the bookmaker odds baseline.
+2. **Data Sufficiency Gate**: The model should be tested and evaluated on at least 100 historical out-of-sample fixtures.
+3. **Calibration Gate**: The model's Expected Calibration Error (ECE) should be strictly under 5%.
 
 ### Risks
 * Strict gates might slow down the development lifecycle if initial model architectures struggle to beat the bookmaker baseline.
@@ -177,6 +178,7 @@ To protect the integrity of recommendations, we must establish strict, objective
 ### Open Questions
 * Who has the authority to approve promoting a model to production if it passes all automated gates?
 * Should we track separate calibration gates for different market types (e.g., 1X2 vs Over/Under)?
+* Should the proposed 1% Brier improvement, 100-match sample, and ECE < 5% thresholds be accepted, revised, or kept as draft-only R&D gates?
 
 ### What It Must Not Decide Yet
 * The production model hosting platform (e.g., Hugging Face, local model registry).

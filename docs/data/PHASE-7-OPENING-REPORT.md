@@ -2,7 +2,7 @@
 
 * **Date**: June 28, 2026
 * **Phase Name**: Phase 7 - Real Data Provider, Dataset, and Evaluation Planning
-* **Status**: Completed
+* **Status**: Draft - Owner Review Required
 
 ---
 
@@ -14,11 +14,11 @@ As of this opening report, the new Phase 7 planning documents have been outlined
 
 ---
 
-## 2. Completed Planning Deliverables
+## 2. Draft Planning Deliverables
 
 - **Phase 7 Planning Documents**:
-  - [phase-7-planning.md](file:///c:/CODE/miraichi/docs/data/phase-7-planning.md) (Status: Completed)
-  - [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md) (Status: Completed)
+  - [phase-7-planning.md](file:///c:/CODE/miraichi/docs/data/phase-7-planning.md) (Status: Draft - Owner Review Required)
+  - [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md) (Status: Candidate)
 
 
 ---
@@ -33,15 +33,17 @@ As of this opening report, the new Phase 7 planning documents have been outlined
 
 ## 4. Current Blockers & Open Decisions
 
-There are no blocking bugs. However, active implementation of data providers or evaluation scripts remains blocked until the following candidates in [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md) are reviewed and accepted:
-- **ADR-0035**: Real Data Provider Selection Strategy
-- **ADR-0036**: Model Training Dataset Boundaries and Feature Extraction Constraints
-- **ADR-0037**: Prediction Model Evaluation Criteria and Backtesting Standards
-- **ADR-0038**: Model Readiness Gates and Promotion Workflows
+There are no blocking bugs in the docs-only opening package. However, active implementation of data providers, dataset generation, or evaluation scripts remains blocked until the following candidates in [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md) are reviewed and accepted by the project owner:
+- **ADR-0035**: Real Data Provider Selection and Integration Strategy
+- **ADR-0036**: FIFA World Cup Fixture Source Coverage and Competition-Agnostic Adapter Design
+- **ADR-0037**: Dataset Boundaries and Schema for Prediction
+- **ADR-0038**: Prediction Evaluation Criteria and Metrics
+- **ADR-0039**: Provider Adapter Contract and Data Validation Schema
+- **ADR-0040**: Model-Readiness Gates and Deployment Governance
 
 ---
 
 ## 5. Next Recommended Step
 
-- **Step**: Review the candidate ADRs in [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md) and finalize the selection criteria with the project owner.
-- **Next Planning Milestone**: Detail the provider adapter contract structures and baseline metrics for the evaluation framework.
+- **Step**: Review the candidate ADRs in [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md), resolve owner questions, and promote approved decisions into accepted ADRs or an acceptance summary.
+- **Next Planning Milestone**: Convert the accepted Phase 7 decisions into a `phase:implementation-plan` only after owner approval. Phase 8 model training R&D remains blocked until then.
