@@ -846,7 +846,7 @@ ${report.warnings.map((warning) => `- ${warning}`).join('\n')}
 - No club competition expansion.
 
 ## Next Phase
-Run \`phase:plan Phase 8.6 Model Selection ADR\` only after this report is reviewed. If no candidate meaningfully beats baselines, the correct ADR outcome can be no model selected.
+Run \`phase:implementation-plan Phase 8.5 Owner-Only Experimental Report Surface\` before any Phase 8.6 Model Selection ADR. If no candidate meaningfully beats baselines, the later ADR outcome can be no model selected.
 `;
 }
 ```
@@ -1102,7 +1102,7 @@ Modify `PROJECT_PLAN.md` only after the report exists and verification passes:
 The next safe lifecycle command after Phase 8.4 closeout is:
 
 ```text
-phase:plan Phase 8.6 Model Selection ADR
+phase:implementation-plan Phase 8.5 Owner-Only Experimental Report Surface
 ```
 
 Expected: The ADR may choose `no model selected`. It must not be skipped.

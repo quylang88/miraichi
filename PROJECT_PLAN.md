@@ -121,7 +121,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete owner review for ADR-0040 model-readiness gates, with Phase 8 evidence or narrower owner-only R&D report authority before acceptance.
 - [x] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning only after owner-approved ADRs exist.
 - [x] Create Phase 8 Owner-Only Model R&D plan and split Phase 8 into smaller gated subphases.
-- [ ] Owner review Phase 8.0 R&D boundary split before Phase 8.1 implementation planning.
+- [x] Owner review Phase 8.0 R&D boundary split before Phase 8.1 implementation planning.
+  - **Result**: Owner confirmed the Phase 8 subphase drift and approved returning to the Phase 8.0 boundary check. Phase 8 remains owner-only R&D: no public prediction surface, no production model mode, no betting recommendation, no model artifact promotion, and national-team competitions remain before club expansion.
 - [x] Create `phase:implementation-plan Phase 8.1 Dataset Snapshot and Provenance`.
 - [x] Complete Phase 8.1 reproducible offline dataset snapshot and data quality report.
 - [x] Review and correct Phase 8.1 to make World Cup/national-team competitions the explicit first data target before Phase 8.2.
@@ -136,5 +137,8 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Result**: Candidate comparison report generated for the aggregate World Cup + Euro national-team dataset. No model selected.
   - **Blocker**: Lifted (Phase 8.3A completed with World Cup and Euro datasets, total test sample count = 107). Club/Premier League expansion remains blocked.
   - **Constraints**: Do not treat high-variance Phase 8.4 outcomes as model-selection evidence due to sample size limits and missing bookmaker baseline. Do not create runtime prediction routes, model artifacts, betting recommendations, or club competition support.
+- [ ] Create `phase:implementation-plan Phase 8.5 Owner-Only Experimental Report Surface`.
+- [ ] Complete Phase 8.5 Owner-Only Experimental Report Surface before Phase 8.6 Model Selection ADR.
+  - **Constraints**: The report surface must remain owner-only and experimental. It may show model evidence, metrics, calibration bins, dataset/version metadata, and weaknesses, but it must not expose public predictions, `engineMode: production`, recommendation labels, stake advice, bankroll advice, ROI, CLV, Kelly logic, or club competition expansion.
 - [ ] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.

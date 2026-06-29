@@ -86,5 +86,6 @@ describe('buildCandidateBakeoffReport', () => {
     expect(markdown).toContain('No model is selected in Phase 8.4.');
     expect(markdown).toContain('No runtime prediction route.');
     expect(markdown).toContain('No betting recommendation.');
+    expect(markdown).toContain('Phase 8.5 Owner-Only Experimental Report Surface');
   });
 });

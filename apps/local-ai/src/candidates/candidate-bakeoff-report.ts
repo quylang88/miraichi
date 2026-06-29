@@ -173,6 +173,6 @@ ${warningsSection}
 - No model selection until Phase 8.6 Model Selection ADR.
 
 ## Next Phase
-Phase 8.6 Model Selection ADR, after owner review of the bake-off evidence and ADR gate.
+Phase 8.5 Owner-Only Experimental Report Surface, before any Phase 8.6 Model Selection ADR.
 `;
 }
