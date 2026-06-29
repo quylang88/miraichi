@@ -156,6 +156,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete Phase 8.6B Sofascore National-Team Source Discovery and Odds Baseline Discovery.
   - **Result**: Sofascore direct tournament-id discovery report generated for World Cup, Euro, AFCON, Copa America, AFC Asian Cup, CONCACAF Gold Cup, and UEFA Nations League.
   - **Evidence**: See `apps/local-ai/reports/phase-8-6b-sofascore-national-team-source-discovery.json`, `apps/local-ai/reports/phase-8-6b-odds-baseline-source-discovery.json`, and `docs/data/PHASE-8-6B-SOFASCORE-NATIONAL-TEAM-SOURCE-DISCOVERY.md`.
-  - **Constraint**: Bookmaker baseline remains unavailable under current no-key/no-paid-provider constraints unless the generated odds report proves otherwise. Do not return to model selection until a follow-up owner-approved Phase 8.6C dataset ingestion plan or odds-provider decision exists.
+- [x] Create `phase:plan Phase 8.6C National-Team Sofascore Dataset Ingestion`.
+  - **Result**: Proposed design spec created to ingest historical match events and scores from Sofascore for 7 tournaments, updating `competition-registry.json` splits, and rebuilding offline training/validation splits without odds.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
+
 
