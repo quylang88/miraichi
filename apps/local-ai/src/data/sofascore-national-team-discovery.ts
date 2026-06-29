@@ -44,6 +44,14 @@ export type SofascoreEvent = {
   awayTeamName: string;
   homeScore: number | null;
   awayScore: number | null;
+  cornersHome?: number | null;
+  cornersAway?: number | null;
+  yellowHome?: number | null;
+  yellowAway?: number | null;
+  redHome?: number | null;
+  redAway?: number | null;
+  goalsHome?: string | null;
+  goalsAway?: string | null;
 };
 
 export type SofascoreDiscoveryClient = {
@@ -222,7 +230,7 @@ export async function buildSofascoreDiscoveryReport(
       providerError = error instanceof Error ? error.message : String(error);
     }
 
-    competitions.push({
+    const result: CompetitionDiscoveryResult = {
       competitionId: competition.competitionId,
       displayName: competition.displayName,
       sofascoreUniqueTournamentId: competition.sofascoreUniqueTournamentId,
@@ -237,9 +245,12 @@ export async function buildSofascoreDiscoveryReport(
       completedEventCount,
       rejectedEventCount,
       rejectedEventReasons,
-      sampledSeasonIds,
-      providerError
-    });
+      sampledSeasonIds
+    };
+    if (providerError !== undefined) {
+      result.providerError = providerError;
+    }
+    competitions.push(result);
   }
 
   const status =

@@ -63,6 +63,6 @@ describe('Phase 8.6C Sofascore Ingestion Verifier', () => {
     expect(fs.existsSync(csvPath)).toBe(true);
 
     const csvContent = fs.readFileSync(csvPath, 'utf8');
-    expect(csvContent).toContain('11761871,2024-01-13,2023,20:00,Cote d Ivoire,Guinea-Bissau,2,0,');
+    expect(csvContent).toContain('11761871,2024-01-13,2023,20:00,Cote d Ivoire,Guinea-Bissau,2,0,,Group stage,6,2,2,1,0,0,"4,30",');
   });
 });

@@ -14,6 +14,25 @@ class MatchScores(BaseModel):
     homeScore: int = Field(..., ge=0)
     awayScore: int = Field(..., ge=0)
 
+class TeamStats(BaseModel):
+    home: Optional[int] = None
+    away: Optional[int] = None
+
+class MatchCards(BaseModel):
+    yellow: TeamStats
+    red: TeamStats
+
+class MatchStats(BaseModel):
+    corners: Optional[TeamStats] = None
+    cards: Optional[MatchCards] = None
+
+class GoalIncident(BaseModel):
+    time: str
+    isHome: bool
+
+class MatchIncidents(BaseModel):
+    goals: list[GoalIncident] = []
+
 class ProcessedMatch(BaseModel):
     id: str
     competitionId: str
@@ -24,6 +43,9 @@ class ProcessedMatch(BaseModel):
     kickoffTime: datetime.datetime
     scores: Optional[MatchScores] = None
     venueName: Optional[str] = None
+    round: Optional[str] = None
+    stats: Optional[MatchStats] = None
+    incidents: Optional[MatchIncidents] = None
 
     @field_validator('homeTeamId', 'awayTeamId')
     @classmethod
@@ -115,6 +137,47 @@ def build_dataset(competition_id: str, raw_path: Optional[str] = None, output_di
             home_id = team_mapper.resolve(str(row["home_team"]))
             away_id = team_mapper.resolve(str(row["away_team"]))
             
+            # Parse round
+            round_val = row.get("round")
+            round_str = str(round_val).strip() if not pd.isna(round_val) else None
+            
+            # Parse corners
+            c_home = row.get("corners_home")
+            c_away = row.get("corners_away")
+            corners = None
+            if not pd.isna(c_home) and not pd.isna(c_away):
+                corners = TeamStats(home=int(float(c_home)), away=int(float(c_away)))
+                
+            # Parse cards
+            y_home = row.get("yellow_cards_home")
+            y_away = row.get("yellow_cards_away")
+            r_home = row.get("red_cards_home")
+            r_away = row.get("red_cards_away")
+            cards = None
+            if not pd.isna(y_home) and not pd.isna(y_away) and not pd.isna(r_home) and not pd.isna(r_away):
+                cards = MatchCards(
+                    yellow=TeamStats(home=int(float(y_home)), away=int(float(y_away))),
+                    red=TeamStats(home=int(float(r_home)), away=int(float(r_away)))
+                )
+                
+            stats = MatchStats(corners=corners, cards=cards) if (corners or cards) else None
+
+            # Parse goal minutes list
+            g_home_val = row.get("goal_minutes_home")
+            g_away_val = row.get("goal_minutes_away")
+            goals_list = []
+            
+            if not pd.isna(g_home_val) and str(g_home_val).strip():
+                for m in str(g_home_val).split(","):
+                    if m.strip():
+                        goals_list.append(GoalIncident(time=m.strip(), isHome=True))
+            if not pd.isna(g_away_val) and str(g_away_val).strip():
+                for m in str(g_away_val).split(","):
+                    if m.strip():
+                        goals_list.append(GoalIncident(time=m.strip(), isHome=False))
+                        
+            incidents = MatchIncidents(goals=goals_list) if goals_list else None
+
             match_data = ProcessedMatch(
                 id=f"match-{row['game_id']}",
                 competitionId=competition_id,
@@ -124,7 +187,10 @@ def build_dataset(competition_id: str, raw_path: Optional[str] = None, output_di
                 status="completed" if scores is not None else "scheduled",
                 kickoffTime=kickoff_str,
                 scores=scores,
-                venueName=str(row["venue"]) if not pd.isna(row.get("venue")) else None
+                venueName=str(row["venue"]) if not pd.isna(row.get("venue")) else None,
+                round=round_str,
+                stats=stats,
+                incidents=incidents
             )
             
             # Split chronologically (use mode='json' to serialize datetime & sub-models)

@@ -106,8 +106,32 @@ describe('Phase 8.6B Sofascore discovery registry', () => {
 
 import {
   buildSofascoreDiscoveryReport,
-  type SofascoreDiscoveryClient
+  type SofascoreDiscoveryClient,
+  type SofascoreEvent
 } from './sofascore-national-team-discovery.js';
+
+describe('SofascoreEvent type extensions', () => {
+  it('supports advanced stats fields on SofascoreEvent', () => {
+    const event: SofascoreEvent = {
+      eventId: 12345,
+      startTimestamp: 1705176000,
+      statusCode: 100,
+      homeTeamName: 'Cote d Ivoire',
+      awayTeamName: 'Guinea-Bissau',
+      homeScore: 2,
+      awayScore: 0,
+      cornersHome: 5,
+      cornersAway: 3,
+      yellowHome: 1,
+      yellowAway: 2,
+      redHome: 0,
+      redAway: 1,
+      goalsHome: '2',
+      goalsAway: '0'
+    };
+    expect(event).toBeDefined();
+  });
+});
 
 const fixedNow = new Date('2026-06-29T00:00:00Z');
 

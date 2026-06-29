@@ -19,7 +19,8 @@ const RULES = [
     // Allowed files for this specific rule (tests and validators checking agnosticism checks)
     allowList: [
       'packages/config/src/competition-registry.mock.ts',
-      'scripts/phase2-verify.ts'
+      'scripts/phase2-verify.ts',
+      'apps/local-ai/src/data/sofascore-national-team-discovery.test.ts'
     ]
   },
   {

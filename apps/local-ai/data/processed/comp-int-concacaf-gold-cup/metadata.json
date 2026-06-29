@@ -4,8 +4,8 @@
   "schemaVersion": "1.0.0",
   "featureSpecVersion": "feature-spec-v0.1.0",
   "sourceProviderId": "soccerdata-fbref",
-  "sourceSnapshotHash": "3e4d9d17fcc940ca8b5060337a9e721e4c8ea89d5eeabc267c1162d512f78937",
-  "builtAt": "2026-06-29T04:28:40.553305Z",
+  "sourceSnapshotHash": "9fe112a69db34b4ff6c04f613263042b8d9ed9b42fbf11107799e74c6ce964a8",
+  "builtAt": "2026-06-29T07:27:05.223706Z",
   "trainCount": 144,
   "valCount": 102,
   "testCount": 40

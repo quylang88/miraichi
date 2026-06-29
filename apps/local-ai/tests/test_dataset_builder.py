@@ -10,15 +10,24 @@ def test_build_dataset_valid(tmp_path):
     # Set up raw data test fixture
     raw_csv = tmp_path / "comp-int-world-cup_schedule.csv"
     data = {
-        "season": [2014, 2018, 2022],
-        "date": ["2014-06-16", "2018-07-15", "2022-11-26"],
+        "season": [2002, 2014, 2018],
+        "date": ["2002-06-16", "2014-06-16", "2018-07-15"],
         "time": ["13:00", "18:00", "22:00"],
         "home_team": ["Germany", "France", "Argentina"],
         "away_team": ["Portugal", "Croatia", "Mexico"],
         "home_score": [4.0, 4.0, 2.0],
         "away_score": [0.0, 2.0, 0.0],
         "venue": ["Arena Fonte Nova", "Luzhniki Stadium", "Lusail Stadium"],
-        "game_id": ["wc-2014-sample-1", "wc-2018-sample-1", "wc-2022-sample-1"]
+        "game_id": ["wc-2002-sample-1", "wc-2014-sample-1", "wc-2018-sample-1"],
+        "round": ["Group stage", "Round of 16", "Final"],
+        "corners_home": [6.0, 4.0, 5.0],
+        "corners_away": [2.0, 5.0, 3.0],
+        "yellow_cards_home": [1.0, 2.0, 0.0],
+        "yellow_cards_away": [1.0, 0.0, 2.0],
+        "red_cards_home": [0.0, 0.0, 0.0],
+        "red_cards_away": [1.0, 0.0, 0.0],
+        "goal_minutes_home": ["12,45", "", "30"],
+        "goal_minutes_away": ["", "60", ""]
     }
     df = pd.DataFrame(data)
     df.to_csv(raw_csv, index=False)
@@ -53,14 +62,22 @@ def test_build_dataset_valid(tmp_path):
     # Verify structured record in train.jsonl
     with open(processed_dir / "train.jsonl", 'r') as f:
         record = json.loads(f.readline())
-        assert record["id"] == "match-wc-2014-sample-1"
+        assert record["id"] == "match-wc-2002-sample-1"
         assert record["competitionId"] == "comp-int-world-cup"
         assert record["homeTeamId"] == "team-deu-national"
         assert record["awayTeamId"] == "team-prt-national"
         assert record["status"] == "completed"
-        assert record["kickoffTime"] == "2014-06-16T13:00:00Z"
+        assert record["kickoffTime"] == "2002-06-16T13:00:00Z"
         assert record["scores"] == {"homeScore": 4, "awayScore": 0}
         assert record["venueName"] == "Arena Fonte Nova"
+        assert record["round"] == "Group stage"
+        assert record["stats"]["corners"] == {"home": 6, "away": 2}
+        assert record["stats"]["cards"]["yellow"] == {"home": 1, "away": 1}
+        assert record["stats"]["cards"]["red"] == {"home": 0, "away": 1}
+        assert record["incidents"]["goals"] == [
+            {"time": "12", "isHome": True},
+            {"time": "45", "isHome": True}
+        ]
 
 def test_processed_match_empty_team_id():
     with pytest.raises(ValidationError):
@@ -85,7 +102,7 @@ def test_build_dataset_nan_time(tmp_path):
     # Set up raw data test fixture with a NaN time
     raw_csv = tmp_path / "comp-int-world-cup_schedule.csv"
     data = {
-        "season": [2014],
+        "season": [2002],
         "date": ["2014-06-16"],
         "time": [None],  # Time is missing
         "home_team": ["Germany"],
@@ -93,7 +110,16 @@ def test_build_dataset_nan_time(tmp_path):
         "home_score": [None],
         "away_score": [None],
         "venue": [None],
-        "game_id": ["m1"]
+        "game_id": ["m1"],
+        "round": [None],
+        "corners_home": [None],
+        "corners_away": [None],
+        "yellow_cards_home": [None],
+        "yellow_cards_away": [None],
+        "red_cards_home": [None],
+        "red_cards_away": [None],
+        "goal_minutes_home": [None],
+        "goal_minutes_away": [None]
     }
     df = pd.DataFrame(data)
     df.to_csv(raw_csv, index=False)
@@ -106,6 +132,9 @@ def test_build_dataset_nan_time(tmp_path):
         record = json.loads(f.readline())
         assert record["kickoffTime"] == "2014-06-16T00:00:00Z"
         assert record["scores"] is None
+        assert record["round"] is None
+        assert record["stats"] is None
+        assert record["incidents"] is None
 
 def test_build_dataset_invalid_records(tmp_path):
     # Set up raw data with invalid fields (missing critical date or game_id)
