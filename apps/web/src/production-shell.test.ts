@@ -181,6 +181,40 @@ describe('production PWA shell rendering', () => {
 
     expect(html).toContain('data-icon="stadium"');
   });
+
+  it('renders the Date Navigator and LIVE filter button on the matches panel', () => {
+    const html = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: {
+        status: 'ready',
+        date: '2026-06-30',
+        warnings: [],
+        matches: []
+      }
+    });
+
+    expect(html).toContain('id="date-prev-btn"');
+    expect(html).toContain('id="date-next-btn"');
+    expect(html).toContain('id="date-picker-btn"');
+    expect(html).toContain('id="date-picker-input"');
+    expect(html).toContain('class="date-ribbon"');
+    
+    // It should render 5 dates centered around 2026-06-30:
+    // 2026-06-28, 2026-06-29, 2026-06-30, 2026-07-01, 2026-07-02
+    expect(html).toContain('data-date="2026-06-28"');
+    expect(html).toContain('data-date="2026-06-29"');
+    expect(html).toContain('data-date="2026-06-30"');
+    expect(html).toContain('data-date="2026-07-01"');
+    expect(html).toContain('data-date="2026-07-02"');
+
+    // The center date should be active
+    expect(html).toContain('class="date-chip active" type="button" data-date="2026-06-30"');
+
+    // LIVE filter button should be rendered
+    expect(html).toContain('id="live-filter-btn"');
+    expect(html).toContain('LIVE</button>');
+  });
 });
 
 describe('production shell settings and i18n boundaries', () => {
@@ -215,6 +249,79 @@ describe('production shell settings and i18n boundaries', () => {
   it('keeps translation lookups as a fallback-first stub', () => {
     expect(t('nav.today', 'Today')).toBe('Today');
     expect(t('settings.language', 'Language')).toBe('Language');
+  });
+
+  it('supports timezone and display density settings', () => {
+    const storage = createMemoryStorage();
+    const settings = createSettingsService({ storage });
+
+    // Verify defaults
+    expect(settings.getSettings()).toMatchObject({
+      timezone: 'local',
+      displayDensity: 'standard'
+    });
+
+    // Test settings.setSetting('timezone', 'UTC')
+    settings.setSetting('timezone', 'UTC');
+    expect(settings.getSettings().timezone).toBe('UTC');
+
+    // Test settings.setSetting('timezone', 'Asia/Ho_Chi_Minh')
+    settings.setSetting('timezone', 'Asia/Ho_Chi_Minh');
+    expect(settings.getSettings().timezone).toBe('Asia/Ho_Chi_Minh');
+
+    // Verify invalid values are rejected
+    expect(() => settings.setSetting('timezone', 'invalid-timezone')).toThrow();
+
+    // Verify displayDensity works as well
+    settings.setSetting('displayDensity', 'compact');
+    expect(settings.getSettings().displayDensity).toBe('compact');
+
+    expect(() => settings.setSetting('displayDensity', 'invalid-density')).toThrow();
+  });
+
+  it('respects timezone settings when rendering kickoff times in app shell', () => {
+    const matchFeed = {
+      status: 'ready' as const,
+      date: '2026-06-29',
+      warnings: [] as string[],
+      matches: [
+        {
+          id: 'test-fixture-1',
+          sourceProviderId: 'api-football' as const,
+          providerFixtureId: '1',
+          competitionId: 'test-league',
+          competitionName: 'FIFA World Cup',
+          seasonId: 'test-season',
+          round: 'Group Stage - 1',
+          status: 'scheduled' as const,
+          statusLabel: 'Not Started',
+          kickoffTime: '2026-06-29T10:00:00.000Z',
+          homeTeam: { id: 'team-1', name: 'Japan' },
+          awayTeam: { id: 'team-2', name: 'Vietnam' },
+          score: null,
+          venueName: 'Tokyo Stadium',
+          elapsedMinute: null
+        }
+      ]
+    };
+
+    // For UTC timezone
+    const htmlUtc = renderAppShell({
+      activeTabId: 'today',
+      translate: t,
+      matchFeed,
+      timezone: 'UTC'
+    });
+    expect(htmlUtc).toContain('Kickoff 10:00 UTC');
+
+    // For Asia/Ho_Chi_Minh timezone (UTC+7)
+    const htmlHcm = renderAppShell({
+      activeTabId: 'today',
+      translate: t,
+      matchFeed,
+      timezone: 'Asia/Ho_Chi_Minh'
+    });
+    expect(htmlHcm).toContain('Kickoff 17:00 Asia/Ho_Chi_Minh');
   });
 });
 

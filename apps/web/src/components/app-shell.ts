@@ -30,6 +30,56 @@ export function getTodayDateTileParts(date = new Date()): { readonly day: string
   };
 }
 
+export interface RibbonDate {
+  readonly dateStr: string;
+  readonly dayNumber: string;
+  readonly label: string;
+}
+
+export function getRibbonDates(selectedDateStr: string): readonly RibbonDate[] {
+  const [year, month, day] = selectedDateStr.split('-').map(Number);
+  const centerDate = new Date(year, month - 1, day);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const ribbon: RibbonDate[] = [];
+
+  for (let i = -2; i <= 2; i++) {
+    const d = new Date(centerDate);
+    d.setDate(centerDate.getDate() + i);
+
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+
+    const compareDate = new Date(d);
+    compareDate.setHours(0, 0, 0, 0);
+    const diffTime = compareDate.getTime() - today.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    let label = '';
+    if (diffDays === 0) {
+      label = 'Today';
+    } else if (diffDays === -1) {
+      label = 'Yesterday';
+    } else if (diffDays === 1) {
+      label = 'Tomorrow';
+    } else {
+      label = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(d);
+    }
+
+    ribbon.push({
+      dateStr,
+      dayNumber: String(d.getDate()),
+      label
+    });
+  }
+
+  return ribbon;
+}
+
 function getScreenClass(tabId: ProductionNavigationTabId, activeTabId: ProductionNavigationTabId): string {
   return tabId === activeTabId ? 'screen active' : 'screen';
 }
@@ -39,21 +89,33 @@ const defaultMatchFeed: MatchFeedViewState = Object.freeze({
   date: new Date().toISOString().slice(0, 10)
 });
 
-function formatKickoffTime(isoValue: string): string {
-  return new Intl.DateTimeFormat('en-US', {
+function formatKickoffTime(isoValue: string, timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh' = 'local'): string {
+  const date = new Date(isoValue);
+  if (isNaN(date.getTime())) {
+    return isoValue || '--:--';
+  }
+  const options: Intl.DateTimeFormatOptions = {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
-    timeZone: 'UTC'
-  }).format(new Date(isoValue));
+    hour12: false
+  };
+  if (timezone !== 'local') {
+    options.timeZone = timezone;
+  }
+  try {
+    return new Intl.DateTimeFormat('en-US', options).format(date);
+  } catch {
+    return isoValue || '--:--';
+  }
 }
 
 function matchTitle(match: AppMatch): string {
   return `${match.homeTeam.name} vs ${match.awayTeam.name}`;
 }
 
-function matchMeta(match: AppMatch): string {
-  const score = match.score ? `Score ${match.score.home}-${match.score.away}` : `Kickoff ${formatKickoffTime(match.kickoffTime)} UTC`;
+function matchMeta(match: AppMatch, timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh' = 'local'): string {
+  const suffix = timezone === 'local' ? '' : ` ${timezone}`;
+  const score = match.score ? `Score ${match.score.home}-${match.score.away}` : `Kickoff ${formatKickoffTime(match.kickoffTime, timezone)}${suffix}`;
   const round = match.round ? ` · ${match.round}` : '';
   return `${match.competitionName}${round} · ${score} · ${match.statusLabel}`;
 }
@@ -88,9 +150,9 @@ function renderFeedEmpty(feed: Extract<MatchFeedViewState, { status: 'empty' }>)
   `;
 }
 
-function renderProviderMatchCard(match: AppMatch): string {
+function renderProviderMatchCard(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   const title = matchTitle(match);
-  const meta = matchMeta(match);
+  const meta = matchMeta(match, timezone);
   const statusClass = match.status === 'in_play' ? 'blue' : match.status === 'completed' ? '' : 'amber';
   return `
     <article class="match-card" data-match-card data-provider-match-id="${escapeHtml(match.id)}">
@@ -121,24 +183,24 @@ function renderProviderMatchCard(match: AppMatch): string {
   `;
 }
 
-function renderProviderMatchRow(match: AppMatch): string {
+function renderProviderMatchRow(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   const title = matchTitle(match);
-  const meta = matchMeta(match);
-  return renderMatchRow(title, meta, meta);
+  const meta = matchMeta(match, timezone);
+  return renderMatchRow(title, meta, meta, match.status);
 }
 
-function renderMatchFeedCards(feed: MatchFeedViewState): string {
+function renderMatchFeedCards(feed: MatchFeedViewState, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   if (feed.status === 'loading') return renderFeedLoading(feed);
   if (feed.status === 'unavailable') return renderFeedUnavailable(feed);
   if (feed.status === 'empty') return renderFeedEmpty(feed);
-  return feed.matches.map(renderProviderMatchCard).join('');
+  return feed.matches.map(m => renderProviderMatchCard(m, timezone)).join('');
 }
 
-function renderMatchFeedRows(feed: MatchFeedViewState): string {
+function renderMatchFeedRows(feed: MatchFeedViewState, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   if (feed.status === 'loading') return renderFeedLoading(feed);
   if (feed.status === 'unavailable') return renderFeedUnavailable(feed);
   if (feed.status === 'empty') return renderFeedEmpty(feed);
-  return feed.matches.map(renderProviderMatchRow).join('');
+  return feed.matches.map(m => renderProviderMatchRow(m, timezone)).join('');
 }
 
 function renderSummaryRow({
@@ -191,7 +253,8 @@ function renderScreenHeader({
 function renderTodayPanel(
   activeTabId: ProductionNavigationTabId,
   translate: TranslateFunction,
-  matchFeed: MatchFeedViewState
+  matchFeed: MatchFeedViewState,
+  timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'
 ): string {
   const todayDateTile = getTodayDateTileParts();
 
@@ -239,7 +302,7 @@ function renderTodayPanel(
       </div>
 
       <div class="stack">
-        ${renderMatchFeedCards(matchFeed)}
+        ${renderMatchFeedCards(matchFeed, timezone)}
 
         <section class="note-card">
           <div class="note-eyebrow">Miraichi note</div>
@@ -254,9 +317,153 @@ function renderTodayPanel(
 function renderMatchesPanel(
   activeTabId: ProductionNavigationTabId,
   translate: TranslateFunction,
-  matchFeed: MatchFeedViewState
+  matchFeed: MatchFeedViewState,
+  timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'
 ): string {
+  const ribbonDates = getRibbonDates(matchFeed.date);
+  const datesHtml = ribbonDates
+    .map((rd) => {
+      const activeClass = rd.dateStr === matchFeed.date ? ' active' : '';
+      return `
+        <button class="date-chip${activeClass}" type="button" data-date="${escapeHtml(rd.dateStr)}">
+          <span class="date-chip-label">${escapeHtml(rd.label)}</span>
+          <span class="date-chip-number">${escapeHtml(rd.dayNumber)}</span>
+        </button>
+      `;
+    })
+    .join('');
+
   return `
+    <style>
+      .date-navigator {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid var(--border-color-subtle);
+        margin-bottom: var(--spacing-md);
+        width: 100%;
+      }
+
+      .nav-arrow-btn, .calendar-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-control);
+        background: var(--surface-color-secondary);
+        border: 1px solid var(--border-color-strong);
+        color: var(--text-color-primary);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.2s, border-color 0.2s;
+        padding: 0;
+      }
+
+      .nav-arrow-btn:hover, .calendar-btn:hover {
+        background: var(--surface-color-tertiary);
+        border-color: var(--text-color-muted);
+      }
+
+      .nav-arrow-btn svg, .calendar-btn svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .date-ribbon {
+        display: flex;
+        gap: var(--spacing-xs);
+        overflow-x: auto;
+        flex-grow: 1;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      .date-ribbon::-webkit-scrollbar {
+        display: none;
+      }
+
+      .date-chip {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1 0 54px;
+        height: 48px;
+        border-radius: var(--radius-control);
+        background: var(--surface-color-secondary);
+        border: 1px solid var(--border-color-strong);
+        color: var(--text-color-muted);
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        padding: var(--spacing-xxs) var(--spacing-xs);
+      }
+
+      .date-chip:hover {
+        background: var(--surface-color-tertiary);
+        color: var(--text-color-primary);
+      }
+
+      .date-chip.active {
+        background: var(--accent-color-primary);
+        border-color: var(--accent-color-primary);
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      .date-chip-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+        opacity: 0.8;
+      }
+
+      .date-chip.active .date-chip-label {
+        opacity: 1;
+      }
+
+      .date-chip-number {
+        font-size: 1.05rem;
+        line-height: 1.1;
+      }
+
+      .search-row {
+        grid-template-columns: 1fr auto auto !important;
+      }
+
+      #live-filter-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 var(--spacing-md);
+        height: 42px;
+        border-radius: var(--radius-control);
+        background: var(--surface-color-secondary);
+        border: 1px solid var(--border-color-strong);
+        color: var(--text-color-muted);
+        font-weight: bold;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      #live-filter-btn:hover {
+        background: var(--surface-color-tertiary);
+        color: var(--text-color-primary);
+      }
+
+      #live-filter-btn.active {
+        background: var(--accent-color-danger-soft);
+        border-color: var(--accent-color-danger);
+        color: var(--accent-color-danger);
+        box-shadow: 0 0 8px rgba(255, 69, 58, 0.2);
+      }
+    </style>
+
     <section class="${getScreenClass('matches', activeTabId)}" id="screen-matches" data-shell-tab-panel="matches" aria-labelledby="matches-title">
       ${renderScreenHeader({
         label: translate('matches.eyebrow', 'Browse'),
@@ -264,14 +471,31 @@ function renderMatchesPanel(
         titleId: 'matches-title'
       })}
 
+      <div class="date-navigator">
+        <button id="date-prev-btn" class="nav-arrow-btn" type="button" aria-label="Previous day">
+          ${icons.back}
+        </button>
+        <div class="date-ribbon">
+          ${datesHtml}
+        </div>
+        <button id="date-next-btn" class="nav-arrow-btn" type="button" aria-label="Next day">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button id="date-picker-btn" class="calendar-btn" type="button" aria-label="Pick date">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        </button>
+        <input id="date-picker-input" type="date" style="display: none;" value="${escapeHtml(matchFeed.date)}">
+      </div>
+
       <div class="search-row">
         <input class="search-input" id="match-search" type="search" placeholder="Search generic teams" aria-label="Search generic teams">
+        <button id="live-filter-btn" type="button">LIVE</button>
         <button class="filter-button" type="button" aria-label="Open match filters">${icons.filter}</button>
       </div>
 
       <div class="date-group">
         <div class="group-label">${escapeHtml(matchFeed.date)}</div>
-        ${renderMatchFeedRows(matchFeed)}
+        ${renderMatchFeedRows(matchFeed, timezone)}
       </div>
 
       <div class="empty-state" id="matches-empty">No provider matches match this search.</div>
@@ -279,15 +503,16 @@ function renderMatchesPanel(
   `;
 }
 
-function renderMatchRow(title: string, meta: string, detailMeta: string): string {
+function renderMatchRow(title: string, meta: string, detailMeta: string, status?: string): string {
+  const statusAttr = status ? ` data-status="${escapeHtml(status)}"` : '';
   return `
-    <article class="match-row" data-match-row>
+    <article class="match-row" data-match-row${statusAttr}>
       <div class="row-split">
         <div>
           <div class="row-title">${escapeHtml(title)}</div>
-          <div class="row-meta">${meta}</div>
+          <div class="row-meta">${escapeHtml(meta)}</div>
         </div>
-        <button class="text-button" type="button" data-open-match data-match-title="${escapeHtml(title)}" data-match-meta="${detailMeta}">Open</button>
+        <button class="text-button" type="button" data-open-match data-match-title="${escapeHtml(title)}" data-match-meta="${escapeHtml(detailMeta)}">Open</button>
       </div>
     </article>
   `;
@@ -608,7 +833,12 @@ function renderReviewItem(label: string, value: string): string {
 
 const panelRenderers: Record<
   ProductionNavigationTabId,
-  (activeTabId: ProductionNavigationTabId, translate: TranslateFunction, matchFeed: MatchFeedViewState) => string
+  (
+    activeTabId: ProductionNavigationTabId,
+    translate: TranslateFunction,
+    matchFeed: MatchFeedViewState,
+    timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'
+  ) => string
 > = Object.freeze({
   today: renderTodayPanel,
   matches: renderMatchesPanel,
@@ -620,15 +850,17 @@ const panelRenderers: Record<
 export function renderAppShell({
   activeTabId = 'today',
   translate = t,
-  matchFeed = defaultMatchFeed
+  matchFeed = defaultMatchFeed,
+  timezone = 'local'
 }: {
   readonly activeTabId?: string;
   readonly translate?: TranslateFunction;
   readonly matchFeed?: MatchFeedViewState;
+  readonly timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh';
 } = {}): string {
   const safeActiveTabId = getSafeNavigationTabId(activeTabId);
   const activeTab = navigationTabs.find((tab: NavigationTab) => tab.id === safeActiveTabId) ?? navigationTabs[0];
-  const panels = navigationTabs.map((tab) => panelRenderers[tab.id](safeActiveTabId, translate, matchFeed)).join('');
+  const panels = navigationTabs.map((tab) => panelRenderers[tab.id](safeActiveTabId, translate, matchFeed, timezone)).join('');
 
   return `
     <div class="production-page">

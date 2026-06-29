@@ -15,6 +15,8 @@ const settingsService = createSettingsService();
 
 let currentScreenName = 'today';
 let matchDetailReturnScreen: ProductionNavigationTabId = 'today';
+let currentSearchQuery = '';
+let isLiveFilterActive = false;
 
 function todayLocalDate(): string {
   const now = new Date();
@@ -45,9 +47,21 @@ function render(activeTabId: string): void {
   appRoot.innerHTML = renderAppShell({
     activeTabId: safeActiveTabId,
     translate: t,
-    matchFeed: matchFeedState
+    matchFeed: matchFeedState,
+    timezone: settingsService.getSettings().timezone
   });
   appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settingsService.getSettings().locale);
+
+  // Restore filter values and apply
+  const searchInput = appRoot.querySelector('#match-search') as HTMLInputElement | null;
+  if (searchInput) {
+    searchInput.value = currentSearchQuery;
+  }
+  const liveFilterBtn = appRoot.querySelector('#live-filter-btn') as HTMLElement | null;
+  if (liveFilterBtn && isLiveFilterActive) {
+    liveFilterBtn.classList.add('active');
+  }
+  updateMatchFilters();
 }
 
 function updateUrl(tabId: ProductionNavigationTabId): void {
@@ -161,14 +175,21 @@ function updateAddFormState(): void {
   saveDraftShell.disabled = !(market && odds && stake);
 }
 
-function updateMatchSearch(searchInput: HTMLInputElement): void {
-  const query = searchInput.value.trim().toLowerCase();
+function updateMatchFilters(): void {
+  const searchInput = document.getElementById('match-search') as HTMLInputElement | null;
+  const liveFilterBtn = document.getElementById('live-filter-btn');
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const isLiveOnly = liveFilterBtn ? liveFilterBtn.classList.contains('active') : false;
+
   const rows = Array.from(appRoot.querySelectorAll<HTMLElement>('[data-match-row]'));
   const matchesEmpty = document.getElementById('matches-empty');
   let visibleCount = 0;
 
   rows.forEach((row) => {
-    const visible = (row.textContent ?? '').toLowerCase().includes(query);
+    const matchesQuery = (row.textContent ?? '').toLowerCase().includes(query);
+    const matchesLive = !isLiveOnly || row.dataset.status === 'in_play';
+    const visible = matchesQuery && matchesLive;
+
     row.style.display = visible ? '' : 'none';
     if (visible) {
       visibleCount += 1;
@@ -221,6 +242,72 @@ function toggleMatchCard(button: HTMLElement): void {
 appRoot.addEventListener('click', (event) => {
   const eventTarget = event.target instanceof Element ? event.target : null;
   if (!eventTarget) {
+    return;
+  }
+
+  // Handle Date Prev Button Click
+  const prevBtn = eventTarget.closest<HTMLElement>('#date-prev-btn');
+  if (prevBtn) {
+    const [year, month, day] = matchFeedState.date.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    dateObj.setDate(dateObj.getDate() - 1);
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    matchFeedState.date = `${yyyy}-${mm}-${dd}`;
+    void refreshMatchFeed();
+    return;
+  }
+
+  // Handle Date Next Button Click
+  const nextBtn = eventTarget.closest<HTMLElement>('#date-next-btn');
+  if (nextBtn) {
+    const [year, month, day] = matchFeedState.date.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    dateObj.setDate(dateObj.getDate() + 1);
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    matchFeedState.date = `${yyyy}-${mm}-${dd}`;
+    void refreshMatchFeed();
+    return;
+  }
+
+  // Handle Date Chip Click
+  const dateChipTarget = eventTarget.closest<HTMLElement>('.date-chip');
+  if (dateChipTarget) {
+    const selectedDate = dateChipTarget.dataset.date;
+    if (selectedDate) {
+      matchFeedState.date = selectedDate;
+      void refreshMatchFeed();
+    }
+    return;
+  }
+
+  // Handle Date Picker Button Click
+  const datePickerBtn = eventTarget.closest<HTMLElement>('#date-picker-btn');
+  if (datePickerBtn) {
+    const input = document.getElementById('date-picker-input') as HTMLInputElement | null;
+    if (input) {
+      if (typeof input.showPicker === 'function') {
+        try {
+          input.showPicker();
+        } catch {
+          input.click();
+        }
+      } else {
+        input.click();
+      }
+    }
+    return;
+  }
+
+  // Handle LIVE Filter Button Click
+  const liveFilterTarget = eventTarget.closest<HTMLElement>('#live-filter-btn');
+  if (liveFilterTarget) {
+    liveFilterTarget.classList.toggle('active');
+    isLiveFilterActive = liveFilterTarget.classList.contains('active');
+    updateMatchFilters();
     return;
   }
 
@@ -305,12 +392,22 @@ appRoot.addEventListener('input', (event) => {
   }
 
   if (target instanceof HTMLInputElement && target.id === 'match-search') {
-    updateMatchSearch(target);
+    currentSearchQuery = target.value;
+    updateMatchFilters();
   }
 });
 
 appRoot.addEventListener('change', (event) => {
   const target = event.target;
+  if (target instanceof HTMLInputElement && target.id === 'date-picker-input') {
+    const selectedDate = target.value;
+    if (selectedDate) {
+      matchFeedState.date = selectedDate;
+      void refreshMatchFeed();
+    }
+    return;
+  }
+
   if (target instanceof HTMLElement && target.closest('#add-form')) {
     updateAddFormState();
   }
