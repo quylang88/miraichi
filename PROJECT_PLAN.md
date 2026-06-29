@@ -162,7 +162,10 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Result**: Historical fixture schedules and scores ingested from Sofascore for 7 tournaments, expanding offline dataset to 1,962 matches.
   - **Evidence**: Combined split counts: 1,044 train, 570 validation, and 348 test fixtures. See updated processed JSONL splits under `apps/local-ai/data/processed/`.
   - **Constraint**: Bookmaker baseline remains blocked/unavailable.
+- [x] Create `phase:implementation-plan Phase 8.6E API-Football Owner-Only App Live Data`.
+  - **Result**: Proposed design spec and implementation plan created to replace visible hardcoded app match feed data with backend-mediated API-Football fixture data, plus cache/quota guard and honest unavailable states.
+  - **Evidence**: See `docs/superpowers/specs/2026-06-29-phase-8-6e-api-football-owner-only-app-live-data-design.md` and `docs/superpowers/plans/2026-06-29-phase-8-6e-api-football-owner-only-app-live-data.md`.
+  - **Constraints**: No odds, no prediction runtime, no betting recommendation, no provider key in browser code, no public traffic, and no raw CSV ingestion changes in this phase.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
-
 
 
