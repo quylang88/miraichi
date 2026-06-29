@@ -1,12 +1,12 @@
 {
-  "datasetId": "dataset-comp-int-world-cup-2026-06-28",
+  "datasetId": "dataset-comp-int-world-cup-2026-06-29",
   "competitionId": "comp-int-world-cup",
   "schemaVersion": "1.0.0",
   "featureSpecVersion": "feature-spec-v0.1.0",
   "sourceProviderId": "soccerdata-fbref",
-  "sourceSnapshotHash": "a3155ad43e91437cc2df484a8cde7759df089be9f1a9a72c293d6f90af657a77",
-  "builtAt": "2026-06-28T11:30:33.995548Z",
-  "trainCount": 64,
-  "valCount": 64,
-  "testCount": 64
+  "sourceSnapshotHash": "ea72b998deecd0eb74960352ed5f6316963059898268c9f0923184d4dbaf40e6",
+  "builtAt": "2026-06-29T04:28:40.256578Z",
+  "trainCount": 288,
+  "valCount": 96,
+  "testCount": 144
 }

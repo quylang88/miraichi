@@ -1,0 +1,256 @@
+{
+  "reportId": "phase-8-4-candidate-model-bakeoff",
+  "phase": "8.4",
+  "status": "pass",
+  "datasetId": "dataset-national-team-aggregate-comp-int-world-cup__comp-int-euro",
+  "competitionIds": [
+    "comp-int-world-cup",
+    "comp-int-euro"
+  ],
+  "featureSpecVersion": "feature-spec-v0.1.0",
+  "sampleCount": 214,
+  "baselineLogLoss": 1.0481695457496674,
+  "baselineBrierScore": 0.6358811771066659,
+  "bookmakerBaselineAvailable": false,
+  "candidateResults": [
+    {
+      "candidateId": "elo_rating_v0",
+      "candidateFamily": "elo_rating",
+      "trainedOnSplitNames": [
+        "train",
+        "validation"
+      ],
+      "evaluatedOnSplitName": "test",
+      "evaluatedSampleCount": 214,
+      "metrics": {
+        "brierScore": 0.600485898191358,
+        "logLoss": 1.004646642544502,
+        "classAccuracy": 0.5654205607476636,
+        "expectedCalibrationError": {
+          "ece": 0.0913502802894098,
+          "sampleCount": 214,
+          "binCount": 10,
+          "bins": [
+            {
+              "index": 0,
+              "lowerInclusive": 0,
+              "upperExclusive": 0.1,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 1,
+              "lowerInclusive": 0.1,
+              "upperExclusive": 0.2,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 2,
+              "lowerInclusive": 0.2,
+              "upperExclusive": 0.3,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 3,
+              "lowerInclusive": 0.3,
+              "upperExclusive": 0.4,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 4,
+              "lowerInclusive": 0.4,
+              "upperExclusive": 0.5,
+              "sampleCount": 147,
+              "averageConfidence": 0.446698783558815,
+              "accuracy": 0.5374149659863946,
+              "gap": 0.09071618242757962
+            },
+            {
+              "index": 5,
+              "lowerInclusive": 0.5,
+              "upperExclusive": 0.6,
+              "sampleCount": 63,
+              "averageConfidence": 0.5433004147131932,
+              "accuracy": 0.6349206349206349,
+              "gap": 0.09162022020744165
+            },
+            {
+              "index": 6,
+              "lowerInclusive": 0.6,
+              "upperExclusive": 0.7,
+              "sampleCount": 4,
+              "averageConfidence": 0.6104018230026671,
+              "accuracy": 0.5,
+              "gap": 0.1104018230026671
+            },
+            {
+              "index": 7,
+              "lowerInclusive": 0.7,
+              "upperExclusive": 0.8,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 8,
+              "lowerInclusive": 0.8,
+              "upperExclusive": 0.9,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 9,
+              "lowerInclusive": 0.9,
+              "upperExclusive": 1,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "candidateId": "multinomial_logistic_competition_v0",
+      "candidateFamily": "multinomial_logistic_regression",
+      "trainedOnSplitNames": [
+        "train"
+      ],
+      "evaluatedOnSplitName": "test",
+      "evaluatedSampleCount": 214,
+      "metrics": {
+        "brierScore": 0.6375515284056827,
+        "logLoss": 1.0528654740441903,
+        "classAccuracy": 0.42990654205607476,
+        "expectedCalibrationError": {
+          "ece": 0.00930929249925666,
+          "sampleCount": 214,
+          "binCount": 10,
+          "bins": [
+            {
+              "index": 0,
+              "lowerInclusive": 0,
+              "upperExclusive": 0.1,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 1,
+              "lowerInclusive": 0.1,
+              "upperExclusive": 0.2,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 2,
+              "lowerInclusive": 0.2,
+              "upperExclusive": 0.3,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 3,
+              "lowerInclusive": 0.3,
+              "upperExclusive": 0.4,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 4,
+              "lowerInclusive": 0.4,
+              "upperExclusive": 0.5,
+              "sampleCount": 214,
+              "averageConfidence": 0.4392158345553314,
+              "accuracy": 0.42990654205607476,
+              "gap": 0.00930929249925666
+            },
+            {
+              "index": 5,
+              "lowerInclusive": 0.5,
+              "upperExclusive": 0.6,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 6,
+              "lowerInclusive": 0.6,
+              "upperExclusive": 0.7,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 7,
+              "lowerInclusive": 0.7,
+              "upperExclusive": 0.8,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 8,
+              "lowerInclusive": 0.8,
+              "upperExclusive": 0.9,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "index": 9,
+              "lowerInclusive": 0.9,
+              "upperExclusive": 1,
+              "sampleCount": 0,
+              "averageConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "rankedCandidateIds": [
+    "elo_rating_v0",
+    "multinomial_logistic_competition_v0"
+  ],
+  "selectedCandidateId": null,
+  "selectionAuthority": "blocked_until_phase_8_6_model_selection_adr",
+  "warnings": [
+    "Bookmaker baseline is unavailable for the current dataset; candidate results cannot be judged against market-implied probabilities."
+  ],
+  "forbiddenScope": [
+    "model_selection",
+    "runtime_prediction",
+    "betting_recommendation",
+    "stake_sizing",
+    "club_competition_expansion"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "datasetId": "dataset-comp-int-concacaf-gold-cup-2026-06-29",
+  "competitionId": "comp-int-concacaf-gold-cup",
+  "schemaVersion": "1.0.0",
+  "featureSpecVersion": "feature-spec-v0.1.0",
+  "sourceProviderId": "soccerdata-fbref",
+  "sourceSnapshotHash": "3e4d9d17fcc940ca8b5060337a9e721e4c8ea89d5eeabc267c1162d512f78937",
+  "builtAt": "2026-06-29T04:28:40.553305Z",
+  "trainCount": 144,
+  "valCount": 102,
+  "testCount": 40
+}

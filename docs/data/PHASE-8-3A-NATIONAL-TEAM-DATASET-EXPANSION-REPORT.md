@@ -2,14 +2,14 @@
 
 ## Status
 - **Status**: pass
-- **Date**: 2026-06-28
+- **Date**: 2026-06-29
 - **Scope**: National-team dataset expansion before Phase 8.4.
 
 ## Evidence
 - Enabled national-team competitions: `comp-int-world-cup`, `comp-int-euro`
-- Total train count: 108
-- Total validation count: 60
-- Total test count: 107
+- Total train count: 272
+- Total validation count: 137
+- Total test count: 214
 - Phase 8.4 data ready: yes
 
 ## Warnings

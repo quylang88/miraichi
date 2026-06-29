@@ -4,10 +4,10 @@
     {
       "competition_id": "comp-int-world-cup",
       "soccerdata_league": "INT-World Cup",
-      "seasons": [2014, 2018, 2022],
-      "train_split": [2014],
-      "val_split": [2018],
-      "test_split": [2022],
+      "seasons": [2002, 2006, 2010, 2014, 2018, 2022],
+      "train_split": [2002, 2006, 2010],
+      "val_split": [2014],
+      "test_split": [2018, 2022],
       "competition_type": "national_team",
       "provider_status": "supported",
       "enabled": true
@@ -15,10 +15,10 @@
     {
       "competition_id": "comp-int-euro",
       "soccerdata_league": "INT-European Championship",
-      "seasons": [2016, 2021, 2024],
-      "train_split": [2016],
-      "val_split": [2021],
-      "test_split": [2024],
+      "seasons": [2000, 2004, 2008, 2012, 2016, 2020, 2024],
+      "train_split": [2000, 2004, 2008],
+      "val_split": [2012, 2016],
+      "test_split": [2020, 2024],
       "competition_type": "national_team",
       "provider_status": "supported",
       "enabled": true
@@ -26,14 +26,57 @@
     {
       "competition_id": "comp-int-copa-america",
       "soccerdata_league": "INT-Copa America",
-      "seasons": [],
-      "train_split": [],
-      "val_split": [],
-      "test_split": [],
+      "seasons": [2007, 2011, 2015, 2016, 2019, 2021, 2024],
+      "train_split": [2007, 2011, 2015, 2016],
+      "val_split": [2019],
+      "test_split": [2021, 2024],
       "competition_type": "national_team",
-      "provider_status": "unsupported",
-      "enabled": false
+      "provider_status": "supported",
+      "enabled": true
+    },
+    {
+      "competition_id": "comp-int-afcon",
+      "soccerdata_league": "INT-Africa Cup of Nations",
+      "seasons": [2010, 2012, 2013, 2015, 2017, 2019, 2021, 2023],
+      "train_split": [2010, 2012, 2013, 2015, 2017],
+      "val_split": [2019, 2021],
+      "test_split": [2023],
+      "competition_type": "national_team",
+      "provider_status": "supported",
+      "enabled": true
+    },
+    {
+      "competition_id": "comp-int-afc-asian-cup",
+      "soccerdata_league": "INT-AFC Asian Cup",
+      "seasons": [2011, 2015, 2019, 2023],
+      "train_split": [2011, 2015],
+      "val_split": [2019],
+      "test_split": [2023],
+      "competition_type": "national_team",
+      "provider_status": "supported",
+      "enabled": true
+    },
+    {
+      "competition_id": "comp-int-concacaf-gold-cup",
+      "soccerdata_league": "INT-CONCACAF Gold Cup",
+      "seasons": [2009, 2011, 2013, 2015, 2017, 2019, 2021, 2023],
+      "train_split": [2009, 2011, 2013, 2015, 2017],
+      "val_split": [2019, 2021],
+      "test_split": [2023],
+      "competition_type": "national_team",
+      "provider_status": "supported",
+      "enabled": true
+    },
+    {
+      "competition_id": "comp-int-uefa-nations-league",
+      "soccerdata_league": "INT-UEFA Nations League",
+      "seasons": [2018, 2020, 2022, 2024],
+      "train_split": [2018, 2020],
+      "val_split": [2022],
+      "test_split": [2024],
+      "competition_type": "national_team",
+      "provider_status": "supported",
+      "enabled": true
     }
   ]
 }
-

@@ -121,7 +121,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete owner review for ADR-0040 model-readiness gates, with Phase 8 evidence or narrower owner-only R&D report authority before acceptance.
 - [x] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning only after owner-approved ADRs exist.
 - [x] Create Phase 8 Owner-Only Model R&D plan and split Phase 8 into smaller gated subphases.
-- [ ] Owner review Phase 8.0 R&D boundary split before Phase 8.1 implementation planning.
+- [x] Owner review Phase 8.0 R&D boundary split before Phase 8.1 implementation planning.
+  - **Result**: Owner confirmed the Phase 8 subphase drift and approved returning to the Phase 8.0 boundary check. Phase 8 remains owner-only R&D: no public prediction surface, no production model mode, no betting recommendation, no model artifact promotion, and national-team competitions remain before club expansion.
 - [x] Create `phase:implementation-plan Phase 8.1 Dataset Snapshot and Provenance`.
 - [x] Complete Phase 8.1 reproducible offline dataset snapshot and data quality report.
 - [x] Review and correct Phase 8.1 to make World Cup/national-team competitions the explicit first data target before Phase 8.2.
@@ -131,8 +132,37 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete Phase 8.3 Evaluation Harness and Baselines, using pure TypeScript metric functions in `apps/local-ai` for Brier, Calibration/ECE, and log loss, reporting sample count and bookmaker/simple baseline comparison without blocking harness construction on additional national-team competitions.
 - [x] Create `phase:implementation-plan Phase 8.3A National-Team Dataset Expansion`.
 - [x] Complete Phase 8.3A National-Team Dataset Expansion before Phase 8.4, with provider-confirmed national-team competitions and aggregate evaluation readiness evidence.
-- [ ] Create and complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.
+- [x] Create `phase:implementation-plan Phase 8.4 Candidate Model Bake-Off`.
+- [x] Complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.
+  - **Result**: Candidate comparison report generated for the aggregate World Cup + Euro national-team dataset. No model selected.
   - **Blocker**: Lifted (Phase 8.3A completed with World Cup and Euro datasets, total test sample count = 107). Club/Premier League expansion remains blocked.
-  - **Constraints**: Do not treat high-variance Phase 8.4 outcomes as model-selection evidence due to potential sample size limits. Do not create model-ready labels, no runtime prediction routes, and no betting recommendations.
-- [ ] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
+  - **Constraints**: Do not treat high-variance Phase 8.4 outcomes as model-selection evidence due to sample size limits and missing bookmaker baseline. Do not create runtime prediction routes, model artifacts, betting recommendations, or club competition support.
+- [x] Create `phase:implementation-plan Phase 8.5 Owner-Only Experimental Report Surface`.
+- [x] Complete Phase 8.5 Owner-Only Experimental Report Surface before Phase 8.6 Model Selection ADR.
+  - **Result**: Owner-only experimental JSON/Markdown report surface generated from Phase 8.4 evidence. No model selected and no runtime prediction surface created.
+  - **Constraints**: The report surface remains owner-only and experimental. It does not expose public predictions, `engineMode: production`, recommendation labels, stake advice, bankroll advice, ROI, CLV, Kelly logic, or club competition expansion.
+- [x] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
+  - **Result**: Owner approved ADR-0041 on 2026-06-29, confirming the decision to select no model yet.
+- [x] Phase 8.6A: National-Team Dataset Expansion for Model Selection Evidence.
+  - **Goal**: Expand World Cup and Euro history to increase out-of-sample test count and check for bookmaker odds/implied probability baselines, then rerun the model R&D pipeline.
+  - **Result**: Narrow expansion completed for World Cup + Euro, increasing scored aggregate test count to 214. Candidate bake-off still selected no model.
+  - **Limitation**: Bookmaker baseline remains unavailable, and Phase 8.6A provider discovery was too narrow because it only proved AFCON/Copa America/AFC Asian Cup/CONCACAF Gold Cup unavailable through the current FBref path, not through Sofascore direct tournament ids.
+- [x] Create `phase:plan Phase 8.6B Sofascore National-Team Source Discovery and Odds Baseline Discovery`.
+  - **Result**: Draft design spec created to investigate Sofascore direct tournament-id discovery for AFCON, Copa America, AFC Asian Cup, CONCACAF Gold Cup, UEFA Nations League, World Cup, and Euro, plus a separate odds/bookmaker source discovery.
+  - **Constraints**: Do not merge Sofascore fixtures into the main training dataset, do not fake bookmaker baselines, do not add API keys/secrets/paid providers, do not add club competitions, and do not revisit model selection before Phase 8.6B evidence exists.
+- [x] Create `phase:implementation-plan Phase 8.6B Sofascore National-Team Source Discovery and Odds Baseline Discovery`.
+  - **Result**: Implementation plan created with TDD slices for the Sofascore discovery registry, quality gates, odds baseline source matrix, phase verifier, generated artifacts, and closeout evidence.
+  - **Next**: Start with `phase:code-slice Phase 8.6B Sofascore Discovery Registry And Validation`.
+- [x] Complete Phase 8.6B Sofascore National-Team Source Discovery and Odds Baseline Discovery.
+  - **Result**: Sofascore direct tournament-id discovery report generated for World Cup, Euro, AFCON, Copa America, AFC Asian Cup, CONCACAF Gold Cup, and UEFA Nations League.
+  - **Evidence**: See `apps/local-ai/reports/phase-8-6b-sofascore-national-team-source-discovery.json`, `apps/local-ai/reports/phase-8-6b-odds-baseline-source-discovery.json`, and `docs/data/PHASE-8-6B-SOFASCORE-NATIONAL-TEAM-SOURCE-DISCOVERY.md`.
+- [x] Create `phase:plan Phase 8.6C National-Team Sofascore Dataset Ingestion`.
+  - **Result**: Proposed design spec created to ingest historical match events and scores from Sofascore for 7 tournaments, updating `competition-registry.json` splits, and rebuilding offline training/validation splits without odds.
+- [x] Complete Phase 8.6C National-Team Sofascore Dataset Ingestion.
+  - **Result**: Historical fixture schedules and scores ingested from Sofascore for 7 tournaments, expanding offline dataset to 1,962 matches.
+  - **Evidence**: Combined split counts: 1,044 train, 570 validation, and 348 test fixtures. See updated processed JSONL splits under `apps/local-ai/data/processed/`.
+  - **Constraint**: Bookmaker baseline remains blocked/unavailable.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
+
+
+

@@ -27,6 +27,8 @@ export type EvaluationFixture = {
   matchId: string;
   split: EvaluationSplitName;
   competitionId: string;
+  homeTeamId: string;
+  awayTeamId: string;
   kickoffTime: string;
   actualOutcome: OutcomeClass;
   marketProbabilities?: OutcomeProbabilities;
@@ -48,6 +50,8 @@ export type EvaluationDatasetMetadata = {
 export type EvaluationDataset = {
   metadata: EvaluationDatasetMetadata;
   competitionId: string;
+  competitionIds?: string[];
+  datasetIds?: string[];
   train: EvaluationFixture[];
   validation: EvaluationFixture[];
   test: EvaluationFixture[];
@@ -114,6 +118,8 @@ function toEvaluationFixtures(
       matchId: record.id,
       split,
       competitionId: record.competitionId,
+      homeTeamId: record.homeTeamId,
+      awayTeamId: record.awayTeamId,
       kickoffTime: record.kickoffTime,
       actualOutcome: actualOutcomeFromScores(record.scores)
     };
@@ -162,11 +168,24 @@ export function loadEvaluationDatasets(processedDirs: readonly string[]): Aggreg
 
   const datasets = processedDirs.map((processedDir) => loadEvaluationDataset(processedDir));
   const first = datasets[0];
+  const competitionIds = datasets.map((dataset) => dataset.competitionId);
+  const datasetIds = datasets.map((dataset) => dataset.metadata.datasetId);
+  const aggregateCompetitionId = 'aggregate-national-team';
+  const aggregateMetadata: EvaluationDatasetMetadata = {
+    ...first.metadata,
+    datasetId: `dataset-national-team-aggregate-${competitionIds.join('__')}`,
+    competitionId: aggregateCompetitionId,
+    sourceSnapshotHash: datasets.map((dataset) => dataset.metadata.sourceSnapshotHash).join('|'),
+    trainCount: datasets.reduce((sum, dataset) => sum + dataset.train.length, 0),
+    valCount: datasets.reduce((sum, dataset) => sum + dataset.validation.length, 0),
+    testCount: datasets.reduce((sum, dataset) => sum + dataset.test.length, 0),
+  };
 
   return {
-    metadata: first.metadata,
-    competitionId: first.competitionId,
-    competitionIds: datasets.map((dataset) => dataset.competitionId),
+    metadata: aggregateMetadata,
+    competitionId: aggregateCompetitionId,
+    competitionIds,
+    datasetIds,
     train: datasets.flatMap((dataset) => dataset.train),
     validation: datasets.flatMap((dataset) => dataset.validation),
     test: datasets.flatMap((dataset) => dataset.test),

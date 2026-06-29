@@ -21,6 +21,8 @@ const dataset: EvaluationDataset = {
       matchId: 'match-train-1',
       split: 'train',
       competitionId: 'comp-int-world-cup',
+      homeTeamId: 'germany',
+      awayTeamId: 'portugal',
       kickoffTime: '2014-06-16T13:00:00Z',
       actualOutcome: 'home'
     },
@@ -28,6 +30,8 @@ const dataset: EvaluationDataset = {
       matchId: 'match-train-2',
       split: 'train',
       competitionId: 'comp-int-world-cup',
+      homeTeamId: 'belgium',
+      awayTeamId: 'algeria',
       kickoffTime: '2014-06-17T13:00:00Z',
       actualOutcome: 'home'
     },
@@ -35,6 +39,8 @@ const dataset: EvaluationDataset = {
       matchId: 'match-train-3',
       split: 'train',
       competitionId: 'comp-int-world-cup',
+      homeTeamId: 'usa',
+      awayTeamId: 'wales',
       kickoffTime: '2018-07-15T18:00:00Z',
       actualOutcome: 'draw'
     }
@@ -44,6 +50,8 @@ const dataset: EvaluationDataset = {
       matchId: 'match-val',
       split: 'validation',
       competitionId: 'comp-int-world-cup',
+      homeTeamId: 'france',
+      awayTeamId: 'croatia',
       kickoffTime: '2018-07-15T18:00:00Z',
       actualOutcome: 'home'
     }
@@ -53,6 +61,8 @@ const dataset: EvaluationDataset = {
       matchId: 'match-test-1',
       split: 'test',
       competitionId: 'comp-int-world-cup',
+      homeTeamId: 'england',
+      awayTeamId: 'ir-iran',
       kickoffTime: '2022-11-26T22:00:00Z',
       actualOutcome: 'home',
       marketProbabilities: { home: 0.6, draw: 0.3, away: 0.1 }
@@ -61,6 +71,8 @@ const dataset: EvaluationDataset = {
       matchId: 'match-test-2',
       split: 'test',
       competitionId: 'comp-int-world-cup',
+      homeTeamId: 'usa',
+      awayTeamId: 'wales',
       kickoffTime: '2022-11-27T22:00:00Z',
       actualOutcome: 'draw',
       marketProbabilities: { home: 0.2, draw: 0.5, away: 0.3 }
@@ -139,6 +151,8 @@ describe('Phase 8.3 evaluation report', () => {
       matchId: `match-test-${i}`,
       split: 'test' as const,
       competitionId: 'comp-int-world-cup',
+      homeTeamId: 'england',
+      awayTeamId: 'ir-iran',
       kickoffTime: '2022-11-26T22:00:00Z',
       actualOutcome: 'home' as const,
       marketProbabilities: { home: 0.6, draw: 0.3, away: 0.1 }
@@ -171,5 +185,42 @@ describe('Phase 8.3 evaluation report', () => {
     expect(markdown).not.toContain('- `pnpm run test:integration`: PASS');
     expect(markdown).toContain('- `pnpm run verify:local`: Required external verification');
     expect(markdown).toContain('- `pnpm run test:integration`: Required external verification');
+  });
+
+  it('reports aggregate national-team provenance without World Cup-only warnings', () => {
+    const aggregateDataset = {
+      ...dataset,
+      metadata: {
+        ...dataset.metadata,
+        datasetId: 'dataset-national-team-aggregate-comp-int-world-cup__comp-int-euro',
+        competitionId: 'aggregate-national-team',
+        trainCount: 3,
+        valCount: 1,
+        testCount: 100
+      },
+      competitionId: 'aggregate-national-team',
+      competitionIds: ['comp-int-world-cup', 'comp-int-euro'],
+      test: Array.from({ length: 100 }, (_, index) => ({
+        matchId: `match-test-${index}`,
+        split: 'test' as const,
+        competitionId: index < 50 ? 'comp-int-world-cup' : 'comp-int-euro',
+        homeTeamId: index < 50 ? 'england' : 'germany',
+        awayTeamId: index < 50 ? 'ir-iran' : 'scotland',
+        kickoffTime: '2024-06-10T20:00:00Z',
+        actualOutcome: 'home' as const
+      }))
+    };
+
+    const report = buildEvaluationReport(aggregateDataset, { eceBinCount: 5 });
+    const markdown = generateReportMarkdown(report);
+
+    expect(report.reportId).toBe('phase-8-3-evaluation-harness-aggregate-national-team');
+    expect(report.competitionId).toBe('aggregate-national-team');
+    expect(report.competitionIds).toEqual(['comp-int-world-cup', 'comp-int-euro']);
+    expect(report.warnings).not.toContain(
+      'World Cup-only evaluation must not be treated as statistically strong until related national-team competitions are added.'
+    );
+    expect(markdown).toContain('- Competitions: `comp-int-world-cup`, `comp-int-euro`');
+    expect(markdown).not.toContain('World Cup-only snapshot is too small');
   });
 });

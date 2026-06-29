@@ -6,23 +6,24 @@
 - **Scope**: Owner-only World Cup/national-team-first evaluation harness and baseline report.
 
 ## Direct Conclusion
-Phase 8.3 can generate baseline metrics, but the current World Cup-only snapshot is too small for model-readiness or calibration confidence.
+Phase 8.3 can generate aggregate national-team baseline metrics across provider-confirmed competitions; this is still owner-only R&D evidence, not model-selection approval.
 
 ## Evidence
-- Dataset: `dataset-comp-int-world-cup-2026-06-28`
-- Competition: `comp-int-world-cup`
+- Dataset: `dataset-national-team-aggregate-comp-int-world-cup__comp-int-euro`
+- Competition: `aggregate-national-team`
+- Competitions: `comp-int-world-cup`, `comp-int-euro`
 - Feature spec version: `feature-spec-v0.1.0`
 - Evaluation split: `test`
-- Test sample count: 107
-- Missing bookmaker baseline count: 107
+- Test sample count: 214
+- Missing bookmaker baseline count: 214
 - Metrics implementation: pure TypeScript in `apps/local-ai`
 
 ## Baselines
-- `uniform_1x2`: Brier=0.666667, LogLoss=1.098612, Accuracy=0.448598, ECE=0.115265, N=107
-- `train_outcome_frequency_smoothed`: Brier=0.644524, LogLoss=1.066064, Accuracy=0.448598, ECE=0.007157, N=107
+- `uniform_1x2`: Brier=0.666667, LogLoss=1.098612, Accuracy=0.425234, ECE=0.091900, N=214
+- `train_outcome_frequency_smoothed`: Brier=0.635881, LogLoss=1.048170, Accuracy=0.425234, ECE=0.003857, N=214
 
 ## Warnings
-- World Cup-only evaluation must not be treated as statistically strong until related national-team competitions are added.
+
 
 ## Explicit Non-Authorizations
 - No model training.
@@ -32,7 +33,7 @@ Phase 8.3 can generate baseline metrics, but the current World Cup-only snapshot
 - No club competition expansion.
 
 ## Recommendation
-Do not start Phase 8.4 candidate model bake-off until related national-team competitions are added or the owner accepts that Phase 8.4 will run as a high-variance experiment only.
+Phase 8.4 may proceed only as a gated candidate model bake-off plan; do not treat baseline or candidate results as model-selection approval without the later ADR.
 
 ## Verification
 - `pnpm --filter local-ai test`: Run separately

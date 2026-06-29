@@ -2,19 +2,17 @@
   "reportId": "phase-8-2-feature-leakage-audit-comp-int-world-cup",
   "phase": "8.2",
   "status": "pass",
-  "datasetId": "dataset-comp-int-world-cup-2026-06-28",
+  "datasetId": "dataset-comp-int-world-cup-2026-06-29",
   "competitionId": "comp-int-world-cup",
   "targetCompetitionScope": "world-cup-national-team-first",
   "featureSpecVersion": "feature-spec-v0.1.0",
   "metadataFeatureSpecVersion": "feature-spec-v0.1.0",
   "featureSpecVersionMatchesMetadata": true,
   "checkedFeatureCount": 13,
-  "datasetSampleCount": 3,
+  "datasetSampleCount": 384,
   "rejectedRecordCount": 0,
   "violations": [],
-  "warnings": [
-    "Dataset sample count is below 100 fixtures; this is audit evidence only, not model-training evidence."
-  ],
+  "warnings": [],
   "forbiddenScope": [
     "model_training",
     "runtime_prediction",

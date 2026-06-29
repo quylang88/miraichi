@@ -1,27 +1,35 @@
 {
-  "reportId": "phase-8-3-evaluation-harness-comp-int-world-cup",
+  "reportId": "phase-8-3-evaluation-harness-aggregate-national-team",
   "phase": "8.3",
   "status": "pass",
-  "datasetId": "dataset-comp-int-world-cup-2026-06-28",
-  "competitionId": "comp-int-world-cup",
+  "datasetId": "dataset-national-team-aggregate-comp-int-world-cup__comp-int-euro",
+  "datasetIds": [
+    "dataset-comp-int-world-cup-2026-06-29",
+    "dataset-comp-int-euro-2026-06-29"
+  ],
+  "competitionId": "aggregate-national-team",
+  "competitionIds": [
+    "comp-int-world-cup",
+    "comp-int-euro"
+  ],
   "featureSpecVersion": "feature-spec-v0.1.0",
   "evaluationSplit": "test",
-  "sampleCount": 107,
-  "trainSampleCount": 108,
-  "validationSampleCount": 60,
-  "skippedRecordCount": 19,
-  "missingBookmakerBaselineCount": 107,
+  "sampleCount": 214,
+  "trainSampleCount": 272,
+  "validationSampleCount": 137,
+  "skippedRecordCount": 38,
+  "missingBookmakerBaselineCount": 214,
   "baselines": [
     {
       "id": "uniform_1x2",
-      "evaluatedSampleCount": 107,
+      "evaluatedSampleCount": 214,
       "metrics": {
-        "brierScore": 0.6666666666666662,
-        "logLoss": 1.0986122886681082,
-        "classAccuracy": 0.4485981308411215,
+        "brierScore": 0.6666666666666673,
+        "logLoss": 1.0986122886681078,
+        "classAccuracy": 0.4252336448598131,
         "expectedCalibrationError": {
-          "ece": 0.1152647975077884,
-          "sampleCount": 107,
+          "ece": 0.09190031152647943,
+          "sampleCount": 214,
           "binCount": 10,
           "bins": [
             {
@@ -55,10 +63,10 @@
               "index": 3,
               "lowerInclusive": 0.3,
               "upperExclusive": 0.4,
-              "sampleCount": 107,
-              "averageConfidence": 0.3333333333333331,
-              "accuracy": 0.4485981308411215,
-              "gap": 0.1152647975077884
+              "sampleCount": 214,
+              "averageConfidence": 0.33333333333333365,
+              "accuracy": 0.4252336448598131,
+              "gap": 0.09190031152647943
             },
             {
               "index": 4,
@@ -120,14 +128,14 @@
     },
     {
       "id": "train_outcome_frequency_smoothed",
-      "evaluatedSampleCount": 107,
+      "evaluatedSampleCount": 214,
       "metrics": {
-        "brierScore": 0.644523786226236,
-        "logLoss": 1.0660635176738023,
-        "classAccuracy": 0.4485981308411215,
+        "brierScore": 0.6358811771066659,
+        "logLoss": 1.0481695457496674,
+        "classAccuracy": 0.4252336448598131,
         "expectedCalibrationError": {
-          "ece": 0.007156689399680449,
-          "sampleCount": 107,
+          "ece": 0.0038572642310943928,
+          "sampleCount": 214,
           "binCount": 10,
           "bins": [
             {
@@ -170,10 +178,10 @@
               "index": 4,
               "lowerInclusive": 0.4,
               "upperExclusive": 0.5,
-              "sampleCount": 107,
-              "averageConfidence": 0.44144144144144104,
-              "accuracy": 0.4485981308411215,
-              "gap": 0.007156689399680449
+              "sampleCount": 214,
+              "averageConfidence": 0.42909090909090747,
+              "accuracy": 0.4252336448598131,
+              "gap": 0.0038572642310943928
             },
             {
               "index": 5,
@@ -225,9 +233,7 @@
       }
     }
   ],
-  "warnings": [
-    "World Cup-only evaluation must not be treated as statistically strong until related national-team competitions are added."
-  ],
+  "warnings": [],
   "nonBlockingGates": {
     "sampleCountAtLeast100": true,
     "bookmakerBaselineAvailable": false

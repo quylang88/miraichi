@@ -49,6 +49,16 @@ def test_registry_marks_enabled_competitions_as_national_team_only():
     assert all(item.enabled is True for item in enabled)
 
 
+def test_euro_validation_split_uses_provider_season_year():
+    cfg = get_competition_config("comp-int-euro")
+
+    assert cfg is not None
+    assert cfg.seasons == [2016, 2020, 2024]
+    assert cfg.train_split == [2016]
+    assert cfg.val_split == [2020]
+    assert cfg.test_split == [2024]
+
+
 def test_copa_america_is_not_enabled_without_provider_support():
     cfg = get_competition_config("comp-int-copa-america")
 
@@ -71,4 +81,3 @@ def test_registry_rejects_enabled_club_competitions():
             provider_status="supported",
             enabled=True,
         )
-

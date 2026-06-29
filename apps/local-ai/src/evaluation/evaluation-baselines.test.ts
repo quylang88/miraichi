@@ -11,6 +11,8 @@ const trainFixtures: EvaluationFixture[] = [
     matchId: 'match-1',
     split: 'train',
     competitionId: 'comp-int-world-cup',
+    homeTeamId: 'brazil',
+    awayTeamId: 'team-hrv-national',
     kickoffTime: '2014-06-16T13:00:00Z',
     actualOutcome: 'home'
   },
@@ -18,6 +20,8 @@ const trainFixtures: EvaluationFixture[] = [
     matchId: 'match-2',
     split: 'train',
     competitionId: 'comp-int-world-cup',
+    homeTeamId: 'usa',
+    awayTeamId: 'wales',
     kickoffTime: '2018-07-15T18:00:00Z',
     actualOutcome: 'draw'
   }
@@ -49,6 +53,8 @@ describe('Phase 8.3 evaluation baselines', () => {
         matchId: 'match-market',
         split: 'test',
         competitionId: 'comp-int-world-cup',
+        homeTeamId: 'england',
+        awayTeamId: 'ir-iran',
         kickoffTime: '2022-11-26T22:00:00Z',
         actualOutcome: 'home',
         marketProbabilities: { home: 0.5, draw: 0.25, away: 0.25 }
@@ -63,6 +69,8 @@ describe('Phase 8.3 evaluation baselines', () => {
         matchId: 'match-no-market',
         split: 'test',
         competitionId: 'comp-int-world-cup',
+        homeTeamId: 'qatar',
+        awayTeamId: 'ecuador',
         kickoffTime: '2022-11-26T22:00:00Z',
         actualOutcome: 'home'
       })

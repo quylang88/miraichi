@@ -36,6 +36,10 @@
     "phase8:feature-audit": "tsx scripts/phase8-feature-leakage-verify.ts",
     "phase8:evaluation-harness": "tsx scripts/phase8-evaluation-harness-verify.ts",
     "phase8:national-team-expansion": "tsx scripts/phase8-national-team-expansion-verify.ts",
+    "phase8:candidate-bakeoff": "tsx scripts/phase8-candidate-bakeoff-verify.ts",
+    "phase8:experimental-report-surface": "tsx scripts/phase8-experimental-report-surface-verify.ts",
+    "phase8:sofascore-national-team-discovery": "tsx scripts/phase8-sofascore-national-team-discovery-verify.ts",
+    "phase8:sofascore-national-team-ingestion": "tsx scripts/phase8-sofascore-national-team-ingestion-verify.ts",
     "pwa:verify": "tsx scripts/pwa-verify.ts",
     "typecheck": "tsc -p tsconfig.base.json --noEmit"
   },

@@ -1,0 +1,12 @@
+{
+  "datasetId": "dataset-comp-int-uefa-nations-league-2026-06-29",
+  "competitionId": "comp-int-uefa-nations-league",
+  "schemaVersion": "1.0.0",
+  "featureSpecVersion": "feature-spec-v0.1.0",
+  "sourceProviderId": "soccerdata-fbref",
+  "sourceSnapshotHash": "4123425d0b116c5e48e3af72a7e55ea16c83043ce9c9564a2e08bbc010f7e9c3",
+  "builtAt": "2026-06-29T04:28:40.662947Z",
+  "trainCount": 0,
+  "valCount": 0,
+  "testCount": 0
+}
