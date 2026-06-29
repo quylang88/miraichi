@@ -3,39 +3,6 @@
  * Fully competition-agnostic. No business logic.
  */
 
-export const MOCK_MATCHES = [
-  {
-    id: "match_2026_001",
-    competitionId: "comp_international_cup_2026",
-    seasonId: "season_2026",
-    status: "scheduled",
-    homeTeam: {
-      id: "team_generic_a",
-      name: "Team A"
-    },
-    awayTeam: {
-      id: "team_generic_b",
-      name: "Team B"
-    },
-    scheduledTime: "2026-06-25T18:00:00Z"
-  },
-  {
-    id: "match_2026_002",
-    competitionId: "comp_international_cup_2026",
-    seasonId: "season_2026",
-    status: "scheduled",
-    homeTeam: {
-      id: "team_generic_c",
-      name: "Team C"
-    },
-    awayTeam: {
-      id: "team_generic_d",
-      name: "Team D"
-    },
-    scheduledTime: "2026-06-26T20:00:00Z"
-  }
-];
-
 export const MOCK_PREDICTIONS = {
   "match_2026_001": {
     matchId: "match_2026_001",
