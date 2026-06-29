@@ -141,5 +141,6 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete Phase 8.5 Owner-Only Experimental Report Surface before Phase 8.6 Model Selection ADR.
   - **Result**: Owner-only experimental JSON/Markdown report surface generated from Phase 8.4 evidence. No model selected and no runtime prediction surface created.
   - **Constraints**: The report surface remains owner-only and experimental. It does not expose public predictions, `engineMode: production`, recommendation labels, stake advice, bankroll advice, ROI, CLV, Kelly logic, or club competition expansion.
-- [ ] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
+- [x] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
+  - **Result**: Draft ADR-0041 created with the recommended decision to select no model yet. Owner approval remains pending.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
