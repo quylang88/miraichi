@@ -429,8 +429,8 @@ function renderMatchesPanel(
         line-height: 1.1;
       }
 
-      .search-row {
-        grid-template-columns: 1fr auto auto !important;
+      #screen-matches .search-row {
+        grid-template-columns: 1fr auto auto;
       }
 
       #live-filter-btn {
@@ -484,7 +484,7 @@ function renderMatchesPanel(
         <button id="date-picker-btn" class="calendar-btn" type="button" aria-label="Pick date">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
         </button>
-        <input id="date-picker-input" type="date" style="display: none;" value="${escapeHtml(matchFeed.date)}">
+        <input id="date-picker-input" type="date" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;" value="${escapeHtml(matchFeed.date)}">
       </div>
 
       <div class="search-row">

@@ -197,7 +197,8 @@ function updateMatchFilters(): void {
   });
 
   if (matchesEmpty) {
-    matchesEmpty.style.display = visibleCount === 0 ? 'block' : 'none';
+    const showEmpty = matchFeedState.status === 'ready' && visibleCount === 0;
+    matchesEmpty.style.display = showEmpty ? 'block' : 'none';
   }
 }
 
@@ -441,8 +442,11 @@ async function refreshMatchFeed(): Promise<void> {
   const date = matchFeedState.date;
   matchFeedState = { status: 'loading', date };
   render(currentScreenName);
-  matchFeedState = await getMatchFeed(date);
-  render(currentScreenName);
+  const result = await getMatchFeed(date);
+  if (matchFeedState.date === date) {
+    matchFeedState = result;
+    render(currentScreenName);
+  }
 }
 
 render(getInitialTabId());
