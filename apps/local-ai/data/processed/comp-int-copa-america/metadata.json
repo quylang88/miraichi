@@ -1,0 +1,12 @@
+{
+  "datasetId": "dataset-comp-int-copa-america-2026-06-29",
+  "competitionId": "comp-int-copa-america",
+  "schemaVersion": "1.0.0",
+  "featureSpecVersion": "feature-spec-v0.1.0",
+  "sourceProviderId": "soccerdata-fbref",
+  "sourceSnapshotHash": "f095851e6a822dc40dfb930824fd4e255a60b781980cbe6aafaa42d15f214ebb",
+  "builtAt": "2026-06-29T04:28:40.367550Z",
+  "trainCount": 138,
+  "valCount": 36,
+  "testCount": 56
+}

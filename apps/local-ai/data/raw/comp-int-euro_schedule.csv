@@ -1,278 +1,497 @@
-league,season,game,round,week,day,date,time,home_team,score,away_team,attendance,venue,referee,match_report,notes,game_id
-INT-European Championship,2000,2000-06-10 Belgium-Sweden,Group stage,1,Sat,2000-06-10,20:45 (03:45),Belgium,2–1,Sweden,46700,Stade Roi Baudouin,Markus Merk,/en/matches/d0cc54df/Belgium-Sweden-June-10-2000-UEFA-Euro-2000,,d0cc54df
-INT-European Championship,2000,2000-06-11 France-Denmark,Group stage,1,Sun,2000-06-11,18:00 (01:00),France,3–0,Denmark,28100,Jan Breydelstadion,Günter Benkö,/en/matches/acf38877/France-Denmark-June-11-2000-UEFA-Euro-2000,,acf38877
-INT-European Championship,2000,2000-06-11 Netherlands-Czechia,Group stage,1,Sun,2000-06-11,20:45 (03:45),Netherlands,1–0,Czechia,50800,Johan Cruyff ArenA,Pierluigi Collina,/en/matches/4b680532/Netherlands-Czechia-June-11-2000-UEFA-Euro-2000,,4b680532
-INT-European Championship,2000,2000-06-11 Türkiye-Italy,Group stage,1,Sun,2000-06-11,14:30 (21:30),Türkiye,1–2,Italy,22500,GelreDome,Hugh Dallas,/en/matches/6027ced9/Turkiye-Italy-June-11-2000-UEFA-Euro-2000,,6027ced9
-INT-European Championship,2000,2000-06-12 Germany-Romania,Group stage,1,Mon,2000-06-12,18:00 (01:00),Germany,1–1,Romania,28500,Stade Maurice Dufrasne,Kim Milton Nielsen,/en/matches/afcab359/Germany-Romania-June-12-2000-UEFA-Euro-2000,,afcab359
-INT-European Championship,2000,2000-06-12 Portugal-England,Group stage,1,Mon,2000-06-12,20:45 (03:45),Portugal,3–2,England,31500,Philips Stadion,Anders Frisk,/en/matches/80bff97b/Portugal-England-June-12-2000-UEFA-Euro-2000,,80bff97b
-INT-European Championship,2000,2000-06-13 Spain-Norway,Group stage,1,Tue,2000-06-13,18:00 (01:00),Spain,0–1,Norway,41000,Stadion Feijenoord,Gamal Al Ghandour,/en/matches/adb88414/Spain-Norway-June-13-2000-UEFA-Euro-2000,,adb88414
-INT-European Championship,2000,2000-06-13 Yugoslavia-Slovenia,Group stage,1,Tue,2000-06-13,20:45 (03:45),Yugoslavia,3–3,Slovenia,18500,Stade du Pays de Charleroi,Vítor Melo,/en/matches/1a4852cc/FR-Yugoslavia-Slovenia-June-13-2000-UEFA-Euro-2000,,1a4852cc
-INT-European Championship,2000,2000-06-14 Italy-Belgium,Group stage,2,Wed,2000-06-14,20:45 (03:45),Italy,2–0,Belgium,44500,Stade Roi Baudouin,José García Aranda,/en/matches/6154782f/Italy-Belgium-June-14-2000-UEFA-Euro-2000,,6154782f
-INT-European Championship,2000,2000-06-15 Sweden-Türkiye,Group stage,2,Thu,2000-06-15,20:45 (03:45),Sweden,0–0,Türkiye,27000,Philips Stadion,Dick Jol,/en/matches/dc8934b7/Sweden-Turkiye-June-15-2000-UEFA-Euro-2000,,dc8934b7
-INT-European Championship,2000,2000-06-16 Czechia-France,Group stage,2,Fri,2000-06-16,18:00 (01:00),Czechia,1–2,France,27243,Jan Breydelstadion,Graham Poll,/en/matches/2bfda9bb/Czechia-France-June-16-2000-UEFA-Euro-2000,,2bfda9bb
-INT-European Championship,2000,2000-06-16 Denmark-Netherlands,Group stage,2,Fri,2000-06-16,20:45 (03:45),Denmark,0–3,Netherlands,51425,Stadion Feijenoord,Urs Meier,/en/matches/ae60ed14/Denmark-Netherlands-June-16-2000-UEFA-Euro-2000,,ae60ed14
-INT-European Championship,2000,2000-06-17 England-Germany,Group stage,2,Sat,2000-06-17,20:45 (03:45),England,1–0,Germany,29000,Stade du Pays de Charleroi,Pierluigi Collina,/en/matches/1adf3b00/England-Germany-June-17-2000-UEFA-Euro-2000,,1adf3b00
-INT-European Championship,2000,2000-06-17 Romania-Portugal,Group stage,2,Sat,2000-06-17,18:00 (01:00),Romania,0–1,Portugal,28400,GelreDome,Gilles Veissière,/en/matches/47ecc3a7/Romania-Portugal-June-17-2000-UEFA-Euro-2000,,47ecc3a7
-INT-European Championship,2000,2000-06-18 Norway-Yugoslavia,Group stage,2,Sun,2000-06-18,20:45 (03:45),Norway,0–1,Yugoslavia,28750,Stade Maurice Dufrasne,Hugh Dallas,/en/matches/7d4aaa87/Norway-FR-Yugoslavia-June-18-2000-UEFA-Euro-2000,,7d4aaa87
-INT-European Championship,2000,2000-06-18 Slovenia-Spain,Group stage,2,Sun,2000-06-18,18:00 (01:00),Slovenia,1–2,Spain,51300,Johan Cruyff ArenA,Markus Merk,/en/matches/aa10dc8f/Slovenia-Spain-June-18-2000-UEFA-Euro-2000,,aa10dc8f
-INT-European Championship,2000,2000-06-19 Italy-Sweden,Group stage,3,Mon,2000-06-19,20:45 (03:45),Italy,2–1,Sweden,30000,Philips Stadion,Vítor Melo,/en/matches/9dc6619e/Italy-Sweden-June-19-2000-UEFA-Euro-2000,,9dc6619e
-INT-European Championship,2000,2000-06-19 Türkiye-Belgium,Group stage,3,Mon,2000-06-19,20:45 (03:45),Türkiye,2–0,Belgium,48000,Stade Roi Baudouin,Kim Milton Nielsen,/en/matches/e93af806/Turkiye-Belgium-June-19-2000-UEFA-Euro-2000,,e93af806
-INT-European Championship,2000,2000-06-20 England-Romania,Group stage,3,Tue,2000-06-20,20:45 (03:45),England,2–3,Romania,30000,Stade du Pays de Charleroi,Urs Meier,/en/matches/056c7f19/England-Romania-June-20-2000-UEFA-Euro-2000,,056c7f19
-INT-European Championship,2000,2000-06-20 Portugal-Germany,Group stage,3,Tue,2000-06-20,20:45 (03:45),Portugal,3–0,Germany,44000,Stadion Feijenoord,Dick Jol,/en/matches/b486e939/Portugal-Germany-June-20-2000-UEFA-Euro-2000,,b486e939
-INT-European Championship,2000,2000-06-21 Denmark-Czechia,Group stage,3,Wed,2000-06-21,20:45 (03:45),Denmark,0–2,Czechia,20000,Stade Maurice Dufrasne,Gamal Al Ghandour,/en/matches/79a05789/Denmark-Czechia-June-21-2000-UEFA-Euro-2000,,79a05789
-INT-European Championship,2000,2000-06-21 France-Netherlands,Group stage,3,Wed,2000-06-21,20:45 (03:45),France,2–3,Netherlands,50000,Johan Cruyff ArenA,Anders Frisk,/en/matches/03242663/France-Netherlands-June-21-2000-UEFA-Euro-2000,,03242663
-INT-European Championship,2000,2000-06-21 Slovenia-Norway,Group stage,3,Wed,2000-06-21,18:00 (01:00),Slovenia,0–0,Norway,21000,GelreDome,Graham Poll,/en/matches/bd6129b3/Slovenia-Norway-June-21-2000-UEFA-Euro-2000,,bd6129b3
-INT-European Championship,2000,2000-06-21 Yugoslavia-Spain,Group stage,3,Wed,2000-06-21,18:00 (01:00),Yugoslavia,3–4,Spain,26611,Jan Breydelstadion,Gilles Veissière,/en/matches/4fc9b473/FR-Yugoslavia-Spain-June-21-2000-UEFA-Euro-2000,,4fc9b473
-INT-European Championship,2000,2000-06-24 Italy-Romania,Quarter-finals,,Sat,2000-06-24,20:45 (03:45),Italy,2–0,Romania,41000,Stade Roi Baudouin,Vítor Melo,/en/matches/0204b94b/Italy-Romania-June-24-2000-UEFA-Euro-2000,,0204b94b
-INT-European Championship,2000,2000-06-24 Türkiye-Portugal,Quarter-finals,,Sat,2000-06-24,18:00 (01:00),Türkiye,0–2,Portugal,42000,Johan Cruyff ArenA,Dick Jol,/en/matches/3fcceb3e/Turkiye-Portugal-June-24-2000-UEFA-Euro-2000,,3fcceb3e
-INT-European Championship,2000,2000-06-25 Netherlands-Yugoslavia,Quarter-finals,,Sun,2000-06-25,18:00 (01:00),Netherlands,6–1,Yugoslavia,44000,Stadion Feijenoord,José García Aranda,/en/matches/f18539f1/Netherlands-FR-Yugoslavia-June-25-2000-UEFA-Euro-2000,,f18539f1
-INT-European Championship,2000,2000-06-25 Spain-France,Quarter-finals,,Sun,2000-06-25,20:45 (03:45),Spain,1–2,France,26614,Jan Breydelstadion,Pierluigi Collina,/en/matches/befd4117/Spain-France-June-25-2000-UEFA-Euro-2000,,befd4117
-INT-European Championship,2000,2000-06-28 France-Portugal,Semi-finals,,Wed,2000-06-28,20:45 (03:45),France,2–1,Portugal,48000,Stade Roi Baudouin,Günter Benkö,/en/matches/b4335819/France-Portugal-June-28-2000-UEFA-Euro-2000,Required Extra Time,b4335819
-INT-European Championship,2000,2000-06-29 Italy-Netherlands,Semi-finals,,Thu,2000-06-29,18:00 (01:00),Italy,(3) 0–0 (1),Netherlands,50000,Johan Cruyff ArenA,Markus Merk,/en/matches/7c8097e9/Italy-Netherlands-June-29-2000-UEFA-Euro-2000,Italy won on penalty kicks following extra time,7c8097e9
-INT-European Championship,2000,2000-07-02 France-Italy,Final,,Sun,2000-07-02,20:00 (03:00),France,2–1,Italy,50000,Stadion Feijenoord,Anders Frisk,/en/matches/e2360664/France-Italy-July-2-2000-UEFA-Euro-2000,Required Extra Time,e2360664
-INT-European Championship,2004,2004-06-12 Portugal-Greece,Group stage,1,Sat,2004-06-12,17:00 (01:00),Portugal,1–2,Greece,48761,Estádio Do Dragão,Pierluigi Collina,/en/matches/9e1ea73d/Portugal-Greece-June-12-2004-UEFA-Euro-2004,,9e1ea73d
-INT-European Championship,2004,2004-06-12 Spain-Russia,Group stage,1,Sat,2004-06-12,19:45 (03:45),Spain,1–0,Russia,28182,Estádio Do Algarve,Urs Meier,/en/matches/3c8585c6/Spain-Russia-June-12-2004-UEFA-Euro-2004,,3c8585c6
-INT-European Championship,2004,2004-06-13 France-England,Group stage,1,Sun,2004-06-13,19:45 (03:45),France,2–1,England,62487,Estádio do Sport Lisboa e Benfica,Markus Merk,/en/matches/ed31d022/France-England-June-13-2004-UEFA-Euro-2004,,ed31d022
-INT-European Championship,2004,2004-06-13 Switzerland-Croatia,Group stage,1,Sun,2004-06-13,17:00 (01:00),Switzerland,0–0,Croatia,24090,Estádio Dr. Magalhães Pessoa,Lucílio Cardoso Cortez Batista,/en/matches/b9c9db02/Switzerland-Croatia-June-13-2004-UEFA-Euro-2004,,b9c9db02
-INT-European Championship,2004,2004-06-14 Denmark-Italy,Group stage,1,Mon,2004-06-14,17:00 (01:00),Denmark,0–0,Italy,19595,Estádio Dom Afonso Henriques,Manuel Mejuto,/en/matches/2685eee7/Denmark-Italy-June-14-2004-UEFA-Euro-2004,,2685eee7
-INT-European Championship,2004,2004-06-14 Sweden-Bulgaria,Group stage,1,Mon,2004-06-14,19:45 (03:45),Sweden,5–0,Bulgaria,31652,Estádio José Alvalade,Michael Riley,/en/matches/8900c651/Sweden-Bulgaria-June-14-2004-UEFA-Euro-2004,,8900c651
-INT-European Championship,2004,2004-06-15 Czechia-Latvia,Group stage,1,Tue,2004-06-15,17:00 (01:00),Czechia,2–1,Latvia,21744,Estádio Municipal de Aveiro,Gilles Veissière,/en/matches/041e06e4/Czechia-Latvia-June-15-2004-UEFA-Euro-2004,,041e06e4
-INT-European Championship,2004,2004-06-15 Germany-Netherlands,Group stage,1,Tue,2004-06-15,19:45 (03:45),Germany,1–1,Netherlands,48197,Estádio Do Dragão,Anders Frisk,/en/matches/745ff8d0/Germany-Netherlands-June-15-2004-UEFA-Euro-2004,,745ff8d0
-INT-European Championship,2004,2004-06-16 Greece-Spain,Group stage,2,Wed,2004-06-16,17:00 (01:00),Greece,1–1,Spain,25444,Estádio do Bessa Século XXI,Ľuboš Micheľ,/en/matches/3c6e4a69/Greece-Spain-June-16-2004-UEFA-Euro-2004,,3c6e4a69
-INT-European Championship,2004,2004-06-16 Russia-Portugal,Group stage,2,Wed,2004-06-16,19:45 (03:45),Russia,0–2,Portugal,59273,Estádio do Sport Lisboa e Benfica,Terje Hauge,/en/matches/cbcd7d2f/Russia-Portugal-June-16-2004-UEFA-Euro-2004,,cbcd7d2f
-INT-European Championship,2004,2004-06-17 Croatia-France,Group stage,2,Thu,2004-06-17,19:45 (03:45),Croatia,2–2,France,29160,Estádio Dr. Magalhães Pessoa,Kim Milton Nielsen,/en/matches/e1a40e16/Croatia-France-June-17-2004-UEFA-Euro-2004,,e1a40e16
-INT-European Championship,2004,2004-06-17 England-Switzerland,Group stage,2,Thu,2004-06-17,17:00 (01:00),England,3–0,Switzerland,28214,Estádio EFAPEL,Valentin Ivanov,/en/matches/2ffec7bc/England-Switzerland-June-17-2004-UEFA-Euro-2004,,2ffec7bc
-INT-European Championship,2004,2004-06-18 Bulgaria-Denmark,Group stage,2,Fri,2004-06-18,17:00 (01:00),Bulgaria,0–2,Denmark,24131,Estádio Municipal de Braga,Lucílio Cardoso Cortez Batista,/en/matches/fc52b0cb/Bulgaria-Denmark-June-18-2004-UEFA-Euro-2004,,fc52b0cb
-INT-European Championship,2004,2004-06-18 Italy-Sweden,Group stage,2,Fri,2004-06-18,19:45 (03:45),Italy,1–1,Sweden,44926,Estádio Do Dragão,Urs Meier,/en/matches/bf1378c3/Italy-Sweden-June-18-2004-UEFA-Euro-2004,,bf1378c3
-INT-European Championship,2004,2004-06-19 Latvia-Germany,Group stage,2,Sat,2004-06-19,17:00 (01:00),Latvia,0–0,Germany,22344,Estádio do Bessa Século XXI,Michael Riley,/en/matches/29739a51/Latvia-Germany-June-19-2004-UEFA-Euro-2004,,29739a51
-INT-European Championship,2004,2004-06-19 Netherlands-Czechia,Group stage,2,Sat,2004-06-19,19:45 (03:45),Netherlands,2–3,Czechia,29935,Estádio Municipal de Aveiro,Manuel Mejuto,/en/matches/14e406c2/Netherlands-Czechia-June-19-2004-UEFA-Euro-2004,,14e406c2
-INT-European Championship,2004,2004-06-20 Russia-Greece,Group stage,3,Sun,2004-06-20,19:45 (03:45),Russia,2–1,Greece,24347,Estádio Do Algarve,Gilles Veissière,/en/matches/acadaf23/Russia-Greece-June-20-2004-UEFA-Euro-2004,,acadaf23
-INT-European Championship,2004,2004-06-20 Spain-Portugal,Group stage,3,Sun,2004-06-20,19:45 (03:45),Spain,0–1,Portugal,47491,Estádio José Alvalade,Anders Frisk,/en/matches/f0622d56/Spain-Portugal-June-20-2004-UEFA-Euro-2004,,f0622d56
-INT-European Championship,2004,2004-06-21 Croatia-England,Group stage,3,Mon,2004-06-21,19:45 (03:45),Croatia,2–4,England,57047,Estádio do Sport Lisboa e Benfica,Pierluigi Collina,/en/matches/d287caf7/Croatia-England-June-21-2004-UEFA-Euro-2004,,d287caf7
-INT-European Championship,2004,2004-06-21 Switzerland-France,Group stage,3,Mon,2004-06-21,19:45 (03:45),Switzerland,1–3,France,28111,Estádio EFAPEL,Ľuboš Micheľ,/en/matches/ab03fae4/Switzerland-France-June-21-2004-UEFA-Euro-2004,,ab03fae4
-INT-European Championship,2004,2004-06-22 Denmark-Sweden,Group stage,3,Tue,2004-06-22,19:45 (03:45),Denmark,2–2,Sweden,26115,Estádio do Bessa Século XXI,Markus Merk,/en/matches/347ff8fb/Denmark-Sweden-June-22-2004-UEFA-Euro-2004,,347ff8fb
-INT-European Championship,2004,2004-06-22 Italy-Bulgaria,Group stage,3,Tue,2004-06-22,19:45 (03:45),Italy,2–1,Bulgaria,16002,Estádio Dom Afonso Henriques,Valentin Ivanov,/en/matches/48e748f3/Italy-Bulgaria-June-22-2004-UEFA-Euro-2004,,48e748f3
-INT-European Championship,2004,2004-06-23 Germany-Czechia,Group stage,3,Wed,2004-06-23,19:45 (03:45),Germany,1–2,Czechia,46849,Estádio José Alvalade,Terje Hauge,/en/matches/59a4ea0a/Germany-Czechia-June-23-2004-UEFA-Euro-2004,,59a4ea0a
-INT-European Championship,2004,2004-06-23 Netherlands-Latvia,Group stage,3,Wed,2004-06-23,19:45 (03:45),Netherlands,3–0,Latvia,27904,Estádio Municipal de Braga,Kim Milton Nielsen,/en/matches/51e71fed/Netherlands-Latvia-June-23-2004-UEFA-Euro-2004,,51e71fed
-INT-European Championship,2004,2004-06-24 Portugal-England,Quarter-finals,,Thu,2004-06-24,19:45 (03:45),Portugal,(6) 2–2 (5),England,62564,Estádio do Sport Lisboa e Benfica,Urs Meier,/en/matches/0911262b/Portugal-England-June-24-2004-UEFA-Euro-2004,Portugal won on penalty kicks following extra time,0911262b
-INT-European Championship,2004,2004-06-25 France-Greece,Quarter-finals,,Fri,2004-06-25,19:45 (03:45),France,0–1,Greece,45390,Estádio José Alvalade,Anders Frisk,/en/matches/e1b580e3/France-Greece-June-25-2004-UEFA-Euro-2004,,e1b580e3
-INT-European Championship,2004,2004-06-26 Sweden-Netherlands,Quarter-finals,,Sat,2004-06-26,19:45 (03:45),Sweden,(4) 0–0 (5),Netherlands,27762,Estádio Do Algarve,Ľuboš Micheľ,/en/matches/98672230/Sweden-Netherlands-June-26-2004-UEFA-Euro-2004,Netherlands won on penalty kicks following extra time,98672230
-INT-European Championship,2004,2004-06-27 Czechia-Denmark,Quarter-finals,,Sun,2004-06-27,19:45 (03:45),Czechia,3–0,Denmark,41092,Estádio Do Dragão,Valentin Ivanov,/en/matches/33ee9e4c/Czechia-Denmark-June-27-2004-UEFA-Euro-2004,,33ee9e4c
-INT-European Championship,2004,2004-06-30 Portugal-Netherlands,Semi-finals,,Wed,2004-06-30,19:45 (03:45),Portugal,2–1,Netherlands,46679,Estádio José Alvalade,Anders Frisk,/en/matches/854411a6/Portugal-Netherlands-June-30-2004-UEFA-Euro-2004,,854411a6
-INT-European Championship,2004,2004-07-01 Greece-Czechia,Semi-finals,,Thu,2004-07-01,19:45 (03:45),Greece,1–0,Czechia,42449,Estádio Do Dragão,Pierluigi Collina,/en/matches/4a853e76/Greece-Czechia-July-1-2004-UEFA-Euro-2004,Required Extra Time,4a853e76
-INT-European Championship,2004,2004-07-04 Portugal-Greece,Final,,Sun,2004-07-04,19:45 (03:45),Portugal,0–1,Greece,62865,Estádio do Sport Lisboa e Benfica,Markus Merk,/en/matches/e9f43994/Portugal-Greece-July-4-2004-UEFA-Euro-2004,,e9f43994
-INT-European Championship,2008,2008-06-07 Portugal-Türkiye,Group stage,1,Sat,2008-06-07,20:45 (03:45),Portugal,2–0,Türkiye,29106,Stade de Genève,Herbert Fandel,/en/matches/2cd7489a/Portugal-Turkiye-June-7-2008-UEFA-Euro-2008,,2cd7489a
-INT-European Championship,2008,2008-06-07 Switzerland-Czechia,Group stage,1,Sat,2008-06-07,18:00 (01:00),Switzerland,0–1,Czechia,39730,St. Jakob-Park,Roberto Rosetti,/en/matches/91d1152a/Switzerland-Czechia-June-7-2008-UEFA-Euro-2008,,91d1152a
-INT-European Championship,2008,2008-06-08 Austria-Croatia,Group stage,1,Sun,2008-06-08,18:00 (01:00),Austria,0–1,Croatia,51428,Ernst-Happel-Stadion,Pieter Vink,/en/matches/8db130ad/Austria-Croatia-June-8-2008-UEFA-Euro-2008,,8db130ad
-INT-European Championship,2008,2008-06-08 Germany-Poland,Group stage,1,Sun,2008-06-08,20:45 (03:45),Germany,2–0,Poland,30000,Wörthersee Stadion,Tom Henning Øvrebø,/en/matches/6a5972c3/Germany-Poland-June-8-2008-UEFA-Euro-2008,,6a5972c3
-INT-European Championship,2008,2008-06-09 Netherlands-Italy,Group stage,1,Mon,2008-06-09,20:45 (03:45),Netherlands,3–0,Italy,30777,Stade de Suisse Wankdorf Bern,Peter Frojdfeldt,/en/matches/e53203ac/Netherlands-Italy-June-9-2008-UEFA-Euro-2008,,e53203ac
-INT-European Championship,2008,2008-06-09 Romania-France,Group stage,1,Mon,2008-06-09,18:00 (01:00),Romania,0–0,France,30585,Stadion Letzigrund,Manuel Mejuto,/en/matches/d5574cb6/Romania-France-June-9-2008-UEFA-Euro-2008,,d5574cb6
-INT-European Championship,2008,2008-06-10 Greece-Sweden,Group stage,1,Tue,2008-06-10,20:45 (03:45),Greece,0–2,Sweden,31063,Red Bull Arena,Massimo Busacca,/en/matches/8813d1b6/Greece-Sweden-June-10-2008-UEFA-Euro-2008,,8813d1b6
-INT-European Championship,2008,2008-06-10 Spain-Russia,Group stage,1,Tue,2008-06-10,18:00 (01:00),Spain,4–1,Russia,30772,Tivoli Stadion Tirol,Konrad Plautz,/en/matches/e42fb090/Spain-Russia-June-10-2008-UEFA-Euro-2008,,e42fb090
-INT-European Championship,2008,2008-06-11 Czechia-Portugal,Group stage,2,Wed,2008-06-11,18:00 (01:00),Czechia,1–3,Portugal,29016,Stade de Genève,Kyros Vassaras,/en/matches/62873a71/Czechia-Portugal-June-11-2008-UEFA-Euro-2008,,62873a71
-INT-European Championship,2008,2008-06-11 Switzerland-Türkiye,Group stage,2,Wed,2008-06-11,20:45 (03:45),Switzerland,1–2,Türkiye,39730,St. Jakob-Park,Ľuboš Micheľ,/en/matches/474a52b9/Switzerland-Turkiye-June-11-2008-UEFA-Euro-2008,,474a52b9
-INT-European Championship,2008,2008-06-12 Austria-Poland,Group stage,2,Thu,2008-06-12,20:45 (03:45),Austria,1–1,Poland,51428,Ernst-Happel-Stadion,Howard Webb,/en/matches/35ab41a8/Austria-Poland-June-12-2008-UEFA-Euro-2008,,35ab41a8
-INT-European Championship,2008,2008-06-12 Croatia-Germany,Group stage,2,Thu,2008-06-12,18:00 (01:00),Croatia,2–1,Germany,30461,Wörthersee Stadion,Frank De Bleeckere,/en/matches/04c62d77/Croatia-Germany-June-12-2008-UEFA-Euro-2008,,04c62d77
-INT-European Championship,2008,2008-06-13 Italy-Romania,Group stage,2,Fri,2008-06-13,18:00 (01:00),Italy,1–1,Romania,30585,Stadion Letzigrund,Tom Henning Øvrebø,/en/matches/79b5ef4f/Italy-Romania-June-13-2008-UEFA-Euro-2008,,79b5ef4f
-INT-European Championship,2008,2008-06-13 Netherlands-France,Group stage,2,Fri,2008-06-13,20:45 (03:45),Netherlands,4–1,France,30777,Stade de Suisse Wankdorf Bern,Herbert Fandel,/en/matches/f4b01527/Netherlands-France-June-13-2008-UEFA-Euro-2008,,f4b01527
-INT-European Championship,2008,2008-06-14 Greece-Russia,Group stage,2,Sat,2008-06-14,20:45 (03:45),Greece,0–1,Russia,31063,Red Bull Arena,Roberto Rosetti,/en/matches/93f5bd95/Greece-Russia-June-14-2008-UEFA-Euro-2008,,93f5bd95
-INT-European Championship,2008,2008-06-14 Sweden-Spain,Group stage,2,Sat,2008-06-14,18:00 (01:00),Sweden,1–2,Spain,30772,Tivoli Stadion Tirol,Pieter Vink,/en/matches/32e6c395/Sweden-Spain-June-14-2008-UEFA-Euro-2008,,32e6c395
-INT-European Championship,2008,2008-06-15 Switzerland-Portugal,Group stage,3,Sun,2008-06-15,20:45 (03:45),Switzerland,2–0,Portugal,39730,St. Jakob-Park,Konrad Plautz,/en/matches/551dc97f/Switzerland-Portugal-June-15-2008-UEFA-Euro-2008,,551dc97f
-INT-European Championship,2008,2008-06-15 Türkiye-Czechia,Group stage,3,Sun,2008-06-15,20:45 (03:45),Türkiye,3–2,Czechia,29016,Stade de Genève,Peter Frojdfeldt,/en/matches/dbb00d95/Turkiye-Czechia-June-15-2008-UEFA-Euro-2008,,dbb00d95
-INT-European Championship,2008,2008-06-16 Austria-Germany,Group stage,3,Mon,2008-06-16,20:45 (03:45),Austria,0–1,Germany,51428,Ernst-Happel-Stadion,Manuel Mejuto,/en/matches/0561a099/Austria-Germany-June-16-2008-UEFA-Euro-2008,,0561a099
-INT-European Championship,2008,2008-06-16 Poland-Croatia,Group stage,3,Mon,2008-06-16,20:45 (03:45),Poland,0–1,Croatia,30461,Wörthersee Stadion,Kyros Vassaras,/en/matches/9891baf6/Poland-Croatia-June-16-2008-UEFA-Euro-2008,,9891baf6
-INT-European Championship,2008,2008-06-17 France-Italy,Group stage,3,Tue,2008-06-17,20:45 (03:45),France,0–2,Italy,30585,Stadion Letzigrund,Ľuboš Micheľ,/en/matches/3c4c5ad9/France-Italy-June-17-2008-UEFA-Euro-2008,,3c4c5ad9
-INT-European Championship,2008,2008-06-17 Netherlands-Romania,Group stage,3,Tue,2008-06-17,20:45 (03:45),Netherlands,2–0,Romania,30777,Stade de Suisse Wankdorf Bern,Massimo Busacca,/en/matches/2e0f3e7f/Netherlands-Romania-June-17-2008-UEFA-Euro-2008,,2e0f3e7f
-INT-European Championship,2008,2008-06-18 Greece-Spain,Group stage,3,Wed,2008-06-18,20:45 (03:45),Greece,1–2,Spain,30883,Red Bull Arena,Howard Webb,/en/matches/80eebafc/Greece-Spain-June-18-2008-UEFA-Euro-2008,,80eebafc
-INT-European Championship,2008,2008-06-18 Russia-Sweden,Group stage,3,Wed,2008-06-18,20:45 (03:45),Russia,2–0,Sweden,30772,Tivoli Stadion Tirol,Frank De Bleeckere,/en/matches/dd4aa11f/Russia-Sweden-June-18-2008-UEFA-Euro-2008,,dd4aa11f
-INT-European Championship,2008,2008-06-19 Portugal-Germany,Quarter-finals,,Thu,2008-06-19,20:45 (03:45),Portugal,2–3,Germany,39374,St. Jakob-Park,Peter Frojdfeldt,/en/matches/5b28b2c8/Portugal-Germany-June-19-2008-UEFA-Euro-2008,,5b28b2c8
-INT-European Championship,2008,2008-06-20 Croatia-Türkiye,Quarter-finals,,Fri,2008-06-20,20:45 (03:45),Croatia,(1) 1–1 (3),Türkiye,51428,Ernst-Happel-Stadion,Roberto Rosetti,/en/matches/e34c5a5a/Croatia-Turkiye-June-20-2008-UEFA-Euro-2008,Türkiye won on penalty kicks following extra time,e34c5a5a
-INT-European Championship,2008,2008-06-21 Netherlands-Russia,Quarter-finals,,Sat,2008-06-21,20:45 (03:45),Netherlands,1–3,Russia,38374,St. Jakob-Park,Ľuboš Micheľ,/en/matches/2b0dc63a/Netherlands-Russia-June-21-2008-UEFA-Euro-2008,Required Extra Time,2b0dc63a
-INT-European Championship,2008,2008-06-22 Spain-Italy,Quarter-finals,,Sun,2008-06-22,20:45 (03:45),Spain,(4) 0–0 (2),Italy,51178,Ernst-Happel-Stadion,Herbert Fandel,/en/matches/82edb603/Spain-Italy-June-22-2008-UEFA-Euro-2008,Spain won on penalty kicks following extra time,82edb603
-INT-European Championship,2008,2008-06-25 Germany-Türkiye,Semi-finals,,Wed,2008-06-25,20:45 (03:45),Germany,3–2,Türkiye,39374,St. Jakob-Park,Massimo Busacca,/en/matches/5e3a4634/Germany-Turkiye-June-25-2008-UEFA-Euro-2008,,5e3a4634
-INT-European Championship,2008,2008-06-26 Russia-Spain,Semi-finals,,Thu,2008-06-26,20:45 (03:45),Russia,0–3,Spain,51428,Ernst-Happel-Stadion,Frank De Bleeckere,/en/matches/a1be1dc0/Russia-Spain-June-26-2008-UEFA-Euro-2008,,a1be1dc0
-INT-European Championship,2008,2008-06-29 Germany-Spain,Final,,Sun,2008-06-29,20:45 (03:45),Germany,0–1,Spain,51428,Ernst-Happel-Stadion,Roberto Rosetti,/en/matches/211873e9/Germany-Spain-June-29-2008-UEFA-Euro-2008,,211873e9
-INT-European Championship,2012,2012-06-08 Poland-Greece,Group stage,1,Fri,2012-06-08,18:00 (01:00),Poland,1–1,Greece,56070,Stadion Narodowy,Carlos Velasco,/en/matches/2d50b00b/Poland-Greece-June-8-2012-UEFA-Euro-2012,,2d50b00b
-INT-European Championship,2012,2012-06-08 Russia-Czechia,Group stage,1,Fri,2012-06-08,20:45 (03:45),Russia,4–1,Czechia,40803,Stadion Miejski,Howard Webb,/en/matches/67df88ea/Russia-Czechia-June-8-2012-UEFA-Euro-2012,,67df88ea
-INT-European Championship,2012,2012-06-09 Germany-Portugal,Group stage,1,Sat,2012-06-09,21:45 (03:45),Germany,1–0,Portugal,32990,L'viv Arena,Stéphane Lannoy,/en/matches/da9d3266/Germany-Portugal-June-9-2012-UEFA-Euro-2012,,da9d3266
-INT-European Championship,2012,2012-06-09 Netherlands-Denmark,Group stage,1,Sat,2012-06-09,19:00 (01:00),Netherlands,0–1,Denmark,35923,Oblasny SportKomplex Metalist,Damir Skomina,/en/matches/52e5fcbc/Netherlands-Denmark-June-9-2012-UEFA-Euro-2012,,52e5fcbc
-INT-European Championship,2012,2012-06-10 Rep. of Ireland-Croatia,Group stage,1,Sun,2012-06-10,20:45 (03:45),Rep. of Ireland,1–3,Croatia,39550,INEA stadion,Björn Kuipers,/en/matches/d0555020/Republic-of-Ireland-Croatia-June-10-2012-UEFA-Euro-2012,,d0555020
-INT-European Championship,2012,2012-06-10 Spain-Italy,Group stage,1,Sun,2012-06-10,18:00 (01:00),Spain,1–1,Italy,38869,Stadion Energa Gdańsk,Viktor Kassai,/en/matches/be369089/Spain-Italy-June-10-2012-UEFA-Euro-2012,,be369089
-INT-European Championship,2012,2012-06-11 France-England,Group stage,1,Mon,2012-06-11,19:00 (01:00),France,1–1,England,47400,Donbass Arena,Nicola Rizzoli,/en/matches/ceaf0a3e/France-England-June-11-2012-UEFA-Euro-2012,,ceaf0a3e
-INT-European Championship,2012,2012-06-11 Ukraine-Sweden,Group stage,1,Mon,2012-06-11,21:45 (03:45),Ukraine,2–1,Sweden,64290,NSK Olimpijs'kyj,Cüneyt Çakιr,/en/matches/c9b342b8/Ukraine-Sweden-June-11-2012-UEFA-Euro-2012,,c9b342b8
-INT-European Championship,2012,2012-06-12 Greece-Czechia,Group stage,2,Tue,2012-06-12,18:00 (01:00),Greece,1–2,Czechia,41105,Stadion Miejski,Stéphane Lannoy,/en/matches/682fa3d7/Greece-Czechia-June-12-2012-UEFA-Euro-2012,,682fa3d7
-INT-European Championship,2012,2012-06-12 Poland-Russia,Group stage,2,Tue,2012-06-12,20:45 (03:45),Poland,1–1,Russia,55920,Stadion Narodowy,Wolfgang Stark,/en/matches/c419f933/Poland-Russia-June-12-2012-UEFA-Euro-2012,,c419f933
-INT-European Championship,2012,2012-06-13 Denmark-Portugal,Group stage,2,Wed,2012-06-13,19:00 (01:00),Denmark,2–3,Portugal,31840,L'viv Arena,Craig Thomson,/en/matches/02cb43b9/Denmark-Portugal-June-13-2012-UEFA-Euro-2012,,02cb43b9
-INT-European Championship,2012,2012-06-13 Netherlands-Germany,Group stage,2,Wed,2012-06-13,21:45 (03:45),Netherlands,1–2,Germany,37750,Oblasny SportKomplex Metalist,Jonas Eriksson,/en/matches/7b424511/Netherlands-Germany-June-13-2012-UEFA-Euro-2012,,7b424511
-INT-European Championship,2012,2012-06-14 Italy-Croatia,Group stage,2,Thu,2012-06-14,18:00 (01:00),Italy,1–1,Croatia,37096,INEA stadion,Howard Webb,/en/matches/a5b7151b/Italy-Croatia-June-14-2012-UEFA-Euro-2012,,a5b7151b
-INT-European Championship,2012,2012-06-14 Spain-Rep. of Ireland,Group stage,2,Thu,2012-06-14,20:45 (03:45),Spain,4–0,Rep. of Ireland,39150,Stadion Energa Gdańsk,Pedro Proença,/en/matches/3da41274/Spain-Republic-of-Ireland-June-14-2012-UEFA-Euro-2012,,3da41274
-INT-European Championship,2012,2012-06-15 Sweden-England,Group stage,2,Fri,2012-06-15,22:00 (04:00),Sweden,2–3,England,64640,Donbass Arena,Damir Skomina,/en/matches/59fd2ff9/Sweden-England-June-15-2012-UEFA-Euro-2012,,59fd2ff9
-INT-European Championship,2012,2012-06-15 Ukraine-France,Group stage,2,Fri,2012-06-15,19:00 (01:00),Ukraine,0–2,France,48000,Donbass Arena,Björn Kuipers,/en/matches/3ad611ad/Ukraine-France-June-15-2012-UEFA-Euro-2012,,3ad611ad
-INT-European Championship,2012,2012-06-16 Czechia-Poland,Group stage,3,Sat,2012-06-16,20:45 (03:45),Czechia,1–0,Poland,41480,Stadion Miejski,Craig Thomson,/en/matches/856e577c/Czechia-Poland-June-16-2012-UEFA-Euro-2012,,856e577c
-INT-European Championship,2012,2012-06-16 Greece-Russia,Group stage,3,Sat,2012-06-16,20:45 (03:45),Greece,1–0,Russia,55614,Stadion Narodowy,Jonas Eriksson,/en/matches/c7b17335/Greece-Russia-June-16-2012-UEFA-Euro-2012,,c7b17335
-INT-European Championship,2012,2012-06-17 Denmark-Germany,Group stage,3,Sun,2012-06-17,21:45 (03:45),Denmark,1–2,Germany,32990,L'viv Arena,Carlos Velasco,/en/matches/0357a06e/Denmark-Germany-June-17-2012-UEFA-Euro-2012,,0357a06e
-INT-European Championship,2012,2012-06-17 Portugal-Netherlands,Group stage,3,Sun,2012-06-17,21:45 (03:45),Portugal,2–1,Netherlands,37445,Oblasny SportKomplex Metalist,Nicola Rizzoli,/en/matches/8a9db1cb/Portugal-Netherlands-June-17-2012-UEFA-Euro-2012,,8a9db1cb
-INT-European Championship,2012,2012-06-18 Croatia-Spain,Group stage,3,Mon,2012-06-18,20:45 (03:45),Croatia,0–1,Spain,39076,Stadion Energa Gdańsk,Wolfgang Stark,/en/matches/1ef20457/Croatia-Spain-June-18-2012-UEFA-Euro-2012,,1ef20457
-INT-European Championship,2012,2012-06-18 Italy-Rep. of Ireland,Group stage,3,Mon,2012-06-18,20:45 (03:45),Italy,2–0,Rep. of Ireland,38794,INEA stadion,Cüneyt Çakιr,/en/matches/7dad9688/Italy-Republic-of-Ireland-June-18-2012-UEFA-Euro-2012,,7dad9688
-INT-European Championship,2012,2012-06-19 England-Ukraine,Group stage,3,Tue,2012-06-19,21:45 (03:45),England,1–0,Ukraine,48700,Donbass Arena,Viktor Kassai,/en/matches/0eab1041/England-Ukraine-June-19-2012-UEFA-Euro-2012,,0eab1041
-INT-European Championship,2012,2012-06-19 Sweden-France,Group stage,3,Tue,2012-06-19,21:45 (03:45),Sweden,2–0,France,63010,NSK Olimpijs'kyj,Pedro Proença,/en/matches/6212d0b9/Sweden-France-June-19-2012-UEFA-Euro-2012,,6212d0b9
-INT-European Championship,2012,2012-06-21 Czechia-Portugal,Quarter-finals,,Thu,2012-06-21,20:45 (03:45),Czechia,0–1,Portugal,55590,Stadion Narodowy,Howard Webb,/en/matches/ac695a68/Czechia-Portugal-June-21-2012-UEFA-Euro-2012,,ac695a68
-INT-European Championship,2012,2012-06-22 Germany-Greece,Quarter-finals,,Fri,2012-06-22,20:45 (03:45),Germany,4–2,Greece,38751,Stadion Energa Gdańsk,Damir Skomina,/en/matches/7c97c9cd/Germany-Greece-June-22-2012-UEFA-Euro-2012,,7c97c9cd
-INT-European Championship,2012,2012-06-23 Spain-France,Quarter-finals,,Sat,2012-06-23,21:45 (03:45),Spain,2–0,France,47000,Donbass Arena,Nicola Rizzoli,/en/matches/337d5126/Spain-France-June-23-2012-UEFA-Euro-2012,,337d5126
-INT-European Championship,2012,2012-06-24 England-Italy,Quarter-finals,,Sun,2012-06-24,21:45 (03:45),England,(2) 0–0 (4),Italy,64340,NSK Olimpijs'kyj,Pedro Proença,/en/matches/308ce2d1/England-Italy-June-24-2012-UEFA-Euro-2012,Italy won on penalty kicks following extra time,308ce2d1
-INT-European Championship,2012,2012-06-27 Portugal-Spain,Semi-finals,,Wed,2012-06-27,21:45 (03:45),Portugal,(2) 0–0 (4),Spain,48000,Donbass Arena,Cüneyt Çakιr,/en/matches/c25bf1e5/Portugal-Spain-June-27-2012-UEFA-Euro-2012,Spain won on penalty kicks following extra time,c25bf1e5
-INT-European Championship,2012,2012-06-28 Germany-Italy,Semi-finals,,Thu,2012-06-28,20:45 (03:45),Germany,1–2,Italy,55540,Stadion Narodowy,Stéphane Lannoy,/en/matches/721a4848/Germany-Italy-June-28-2012-UEFA-Euro-2012,,721a4848
-INT-European Championship,2012,2012-07-01 Spain-Italy,Final,,Sun,2012-07-01,21:45 (03:45),Spain,4–0,Italy,63170,NSK Olimpijs'kyj,Pedro Proença,/en/matches/dd297430/Spain-Italy-July-1-2012-UEFA-Euro-2012,,dd297430
-INT-European Championship,2016,2016-06-10 France-Romania,Group stage,1,Fri,2016-06-10,21:00 (04:00),France,2–1,Romania,75113,Stade de France,Viktor Kassai,/en/matches/c94e8405/France-Romania-June-10-2016-UEFA-Euro-2016,,c94e8405
-INT-European Championship,2016,2016-06-11 Albania-Switzerland,Group stage,1,Sat,2016-06-11,15:00 (22:00),Albania,0–1,Switzerland,33805,Stade Bollaert-Delelis (Neutral Site),Carlos Velasco,/en/matches/f3b282c3/Albania-Switzerland-June-11-2016-UEFA-Euro-2016,,f3b282c3
-INT-European Championship,2016,2016-06-11 England-Russia,Group stage,1,Sat,2016-06-11,21:00 (04:00),England,1–1,Russia,62343,Orange Vélodrome (Neutral Site),Nicola Rizzoli,/en/matches/13dc8d2c/England-Russia-June-11-2016-UEFA-Euro-2016,,13dc8d2c
-INT-European Championship,2016,2016-06-11 Wales-Slovakia,Group stage,1,Sat,2016-06-11,18:00 (01:00),Wales,2–1,Slovakia,37831,Stade Matmut-Atlantique (Neutral Site),Svein Oddvar Moen,/en/matches/b0116f96/Wales-Slovakia-June-11-2016-UEFA-Euro-2016,,b0116f96
-INT-European Championship,2016,2016-06-12 Germany-Ukraine,Group stage,1,Sun,2016-06-12,21:00 (04:00),Germany,2–0,Ukraine,43035,Stade Pierre-Mauroy (Neutral Site),Martin Atkinson,/en/matches/4c693e49/Germany-Ukraine-June-12-2016-UEFA-Euro-2016,,4c693e49
-INT-European Championship,2016,2016-06-12 Poland-Northern Ireland,Group stage,1,Sun,2016-06-12,18:00 (01:00),Poland,1–0,Northern Ireland,33742,Stade de Nice (Neutral Site),Ovidiu Hațegan,/en/matches/e4486524/Poland-Northern-Ireland-June-12-2016-UEFA-Euro-2016,,e4486524
-INT-European Championship,2016,2016-06-12 Türkiye-Croatia,Group stage,1,Sun,2016-06-12,15:00 (22:00),Türkiye,0–1,Croatia,43842,Parc des Princes (Neutral Site),Jonas Eriksson,/en/matches/246d7415/Turkiye-Croatia-June-12-2016-UEFA-Euro-2016,,246d7415
-INT-European Championship,2016,2016-06-13 Belgium-Italy,Group stage,1,Mon,2016-06-13,21:00 (04:00),Belgium,0–2,Italy,55408,Groupama Stadium (Neutral Site),Mark Clattenburg,/en/matches/b8a7066e/Belgium-Italy-June-13-2016-UEFA-Euro-2016,,b8a7066e
-INT-European Championship,2016,2016-06-13 Rep. of Ireland-Sweden,Group stage,1,Mon,2016-06-13,18:00 (01:00),Rep. of Ireland,1–1,Sweden,73419,Stade de France (Neutral Site),Milorad Mažić,/en/matches/b8499340/Republic-of-Ireland-Sweden-June-13-2016-UEFA-Euro-2016,,b8499340
-INT-European Championship,2016,2016-06-13 Spain-Czechia,Group stage,1,Mon,2016-06-13,15:00 (22:00),Spain,1–0,Czechia,29400,Stadium Municipal (Neutral Site),Szymon Marciniak,/en/matches/14a84c72/Spain-Czechia-June-13-2016-UEFA-Euro-2016,,14a84c72
-INT-European Championship,2016,2016-06-14 Austria-Hungary,Group stage,1,Tue,2016-06-14,18:00 (01:00),Austria,0–2,Hungary,34424,Stade Matmut-Atlantique (Neutral Site),Clément Turpin,/en/matches/14522673/Austria-Hungary-June-14-2016-UEFA-Euro-2016,,14522673
-INT-European Championship,2016,2016-06-14 Portugal-Iceland,Group stage,1,Tue,2016-06-14,21:00 (04:00),Portugal,1–1,Iceland,38742,Stade Geoffroy-Guichard (Neutral Site),Cüneyt Çakιr,/en/matches/c68ea3ea/Portugal-Iceland-June-14-2016-UEFA-Euro-2016,,c68ea3ea
-INT-European Championship,2016,2016-06-15 France-Albania,Group stage,2,Wed,2016-06-15,21:00 (04:00),France,2–0,Albania,63670,Orange Vélodrome,William Collum,/en/matches/64b107ef/France-Albania-June-15-2016-UEFA-Euro-2016,,64b107ef
-INT-European Championship,2016,2016-06-15 Romania-Switzerland,Group stage,2,Wed,2016-06-15,18:00 (01:00),Romania,1–1,Switzerland,43576,Parc des Princes (Neutral Site),Sergey Karasev,/en/matches/86319b34/Romania-Switzerland-June-15-2016-UEFA-Euro-2016,,86319b34
-INT-European Championship,2016,2016-06-15 Russia-Slovakia,Group stage,2,Wed,2016-06-15,15:00 (22:00),Russia,1–2,Slovakia,38989,Stade Pierre-Mauroy (Neutral Site),Damir Skomina,/en/matches/536d2ac3/Russia-Slovakia-June-15-2016-UEFA-Euro-2016,,536d2ac3
-INT-European Championship,2016,2016-06-16 England-Wales,Group stage,2,Thu,2016-06-16,15:00 (22:00),England,2–1,Wales,34033,Stade Bollaert-Delelis (Neutral Site),Felix Brych,/en/matches/897cbea3/England-Wales-June-16-2016-UEFA-Euro-2016,,897cbea3
-INT-European Championship,2016,2016-06-16 Germany-Poland,Group stage,2,Thu,2016-06-16,21:00 (04:00),Germany,0–0,Poland,73648,Stade de France (Neutral Site),Björn Kuipers,/en/matches/e8fe487e/Germany-Poland-June-16-2016-UEFA-Euro-2016,,e8fe487e
-INT-European Championship,2016,2016-06-16 Ukraine-Northern Ireland,Group stage,2,Thu,2016-06-16,18:00 (01:00),Ukraine,0–2,Northern Ireland,51043,Groupama Stadium (Neutral Site),Pavel Královec,/en/matches/8f00420f/Ukraine-Northern-Ireland-June-16-2016-UEFA-Euro-2016,,8f00420f
-INT-European Championship,2016,2016-06-17 Czechia-Croatia,Group stage,2,Fri,2016-06-17,18:00 (01:00),Czechia,2–2,Croatia,38376,Stade Geoffroy-Guichard (Neutral Site),Mark Clattenburg,/en/matches/a0174ed1/Czechia-Croatia-June-17-2016-UEFA-Euro-2016,,a0174ed1
-INT-European Championship,2016,2016-06-17 Italy-Sweden,Group stage,2,Fri,2016-06-17,15:00 (22:00),Italy,1–0,Sweden,29600,Stadium Municipal (Neutral Site),Viktor Kassai,/en/matches/1bc2b5a2/Italy-Sweden-June-17-2016-UEFA-Euro-2016,,1bc2b5a2
-INT-European Championship,2016,2016-06-17 Spain-Türkiye,Group stage,2,Fri,2016-06-17,21:00 (04:00),Spain,3–0,Türkiye,33409,Stade de Nice (Neutral Site),Milorad Mažić,/en/matches/b6cf5012/Spain-Turkiye-June-17-2016-UEFA-Euro-2016,,b6cf5012
-INT-European Championship,2016,2016-06-18 Belgium-Rep. of Ireland,Group stage,2,Sat,2016-06-18,15:00 (22:00),Belgium,3–0,Rep. of Ireland,39493,Stade Matmut-Atlantique (Neutral Site),Cüneyt Çakιr,/en/matches/058d3228/Belgium-Republic-of-Ireland-June-18-2016-UEFA-Euro-2016,,058d3228
-INT-European Championship,2016,2016-06-18 Iceland-Hungary,Group stage,2,Sat,2016-06-18,18:00 (01:00),Iceland,1–1,Hungary,60842,Orange Vélodrome (Neutral Site),Sergey Karasev,/en/matches/bdd4b6d1/Iceland-Hungary-June-18-2016-UEFA-Euro-2016,,bdd4b6d1
-INT-European Championship,2016,2016-06-18 Portugal-Austria,Group stage,2,Sat,2016-06-18,21:00 (04:00),Portugal,0–0,Austria,44291,Parc des Princes (Neutral Site),Nicola Rizzoli,/en/matches/bf05ecae/Portugal-Austria-June-18-2016-UEFA-Euro-2016,,bf05ecae
-INT-European Championship,2016,2016-06-19 Romania-Albania,Group stage,3,Sun,2016-06-19,21:00 (04:00),Romania,0–1,Albania,49752,Groupama Stadium (Neutral Site),Pavel Královec,/en/matches/68f33bc1/Romania-Albania-June-19-2016-UEFA-Euro-2016,,68f33bc1
-INT-European Championship,2016,2016-06-19 Switzerland-France,Group stage,3,Sun,2016-06-19,21:00 (04:00),Switzerland,0–0,France,45616,Stade Pierre-Mauroy,Damir Skomina,/en/matches/70e16fd0/Switzerland-France-June-19-2016-UEFA-Euro-2016,,70e16fd0
-INT-European Championship,2016,2016-06-20 Russia-Wales,Group stage,3,Mon,2016-06-20,21:00 (04:00),Russia,0–3,Wales,28840,Stadium Municipal (Neutral Site),Jonas Eriksson,/en/matches/d86a5b6c/Russia-Wales-June-20-2016-UEFA-Euro-2016,,d86a5b6c
-INT-European Championship,2016,2016-06-20 Slovakia-England,Group stage,3,Mon,2016-06-20,21:00 (04:00),Slovakia,0–0,England,39051,Stade Geoffroy-Guichard (Neutral Site),Carlos Velasco,/en/matches/4ae1ba74/Slovakia-England-June-20-2016-UEFA-Euro-2016,,4ae1ba74
-INT-European Championship,2016,2016-06-21 Croatia-Spain,Group stage,3,Tue,2016-06-21,21:00 (04:00),Croatia,2–1,Spain,37245,Stade Matmut-Atlantique (Neutral Site),Björn Kuipers,/en/matches/588b6d81/Croatia-Spain-June-21-2016-UEFA-Euro-2016,,588b6d81
-INT-European Championship,2016,2016-06-21 Czechia-Türkiye,Group stage,3,Tue,2016-06-21,21:00 (04:00),Czechia,0–2,Türkiye,32836,Stade Bollaert-Delelis (Neutral Site),William Collum,/en/matches/7a7bb65b/Czechia-Turkiye-June-21-2016-UEFA-Euro-2016,,7a7bb65b
-INT-European Championship,2016,2016-06-21 Northern Ireland-Germany,Group stage,3,Tue,2016-06-21,18:00 (01:00),Northern Ireland,0–1,Germany,44125,Parc des Princes (Neutral Site),Clément Turpin,/en/matches/593acaa2/Northern-Ireland-Germany-June-21-2016-UEFA-Euro-2016,,593acaa2
-INT-European Championship,2016,2016-06-21 Ukraine-Poland,Group stage,3,Tue,2016-06-21,18:00 (01:00),Ukraine,0–1,Poland,58874,Orange Vélodrome (Neutral Site),Svein Oddvar Moen,/en/matches/8899b39b/Ukraine-Poland-June-21-2016-UEFA-Euro-2016,,8899b39b
-INT-European Championship,2016,2016-06-22 Hungary-Portugal,Group stage,3,Wed,2016-06-22,18:00 (01:00),Hungary,3–3,Portugal,55514,Groupama Stadium (Neutral Site),Martin Atkinson,/en/matches/1b049399/Hungary-Portugal-June-22-2016-UEFA-Euro-2016,,1b049399
-INT-European Championship,2016,2016-06-22 Iceland-Austria,Group stage,3,Wed,2016-06-22,18:00 (01:00),Iceland,2–1,Austria,55514,Stade de France (Neutral Site),Szymon Marciniak,/en/matches/054c88c5/Iceland-Austria-June-22-2016-UEFA-Euro-2016,,054c88c5
-INT-European Championship,2016,2016-06-22 Italy-Rep. of Ireland,Group stage,3,Wed,2016-06-22,21:00 (04:00),Italy,0–1,Rep. of Ireland,44268,Stade Pierre-Mauroy (Neutral Site),Ovidiu Hațegan,/en/matches/bcdb3cea/Italy-Republic-of-Ireland-June-22-2016-UEFA-Euro-2016,,bcdb3cea
-INT-European Championship,2016,2016-06-22 Sweden-Belgium,Group stage,3,Wed,2016-06-22,21:00 (04:00),Sweden,0–1,Belgium,34011,Stade de Nice (Neutral Site),Felix Brych,/en/matches/2745c756/Sweden-Belgium-June-22-2016-UEFA-Euro-2016,,2745c756
-INT-European Championship,2016,2016-06-25 Croatia-Portugal,Round of 16,,Sat,2016-06-25,21:00 (04:00),Croatia,0–1,Portugal,33523,Stade Bollaert-Delelis (Neutral Site),Carlos Velasco,/en/matches/592683f6/Croatia-Portugal-June-25-2016-UEFA-Euro-2016,Required Extra Time,592683f6
-INT-European Championship,2016,2016-06-25 Switzerland-Poland,Round of 16,,Sat,2016-06-25,15:00 (22:00),Switzerland,(4) 1–1 (5),Poland,38842,Stade Geoffroy-Guichard (Neutral Site),Mark Clattenburg,/en/matches/9e3d020b/Switzerland-Poland-June-25-2016-UEFA-Euro-2016,Poland won on penalty kicks following extra time,9e3d020b
-INT-European Championship,2016,2016-06-25 Wales-Northern Ireland,Round of 16,,Sat,2016-06-25,18:00 (01:00),Wales,1–0,Northern Ireland,44342,Parc des Princes (Neutral Site),Martin Atkinson,/en/matches/e1a74710/Wales-Northern-Ireland-June-25-2016-UEFA-Euro-2016,,e1a74710
-INT-European Championship,2016,2016-06-26 France-Rep. of Ireland,Round of 16,,Sun,2016-06-26,15:00 (22:00),France,2–1,Rep. of Ireland,56279,Groupama Stadium,Nicola Rizzoli,/en/matches/7c847853/France-Republic-of-Ireland-June-26-2016-UEFA-Euro-2016,,7c847853
-INT-European Championship,2016,2016-06-26 Germany-Slovakia,Round of 16,,Sun,2016-06-26,18:00 (01:00),Germany,3–0,Slovakia,44312,Stade Pierre-Mauroy (Neutral Site),Szymon Marciniak,/en/matches/09ada352/Germany-Slovakia-June-26-2016-UEFA-Euro-2016,,09ada352
-INT-European Championship,2016,2016-06-26 Hungary-Belgium,Round of 16,,Sun,2016-06-26,21:00 (04:00),Hungary,0–4,Belgium,28921,Stadium Municipal (Neutral Site),Milorad Mažić,/en/matches/ba95606b/Hungary-Belgium-June-26-2016-UEFA-Euro-2016,,ba95606b
-INT-European Championship,2016,2016-06-27 England-Iceland,Round of 16,,Mon,2016-06-27,21:00 (04:00),England,1–2,Iceland,33901,Stade de Nice (Neutral Site),Damir Skomina,/en/matches/d463716d/England-Iceland-June-27-2016-UEFA-Euro-2016,,d463716d
-INT-European Championship,2016,2016-06-27 Italy-Spain,Round of 16,,Mon,2016-06-27,18:00 (01:00),Italy,2–0,Spain,76165,Stade de France (Neutral Site),Cüneyt Çakιr,/en/matches/93c79690/Italy-Spain-June-27-2016-UEFA-Euro-2016,,93c79690
-INT-European Championship,2016,2016-06-30 Poland-Portugal,Quarter-finals,,Thu,2016-06-30,21:00 (04:00),Poland,(3) 1–1 (5),Portugal,62940,Orange Vélodrome (Neutral Site),Felix Brych,/en/matches/13b0870e/Poland-Portugal-June-30-2016-UEFA-Euro-2016,Portugal won on penalty kicks following extra time,13b0870e
-INT-European Championship,2016,2016-07-01 Wales-Belgium,Quarter-finals,,Fri,2016-07-01,21:00 (04:00),Wales,3–1,Belgium,45936,Stade Pierre-Mauroy (Neutral Site),Damir Skomina,/en/matches/1318c50b/Wales-Belgium-July-1-2016-UEFA-Euro-2016,,1318c50b
-INT-European Championship,2016,2016-07-02 Germany-Italy,Quarter-finals,,Sat,2016-07-02,21:00 (04:00),Germany,(6) 1–1 (5),Italy,38764,Stade Matmut-Atlantique (Neutral Site),Viktor Kassai,/en/matches/70a25091/Germany-Italy-July-2-2016-UEFA-Euro-2016,Germany won on penalty kicks following extra time,70a25091
-INT-European Championship,2016,2016-07-03 France-Iceland,Quarter-finals,,Sun,2016-07-03,21:00 (04:00),France,5–2,Iceland,76833,Stade de France,Björn Kuipers,/en/matches/5d601a52/France-Iceland-July-3-2016-UEFA-Euro-2016,,5d601a52
-INT-European Championship,2016,2016-07-06 Portugal-Wales,Semi-finals,,Wed,2016-07-06,21:00 (04:00),Portugal,2–0,Wales,55679,Groupama Stadium (Neutral Site),Jonas Eriksson,/en/matches/5f0395d8/Portugal-Wales-July-6-2016-UEFA-Euro-2016,,5f0395d8
-INT-European Championship,2016,2016-07-07 Germany-France,Semi-finals,,Thu,2016-07-07,21:00 (04:00),Germany,0–2,France,64078,Orange Vélodrome,Nicola Rizzoli,/en/matches/0c560da7/Germany-France-July-7-2016-UEFA-Euro-2016,,0c560da7
-INT-European Championship,2016,2016-07-10 Portugal-France,Final,,Sun,2016-07-10,21:00 (04:00),Portugal,1–0,France,75868,Stade de France,Mark Clattenburg,/en/matches/d9551fd6/Portugal-France-July-10-2016-UEFA-Euro-2016,Required Extra Time,d9551fd6
-INT-European Championship,2020,2021-06-11 Türkiye-Italy,Group stage,1,Fri,2021-06-11,21:00 (04:00),Türkiye,0–3,Italy,12916,Stadio Olimpico (Neutral Site),Danny Makkelie,/en/matches/95a9ebd1/Turkiye-Italy-June-11-2021-UEFA-Euro-2020,,95a9ebd1
-INT-European Championship,2020,2021-06-12 Belgium-Russia,Group stage,1,Sat,2021-06-12,22:00 (04:00),Belgium,3–0,Russia,26264,Gazprom Arena (Neutral Site),Antonio Matéu Lahoz,/en/matches/e594174b/Belgium-Russia-June-12-2021-UEFA-Euro-2020,,e594174b
-INT-European Championship,2020,2021-06-12 Denmark-Finland,Group stage,1,Sat,2021-06-12,18:00 (01:00),Denmark,0–1,Finland,13790,Parken (Neutral Site),Anthony Taylor,/en/matches/c3c2ffa2/Denmark-Finland-June-12-2021-UEFA-Euro-2020,,c3c2ffa2
-INT-European Championship,2020,2021-06-12 Wales-Switzerland,Group stage,1,Sat,2021-06-12,17:00 (22:00),Wales,1–1,Switzerland,8782,Bakı Olimpiya Stadionu (Neutral Site),Clément Turpin,/en/matches/d9eaa85c/Wales-Switzerland-June-12-2021-UEFA-Euro-2020,,d9eaa85c
-INT-European Championship,2020,2021-06-13 Austria-N. Macedonia,Group stage,1,Sun,2021-06-13,19:00 (01:00),Austria,3–1,N. Macedonia,9082,Arena Naţională (Neutral Site),Andreas Ekberg,/en/matches/b47a0ea6/Austria-North-Macedonia-June-13-2021-UEFA-Euro-2020,,b47a0ea6
-INT-European Championship,2020,2021-06-13 England-Croatia,Group stage,1,Sun,2021-06-13,14:00 (22:00),England,1–0,Croatia,18497,Wembley Stadium (Neutral Site),Daniele Orsato,/en/matches/764c27dc/England-Croatia-June-13-2021-UEFA-Euro-2020,,764c27dc
-INT-European Championship,2020,2021-06-13 Netherlands-Ukraine,Group stage,1,Sun,2021-06-13,21:00 (04:00),Netherlands,3–2,Ukraine,15837,Johan Cruyff ArenA (Neutral Site),Felix Brych,/en/matches/0e9919a5/Netherlands-Ukraine-June-13-2021-UEFA-Euro-2020,,0e9919a5
-INT-European Championship,2020,2021-06-14 Poland-Slovakia,Group stage,1,Mon,2021-06-14,17:00 (01:00),Poland,1–2,Slovakia,12862,Gazprom Arena (Neutral Site),Ovidiu Hațegan,/en/matches/d35ad7a8/Poland-Slovakia-June-14-2021-UEFA-Euro-2020,,d35ad7a8
-INT-European Championship,2020,2021-06-14 Scotland-Czechia,Group stage,1,Mon,2021-06-14,14:00 (22:00),Scotland,0–2,Czechia,9847,Hampden Park (Neutral Site),Daniel Siebert,/en/matches/6599f4ab/Scotland-Czechia-June-14-2021-UEFA-Euro-2020,,6599f4ab
-INT-European Championship,2020,2021-06-14 Spain-Sweden,Group stage,1,Mon,2021-06-14,21:00 (04:00),Spain,0–0,Sweden,10559,Estadio La Cartuja de Sevilla (Neutral Site),Slavko Vinčič,/en/matches/107fd412/Spain-Sweden-June-14-2021-UEFA-Euro-2020,,107fd412
-INT-European Championship,2020,2021-06-15 France-Germany,Group stage,1,Tue,2021-06-15,21:00 (04:00),France,1–0,Germany,13000,Allianz Arena (Neutral Site),Carlos del Cerro,/en/matches/95d34c87/France-Germany-June-15-2021-UEFA-Euro-2020,,95d34c87
-INT-European Championship,2020,2021-06-15 Hungary-Portugal,Group stage,1,Tue,2021-06-15,18:00 (01:00),Hungary,0–3,Portugal,55662,Puskás Aréna (Neutral Site),Cüneyt Çakιr,/en/matches/ba500d70/Hungary-Portugal-June-15-2021-UEFA-Euro-2020,,ba500d70
-INT-European Championship,2020,2021-06-16 Finland-Russia,Group stage,2,Wed,2021-06-16,16:00 (22:00),Finland,0–1,Russia,24540,Gazprom Arena (Neutral Site),Danny Makkelie,/en/matches/2c48acb2/Finland-Russia-June-16-2021-UEFA-Euro-2020,,2c48acb2
-INT-European Championship,2020,2021-06-16 Italy-Switzerland,Group stage,2,Wed,2021-06-16,21:00 (04:00),Italy,3–0,Switzerland,12445,Stadio Olimpico (Neutral Site),Sergey Karasev,/en/matches/caa84313/Italy-Switzerland-June-16-2021-UEFA-Euro-2020,,caa84313
-INT-European Championship,2020,2021-06-16 Türkiye-Wales,Group stage,2,Wed,2021-06-16,20:00 (01:00),Türkiye,0–2,Wales,19762,Bakı Olimpiya Stadionu (Neutral Site),Artur Soares Dias,/en/matches/f09b64db/Turkiye-Wales-June-16-2021-UEFA-Euro-2020,,f09b64db
-INT-European Championship,2020,2021-06-17 Denmark-Belgium,Group stage,2,Thu,2021-06-17,18:00 (01:00),Denmark,1–2,Belgium,23395,Parken (Neutral Site),Björn Kuipers,/en/matches/25bb1fa2/Denmark-Belgium-June-17-2021-UEFA-Euro-2020,,25bb1fa2
-INT-European Championship,2020,2021-06-17 Netherlands-Austria,Group stage,2,Thu,2021-06-17,21:00 (04:00),Netherlands,2–0,Austria,15243,Johan Cruyff ArenA (Neutral Site),Orel Grinfeeld,/en/matches/f3d39a29/Netherlands-Austria-June-17-2021-UEFA-Euro-2020,,f3d39a29
-INT-European Championship,2020,2021-06-17 Ukraine-N. Macedonia,Group stage,2,Thu,2021-06-17,16:00 (22:00),Ukraine,2–1,N. Macedonia,10001,Arena Naţională (Neutral Site),Fernando Rapallini,/en/matches/e0eed6e8/Ukraine-North-Macedonia-June-17-2021-UEFA-Euro-2020,,e0eed6e8
-INT-European Championship,2020,2021-06-18 Croatia-Czechia,Group stage,2,Fri,2021-06-18,17:00 (01:00),Croatia,1–1,Czechia,5607,Hampden Park (Neutral Site),Carlos del Cerro,/en/matches/1e930db9/Croatia-Czechia-June-18-2021-UEFA-Euro-2020,,1e930db9
-INT-European Championship,2020,2021-06-18 England-Scotland,Group stage,2,Fri,2021-06-18,20:00 (04:00),England,0–0,Scotland,20306,Wembley Stadium (Neutral Site),Antonio Matéu Lahoz,/en/matches/027b11df/England-Scotland-June-18-2021-UEFA-Euro-2020,,027b11df
-INT-European Championship,2020,2021-06-18 Sweden-Slovakia,Group stage,2,Fri,2021-06-18,14:00 (22:00),Sweden,1–0,Slovakia,11525,Gazprom Arena (Neutral Site),Daniel Siebert,/en/matches/c6533f76/Sweden-Slovakia-June-18-2021-UEFA-Euro-2020,,c6533f76
-INT-European Championship,2020,2021-06-19 Hungary-France,Group stage,2,Sat,2021-06-19,15:00 (22:00),Hungary,1–1,France,55998,Puskás Aréna (Neutral Site),Michael Oliver,/en/matches/988198ba/Hungary-France-June-19-2021-UEFA-Euro-2020,,988198ba
-INT-European Championship,2020,2021-06-19 Portugal-Germany,Group stage,2,Sat,2021-06-19,18:00 (01:00),Portugal,2–4,Germany,12926,Allianz Arena (Neutral Site),Anthony Taylor,/en/matches/e33c4403/Portugal-Germany-June-19-2021-UEFA-Euro-2020,,e33c4403
-INT-European Championship,2020,2021-06-19 Spain-Poland,Group stage,2,Sat,2021-06-19,21:00 (04:00),Spain,1–1,Poland,11742,Estadio La Cartuja de Sevilla (Neutral Site),Daniele Orsato,/en/matches/14874531/Spain-Poland-June-19-2021-UEFA-Euro-2020,,14874531
-INT-European Championship,2020,2021-06-20 Italy-Wales,Group stage,3,Sun,2021-06-20,18:00 (01:00),Italy,1–0,Wales,11541,Stadio Olimpico (Neutral Site),Ovidiu Hațegan,/en/matches/b756c626/Italy-Wales-June-20-2021-UEFA-Euro-2020,,b756c626
-INT-European Championship,2020,2021-06-20 Switzerland-Türkiye,Group stage,3,Sun,2021-06-20,20:00 (01:00),Switzerland,3–1,Türkiye,17138,Bakı Olimpiya Stadionu (Neutral Site),Slavko Vinčič,/en/matches/fa85a731/Switzerland-Turkiye-June-20-2021-UEFA-Euro-2020,,fa85a731
-INT-European Championship,2020,2021-06-21 Finland-Belgium,Group stage,3,Mon,2021-06-21,22:00 (04:00),Finland,0–2,Belgium,18545,Gazprom Arena (Neutral Site),Felix Brych,/en/matches/bd35edec/Finland-Belgium-June-21-2021-UEFA-Euro-2020,,bd35edec
-INT-European Championship,2020,2021-06-21 N. Macedonia-Netherlands,Group stage,3,Mon,2021-06-21,18:00 (01:00),N. Macedonia,0–3,Netherlands,15227,Johan Cruyff ArenA (Neutral Site),István Kovács,/en/matches/841065f5/North-Macedonia-Netherlands-June-21-2021-UEFA-Euro-2020,,841065f5
-INT-European Championship,2020,2021-06-21 Russia-Denmark,Group stage,3,Mon,2021-06-21,21:00 (04:00),Russia,1–4,Denmark,23644,Parken (Neutral Site),Clément Turpin,/en/matches/04188c5c/Russia-Denmark-June-21-2021-UEFA-Euro-2020,,04188c5c
-INT-European Championship,2020,2021-06-21 Ukraine-Austria,Group stage,3,Mon,2021-06-21,19:00 (01:00),Ukraine,0–1,Austria,10472,Arena Naţională (Neutral Site),Cüneyt Çakιr,/en/matches/7ed46abd/Ukraine-Austria-June-21-2021-UEFA-Euro-2020,,7ed46abd
-INT-European Championship,2020,2021-06-22 Croatia-Scotland,Group stage,3,Tue,2021-06-22,20:00 (04:00),Croatia,3–1,Scotland,9896,Hampden Park (Neutral Site),Fernando Rapallini,/en/matches/0305e42c/Croatia-Scotland-June-22-2021-UEFA-Euro-2020,,0305e42c
-INT-European Championship,2020,2021-06-22 Czechia-England,Group stage,3,Tue,2021-06-22,20:00 (04:00),Czechia,0–1,England,19104,Wembley Stadium (Neutral Site),Artur Soares Dias,/en/matches/20b1972b/Czechia-England-June-22-2021-UEFA-Euro-2020,,20b1972b
-INT-European Championship,2020,2021-06-23 Germany-Hungary,Group stage,3,Wed,2021-06-23,21:00 (04:00),Germany,2–2,Hungary,12413,Allianz Arena (Neutral Site),Sergey Karasev,/en/matches/a4888546/Germany-Hungary-June-23-2021-UEFA-Euro-2020,,a4888546
-INT-European Championship,2020,2021-06-23 Portugal-France,Group stage,3,Wed,2021-06-23,21:00 (04:00),Portugal,2–2,France,54886,Puskás Aréna (Neutral Site),Antonio Matéu Lahoz,/en/matches/5a7e53d8/Portugal-France-June-23-2021-UEFA-Euro-2020,,5a7e53d8
-INT-European Championship,2020,2021-06-23 Slovakia-Spain,Group stage,3,Wed,2021-06-23,18:00 (01:00),Slovakia,0–5,Spain,11204,Estadio La Cartuja de Sevilla (Neutral Site),Björn Kuipers,/en/matches/7b46b857/Slovakia-Spain-June-23-2021-UEFA-Euro-2020,,7b46b857
-INT-European Championship,2020,2021-06-23 Sweden-Poland,Group stage,3,Wed,2021-06-23,17:00 (01:00),Sweden,3–2,Poland,14252,Gazprom Arena (Neutral Site),Michael Oliver,/en/matches/ee6087f4/Sweden-Poland-June-23-2021-UEFA-Euro-2020,,ee6087f4
-INT-European Championship,2020,2021-06-26 Italy-Austria,Round of 16,,Sat,2021-06-26,20:00 (04:00),Italy,2–1,Austria,18910,Wembley Stadium (Neutral Site),Anthony Taylor,/en/matches/c2b13049/Italy-Austria-June-26-2021-UEFA-Euro-2020,Required Extra Time,c2b13049
-INT-European Championship,2020,2021-06-26 Wales-Denmark,Round of 16,,Sat,2021-06-26,18:00 (01:00),Wales,0–4,Denmark,14645,Johan Cruyff ArenA (Neutral Site),Daniel Siebert,/en/matches/b5659aa3/Wales-Denmark-June-26-2021-UEFA-Euro-2020,,b5659aa3
-INT-European Championship,2020,2021-06-27 Belgium-Portugal,Round of 16,,Sun,2021-06-27,21:00 (04:00),Belgium,1–0,Portugal,11504,Estadio La Cartuja de Sevilla (Neutral Site),Felix Brych,/en/matches/ad36a434/Belgium-Portugal-June-27-2021-UEFA-Euro-2020,,ad36a434
-INT-European Championship,2020,2021-06-27 Netherlands-Czechia,Round of 16,,Sun,2021-06-27,18:00 (01:00),Netherlands,0–2,Czechia,52834,Puskás Aréna (Neutral Site),Sergey Karasev,/en/matches/437cb418/Netherlands-Czechia-June-27-2021-UEFA-Euro-2020,,437cb418
-INT-European Championship,2020,2021-06-28 Croatia-Spain,Round of 16,,Mon,2021-06-28,18:00 (01:00),Croatia,3–5,Spain,22771,Parken (Neutral Site),Cüneyt Çakιr,/en/matches/799efcfc/Croatia-Spain-June-28-2021-UEFA-Euro-2020,Required Extra Time,799efcfc
-INT-European Championship,2020,2021-06-28 France-Switzerland,Round of 16,,Mon,2021-06-28,22:00 (04:00),France,(4) 3–3 (5),Switzerland,22642,Arena Naţională (Neutral Site),Fernando Rapallini,/en/matches/2c7de26e/France-Switzerland-June-28-2021-UEFA-Euro-2020,Switzerland won on penalty kicks following extra time,2c7de26e
-INT-European Championship,2020,2021-06-29 England-Germany,Round of 16,,Tue,2021-06-29,17:00 (01:00),England,2–0,Germany,41973,Wembley Stadium (Neutral Site),Danny Makkelie,/en/matches/415ff832/England-Germany-June-29-2021-UEFA-Euro-2020,,415ff832
-INT-European Championship,2020,2021-06-29 Sweden-Ukraine,Round of 16,,Tue,2021-06-29,20:00 (04:00),Sweden,1–2,Ukraine,9221,Hampden Park (Neutral Site),Daniele Orsato,/en/matches/e07bc7d3/Sweden-Ukraine-June-29-2021-UEFA-Euro-2020,Required Extra Time,e07bc7d3
-INT-European Championship,2020,2021-07-02 Belgium-Italy,Quarter-finals,,Fri,2021-07-02,21:00 (04:00),Belgium,1–2,Italy,12984,Allianz Arena,Slavko Vinčič,/en/matches/35a9c7dc/Belgium-Italy-July-2-2021-UEFA-Euro-2020,,35a9c7dc
-INT-European Championship,2020,2021-07-02 Switzerland-Spain,Quarter-finals,,Fri,2021-07-02,19:00 (01:00),Switzerland,(1) 1–1 (3),Spain,24764,Gazprom Arena,Michael Oliver,/en/matches/18c4e831/Switzerland-Spain-July-2-2021-UEFA-Euro-2020,Spain won on penalty kicks following extra time,18c4e831
-INT-European Championship,2020,2021-07-03 Czechia-Denmark,Quarter-finals,,Sat,2021-07-03,20:00 (01:00),Czechia,1–2,Denmark,16306,Bakı Olimpiya Stadionu,Björn Kuipers,/en/matches/1a1e61fe/Czechia-Denmark-July-3-2021-UEFA-Euro-2020,,1a1e61fe
-INT-European Championship,2020,2021-07-03 Ukraine-England,Quarter-finals,,Sat,2021-07-03,21:00 (04:00),Ukraine,0–4,England,11880,Stadio Olimpico,Felix Brych,/en/matches/8589d5c5/Ukraine-England-July-3-2021-UEFA-Euro-2020,,8589d5c5
-INT-European Championship,2020,2021-07-06 Italy-Spain,Semi-finals,,Tue,2021-07-06,20:00 (04:00),Italy,(4) 1–1 (2),Spain,57811,Wembley Stadium,Felix Brych,/en/matches/997fefb3/Italy-Spain-July-6-2021-UEFA-Euro-2020,Italy won on penalty kicks following extra time,997fefb3
-INT-European Championship,2020,2021-07-07 England-Denmark,Semi-finals,,Wed,2021-07-07,20:00 (04:00),England,2–1,Denmark,64950,Wembley Stadium,Danny Makkelie,/en/matches/3c9e014a/England-Denmark-July-7-2021-UEFA-Euro-2020,Required Extra Time,3c9e014a
-INT-European Championship,2020,2021-07-11 Italy-England,Final,,Sun,2021-07-11,20:00 (04:00),Italy,(3) 1–1 (2),England,67173,Wembley Stadium (Neutral Site),Björn Kuipers,/en/matches/56228480/Italy-England-July-11-2021-UEFA-Euro-2020,,56228480
-INT-European Championship,2024,2024-06-14 Germany-Scotland,Group stage,1,Fri,2024-06-14,21:00 (04:00),Germany,5–1,Scotland,65052,Allianz Arena (Neutral Site),Clément Turpin,/en/matches/bd775264/Germany-Scotland-June-14-2024-UEFA-Euro-2024,,bd775264
-INT-European Championship,2024,2024-06-15 Hungary-Switzerland,Group stage,1,Sat,2024-06-15,15:00 (22:00),Hungary,1–3,Switzerland,41676,RheinEnergieSTADION (Neutral Site),Slavko Vinčič,/en/matches/c15ec4e7/Hungary-Switzerland-June-15-2024-UEFA-Euro-2024,,c15ec4e7
-INT-European Championship,2024,2024-06-15 Italy-Albania,Group stage,1,Sat,2024-06-15,21:00 (04:00),Italy,2–1,Albania,60512,Signal Iduna Park (Neutral Site),Felix Zwayer,/en/matches/4891e62c/Italy-Albania-June-15-2024-UEFA-Euro-2024,,4891e62c
-INT-European Championship,2024,2024-06-15 Spain-Croatia,Group stage,1,Sat,2024-06-15,18:00 (01:00),Spain,3–0,Croatia,68844,Olympiastadion Berlin (Neutral Site),Michael Oliver,/en/matches/b996c4de/Spain-Croatia-June-15-2024-UEFA-Euro-2024,,b996c4de
-INT-European Championship,2024,2024-06-16 Poland-Netherlands,Group stage,1,Sun,2024-06-16,15:00 (22:00),Poland,1–2,Netherlands,48117,Volksparkstadion (Neutral Site),Artur Soares Dias,/en/matches/923de563/Poland-Netherlands-June-16-2024-UEFA-Euro-2024,,923de563
-INT-European Championship,2024,2024-06-16 Serbia-England,Group stage,1,Sun,2024-06-16,21:00 (04:00),Serbia,0–1,England,48953,Veltins-Arena (Neutral Site),Daniele Orsato,/en/matches/94c752b7/Serbia-England-June-16-2024-UEFA-Euro-2024,,94c752b7
-INT-European Championship,2024,2024-06-16 Slovenia-Denmark,Group stage,1,Sun,2024-06-16,18:00 (01:00),Slovenia,1–1,Denmark,54000,MHPArena (Neutral Site),Sandro Schärer,/en/matches/e58cc259/Slovenia-Denmark-June-16-2024-UEFA-Euro-2024,,e58cc259
-INT-European Championship,2024,2024-06-17 Austria-France,Group stage,1,Mon,2024-06-17,21:00 (04:00),Austria,0–1,France,46425,Merkur Spielarena (Neutral Site),Jesús Gil,/en/matches/3d8961eb/Austria-France-June-17-2024-UEFA-Euro-2024,,3d8961eb
-INT-European Championship,2024,2024-06-17 Belgium-Slovakia,Group stage,1,Mon,2024-06-17,18:00 (01:00),Belgium,0–1,Slovakia,45181,Deutsche Bank Park (Neutral Site),Halil Umut Meler,/en/matches/5bda83ea/Belgium-Slovakia-June-17-2024-UEFA-Euro-2024,,5bda83ea
-INT-European Championship,2024,2024-06-17 Romania-Ukraine,Group stage,1,Mon,2024-06-17,15:00 (22:00),Romania,3–0,Ukraine,61591,Allianz Arena (Neutral Site),Glenn Nyberg,/en/matches/67c17ad9/Romania-Ukraine-June-17-2024-UEFA-Euro-2024,,67c17ad9
-INT-European Championship,2024,2024-06-18 Portugal-Czechia,Group stage,1,Tue,2024-06-18,21:00 (04:00),Portugal,2–1,Czechia,38421,Red Bull Arena (Neutral Site),Marco Guida,/en/matches/5e8192b8/Portugal-Czechia-June-18-2024-UEFA-Euro-2024,,5e8192b8
-INT-European Championship,2024,2024-06-18 Türkiye-Georgia,Group stage,1,Tue,2024-06-18,18:00 (01:00),Türkiye,3–1,Georgia,59127,Signal Iduna Park (Neutral Site),Facundo Tello,/en/matches/36e9e40e/Turkiye-Georgia-June-18-2024-UEFA-Euro-2024,,36e9e40e
-INT-European Championship,2024,2024-06-19 Croatia-Albania,Group stage,2,Wed,2024-06-19,15:00 (22:00),Croatia,2–2,Albania,46784,Volksparkstadion (Neutral Site),François Letexier,/en/matches/30406358/Croatia-Albania-June-19-2024-UEFA-Euro-2024,,30406358
-INT-European Championship,2024,2024-06-19 Germany-Hungary,Group stage,2,Wed,2024-06-19,18:00 (01:00),Germany,2–0,Hungary,54000,MHPArena (Neutral Site),Danny Makkelie,/en/matches/248233a8/Germany-Hungary-June-19-2024-UEFA-Euro-2024,,248233a8
-INT-European Championship,2024,2024-06-19 Scotland-Switzerland,Group stage,2,Wed,2024-06-19,21:00 (04:00),Scotland,1–1,Switzerland,42711,RheinEnergieSTADION (Neutral Site),Ivan Kružliak,/en/matches/5ef87a15/Scotland-Switzerland-June-19-2024-UEFA-Euro-2024,,5ef87a15
-INT-European Championship,2024,2024-06-20 Denmark-England,Group stage,2,Thu,2024-06-20,18:00 (01:00),Denmark,1–1,England,46177,Deutsche Bank Park (Neutral Site),Artur Soares Dias,/en/matches/6cfeccb2/Denmark-England-June-20-2024-UEFA-Euro-2024,,6cfeccb2
-INT-European Championship,2024,2024-06-20 Slovenia-Serbia,Group stage,2,Thu,2024-06-20,15:00 (22:00),Slovenia,1–1,Serbia,63028,Allianz Arena (Neutral Site),István Kovács,/en/matches/874a95ef/Slovenia-Serbia-June-20-2024-UEFA-Euro-2024,,874a95ef
-INT-European Championship,2024,2024-06-20 Spain-Italy,Group stage,2,Thu,2024-06-20,21:00 (04:00),Spain,1–0,Italy,49528,Veltins-Arena (Neutral Site),Slavko Vinčič,/en/matches/3f7c6e94/Spain-Italy-June-20-2024-UEFA-Euro-2024,,3f7c6e94
-INT-European Championship,2024,2024-06-21 Netherlands-France,Group stage,2,Fri,2024-06-21,21:00 (04:00),Netherlands,0–0,France,38531,Red Bull Arena (Neutral Site),Anthony Taylor,/en/matches/ad8d106c/Netherlands-France-June-21-2024-UEFA-Euro-2024,,ad8d106c
-INT-European Championship,2024,2024-06-21 Poland-Austria,Group stage,2,Fri,2024-06-21,18:00 (01:00),Poland,1–3,Austria,69455,Olympiastadion Berlin (Neutral Site),Halil Umut Meler,/en/matches/298d4d8f/Poland-Austria-June-21-2024-UEFA-Euro-2024,,298d4d8f
-INT-European Championship,2024,2024-06-21 Slovakia-Ukraine,Group stage,2,Fri,2024-06-21,15:00 (22:00),Slovakia,1–2,Ukraine,43910,Merkur Spielarena (Neutral Site),Michael Oliver,/en/matches/73849328/Slovakia-Ukraine-June-21-2024-UEFA-Euro-2024,,73849328
-INT-European Championship,2024,2024-06-22 Belgium-Romania,Group stage,2,Sat,2024-06-22,21:00 (04:00),Belgium,2–0,Romania,42535,RheinEnergieSTADION (Neutral Site),Szymon Marciniak,/en/matches/e0d67eb9/Belgium-Romania-June-22-2024-UEFA-Euro-2024,,e0d67eb9
-INT-European Championship,2024,2024-06-22 Georgia-Czechia,Group stage,2,Sat,2024-06-22,15:00 (22:00),Georgia,1–1,Czechia,46524,Volksparkstadion (Neutral Site),Daniel Siebert,/en/matches/aab219f9/Georgia-Czechia-June-22-2024-UEFA-Euro-2024,,aab219f9
-INT-European Championship,2024,2024-06-22 Türkiye-Portugal,Group stage,2,Sat,2024-06-22,18:00 (01:00),Türkiye,0–3,Portugal,61047,Signal Iduna Park (Neutral Site),Felix Zwayer,/en/matches/5448c54c/Turkiye-Portugal-June-22-2024-UEFA-Euro-2024,,5448c54c
-INT-European Championship,2024,2024-06-23 Scotland-Hungary,Group stage,3,Sun,2024-06-23,21:00 (04:00),Scotland,0–1,Hungary,54000,MHPArena (Neutral Site),Facundo Tello,/en/matches/2351343a/Scotland-Hungary-June-23-2024-UEFA-Euro-2024,,2351343a
-INT-European Championship,2024,2024-06-23 Switzerland-Germany,Group stage,3,Sun,2024-06-23,21:00 (04:00),Switzerland,1–1,Germany,46685,Deutsche Bank Park (Neutral Site),Daniele Orsato,/en/matches/14e2c55d/Switzerland-Germany-June-23-2024-UEFA-Euro-2024,,14e2c55d
-INT-European Championship,2024,2024-06-24 Albania-Spain,Group stage,3,Mon,2024-06-24,21:00 (04:00),Albania,0–1,Spain,46586,Merkur Spielarena (Neutral Site),Glenn Nyberg,/en/matches/fde83534/Albania-Spain-June-24-2024-UEFA-Euro-2024,,fde83534
-INT-European Championship,2024,2024-06-24 Croatia-Italy,Group stage,3,Mon,2024-06-24,21:00 (04:00),Croatia,1–1,Italy,38322,Red Bull Arena (Neutral Site),Danny Makkelie,/en/matches/015e81b4/Croatia-Italy-June-24-2024-UEFA-Euro-2024,,015e81b4
-INT-European Championship,2024,2024-06-25 Denmark-Serbia,Group stage,3,Tue,2024-06-25,21:00 (04:00),Denmark,0–0,Serbia,64288,Allianz Arena (Neutral Site),François Letexier,/en/matches/5c5484a4/Denmark-Serbia-June-25-2024-UEFA-Euro-2024,,5c5484a4
-INT-European Championship,2024,2024-06-25 England-Slovenia,Group stage,3,Tue,2024-06-25,21:00 (04:00),England,0–0,Slovenia,41536,RheinEnergieSTADION (Neutral Site),Clément Turpin,/en/matches/7f111a22/England-Slovenia-June-25-2024-UEFA-Euro-2024,,7f111a22
-INT-European Championship,2024,2024-06-25 France-Poland,Group stage,3,Tue,2024-06-25,18:00 (01:00),France,1–1,Poland,59728,Signal Iduna Park (Neutral Site),Marco Guida,/en/matches/c410511b/France-Poland-June-25-2024-UEFA-Euro-2024,,c410511b
-INT-European Championship,2024,2024-06-25 Netherlands-Austria,Group stage,3,Tue,2024-06-25,18:00 (01:00),Netherlands,2–3,Austria,68363,Olympiastadion Berlin (Neutral Site),Ivan Kružliak,/en/matches/031f8ef3/Netherlands-Austria-June-25-2024-UEFA-Euro-2024,,031f8ef3
-INT-European Championship,2024,2024-06-26 Czechia-Türkiye,Group stage,3,Wed,2024-06-26,21:00 (04:00),Czechia,1–2,Türkiye,47683,Volksparkstadion (Neutral Site),István Kovács,/en/matches/8824c255/Czechia-Turkiye-June-26-2024-UEFA-Euro-2024,,8824c255
-INT-European Championship,2024,2024-06-26 Georgia-Portugal,Group stage,3,Wed,2024-06-26,21:00 (04:00),Georgia,2–0,Portugal,49616,Veltins-Arena (Neutral Site),Sandro Schärer,/en/matches/24322b1d/Georgia-Portugal-June-26-2024-UEFA-Euro-2024,,24322b1d
-INT-European Championship,2024,2024-06-26 Slovakia-Romania,Group stage,3,Wed,2024-06-26,18:00 (01:00),Slovakia,1–1,Romania,45033,Deutsche Bank Park (Neutral Site),Daniel Siebert,/en/matches/00199be7/Slovakia-Romania-June-26-2024-UEFA-Euro-2024,,00199be7
-INT-European Championship,2024,2024-06-26 Ukraine-Belgium,Group stage,3,Wed,2024-06-26,18:00 (01:00),Ukraine,0–0,Belgium,54000,MHPArena (Neutral Site),Anthony Taylor,/en/matches/2f0d1c11/Ukraine-Belgium-June-26-2024-UEFA-Euro-2024,,2f0d1c11
-INT-European Championship,2024,2024-06-29 Germany-Denmark,Round of 16,,Sat,2024-06-29,21:00 (04:00),Germany,2–0,Denmark,61612,Signal Iduna Park (Neutral Site),Michael Oliver,/en/matches/c7429dd6/Germany-Denmark-June-29-2024-UEFA-Euro-2024,,c7429dd6
-INT-European Championship,2024,2024-06-29 Switzerland-Italy,Round of 16,,Sat,2024-06-29,18:00 (01:00),Switzerland,2–0,Italy,68172,Olympiastadion Berlin (Neutral Site),Szymon Marciniak,/en/matches/9b4d5970/Switzerland-Italy-June-29-2024-UEFA-Euro-2024,,9b4d5970
-INT-European Championship,2024,2024-06-30 England-Slovakia,Round of 16,,Sun,2024-06-30,18:00 (01:00),England,2–1,Slovakia,47244,Veltins-Arena (Neutral Site),Halil Umut Meler,/en/matches/2b26dc4f/England-Slovakia-June-30-2024-UEFA-Euro-2024,Required Extra Time,2b26dc4f
-INT-European Championship,2024,2024-06-30 Spain-Georgia,Round of 16,,Sun,2024-06-30,21:00 (04:00),Spain,4–1,Georgia,42233,RheinEnergieSTADION (Neutral Site),François Letexier,/en/matches/87e35d10/Spain-Georgia-June-30-2024-UEFA-Euro-2024,,87e35d10
-INT-European Championship,2024,2024-07-01 France-Belgium,Round of 16,,Mon,2024-07-01,18:00 (01:00),France,1–0,Belgium,46810,Merkur Spielarena (Neutral Site),Glenn Nyberg,/en/matches/ffae1046/France-Belgium-July-1-2024-UEFA-Euro-2024,,ffae1046
-INT-European Championship,2024,2024-07-01 Portugal-Slovenia,Round of 16,,Mon,2024-07-01,21:00 (04:00),Portugal,(3) 0–0 (0),Slovenia,46576,Deutsche Bank Park (Neutral Site),Daniele Orsato,/en/matches/fd6c3c0d/Portugal-Slovenia-July-1-2024-UEFA-Euro-2024,Portugal won on penalty kicks following extra time,fd6c3c0d
-INT-European Championship,2024,2024-07-02 Austria-Türkiye,Round of 16,,Tue,2024-07-02,21:00 (04:00),Austria,1–2,Türkiye,38305,Red Bull Arena (Neutral Site),Artur Soares Dias,/en/matches/f575ef3e/Austria-Turkiye-July-2-2024-UEFA-Euro-2024,,f575ef3e
-INT-European Championship,2024,2024-07-02 Romania-Netherlands,Round of 16,,Tue,2024-07-02,18:00 (01:00),Romania,0–3,Netherlands,65012,Allianz Arena (Neutral Site),Felix Zwayer,/en/matches/82b4d2f5/Romania-Netherlands-July-2-2024-UEFA-Euro-2024,,82b4d2f5
-INT-European Championship,2024,2024-07-05 Portugal-France,Quarter-finals,,Fri,2024-07-05,21:00 (04:00),Portugal,(3) 0–0 (5),France,47789,Volksparkstadion (Neutral Site),Michael Oliver,/en/matches/8e55d3ab/Portugal-France-July-5-2024-UEFA-Euro-2024,France won on penalty kicks following extra time,8e55d3ab
-INT-European Championship,2024,2024-07-05 Spain-Germany,Quarter-finals,,Fri,2024-07-05,18:00 (01:00),Spain,2–1,Germany,54000,MHPArena (Neutral Site),Anthony Taylor,/en/matches/0baf4cfa/Spain-Germany-July-5-2024-UEFA-Euro-2024,Required Extra Time,0baf4cfa
-INT-European Championship,2024,2024-07-06 England-Switzerland,Quarter-finals,,Sat,2024-07-06,18:00 (01:00),England,(5) 1–1 (3),Switzerland,46907,Merkur Spielarena (Neutral Site),Daniele Orsato,/en/matches/54e21415/England-Switzerland-July-6-2024-UEFA-Euro-2024,England won on penalty kicks following extra time,54e21415
-INT-European Championship,2024,2024-07-06 Netherlands-Türkiye,Quarter-finals,,Sat,2024-07-06,21:00 (04:00),Netherlands,2–1,Türkiye,70091,Olympiastadion Berlin (Neutral Site),Clément Turpin,/en/matches/e8c79df4/Netherlands-Turkiye-July-6-2024-UEFA-Euro-2024,,e8c79df4
-INT-European Championship,2024,2024-07-09 Spain-France,Semi-finals,,Tue,2024-07-09,21:00 (04:00),Spain,2–1,France,62042,Allianz Arena (Neutral Site),Slavko Vinčič,/en/matches/34d4d9d2/Spain-France-July-9-2024-UEFA-Euro-2024,,34d4d9d2
-INT-European Championship,2024,2024-07-10 Netherlands-England,Semi-finals,,Wed,2024-07-10,21:00 (04:00),Netherlands,1–2,England,60926,Signal Iduna Park (Neutral Site),Felix Zwayer,/en/matches/dbff0752/Netherlands-England-July-10-2024-UEFA-Euro-2024,,dbff0752
-INT-European Championship,2024,2024-07-14 Spain-England,Final,,Sun,2024-07-14,21:00 (04:00),Spain,2–1,England,65600,Olympiastadion Berlin (Neutral Site),François Letexier,/en/matches/e307ecc0/Spain-England-July-14-2024-UEFA-Euro-2024,,e307ecc0
+game_id,date,season,time,home_team,away_team,home_score,away_score,venue
+11873905,2024-06-14,2024,19:00,Germany,Scotland,5,1,
+11873897,2024-06-15,2024,13:00,Hungary,Switzerland,1,3,
+11873907,2024-06-15,2024,16:00,Spain,Croatia,3,0,
+11873898,2024-06-15,2024,19:00,Italy,Albania,2,1,
+12198302,2024-06-16,2024,13:00,Poland,Netherlands,1,2,
+11873971,2024-06-16,2024,16:00,Slovenia,Denmark,1,1,
+11873969,2024-06-16,2024,19:00,Serbia,England,0,1,
+12198226,2024-06-17,2024,13:00,Romania,Ukraine,3,0,
+11873978,2024-06-17,2024,16:00,Belgium,Slovakia,0,1,
+11873975,2024-06-17,2024,19:00,Austria,France,0,1,
+12198159,2024-06-18,2024,16:00,Türkiye,Georgia,3,1,
+11873989,2024-06-18,2024,19:00,Portugal,Czechia,2,1,
+11873906,2024-06-19,2024,13:00,Croatia,Albania,2,2,
+11873900,2024-06-19,2024,16:00,Germany,Hungary,2,0,
+11873903,2024-06-19,2024,19:00,Scotland,Switzerland,1,1,
+11873974,2024-06-20,2024,13:00,Slovenia,Serbia,1,1,
+11873970,2024-06-20,2024,16:00,Denmark,England,1,1,
+11873901,2024-06-20,2024,19:00,Spain,Italy,1,0,
+12198231,2024-06-21,2024,13:00,Slovakia,Ukraine,1,2,
+12198303,2024-06-21,2024,16:00,Poland,Austria,1,3,
+11873991,2024-06-21,2024,19:00,Netherlands,France,0,0,
+12198160,2024-06-22,2024,13:00,Georgia,Czechia,1,1,
+11873984,2024-06-22,2024,16:00,Türkiye,Portugal,0,3,
+11873980,2024-06-22,2024,19:00,Belgium,Romania,2,0,
+11873899,2024-06-23,2024,19:00,Scotland,Hungary,0,1,
+11873902,2024-06-23,2024,19:00,Switzerland,Germany,1,1,
+11873904,2024-06-24,2024,19:00,Albania,Spain,0,1,
+11873896,2024-06-24,2024,19:00,Croatia,Italy,1,1,
+12198304,2024-06-25,2024,16:00,France,Poland,1,1,
+11873977,2024-06-25,2024,16:00,Netherlands,Austria,2,3,
+11873968,2024-06-25,2024,19:00,Denmark,Serbia,0,0,
+11873967,2024-06-25,2024,19:00,England,Slovenia,0,0,
+11873983,2024-06-26,2024,16:00,Slovakia,Romania,1,1,
+12198234,2024-06-26,2024,16:00,Ukraine,Belgium,0,0,
+11873986,2024-06-26,2024,19:00,Czechia,Türkiye,1,2,
+12198161,2024-06-26,2024,19:00,Georgia,Portugal,2,0,
+8513121,2021-06-11,2021,19:00,Türkiye,Italy,0,3,
+8513111,2021-06-12,2021,13:00,Wales,Switzerland,1,1,
+8513122,2021-06-12,2021,16:00,Denmark,Finland,0,1,
+8513112,2021-06-12,2021,19:00,Belgium,Russia,3,0,
+8513120,2021-06-13,2021,13:00,England,Croatia,1,0,
+8602459,2021-06-13,2021,16:00,Austria,North Macedonia,3,1,
+8513129,2021-06-13,2021,19:00,Netherlands,Ukraine,3,2,
+8602458,2021-06-14,2021,13:00,Scotland,Czechia,0,2,
+8602452,2021-06-14,2021,16:00,Poland,Slovakia,1,2,
+8513124,2021-06-14,2021,19:00,Spain,Sweden,0,0,
+8602461,2021-06-15,2021,16:00,Hungary,Portugal,0,3,
+8513114,2021-06-15,2021,19:00,France,Germany,1,0,
+8513119,2021-06-16,2021,13:00,Finland,Russia,0,1,
+8513115,2021-06-16,2021,16:00,Türkiye,Wales,0,2,
+8513126,2021-06-16,2021,19:00,Italy,Switzerland,3,0,
+8602446,2021-06-17,2021,13:00,Ukraine,North Macedonia,2,1,
+8513118,2021-06-17,2021,16:00,Denmark,Belgium,1,2,
+8513123,2021-06-17,2021,19:00,Netherlands,Austria,2,0,
+8602448,2021-06-18,2021,13:00,Sweden,Slovakia,1,0,
+8513117,2021-06-18,2021,16:00,Croatia,Czechia,1,1,
+8602445,2021-06-18,2021,19:00,England,Scotland,0,0,
+8602455,2021-06-19,2021,13:00,Hungary,France,1,1,
+8513113,2021-06-19,2021,16:00,Portugal,Germany,2,4,
+8513125,2021-06-19,2021,19:00,Spain,Poland,1,1,
+8513128,2021-06-20,2021,16:00,Italy,Wales,1,0,
+8513127,2021-06-20,2021,16:00,Switzerland,Türkiye,3,1,
+8602462,2021-06-21,2021,16:00,North Macedonia,Netherlands,0,3,
+8513133,2021-06-21,2021,16:00,Ukraine,Austria,0,1,
+8513132,2021-06-21,2021,19:00,Finland,Belgium,0,2,
+8513131,2021-06-21,2021,19:00,Russia,Denmark,1,4,
+8602463,2021-06-22,2021,19:00,Croatia,Scotland,3,1,
+8513134,2021-06-22,2021,19:00,Czechia,England,0,1,
+8602465,2021-06-23,2021,16:00,Slovakia,Spain,0,5,
+8513130,2021-06-23,2021,16:00,Sweden,Poland,3,2,
+8602466,2021-06-23,2021,19:00,Germany,Hungary,2,2,
+8513116,2021-06-23,2021,19:00,Portugal,France,2,2,
+8513128,2021-06-20,2021,16:00,Italy,Wales,1,0,
+8513127,2021-06-20,2021,16:00,Switzerland,Türkiye,3,1,
+8602462,2021-06-21,2021,16:00,North Macedonia,Netherlands,0,3,
+8513133,2021-06-21,2021,16:00,Ukraine,Austria,0,1,
+8513132,2021-06-21,2021,19:00,Finland,Belgium,0,2,
+8513131,2021-06-21,2021,19:00,Russia,Denmark,1,4,
+8602463,2021-06-22,2021,19:00,Croatia,Scotland,3,1,
+8513134,2021-06-22,2021,19:00,Czechia,England,0,1,
+8602465,2021-06-23,2021,16:00,Slovakia,Spain,0,5,
+8513130,2021-06-23,2021,16:00,Sweden,Poland,3,2,
+8602466,2021-06-23,2021,19:00,Germany,Hungary,2,2,
+8513116,2021-06-23,2021,19:00,Portugal,France,2,2,
+8513119,2021-06-16,2021,13:00,Finland,Russia,0,1,
+8513115,2021-06-16,2021,16:00,Türkiye,Wales,0,2,
+8513126,2021-06-16,2021,19:00,Italy,Switzerland,3,0,
+8602446,2021-06-17,2021,13:00,Ukraine,North Macedonia,2,1,
+8513118,2021-06-17,2021,16:00,Denmark,Belgium,1,2,
+8513123,2021-06-17,2021,19:00,Netherlands,Austria,2,0,
+8602448,2021-06-18,2021,13:00,Sweden,Slovakia,1,0,
+8513117,2021-06-18,2021,16:00,Croatia,Czechia,1,1,
+8602445,2021-06-18,2021,19:00,England,Scotland,0,0,
+8602455,2021-06-19,2021,13:00,Hungary,France,1,1,
+8513113,2021-06-19,2021,16:00,Portugal,Germany,2,4,
+8513125,2021-06-19,2021,19:00,Spain,Poland,1,1,
+8513121,2021-06-11,2021,19:00,Türkiye,Italy,0,3,
+8513111,2021-06-12,2021,13:00,Wales,Switzerland,1,1,
+8513122,2021-06-12,2021,16:00,Denmark,Finland,0,1,
+8513112,2021-06-12,2021,19:00,Belgium,Russia,3,0,
+8513120,2021-06-13,2021,13:00,England,Croatia,1,0,
+8602459,2021-06-13,2021,16:00,Austria,North Macedonia,3,1,
+8513129,2021-06-13,2021,19:00,Netherlands,Ukraine,3,2,
+8602458,2021-06-14,2021,13:00,Scotland,Czechia,0,2,
+8602452,2021-06-14,2021,16:00,Poland,Slovakia,1,2,
+8513124,2021-06-14,2021,19:00,Spain,Sweden,0,0,
+8602461,2021-06-15,2021,16:00,Hungary,Portugal,0,3,
+8513114,2021-06-15,2021,19:00,France,Germany,1,0,
+6964817,2016-06-10,2016,19:00,France,Romania,2,1,
+6964815,2016-06-11,2016,13:00,Albania,Switzerland,0,1,
+6964813,2016-06-11,2016,16:00,Wales,Slovakia,2,1,
+6964814,2016-06-11,2016,19:00,England,Russia,1,1,
+6964819,2016-06-12,2016,13:00,Türkiye,Croatia,0,1,
+6964818,2016-06-12,2016,16:00,Poland,Northern Ireland,1,0,
+6964816,2016-06-12,2016,19:00,Germany,Ukraine,2,0,
+6964820,2016-06-13,2016,13:00,Spain,Czechia,1,0,
+6965414,2016-06-13,2016,16:00,Ireland,Sweden,1,1,
+6965415,2016-06-13,2016,19:00,Belgium,Italy,0,2,
+6965438,2016-06-14,2016,16:00,Austria,Hungary,0,2,
+6965439,2016-06-14,2016,19:00,Portugal,Iceland,1,1,
+6964822,2016-06-15,2016,13:00,Russia,Slovakia,1,2,
+6964824,2016-06-15,2016,16:00,Romania,Switzerland,1,1,
+6964821,2016-06-15,2016,19:00,France,Albania,2,0,
+6964828,2016-06-16,2016,13:00,England,Wales,2,1,
+6964823,2016-06-16,2016,16:00,Ukraine,Northern Ireland,0,2,
+6964826,2016-06-16,2016,19:00,Germany,Poland,0,0,
+6965416,2016-06-17,2016,13:00,Italy,Sweden,1,0,
+6964830,2016-06-17,2016,16:00,Czechia,Croatia,2,2,
+6964833,2016-06-17,2016,19:00,Spain,Türkiye,3,0,
+6965417,2016-06-18,2016,13:00,Belgium,Ireland,3,0,
+6965440,2016-06-18,2016,16:00,Iceland,Hungary,1,1,
+6965441,2016-06-18,2016,19:00,Portugal,Austria,0,0,
+6964827,2016-06-19,2016,19:00,Romania,Albania,0,1,
+6964825,2016-06-19,2016,19:00,Switzerland,France,0,0,
+6964832,2016-06-20,2016,19:00,Russia,Wales,0,3,
+6964829,2016-06-20,2016,19:00,Slovakia,England,0,0,
+6964835,2016-06-21,2016,16:00,Northern Ireland,Germany,0,1,
+6964831,2016-06-21,2016,16:00,Ukraine,Poland,0,1,
+6964836,2016-06-21,2016,19:00,Croatia,Spain,2,1,
+6964834,2016-06-21,2016,19:00,Czechia,Türkiye,0,2,
+6965442,2016-06-22,2016,16:00,Hungary,Portugal,3,3,
+6965443,2016-06-22,2016,16:00,Iceland,Austria,2,1,
+6965418,2016-06-22,2016,19:00,Italy,Ireland,0,1,
+6965419,2016-06-22,2016,19:00,Sweden,Belgium,0,1,
+6964827,2016-06-19,2016,19:00,Romania,Albania,0,1,
+6964825,2016-06-19,2016,19:00,Switzerland,France,0,0,
+6964832,2016-06-20,2016,19:00,Russia,Wales,0,3,
+6964829,2016-06-20,2016,19:00,Slovakia,England,0,0,
+6964835,2016-06-21,2016,16:00,Northern Ireland,Germany,0,1,
+6964831,2016-06-21,2016,16:00,Ukraine,Poland,0,1,
+6964836,2016-06-21,2016,19:00,Croatia,Spain,2,1,
+6964834,2016-06-21,2016,19:00,Czechia,Türkiye,0,2,
+6965442,2016-06-22,2016,16:00,Hungary,Portugal,3,3,
+6965443,2016-06-22,2016,16:00,Iceland,Austria,2,1,
+6965418,2016-06-22,2016,19:00,Italy,Ireland,0,1,
+6965419,2016-06-22,2016,19:00,Sweden,Belgium,0,1,
+6964822,2016-06-15,2016,13:00,Russia,Slovakia,1,2,
+6964824,2016-06-15,2016,16:00,Romania,Switzerland,1,1,
+6964821,2016-06-15,2016,19:00,France,Albania,2,0,
+6964828,2016-06-16,2016,13:00,England,Wales,2,1,
+6964823,2016-06-16,2016,16:00,Ukraine,Northern Ireland,0,2,
+6964826,2016-06-16,2016,19:00,Germany,Poland,0,0,
+6965416,2016-06-17,2016,13:00,Italy,Sweden,1,0,
+6964830,2016-06-17,2016,16:00,Czechia,Croatia,2,2,
+6964833,2016-06-17,2016,19:00,Spain,Türkiye,3,0,
+6965417,2016-06-18,2016,13:00,Belgium,Ireland,3,0,
+6965440,2016-06-18,2016,16:00,Iceland,Hungary,1,1,
+6965441,2016-06-18,2016,19:00,Portugal,Austria,0,0,
+6964817,2016-06-10,2016,19:00,France,Romania,2,1,
+6964815,2016-06-11,2016,13:00,Albania,Switzerland,0,1,
+6964813,2016-06-11,2016,16:00,Wales,Slovakia,2,1,
+6964814,2016-06-11,2016,19:00,England,Russia,1,1,
+6964819,2016-06-12,2016,13:00,Türkiye,Croatia,0,1,
+6964818,2016-06-12,2016,16:00,Poland,Northern Ireland,1,0,
+6964816,2016-06-12,2016,19:00,Germany,Ukraine,2,0,
+6964820,2016-06-13,2016,13:00,Spain,Czechia,1,0,
+6965414,2016-06-13,2016,16:00,Ireland,Sweden,1,1,
+6965415,2016-06-13,2016,19:00,Belgium,Italy,0,2,
+6965438,2016-06-14,2016,16:00,Austria,Hungary,0,2,
+6965439,2016-06-14,2016,19:00,Portugal,Iceland,1,1,
+2207778,2012-06-08,2012,16:00,Poland,Greece,1,1,
+2207780,2012-06-08,2012,18:45,Russia,Czechia,4,1,
+2207782,2012-06-09,2012,16:00,Netherlands,Denmark,0,1,
+2207784,2012-06-09,2012,18:45,Germany,Portugal,1,0,
+2207786,2012-06-10,2012,16:00,Spain,Italy,1,1,
+2207788,2012-06-10,2012,18:45,Ireland,Croatia,1,3,
+2207792,2012-06-11,2012,16:00,France,England,1,1,
+2207790,2012-06-11,2012,18:45,Ukraine,Sweden,2,1,
+2207796,2012-06-12,2012,16:00,Greece,Czechia,1,2,
+2207794,2012-06-12,2012,18:45,Poland,Russia,1,1,
+2207800,2012-06-13,2012,16:00,Denmark,Portugal,2,3,
+2207798,2012-06-13,2012,18:45,Netherlands,Germany,1,2,
+2207804,2012-06-14,2012,16:00,Italy,Croatia,1,1,
+2207802,2012-06-14,2012,18:45,Spain,Ireland,4,0,
+2207808,2012-06-15,2012,16:00,Ukraine,France,0,2,
+2207806,2012-06-15,2012,19:00,Sweden,England,2,3,
+2207812,2012-06-16,2012,18:45,Czechia,Poland,1,0,
+2207810,2012-06-16,2012,18:45,Greece,Russia,1,0,
+2207816,2012-06-17,2012,18:45,Denmark,Germany,1,2,
+2207814,2012-06-17,2012,18:45,Portugal,Netherlands,2,1,
+2207818,2012-06-18,2012,18:45,Croatia,Spain,0,1,
+2207820,2012-06-18,2012,18:45,Italy,Ireland,2,0,
+2207824,2012-06-19,2012,18:45,England,Ukraine,1,0,
+2207822,2012-06-19,2012,18:45,Sweden,France,2,0,
+2207812,2012-06-16,2012,18:45,Czechia,Poland,1,0,
+2207810,2012-06-16,2012,18:45,Greece,Russia,1,0,
+2207816,2012-06-17,2012,18:45,Denmark,Germany,1,2,
+2207814,2012-06-17,2012,18:45,Portugal,Netherlands,2,1,
+2207818,2012-06-18,2012,18:45,Croatia,Spain,0,1,
+2207820,2012-06-18,2012,18:45,Italy,Ireland,2,0,
+2207824,2012-06-19,2012,18:45,England,Ukraine,1,0,
+2207822,2012-06-19,2012,18:45,Sweden,France,2,0,
+2207796,2012-06-12,2012,16:00,Greece,Czechia,1,2,
+2207794,2012-06-12,2012,18:45,Poland,Russia,1,1,
+2207800,2012-06-13,2012,16:00,Denmark,Portugal,2,3,
+2207798,2012-06-13,2012,18:45,Netherlands,Germany,1,2,
+2207804,2012-06-14,2012,16:00,Italy,Croatia,1,1,
+2207802,2012-06-14,2012,18:45,Spain,Ireland,4,0,
+2207808,2012-06-15,2012,16:00,Ukraine,France,0,2,
+2207806,2012-06-15,2012,19:00,Sweden,England,2,3,
+2207778,2012-06-08,2012,16:00,Poland,Greece,1,1,
+2207780,2012-06-08,2012,18:45,Russia,Czechia,4,1,
+2207782,2012-06-09,2012,16:00,Netherlands,Denmark,0,1,
+2207784,2012-06-09,2012,18:45,Germany,Portugal,1,0,
+2207786,2012-06-10,2012,16:00,Spain,Italy,1,1,
+2207788,2012-06-10,2012,18:45,Ireland,Croatia,1,3,
+2207792,2012-06-11,2012,16:00,France,England,1,1,
+2207790,2012-06-11,2012,18:45,Ukraine,Sweden,2,1,
+636792,2008-06-07,2008,16:00,Switzerland,Czechia,0,1,
+636793,2008-06-07,2008,18:45,Portugal,Türkiye,2,0,
+636798,2008-06-08,2008,16:00,Austria,Croatia,0,1,
+636799,2008-06-08,2008,18:45,Germany,Poland,2,0,
+636805,2008-06-09,2008,16:00,Romania,France,0,0,
+636806,2008-06-09,2008,18:45,Netherlands,Italy,3,0,
+636811,2008-06-10,2008,16:00,Spain,Russia,4,1,
+636812,2008-06-10,2008,18:45,Greece,Sweden,0,2,
+636794,2008-06-11,2008,16:00,Czechia,Portugal,1,3,
+636795,2008-06-11,2008,18:45,Switzerland,Türkiye,1,2,
+636801,2008-06-12,2008,16:00,Croatia,Germany,2,1,
+636800,2008-06-12,2008,18:45,Austria,Poland,1,1,
+636808,2008-06-13,2008,16:00,Italy,Romania,1,1,
+636807,2008-06-13,2008,18:45,Netherlands,France,4,1,
+636813,2008-06-14,2008,16:00,Sweden,Spain,1,2,
+636814,2008-06-14,2008,18:45,Greece,Russia,0,1,
+636797,2008-06-15,2008,18:45,Switzerland,Portugal,2,0,
+636802,2008-06-15,2008,18:45,Türkiye,Czechia,3,2,
+636804,2008-06-16,2008,18:45,Austria,Germany,0,1,
+636803,2008-06-16,2008,18:45,Poland,Croatia,0,1,
+636810,2008-06-17,2008,18:45,France,Italy,0,2,
+636809,2008-06-17,2008,18:45,Netherlands,Romania,2,0,
+636815,2008-06-18,2008,18:45,Greece,Spain,1,2,
+636816,2008-06-18,2008,18:45,Russia,Sweden,2,0,
+636797,2008-06-15,2008,18:45,Switzerland,Portugal,2,0,
+636802,2008-06-15,2008,18:45,Türkiye,Czechia,3,2,
+636804,2008-06-16,2008,18:45,Austria,Germany,0,1,
+636803,2008-06-16,2008,18:45,Poland,Croatia,0,1,
+636810,2008-06-17,2008,18:45,France,Italy,0,2,
+636809,2008-06-17,2008,18:45,Netherlands,Romania,2,0,
+636815,2008-06-18,2008,18:45,Greece,Spain,1,2,
+636816,2008-06-18,2008,18:45,Russia,Sweden,2,0,
+636794,2008-06-11,2008,16:00,Czechia,Portugal,1,3,
+636795,2008-06-11,2008,18:45,Switzerland,Türkiye,1,2,
+636801,2008-06-12,2008,16:00,Croatia,Germany,2,1,
+636800,2008-06-12,2008,18:45,Austria,Poland,1,1,
+636808,2008-06-13,2008,16:00,Italy,Romania,1,1,
+636807,2008-06-13,2008,18:45,Netherlands,France,4,1,
+636813,2008-06-14,2008,16:00,Sweden,Spain,1,2,
+636814,2008-06-14,2008,18:45,Greece,Russia,0,1,
+636792,2008-06-07,2008,16:00,Switzerland,Czechia,0,1,
+636793,2008-06-07,2008,18:45,Portugal,Türkiye,2,0,
+636798,2008-06-08,2008,16:00,Austria,Croatia,0,1,
+636799,2008-06-08,2008,18:45,Germany,Poland,2,0,
+636805,2008-06-09,2008,16:00,Romania,France,0,0,
+636806,2008-06-09,2008,18:45,Netherlands,Italy,3,0,
+636811,2008-06-10,2008,16:00,Spain,Russia,4,1,
+636812,2008-06-10,2008,18:45,Greece,Sweden,0,2,
+94957,2004-06-12,2004,16:00,Portugal,Greece,1,2,
+94958,2004-06-12,2004,18:45,Spain,Russia,1,0,
+94959,2004-06-13,2004,16:00,Switzerland,Croatia,0,0,
+94960,2004-06-13,2004,18:45,France,England,2,1,
+94961,2004-06-14,2004,16:00,Denmark,Italy,0,0,
+94962,2004-06-14,2004,18:45,Sweden,Bulgaria,5,0,
+94963,2004-06-15,2004,16:00,Czechia,Latvia,2,1,
+94964,2004-06-15,2004,18:45,Germany,Netherlands,1,1,
+94965,2004-06-16,2004,16:00,Greece,Spain,1,1,
+94966,2004-06-16,2004,18:45,Russia,Portugal,0,2,
+94967,2004-06-17,2004,16:00,England,Switzerland,3,0,
+94968,2004-06-17,2004,18:45,Croatia,France,2,2,
+94969,2004-06-18,2004,16:00,Bulgaria,Denmark,0,2,
+94970,2004-06-18,2004,18:45,Italy,Sweden,1,1,
+94971,2004-06-19,2004,16:00,Latvia,Germany,0,0,
+94972,2004-06-19,2004,18:45,Netherlands,Czechia,2,3,
+94973,2004-06-20,2004,18:45,Russia,Greece,2,1,
+94974,2004-06-20,2004,18:45,Spain,Portugal,0,1,
+94976,2004-06-21,2004,18:45,Croatia,England,2,4,
+94975,2004-06-21,2004,18:45,Switzerland,France,1,3,
+94978,2004-06-22,2004,18:45,Denmark,Sweden,2,2,
+94977,2004-06-22,2004,18:45,Italy,Bulgaria,2,1,
+94980,2004-06-23,2004,18:45,Germany,Czechia,1,2,
+94979,2004-06-23,2004,18:45,Netherlands,Latvia,3,0,
+94973,2004-06-20,2004,18:45,Russia,Greece,2,1,
+94974,2004-06-20,2004,18:45,Spain,Portugal,0,1,
+94976,2004-06-21,2004,18:45,Croatia,England,2,4,
+94975,2004-06-21,2004,18:45,Switzerland,France,1,3,
+94978,2004-06-22,2004,18:45,Denmark,Sweden,2,2,
+94977,2004-06-22,2004,18:45,Italy,Bulgaria,2,1,
+94980,2004-06-23,2004,18:45,Germany,Czechia,1,2,
+94979,2004-06-23,2004,18:45,Netherlands,Latvia,3,0,
+94965,2004-06-16,2004,16:00,Greece,Spain,1,1,
+94966,2004-06-16,2004,18:45,Russia,Portugal,0,2,
+94967,2004-06-17,2004,16:00,England,Switzerland,3,0,
+94968,2004-06-17,2004,18:45,Croatia,France,2,2,
+94969,2004-06-18,2004,16:00,Bulgaria,Denmark,0,2,
+94970,2004-06-18,2004,18:45,Italy,Sweden,1,1,
+94971,2004-06-19,2004,16:00,Latvia,Germany,0,0,
+94972,2004-06-19,2004,18:45,Netherlands,Czechia,2,3,
+94957,2004-06-12,2004,16:00,Portugal,Greece,1,2,
+94958,2004-06-12,2004,18:45,Spain,Russia,1,0,
+94959,2004-06-13,2004,16:00,Switzerland,Croatia,0,0,
+94960,2004-06-13,2004,18:45,France,England,2,1,
+94961,2004-06-14,2004,16:00,Denmark,Italy,0,0,
+94962,2004-06-14,2004,18:45,Sweden,Bulgaria,5,0,
+94963,2004-06-15,2004,16:00,Czechia,Latvia,2,1,
+94964,2004-06-15,2004,18:45,Germany,Netherlands,1,1,
+96655,2000-06-10,2000,18:45,Belgium,Sweden,2,1,
+96656,2000-06-11,2000,12:30,Türkiye,Italy,1,2,
+96667,2000-06-11,2000,16:00,France,Denmark,3,0,
+96668,2000-06-11,2000,18:45,Netherlands,Czechia,1,0,
+96649,2000-06-12,2000,16:00,Germany,Romania,1,1,
+96650,2000-06-12,2000,18:45,Portugal,England,3,2,
+96661,2000-06-13,2000,16:00,Spain,Norway,0,1,
+96662,2000-06-13,2000,18:45,Yugoslavia,Slovenia,3,3,
+96657,2000-06-14,2000,18:45,Belgium,Italy,0,2,
+96658,2000-06-15,2000,18:45,Sweden,Türkiye,0,0,
+96669,2000-06-16,2000,16:00,Czechia,France,1,2,
+96670,2000-06-16,2000,18:45,Netherlands,Denmark,3,0,
+96651,2000-06-17,2000,16:00,Romania,Portugal,0,1,
+96652,2000-06-17,2000,18:45,England,Germany,1,0,
+96663,2000-06-18,2000,16:00,Slovenia,Spain,1,2,
+96664,2000-06-18,2000,18:45,Norway,Yugoslavia,0,1,
+96659,2000-06-19,2000,18:45,Belgium,Türkiye,0,2,
+96660,2000-06-19,2000,18:45,Italy,Sweden,2,1,
+96653,2000-06-20,2000,18:45,England,Romania,2,3,
+96654,2000-06-20,2000,18:45,Portugal,Germany,3,0,
+96666,2000-06-21,2000,16:00,Slovenia,Norway,0,0,
+96665,2000-06-21,2000,16:00,Yugoslavia,Spain,3,4,
+96671,2000-06-21,2000,18:45,Denmark,Czechia,0,2,
+96672,2000-06-21,2000,18:45,Netherlands,France,3,2,
+96659,2000-06-19,2000,18:45,Belgium,Türkiye,0,2,
+96660,2000-06-19,2000,18:45,Italy,Sweden,2,1,
+96653,2000-06-20,2000,18:45,England,Romania,2,3,
+96654,2000-06-20,2000,18:45,Portugal,Germany,3,0,
+96666,2000-06-21,2000,16:00,Slovenia,Norway,0,0,
+96665,2000-06-21,2000,16:00,Yugoslavia,Spain,3,4,
+96671,2000-06-21,2000,18:45,Denmark,Czechia,0,2,
+96672,2000-06-21,2000,18:45,Netherlands,France,3,2,
+96657,2000-06-14,2000,18:45,Belgium,Italy,0,2,
+96658,2000-06-15,2000,18:45,Sweden,Türkiye,0,0,
+96669,2000-06-16,2000,16:00,Czechia,France,1,2,
+96670,2000-06-16,2000,18:45,Netherlands,Denmark,3,0,
+96651,2000-06-17,2000,16:00,Romania,Portugal,0,1,
+96652,2000-06-17,2000,18:45,England,Germany,1,0,
+96663,2000-06-18,2000,16:00,Slovenia,Spain,1,2,
+96664,2000-06-18,2000,18:45,Norway,Yugoslavia,0,1,
+96655,2000-06-10,2000,18:45,Belgium,Sweden,2,1,
+96656,2000-06-11,2000,12:30,Türkiye,Italy,1,2,
+96667,2000-06-11,2000,16:00,France,Denmark,3,0,
+96668,2000-06-11,2000,18:45,Netherlands,Czechia,1,0,
+96649,2000-06-12,2000,16:00,Germany,Romania,1,1,
+96650,2000-06-12,2000,18:45,Portugal,England,3,2,
+96661,2000-06-13,2000,16:00,Spain,Norway,0,1,
+96662,2000-06-13,2000,18:45,Yugoslavia,Slovenia,3,3,
+8549561,1996-06-08,1996,13:00,England,Switzerland,1,1,
+8549542,1996-06-09,1996,12:30,Spain,Bulgaria,1,1,
+8549536,1996-06-09,1996,15:00,Germany,Czechia,2,0,
+8549555,1996-06-09,1996,17:30,Denmark,Portugal,1,1,
+8549562,1996-06-10,1996,14:30,Netherlands,Scotland,0,0,
+8549543,1996-06-10,1996,17:30,Romania,France,0,1,
+8549537,1996-06-11,1996,14:30,Italy,Russia,2,1,
+8549556,1996-06-11,1996,17:30,Türkiye,Croatia,0,1,
+8549544,1996-06-13,1996,14:30,Bulgaria,Romania,1,0,
+8549563,1996-06-13,1996,17:30,Switzerland,Netherlands,0,2,
+8549557,1996-06-14,1996,14:30,Portugal,Türkiye,1,0,
+8549538,1996-06-14,1996,17:30,Czechia,Italy,2,1,
+8549564,1996-06-15,1996,13:00,England,Scotland,2,0,
+8549545,1996-06-15,1996,16:00,France,Spain,1,1,
+8549539,1996-06-16,1996,13:00,Russia,Germany,0,3,
+8549558,1996-06-16,1996,16:00,Croatia,Denmark,3,0,
+8549546,1996-06-18,1996,14:30,France,Bulgaria,3,1,
+8549547,1996-06-18,1996,14:30,Romania,Spain,1,2,
+8549566,1996-06-18,1996,17:30,England,Netherlands,4,1,
+8549565,1996-06-18,1996,17:30,Scotland,Switzerland,1,0,
+8549559,1996-06-19,1996,14:30,Croatia,Portugal,0,3,
+8549560,1996-06-19,1996,14:30,Türkiye,Denmark,0,3,
+8549541,1996-06-19,1996,17:30,Italy,Germany,0,0,
+8549540,1996-06-19,1996,17:30,Russia,Czechia,3,3,
+8549546,1996-06-18,1996,14:30,France,Bulgaria,3,1,
+8549547,1996-06-18,1996,14:30,Romania,Spain,1,2,
+8549566,1996-06-18,1996,17:30,England,Netherlands,4,1,
+8549565,1996-06-18,1996,17:30,Scotland,Switzerland,1,0,
+8549559,1996-06-19,1996,14:30,Croatia,Portugal,0,3,
+8549560,1996-06-19,1996,14:30,Türkiye,Denmark,0,3,
+8549541,1996-06-19,1996,17:30,Italy,Germany,0,0,
+8549540,1996-06-19,1996,17:30,Russia,Czechia,3,3,
+8549544,1996-06-13,1996,14:30,Bulgaria,Romania,1,0,
+8549563,1996-06-13,1996,17:30,Switzerland,Netherlands,0,2,
+8549557,1996-06-14,1996,14:30,Portugal,Türkiye,1,0,
+8549538,1996-06-14,1996,17:30,Czechia,Italy,2,1,
+8549564,1996-06-15,1996,13:00,England,Scotland,2,0,
+8549545,1996-06-15,1996,16:00,France,Spain,1,1,
+8549539,1996-06-16,1996,13:00,Russia,Germany,0,3,
+8549558,1996-06-16,1996,16:00,Croatia,Denmark,3,0,
+8549561,1996-06-08,1996,13:00,England,Switzerland,1,1,
+8549542,1996-06-09,1996,12:30,Spain,Bulgaria,1,1,
+8549536,1996-06-09,1996,15:00,Germany,Czechia,2,0,
+8549555,1996-06-09,1996,17:30,Denmark,Portugal,1,1,
+8549562,1996-06-10,1996,14:30,Netherlands,Scotland,0,0,
+8549543,1996-06-10,1996,17:30,Romania,France,0,1,
+8549537,1996-06-11,1996,14:30,Italy,Russia,2,1,
+8549556,1996-06-11,1996,17:30,Türkiye,Croatia,0,1,
+8549411,1992-06-10,1992,18:15,Sweden,France,1,1,
+8549412,1992-06-11,1992,18:15,Denmark,England,0,0,
+8549408,1992-06-12,1992,15:15,Netherlands,Scotland,1,0,
+12262199,1992-06-12,1992,18:15,CIS,Germany,1,1,
+8549413,1992-06-14,1992,15:15,France,England,0,0,
+8549414,1992-06-14,1992,18:15,Sweden,Denmark,1,0,
+8549409,1992-06-15,1992,15:15,Scotland,Germany,0,2,
+12262197,1992-06-15,1992,18:15,Netherlands,CIS,0,0,
+8549416,1992-06-17,1992,18:15,France,Denmark,1,2,
+8549415,1992-06-17,1992,18:15,Sweden,England,2,1,
+8549410,1992-06-18,1992,18:15,Netherlands,Germany,3,1,
+12262196,1992-06-18,1992,18:15,Scotland,CIS,3,0,
+8549413,1992-06-14,1992,15:15,France,England,0,0,
+8549414,1992-06-14,1992,18:15,Sweden,Denmark,1,0,
+8549409,1992-06-15,1992,15:15,Scotland,Germany,0,2,
+12262197,1992-06-15,1992,18:15,Netherlands,CIS,0,0,
+8549411,1992-06-10,1992,18:15,Sweden,France,1,1,
+8549412,1992-06-11,1992,18:15,Denmark,England,0,0,
+8549408,1992-06-12,1992,15:15,Netherlands,Scotland,1,0,
+12262199,1992-06-12,1992,18:15,CIS,Germany,1,1,
+8549393,1988-06-10,1988,18:15,West Germany,Italy,1,1,
+8549394,1988-06-11,1988,13:30,Denmark,Spain,2,3,
+8549399,1988-06-12,1988,13:30,England,Ireland,0,1,
+8549400,1988-06-12,1988,16:00,Netherlands,USSR,0,1,
+8549395,1988-06-14,1988,15:15,West Germany,Denmark,2,0,
+8549396,1988-06-14,1988,18:15,Italy,Spain,1,0,
+8549401,1988-06-15,1988,15:15,England,Netherlands,1,3,
+8549402,1988-06-15,1988,16:00,Ireland,USSR,1,1,
+8549398,1988-06-17,1988,18:15,Italy,Denmark,2,0,
+8549397,1988-06-17,1988,18:15,West Germany,Spain,2,0,
+8549403,1988-06-18,1988,13:30,Ireland,Netherlands,0,1,
+8549404,1988-06-18,1988,16:00,England,USSR,1,3,
+8549395,1988-06-14,1988,15:15,West Germany,Denmark,2,0,
+8549396,1988-06-14,1988,18:15,Italy,Spain,1,0,
+8549401,1988-06-15,1988,15:15,England,Netherlands,1,3,
+8549402,1988-06-15,1988,16:00,Ireland,USSR,1,1,
+8549393,1988-06-10,1988,18:15,West Germany,Italy,1,1,
+8549394,1988-06-11,1988,13:30,Denmark,Spain,2,3,
+8549399,1988-06-12,1988,13:30,England,Ireland,0,1,
+8549400,1988-06-12,1988,16:00,Netherlands,USSR,0,1,
+8549382,1984-06-12,1984,18:30,France,Denmark,1,0,
+8549383,1984-06-13,1984,18:30,Belgium,Yugoslavia,2,0,
+8549359,1984-06-14,1984,15:15,West Germany,Portugal,0,0,
+8549360,1984-06-14,1984,18:30,Romania,Spain,1,1,
+8549384,1984-06-16,1984,15:15,France,Belgium,5,0,
+8549385,1984-06-16,1984,18:30,Denmark,Yugoslavia,5,0,
+8549361,1984-06-17,1984,15:15,West Germany,Romania,2,1,
+8549362,1984-06-17,1984,18:30,Portugal,Spain,1,1,
+8549387,1984-06-19,1984,18:30,Denmark,Belgium,3,2,
+8549386,1984-06-19,1984,18:30,France,Yugoslavia,3,2,
+8549364,1984-06-20,1984,18:30,Portugal,Romania,1,0,
+8549363,1984-06-20,1984,18:30,West Germany,Spain,0,1,
+8549384,1984-06-16,1984,15:15,France,Belgium,5,0,
+8549385,1984-06-16,1984,18:30,Denmark,Yugoslavia,5,0,
+8549361,1984-06-17,1984,15:15,West Germany,Romania,2,1,
+8549362,1984-06-17,1984,18:30,Portugal,Spain,1,1,
+8549382,1984-06-12,1984,18:30,France,Denmark,1,0,
+8549383,1984-06-13,1984,18:30,Belgium,Yugoslavia,2,0,
+8549359,1984-06-14,1984,15:15,West Germany,Portugal,0,0,
+8549360,1984-06-14,1984,18:30,Romania,Spain,1,1,
+8549369,1980-06-11,1980,15:45,Czechoslovakia,West Germany,0,1,
+8549370,1980-06-11,1980,18:30,Netherlands,Greece,1,0,
+8549349,1980-06-12,1980,15:45,Belgium,England,1,1,
+8549350,1980-06-12,1980,18:30,Italy,Spain,0,0,
+8549371,1980-06-14,1980,15:45,West Germany,Netherlands,3,2,
+8549372,1980-06-14,1980,18:30,Greece,Czechoslovakia,1,3,
+8549351,1980-06-15,1980,15:45,Belgium,Spain,2,1,
+8549352,1980-06-15,1980,18:30,Italy,England,1,0,
+8549373,1980-06-17,1980,15:45,Netherlands,Czechoslovakia,1,1,
+8549374,1980-06-17,1980,18:30,Greece,West Germany,0,0,
+8549353,1980-06-18,1980,15:45,Spain,England,1,2,
+8549354,1980-06-18,1980,18:30,Italy,Belgium,0,0,
+8549369,1980-06-11,1980,15:45,Czechoslovakia,West Germany,0,1,
+8549370,1980-06-11,1980,18:30,Netherlands,Greece,1,0,
+8549349,1980-06-12,1980,15:45,Belgium,England,1,1,
+8549350,1980-06-12,1980,18:30,Italy,Spain,0,0,

@@ -1,0 +1,12 @@
+{
+  "datasetId": "dataset-comp-int-afcon-2026-06-29",
+  "competitionId": "comp-int-afcon",
+  "schemaVersion": "1.0.0",
+  "featureSpecVersion": "feature-spec-v0.1.0",
+  "sourceProviderId": "soccerdata-fbref",
+  "sourceSnapshotHash": "cefa304fc1960604a3fccff60f7a49d345117d3b739997be8dcc55b9cac436d9",
+  "builtAt": "2026-06-29T04:28:40.421827Z",
+  "trainCount": 234,
+  "valCount": 144,
+  "testCount": 36
+}
