@@ -137,7 +137,7 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Result**: Candidate comparison report generated for the aggregate World Cup + Euro national-team dataset. No model selected.
   - **Blocker**: Lifted (Phase 8.3A completed with World Cup and Euro datasets, total test sample count = 107). Club/Premier League expansion remains blocked.
   - **Constraints**: Do not treat high-variance Phase 8.4 outcomes as model-selection evidence due to sample size limits and missing bookmaker baseline. Do not create runtime prediction routes, model artifacts, betting recommendations, or club competition support.
-- [ ] Create `phase:implementation-plan Phase 8.5 Owner-Only Experimental Report Surface`.
+- [x] Create `phase:implementation-plan Phase 8.5 Owner-Only Experimental Report Surface`.
 - [ ] Complete Phase 8.5 Owner-Only Experimental Report Surface before Phase 8.6 Model Selection ADR.
   - **Constraints**: The report surface must remain owner-only and experimental. It may show model evidence, metrics, calibration bins, dataset/version metadata, and weaknesses, but it must not expose public predictions, `engineMode: production`, recommendation labels, stake advice, bankroll advice, ROI, CLV, Kelly logic, or club competition expansion.
 - [ ] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
