@@ -142,5 +142,8 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Result**: Owner-only experimental JSON/Markdown report surface generated from Phase 8.4 evidence. No model selected and no runtime prediction surface created.
   - **Constraints**: The report surface remains owner-only and experimental. It does not expose public predictions, `engineMode: production`, recommendation labels, stake advice, bankroll advice, ROI, CLV, Kelly logic, or club competition expansion.
 - [x] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
-  - **Result**: Draft ADR-0041 created with the recommended decision to select no model yet. Owner approval remains pending.
+  - **Result**: Owner approved ADR-0041 on 2026-06-29, confirming the decision to select no model yet.
+- [ ] Phase 8.6A: National-Team Dataset Expansion for Model Selection Evidence.
+  - **Goal**: Expand World Cup and Euro history to increase out-of-sample test count and check for bookmaker odds/implied probability baselines, then rerun the model R&D pipeline.
+  - **Status**: Active.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.

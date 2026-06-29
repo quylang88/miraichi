@@ -1,9 +1,9 @@
 # ADR-0041: Phase 8.6 Model Selection Decision
 
-* **Status**: Proposed
+* **Status**: Accepted
 * **Date**: 2026-06-29
 * **Owner Approval Required**: Yes
-* **Owner Approval**: Pending
+* **Owner Approval**: Approved (2026-06-29)
 * **Implementation Status**: Not started
 * **Phase**: 8.6 Model Selection ADR
 * **Source Evidence**:
