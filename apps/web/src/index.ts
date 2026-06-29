@@ -149,7 +149,7 @@ export function getIndexHtml() {
   <link rel="stylesheet" href="/packages/ui/src/index.css">
   <script>
     window.MIRAICHI_ENV = {
-      API_URL: "${process.env.API_URL || 'http://localhost:3001'}"
+      API_URL: "${process.env.API_URL || ''}"
     };
   </script>
   <script type="module" src="/apps/web/src/pwa/register-service-worker.js"></script>
