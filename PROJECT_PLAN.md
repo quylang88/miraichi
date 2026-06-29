@@ -158,6 +158,11 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Evidence**: See `apps/local-ai/reports/phase-8-6b-sofascore-national-team-source-discovery.json`, `apps/local-ai/reports/phase-8-6b-odds-baseline-source-discovery.json`, and `docs/data/PHASE-8-6B-SOFASCORE-NATIONAL-TEAM-SOURCE-DISCOVERY.md`.
 - [x] Create `phase:plan Phase 8.6C National-Team Sofascore Dataset Ingestion`.
   - **Result**: Proposed design spec created to ingest historical match events and scores from Sofascore for 7 tournaments, updating `competition-registry.json` splits, and rebuilding offline training/validation splits without odds.
+- [x] Complete Phase 8.6C National-Team Sofascore Dataset Ingestion.
+  - **Result**: Historical fixture schedules and scores ingested from Sofascore for 7 tournaments, expanding offline dataset to 1,962 matches.
+  - **Evidence**: Combined split counts: 1,044 train, 570 validation, and 348 test fixtures. See updated processed JSONL splits under `apps/local-ai/data/processed/`.
+  - **Constraint**: Bookmaker baseline remains blocked/unavailable.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
+
 
 
