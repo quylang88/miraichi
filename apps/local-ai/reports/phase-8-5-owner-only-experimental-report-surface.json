@@ -1,0 +1,67 @@
+{
+  "reportId": "phase-8-5-owner-only-experimental-report-surface",
+  "phase": "8.5",
+  "sourceReportId": "phase-8-4-candidate-model-bakeoff",
+  "audience": "owner_only",
+  "experimentLabel": "experimental_not_production_ready",
+  "datasetId": "dataset-national-team-aggregate-comp-int-world-cup__comp-int-euro",
+  "competitionIds": [
+    "comp-int-world-cup",
+    "comp-int-euro"
+  ],
+  "featureSpecVersion": "feature-spec-v0.1.0",
+  "sampleCount": 107,
+  "bookmakerBaselineAvailable": false,
+  "selectedCandidateId": null,
+  "selectionAuthority": "blocked_until_phase_8_6_model_selection_adr",
+  "nextAllowedPhase": "phase:plan Phase 8.6 Model Selection ADR",
+  "candidateEvidence": [
+    {
+      "candidateId": "elo_rating_v0",
+      "candidateFamily": "elo_rating",
+      "rank": 1,
+      "trainedOnSplitNames": [
+        "train",
+        "validation"
+      ],
+      "evaluatedOnSplitName": "test",
+      "evaluatedSampleCount": 107,
+      "metrics": {
+        "brierScore": 0.6289850495627887,
+        "logLoss": 1.0480011879763995,
+        "classAccuracy": 0.514018691588785,
+        "expectedCalibrationError": 0.04491289465475595,
+        "calibrationBinCount": 10
+      }
+    },
+    {
+      "candidateId": "multinomial_logistic_competition_v0",
+      "candidateFamily": "multinomial_logistic_regression",
+      "rank": 2,
+      "trainedOnSplitNames": [
+        "train"
+      ],
+      "evaluatedOnSplitName": "test",
+      "evaluatedSampleCount": 107,
+      "metrics": {
+        "brierScore": 0.6396971335063087,
+        "logLoss": 1.0568376250817875,
+        "classAccuracy": 0.4485981308411215,
+        "expectedCalibrationError": 0.004434886661876858,
+        "calibrationBinCount": 10
+      }
+    }
+  ],
+  "knownWeaknesses": [
+    "Test sample count is 107; treat Phase 8.4 as high-variance R&D evidence, not model-selection evidence.",
+    "Bookmaker baseline is unavailable for the current dataset; candidate results cannot be judged against market-implied probabilities."
+  ],
+  "nonAuthorizations": [
+    "No public prediction surface.",
+    "No `engineMode: production`.",
+    "No model selected.",
+    "No betting recommendation.",
+    "No stake sizing, Kelly, bankroll, ROI, or CLV.",
+    "No club competition expansion."
+  ]
+}
