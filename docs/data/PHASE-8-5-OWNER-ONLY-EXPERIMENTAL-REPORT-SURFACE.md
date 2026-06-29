@@ -11,15 +11,14 @@
 - Dataset: `dataset-national-team-aggregate-comp-int-world-cup__comp-int-euro`
 - Competitions: `comp-int-world-cup`, `comp-int-euro`
 - Feature spec version: `feature-spec-v0.1.0`
-- Test sample count: 107
+- Test sample count: 214
 - Bookmaker baseline available: no
 
 ## Candidate Evidence
-- Rank 1: `elo_rating_v0` (elo_rating) - LogLoss=1.048001, Brier=0.628985, Accuracy=0.514019, ECE=0.044913, N=107
-- Rank 2: `multinomial_logistic_competition_v0` (multinomial_logistic_regression) - LogLoss=1.056838, Brier=0.639697, Accuracy=0.448598, ECE=0.004435, N=107
+- Rank 1: `elo_rating_v0` (elo_rating) - LogLoss=1.004647, Brier=0.600486, Accuracy=0.565421, ECE=0.091350, N=214
+- Rank 2: `multinomial_logistic_competition_v0` (multinomial_logistic_regression) - LogLoss=1.052865, Brier=0.637552, Accuracy=0.429907, ECE=0.009309, N=214
 
 ## Known Weaknesses
-- Test sample count is 107; treat Phase 8.4 as high-variance R&D evidence, not model-selection evidence.
 - Bookmaker baseline is unavailable for the current dataset; candidate results cannot be judged against market-implied probabilities.
 
 ## Explicit Non-Authorizations

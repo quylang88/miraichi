@@ -16,14 +16,14 @@ No model is selected in Phase 8.4. Phase 8.4 only ranks candidates and does not 
 - Dataset: `dataset-national-team-aggregate-comp-int-world-cup__comp-int-euro`
 - Competitions: `comp-int-world-cup`, `comp-int-euro`
 - Feature spec version: `feature-spec-v0.1.0`
-- Sample count: 107
-- Baseline log loss: 1.066
-- Baseline Brier score: 0.645
+- Sample count: 214
+- Baseline log loss: 1.048
+- Baseline Brier score: 0.636
 - Bookmaker baseline available: no
 
 ## Candidates
-- 1. `elo_rating_v0` (elo_rating) - LogLoss=1.048, Brier=0.629, Accuracy=0.514, N=107
-- 2. `multinomial_logistic_competition_v0` (multinomial_logistic_regression) - LogLoss=1.057, Brier=0.640, Accuracy=0.449, N=107
+- 1. `elo_rating_v0` (elo_rating) - LogLoss=1.005, Brier=0.600, Accuracy=0.565, N=214
+- 2. `multinomial_logistic_competition_v0` (multinomial_logistic_regression) - LogLoss=1.053, Brier=0.638, Accuracy=0.430, N=214
 
 ## Ranking
 - Ranked candidate IDs: `elo_rating_v0`, `multinomial_logistic_competition_v0`
@@ -31,7 +31,6 @@ No model is selected in Phase 8.4. Phase 8.4 only ranks candidates and does not 
 - Selection authority: `blocked_until_phase_8_6_model_selection_adr`
 
 ## Warnings
-- Test sample count is 107; treat Phase 8.4 as high-variance R&D evidence, not model-selection evidence.
 - Bookmaker baseline is unavailable for the current dataset; candidate results cannot be judged against market-implied probabilities.
 
 ## Explicit Non-Authorizations

@@ -14,13 +14,13 @@ Phase 8.3 can generate aggregate national-team baseline metrics across provider-
 - Competitions: `comp-int-world-cup`, `comp-int-euro`
 - Feature spec version: `feature-spec-v0.1.0`
 - Evaluation split: `test`
-- Test sample count: 107
-- Missing bookmaker baseline count: 107
+- Test sample count: 214
+- Missing bookmaker baseline count: 214
 - Metrics implementation: pure TypeScript in `apps/local-ai`
 
 ## Baselines
-- `uniform_1x2`: Brier=0.666667, LogLoss=1.098612, Accuracy=0.448598, ECE=0.115265, N=107
-- `train_outcome_frequency_smoothed`: Brier=0.644524, LogLoss=1.066064, Accuracy=0.448598, ECE=0.007157, N=107
+- `uniform_1x2`: Brier=0.666667, LogLoss=1.098612, Accuracy=0.425234, ECE=0.091900, N=214
+- `train_outcome_frequency_smoothed`: Brier=0.635881, LogLoss=1.048170, Accuracy=0.425234, ECE=0.003857, N=214
 
 ## Warnings
 

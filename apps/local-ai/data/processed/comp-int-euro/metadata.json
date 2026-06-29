@@ -1,12 +1,12 @@
 {
-  "datasetId": "dataset-comp-int-euro-2026-06-28",
+  "datasetId": "dataset-comp-int-euro-2026-06-29",
   "competitionId": "comp-int-euro",
   "schemaVersion": "1.0.0",
   "featureSpecVersion": "feature-spec-v0.1.0",
   "sourceProviderId": "soccerdata-fbref",
-  "sourceSnapshotHash": "2ed8389bd38210d46bb5d7eda7e5e301bd821794c19ab7c1368dc7e59349847d",
-  "builtAt": "2026-06-28T12:00:58.135223Z",
-  "trainCount": 51,
-  "valCount": 51,
-  "testCount": 51
+  "sourceSnapshotHash": "2ff074b516c339d34afb217b2b8221a16368df5dcba31517713f26ab7cf7a393",
+  "builtAt": "2026-06-29T02:00:11.147271Z",
+  "trainCount": 93,
+  "valCount": 82,
+  "testCount": 102
 }

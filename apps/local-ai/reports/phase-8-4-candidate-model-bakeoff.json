@@ -8,9 +8,9 @@
     "comp-int-euro"
   ],
   "featureSpecVersion": "feature-spec-v0.1.0",
-  "sampleCount": 107,
-  "baselineLogLoss": 1.0660635176738023,
-  "baselineBrierScore": 0.644523786226236,
+  "sampleCount": 214,
+  "baselineLogLoss": 1.0481695457496674,
+  "baselineBrierScore": 0.6358811771066659,
   "bookmakerBaselineAvailable": false,
   "candidateResults": [
     {
@@ -21,14 +21,14 @@
         "validation"
       ],
       "evaluatedOnSplitName": "test",
-      "evaluatedSampleCount": 107,
+      "evaluatedSampleCount": 214,
       "metrics": {
-        "brierScore": 0.6289850495627887,
-        "logLoss": 1.0480011879763995,
-        "classAccuracy": 0.514018691588785,
+        "brierScore": 0.600485898191358,
+        "logLoss": 1.004646642544502,
+        "classAccuracy": 0.5654205607476636,
         "expectedCalibrationError": {
-          "ece": 0.04491289465475595,
-          "sampleCount": 107,
+          "ece": 0.0913502802894098,
+          "sampleCount": 214,
           "binCount": 10,
           "bins": [
             {
@@ -71,28 +71,28 @@
               "index": 4,
               "lowerInclusive": 0.4,
               "upperExclusive": 0.5,
-              "sampleCount": 86,
-              "averageConfidence": 0.45152200174945395,
-              "accuracy": 0.4883720930232558,
-              "gap": 0.036850091273801844
+              "sampleCount": 147,
+              "averageConfidence": 0.446698783558815,
+              "accuracy": 0.5374149659863946,
+              "gap": 0.09071618242757962
             },
             {
               "index": 5,
               "lowerInclusive": 0.5,
               "upperExclusive": 0.6,
-              "sampleCount": 20,
-              "averageConfidence": 0.5380404328320514,
-              "accuracy": 0.6,
-              "gap": 0.06195956716794859
+              "sampleCount": 63,
+              "averageConfidence": 0.5433004147131932,
+              "accuracy": 0.6349206349206349,
+              "gap": 0.09162022020744165
             },
             {
               "index": 6,
               "lowerInclusive": 0.6,
               "upperExclusive": 0.7,
-              "sampleCount": 1,
-              "averageConfidence": 0.6026194648470434,
-              "accuracy": 1,
-              "gap": 0.39738053515295657
+              "sampleCount": 4,
+              "averageConfidence": 0.6104018230026671,
+              "accuracy": 0.5,
+              "gap": 0.1104018230026671
             },
             {
               "index": 7,
@@ -132,14 +132,14 @@
         "train"
       ],
       "evaluatedOnSplitName": "test",
-      "evaluatedSampleCount": 107,
+      "evaluatedSampleCount": 214,
       "metrics": {
-        "brierScore": 0.6396971335063087,
-        "logLoss": 1.0568376250817875,
-        "classAccuracy": 0.4485981308411215,
+        "brierScore": 0.6375515284056827,
+        "logLoss": 1.0528654740441903,
+        "classAccuracy": 0.42990654205607476,
         "expectedCalibrationError": {
-          "ece": 0.004434886661876858,
-          "sampleCount": 107,
+          "ece": 0.00930929249925666,
+          "sampleCount": 214,
           "binCount": 10,
           "bins": [
             {
@@ -182,10 +182,10 @@
               "index": 4,
               "lowerInclusive": 0.4,
               "upperExclusive": 0.5,
-              "sampleCount": 107,
-              "averageConfidence": 0.44416324417924463,
-              "accuracy": 0.4485981308411215,
-              "gap": 0.004434886661876858
+              "sampleCount": 214,
+              "averageConfidence": 0.4392158345553314,
+              "accuracy": 0.42990654205607476,
+              "gap": 0.00930929249925666
             },
             {
               "index": 5,
@@ -244,7 +244,6 @@
   "selectedCandidateId": null,
   "selectionAuthority": "blocked_until_phase_8_6_model_selection_adr",
   "warnings": [
-    "Test sample count is 107; treat Phase 8.4 as high-variance R&D evidence, not model-selection evidence.",
     "Bookmaker baseline is unavailable for the current dataset; candidate results cannot be judged against market-implied probabilities."
   ],
   "forbiddenScope": [

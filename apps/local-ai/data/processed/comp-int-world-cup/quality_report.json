@@ -1,8 +1,8 @@
 {
-  "processedCount": 192,
+  "processedCount": 384,
   "rejectedCount": 0,
-  "trainCount": 64,
+  "trainCount": 192,
   "valCount": 64,
-  "testCount": 64,
+  "testCount": 128,
   "warnings": []
 }
