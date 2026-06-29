@@ -154,7 +154,9 @@ function statusForCompetition(
   if (competition.competitionType !== 'national_team' || competition.seniority !== 'senior') {
     return 'blocked_by_scope';
   }
-  if (providerError) return 'blocked_by_provider_error';
+  if (providerError && completedEventCount === 0) {
+    return 'blocked_by_provider_error';
+  }
   if (
     completedSeasonCount < competition.minimumCompletedSeasonsForFutureIngestion ||
     completedEventCount === 0
@@ -190,22 +192,30 @@ export async function buildSofascoreDiscoveryReport(
 
       for (const season of completedSeasons.slice(0, 2)) {
         sampledSeasonIds.push(season.seasonId);
-        const rounds = await client.fetchRounds(competition.sofascoreUniqueTournamentId, season.seasonId);
-        for (const round of rounds) {
-          const events = await client.fetchEventsForRound(
-            competition.sofascoreUniqueTournamentId,
-            season.seasonId,
-            round.round
-          );
-          for (const event of events) {
-            const reason = rejectionReasonForEvent(event, now);
-            if (reason) {
-              rejectedEventCount += 1;
-              incrementReason(rejectedEventReasons, reason);
-            } else {
-              completedEventCount += 1;
+        try {
+          const rounds = await client.fetchRounds(competition.sofascoreUniqueTournamentId, season.seasonId);
+          for (const round of rounds) {
+            try {
+              const events = await client.fetchEventsForRound(
+                competition.sofascoreUniqueTournamentId,
+                season.seasonId,
+                round.round
+              );
+              for (const event of events) {
+                const reason = rejectionReasonForEvent(event, now);
+                if (reason) {
+                  rejectedEventCount += 1;
+                  incrementReason(rejectedEventReasons, reason);
+                } else {
+                  completedEventCount += 1;
+                }
+              }
+            } catch (roundError) {
+              providerError = roundError instanceof Error ? roundError.message : String(roundError);
             }
           }
+        } catch (roundsError) {
+          providerError = roundsError instanceof Error ? roundsError.message : String(roundsError);
         }
       }
     } catch (error) {
