@@ -288,3 +288,14 @@ describe('production shell live match feed rendering', () => {
     expect(matchesPanelHtml).not.toContain('Team Gamma vs Team Delta');
   });
 });
+
+describe('production shell entry match feed wiring', () => {
+  it('loads match feed through the web service instead of hardcoded shell-only data', () => {
+    const source = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+
+    expect(source).toContain("import { getMatchFeed");
+    expect(source).toContain("matchFeedState");
+    expect(source).toContain("void refreshMatchFeed");
+    expect(source).not.toContain("Team Alpha vs Team Beta");
+  });
+});

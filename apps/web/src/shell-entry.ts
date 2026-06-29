@@ -2,6 +2,7 @@ import { getSafeNavigationTabId, type ProductionNavigationTabId } from './config
 import { renderAppShell } from './components/app-shell.js';
 import { createSettingsService } from './services/settings-service.js';
 import { t } from './services/i18n-service.js';
+import { getMatchFeed, type MatchFeedViewState } from './services/match-feed-service.js';
 
 const root = document.getElementById('app-root');
 
@@ -14,6 +15,19 @@ const settingsService = createSettingsService();
 
 let currentScreenName = 'today';
 let matchDetailReturnScreen: ProductionNavigationTabId = 'today';
+
+function todayLocalDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+let matchFeedState: MatchFeedViewState = {
+  status: 'loading',
+  date: todayLocalDate()
+};
 
 function getInitialTabId(): ProductionNavigationTabId {
   const params = new URLSearchParams(window.location.search);
@@ -30,7 +44,8 @@ function render(activeTabId: string): void {
   matchDetailReturnScreen = safeActiveTabId;
   appRoot.innerHTML = renderAppShell({
     activeTabId: safeActiveTabId,
-    translate: t
+    translate: t,
+    matchFeed: matchFeedState
   });
   appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settingsService.getSettings().locale);
 }
@@ -325,4 +340,13 @@ window.addEventListener('popstate', () => {
   render(getInitialTabId());
 });
 
+async function refreshMatchFeed(): Promise<void> {
+  const date = matchFeedState.date;
+  matchFeedState = { status: 'loading', date };
+  render(currentScreenName);
+  matchFeedState = await getMatchFeed(date);
+  render(currentScreenName);
+}
+
 render(getInitialTabId());
+void refreshMatchFeed();
