@@ -405,10 +405,11 @@ function renderMatchesPanel(
 
   const leaguesHtml = uniqueLeagues.map(league => {
     const isChecked = filters.selectedLeagues.has(league) ? 'checked' : '';
+    const escapedLeague = escapeHtml(league);
     return `
-      <label class="filter-option">
-        <input type="checkbox" name="filter-league" value="${escapeHtml(league)}" ${isChecked}>
-        <span>${escapeHtml(league)}</span>
+      <label class="filter-option" for="filter-league-${escapedLeague}">
+        <input type="checkbox" id="filter-league-${escapedLeague}" name="filter-league" value="${escapedLeague}" ${isChecked}>
+        <span>${escapedLeague}</span>
       </label>
     `;
   }).join('');
@@ -699,19 +700,19 @@ function renderMatchesPanel(
       <div class="search-row">
         <input class="search-input" id="match-search" type="search" placeholder="Search generic teams" aria-label="Search generic teams">
         <button id="live-filter-btn" type="button">LIVE</button>
-        <button class="filter-button" type="button" aria-label="Open match filters">${icons.filter}</button>
+        <button class="filter-button" id="filter-panel-toggle-btn" type="button" aria-label="Open match filters">${icons.filter}</button>
       </div>
 
       <div class="filter-panel" id="matches-filter-panel" ${isFilterPanelOpen ? '' : 'hidden'}>
         <div class="filter-group">
           <span class="filter-group-title">Sort & Group</span>
           <div class="filter-options">
-            <label class="filter-option">
-              <input type="radio" name="filter-groupby" value="league" ${filters.groupby === 'league' ? 'checked' : ''}>
+            <label class="filter-option" for="filter-groupby-league">
+              <input type="radio" id="filter-groupby-league" name="filter-groupby" value="league" ${filters.groupby === 'league' ? 'checked' : ''}>
               <span>League</span>
             </label>
-            <label class="filter-option">
-              <input type="radio" name="filter-groupby" value="time" ${filters.groupby === 'time' ? 'checked' : ''}>
+            <label class="filter-option" for="filter-groupby-time">
+              <input type="radio" id="filter-groupby-time" name="filter-groupby" value="time" ${filters.groupby === 'time' ? 'checked' : ''}>
               <span>Time</span>
             </label>
           </div>
@@ -720,16 +721,16 @@ function renderMatchesPanel(
         <div class="filter-group">
           <span class="filter-group-title">Competition Type</span>
           <div class="filter-options">
-            <label class="filter-option">
-              <input type="radio" name="filter-type" value="all" ${filters.type === 'all' ? 'checked' : ''}>
+            <label class="filter-option" for="filter-type-all">
+              <input type="radio" id="filter-type-all" name="filter-type" value="all" ${filters.type === 'all' ? 'checked' : ''}>
               <span>All</span>
             </label>
-            <label class="filter-option">
-              <input type="radio" name="filter-type" value="national" ${filters.type === 'national' ? 'checked' : ''}>
+            <label class="filter-option" for="filter-type-national">
+              <input type="radio" id="filter-type-national" name="filter-type" value="national" ${filters.type === 'national' ? 'checked' : ''}>
               <span>National</span>
             </label>
-            <label class="filter-option">
-              <input type="radio" name="filter-type" value="club" ${filters.type === 'club' ? 'checked' : ''}>
+            <label class="filter-option" for="filter-type-club">
+              <input type="radio" id="filter-type-club" name="filter-type" value="club" ${filters.type === 'club' ? 'checked' : ''}>
               <span>Club</span>
             </label>
           </div>
@@ -738,16 +739,16 @@ function renderMatchesPanel(
         <div class="filter-group">
           <span class="filter-group-title">Gender</span>
           <div class="filter-options">
-            <label class="filter-option">
-              <input type="radio" name="filter-gender" value="all" ${filters.gender === 'all' ? 'checked' : ''}>
+            <label class="filter-option" for="filter-gender-all">
+              <input type="radio" id="filter-gender-all" name="filter-gender" value="all" ${filters.gender === 'all' ? 'checked' : ''}>
               <span>All</span>
             </label>
-            <label class="filter-option">
-              <input type="radio" name="filter-gender" value="men" ${filters.gender === 'men' ? 'checked' : ''}>
+            <label class="filter-option" for="filter-gender-men">
+              <input type="radio" id="filter-gender-men" name="filter-gender" value="men" ${filters.gender === 'men' ? 'checked' : ''}>
               <span>Men</span>
             </label>
-            <label class="filter-option">
-              <input type="radio" name="filter-gender" value="women" ${filters.gender === 'women' ? 'checked' : ''}>
+            <label class="filter-option" for="filter-gender-women">
+              <input type="radio" id="filter-gender-women" name="filter-gender" value="women" ${filters.gender === 'women' ? 'checked' : ''}>
               <span>Women</span>
             </label>
           </div>

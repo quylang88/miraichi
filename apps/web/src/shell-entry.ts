@@ -481,6 +481,7 @@ window.addEventListener('popstate', () => {
 });
 
 async function refreshMatchFeed(): Promise<void> {
+  activeFilters.selectedLeagues.clear();
   const date = matchFeedState.date;
   matchFeedState = { status: 'loading', date };
   render(currentScreenName);
