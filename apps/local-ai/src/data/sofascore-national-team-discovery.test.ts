@@ -103,3 +103,188 @@ describe('Phase 8.6B Sofascore discovery registry', () => {
     ]);
   });
 });
+
+import {
+  buildSofascoreDiscoveryReport,
+  type SofascoreDiscoveryClient
+} from './sofascore-national-team-discovery.js';
+
+const fixedNow = new Date('2026-06-29T00:00:00Z');
+
+function fakeClient(): SofascoreDiscoveryClient {
+  return {
+    async fetchSeasons(tournamentId: number) {
+      if (tournamentId === 270) {
+        return [
+          { name: 'Africa Cup of Nations 2025', year: '26/27', seasonId: 71636 },
+          { name: 'Africa Cup of Nations 2023', year: '2023', seasonId: 56021 },
+          { name: 'Africa Cup of Nations 2021', year: '2021', seasonId: 38181 }
+        ];
+      }
+
+      if (tournamentId === 246) {
+        return [
+          { name: 'AFC Asian Cup 2027', year: '2027', seasonId: 94444 },
+          { name: 'AFC Asian Cup 2023', year: '2023', seasonId: 51384 },
+          { name: 'AFC Asian Cup 2019', year: '2019', seasonId: 16919 }
+        ];
+      }
+
+      return [];
+    },
+    async fetchRounds(tournamentId: number, seasonId: number) {
+      if (tournamentId === 270 && seasonId === 56021) {
+        return [{ round: 1 }, { round: 2 }];
+      }
+      if (tournamentId === 270 && seasonId === 38181) {
+        return [{ round: 1 }];
+      }
+      if (tournamentId === 246 && seasonId === 51384) {
+        return [{ round: 1 }];
+      }
+      if (tournamentId === 246 && seasonId === 16919) {
+        return [{ round: 1 }];
+      }
+      return [];
+    },
+    async fetchEventsForRound(tournamentId: number, seasonId: number, round: number) {
+      if (tournamentId === 270 && seasonId === 56021 && round === 1) {
+        return [
+          {
+            eventId: 11761871,
+            startTimestamp: 1705176000,
+            statusCode: 100,
+            homeTeamName: 'Cote d Ivoire',
+            awayTeamName: 'Guinea-Bissau',
+            homeScore: 2,
+            awayScore: 0
+          },
+          {
+            eventId: 11761872,
+            startTimestamp: 1705240800,
+            statusCode: 100,
+            homeTeamName: '',
+            awayTeamName: 'Nigeria',
+            homeScore: 1,
+            awayScore: 1
+          }
+        ];
+      }
+
+      if (tournamentId === 270 && seasonId === 56021 && round === 2) {
+        return [
+          {
+            eventId: 11761873,
+            startTimestamp: 1705600000,
+            statusCode: 60,
+            homeTeamName: 'Ghana',
+            awayTeamName: 'Egypt',
+            homeScore: null,
+            awayScore: null
+          }
+        ];
+      }
+
+      if (tournamentId === 270 && seasonId === 38181 && round === 1) {
+        return [
+          {
+            eventId: 991,
+            startTimestamp: 1642000000,
+            statusCode: 100,
+            homeTeamName: 'Cameroon',
+            awayTeamName: 'Burkina Faso',
+            homeScore: 2,
+            awayScore: 1
+          }
+        ];
+      }
+
+      if (tournamentId === 246 && seasonId === 51384 && round === 1) {
+        return [
+          {
+            eventId: 1001,
+            startTimestamp: 1705000000,
+            statusCode: 100,
+            homeTeamName: 'Qatar',
+            awayTeamName: 'Lebanon',
+            homeScore: 3,
+            awayScore: 0
+          }
+        ];
+      }
+
+      if (tournamentId === 246 && seasonId === 16919 && round === 1) {
+        return [
+          {
+            eventId: 1002,
+            startTimestamp: 1547000000,
+            statusCode: 100,
+            homeTeamName: 'Japan',
+            awayTeamName: 'Turkmenistan',
+            homeScore: 3,
+            awayScore: 2
+          }
+        ];
+      }
+
+      return [];
+    }
+  };
+}
+
+describe('Phase 8.6B Sofascore discovery quality gates', () => {
+  it('filters future seasons, counts rejected events, and marks usable competitions ready', async () => {
+    const registry: SofascoreDiscoveryRegistry = {
+      providerId: 'sofascore-direct',
+      phase: '8.6B',
+      competitions: [
+        {
+          competitionId: 'comp-int-afcon',
+          displayName: 'Africa Cup of Nations',
+          competitionType: 'national_team',
+          gender: 'men',
+          seniority: 'senior',
+          sofascoreUniqueTournamentId: 270,
+          enabledForDiscovery: true,
+          minimumCompletedSeasonsForFutureIngestion: 2
+        },
+        {
+          competitionId: 'comp-int-afc-asian-cup',
+          displayName: 'AFC Asian Cup',
+          competitionType: 'national_team',
+          gender: 'men',
+          seniority: 'senior',
+          sofascoreUniqueTournamentId: 246,
+          enabledForDiscovery: true,
+          minimumCompletedSeasonsForFutureIngestion: 2
+        }
+      ]
+    };
+
+    const report = await buildSofascoreDiscoveryReport(registry, fakeClient(), { now: fixedNow });
+
+    expect(report.status).toBe('pass');
+    expect(report.competitions).toHaveLength(2);
+    expect(report.competitions[0]).toMatchObject({
+      competitionId: 'comp-int-afcon',
+      discoveryStatus: 'ready_for_ingestion_plan',
+      completedSeasonCount: 2,
+      futureSeasonCount: 1,
+      completedEventCount: 2,
+      rejectedEventCount: 2
+    });
+    expect(report.competitions[0].rejectedEventReasons).toEqual({
+      missing_team_name: 1,
+      not_finished: 1
+    });
+    expect(report.competitions[1]).toMatchObject({
+      competitionId: 'comp-int-afc-asian-cup',
+      discoveryStatus: 'ready_for_ingestion_plan',
+      completedSeasonCount: 2,
+      futureSeasonCount: 1,
+      completedEventCount: 2,
+      rejectedEventCount: 0
+    });
+  });
+});
+
