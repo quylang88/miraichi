@@ -1,10 +1,10 @@
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
-$envFile = Join-Path $repoRoot ".env.local"
+$envFile = Join-Path $repoRoot ".env"
 
 if (-not (Test-Path -LiteralPath $envFile)) {
-  throw "Missing .env.local. Copy .env.example or create .env.local with CLOUDFLARE_API_TOKEN."
+  throw "Missing .env. Copy .env.example or create .env with CLOUDFLARE_API_TOKEN."
 }
 
 Get-Content -LiteralPath $envFile | ForEach-Object {
@@ -16,14 +16,14 @@ Get-Content -LiteralPath $envFile | ForEach-Object {
 
   $parts = $line -split "=", 2
   if ($parts.Count -ne 2) {
-    throw "Invalid .env.local line: $line"
+    throw "Invalid .env line: $line"
   }
 
   $name = $parts[0].Trim()
   $value = $parts[1].Trim()
 
   if ($name -notmatch "^[A-Za-z_][A-Za-z0-9_]*$") {
-    throw "Invalid environment variable name in .env.local: $name"
+    throw "Invalid environment variable name in .env: $name"
   }
 
   if ($value.Length -ge 2) {
@@ -39,7 +39,7 @@ Get-Content -LiteralPath $envFile | ForEach-Object {
 }
 
 if ([string]::IsNullOrWhiteSpace($env:CLOUDFLARE_API_TOKEN)) {
-  throw "CLOUDFLARE_API_TOKEN is empty in .env.local."
+  throw "CLOUDFLARE_API_TOKEN is empty in .env."
 }
 
 $projectName = $env:CLOUDFLARE_PAGES_PROJECT

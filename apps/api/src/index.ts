@@ -28,7 +28,7 @@ function findRootDir(startDir: string): string {
 const ROOT_DIR = findRootDir(__dirname);
 
 function loadEnv(rootDir: string) {
-  const envFiles = ['.env', '.env.local'];
+  const envFiles = ['.env'];
   for (const file of envFiles) {
     const filePath = path.join(rootDir, file);
     if (fs.existsSync(filePath)) {

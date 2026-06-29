@@ -10,7 +10,7 @@ const __dirname = pathModule.dirname(__filename);
 const ROOT_DIR = pathModule.resolve(__dirname, '../../../');
 
 function loadEnv(rootDir: string) {
-  const envFiles = ['.env', '.env.local'];
+  const envFiles = ['.env'];
   for (const file of envFiles) {
     const filePath = pathModule.join(rootDir, file);
     if (fs.existsSync(filePath)) {
