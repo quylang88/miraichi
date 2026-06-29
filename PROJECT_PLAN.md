@@ -143,7 +143,14 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Constraints**: The report surface remains owner-only and experimental. It does not expose public predictions, `engineMode: production`, recommendation labels, stake advice, bankroll advice, ROI, CLV, Kelly logic, or club competition expansion.
 - [x] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
   - **Result**: Owner approved ADR-0041 on 2026-06-29, confirming the decision to select no model yet.
-- [ ] Phase 8.6A: National-Team Dataset Expansion for Model Selection Evidence.
+- [x] Phase 8.6A: National-Team Dataset Expansion for Model Selection Evidence.
   - **Goal**: Expand World Cup and Euro history to increase out-of-sample test count and check for bookmaker odds/implied probability baselines, then rerun the model R&D pipeline.
-  - **Status**: Active.
+  - **Result**: Narrow expansion completed for World Cup + Euro, increasing scored aggregate test count to 214. Candidate bake-off still selected no model.
+  - **Limitation**: Bookmaker baseline remains unavailable, and Phase 8.6A provider discovery was too narrow because it only proved AFCON/Copa America/AFC Asian Cup/CONCACAF Gold Cup unavailable through the current FBref path, not through Sofascore direct tournament ids.
+- [x] Create `phase:plan Phase 8.6B Sofascore National-Team Source Discovery and Odds Baseline Discovery`.
+  - **Result**: Draft design spec created to investigate Sofascore direct tournament-id discovery for AFCON, Copa America, AFC Asian Cup, CONCACAF Gold Cup, UEFA Nations League, World Cup, and Euro, plus a separate odds/bookmaker source discovery.
+  - **Constraints**: Do not merge Sofascore fixtures into the main training dataset, do not fake bookmaker baselines, do not add API keys/secrets/paid providers, do not add club competitions, and do not revisit model selection before Phase 8.6B evidence exists.
+- [x] Create `phase:implementation-plan Phase 8.6B Sofascore National-Team Source Discovery and Odds Baseline Discovery`.
+  - **Result**: Implementation plan created with TDD slices for the Sofascore discovery registry, quality gates, odds baseline source matrix, phase verifier, generated artifacts, and closeout evidence.
+  - **Next**: Start with `phase:code-slice Phase 8.6B Sofascore Discovery Registry And Validation`.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
