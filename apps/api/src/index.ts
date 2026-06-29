@@ -52,8 +52,6 @@ function loadEnv(rootDir: string) {
 
 loadEnv(ROOT_DIR);
 
-const PORT = process.env.PORT || 3001;
-
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url || '/', 'http://localhost');
   const pathname = parsedUrl.pathname;
@@ -93,6 +91,15 @@ const server = http.createServer((req, res) => {
   }
 });
 
+if (!process.env.API_URL) {
+  throw new Error('API_URL must be defined in .env');
+}
+const apiUrlobj = new URL(process.env.API_URL);
+const PORT = process.env.PORT || apiUrlobj.port;
+if (!PORT) {
+  throw new Error('PORT or port in API_URL must be defined in .env');
+}
+
 server.listen(PORT, () => {
-  console.log(`[API Mediation Gateway] Running at http://localhost:${PORT}`);
+  console.log(`[API Mediation Gateway] Running at ${process.env.API_URL}`);
 });

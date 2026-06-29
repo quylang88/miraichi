@@ -34,7 +34,7 @@ function loadEnv(rootDir: string) {
 
 loadEnv(ROOT_DIR);
 
-const PORT = process.env.PORT || 3010;
+// PORT is determined dynamically at startup from process.env or process.env.APP_URL
 
 const server = http.createServer((req, res) => {
   const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
@@ -127,8 +127,17 @@ function serveStaticFile(res: http.ServerResponse, filePath: string, contentType
 }
 
 if (process.argv[1] === __filename) {
+  if (!process.env.APP_URL) {
+    throw new Error('APP_URL must be defined in .env');
+  }
+  const appUrlobj = new URL(process.env.APP_URL);
+  const PORT = process.env.PORT || appUrlobj.port;
+  if (!PORT) {
+    throw new Error('PORT or port in APP_URL must be defined in .env');
+  }
+
   server.listen(PORT, () => {
-    console.log(`[Web Server] Running at http://localhost:${PORT}`);
+    console.log(`[Web Server] Running at ${process.env.APP_URL}`);
   });
 }
 
