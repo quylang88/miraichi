@@ -45,17 +45,26 @@ function readWarnings(value: unknown): string[] {
 export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/v1/matches?date=${encodeURIComponent(date)}`);
-    const payload = await response.json() as MatchFeedApiResponse;
 
     if (!response.ok) {
+      let message = `Match feed unavailable with HTTP ${response.status}.`;
+      let code = 'match_feed_unavailable';
+      try {
+        const payload = await response.json() as MatchFeedApiResponse;
+        if (payload.error?.message) message = payload.error.message;
+        if (payload.error?.code) code = payload.error.code;
+      } catch {
+        // Response is not JSON, use default HTTP status message
+      }
       return {
         status: 'unavailable',
         date,
-        reason: payload.error?.message || `Match feed unavailable with HTTP ${response.status}.`,
-        warnings: [payload.error?.code || 'match_feed_unavailable']
+        reason: message,
+        warnings: [code]
       };
     }
 
+    const payload = await response.json() as MatchFeedApiResponse;
     const warnings = readWarnings(payload.warnings);
     const matches = Array.isArray(payload.matches) ? payload.matches as AppMatch[] : [];
 
