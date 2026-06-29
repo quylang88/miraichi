@@ -1,12 +1,12 @@
 import http from 'http';
 import { handleHealth } from './routes/health.js';
+import { handleMatches } from './routes/matches.js';
 import { handlePredictions } from './routes/predictions.mock.js';
 import { handleExplanations } from './routes/explanations.mock.js';
 import { handleBetHistory } from './routes/bet-history.mock.js';
 import { handleIngestionStatus } from './routes/ingestion-status.mock.js';
 import { handleMockPredict } from './routes/mock-prediction.js';
 import { handleMockExplain } from './routes/mock-explanation.js';
-import { MOCK_MATCHES } from '@miraichi/shared';
 
 const PORT = 3001;
 
@@ -30,8 +30,7 @@ const server = http.createServer((req, res) => {
   if (pathname === '/api/v1/health') {
     handleHealth(req, res);
   } else if (pathname === '/api/v1/matches') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(MOCK_MATCHES));
+    void handleMatches(req, res);
   } else if (pathname === '/api/v1/predictions') {
     handlePredictions(req, res);
   } else if (pathname === '/api/v1/chat') {
