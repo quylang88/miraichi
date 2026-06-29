@@ -122,16 +122,10 @@ function parseFixture(value: unknown): ApiFootballFixture {
   const away = readRecord(teams.away, 'away team');
   const status = readRecord(fixture.status, 'fixture status');
 
-  return {
+  const result: ApiFootballFixture = {
     fixture: {
       id: readNumber(fixture.id, 'fixture id'),
       date: readString(fixture.date, 'fixture date'),
-      timestamp: typeof fixture.timestamp === 'number' ? fixture.timestamp : undefined,
-      venue: isRecord(fixture.venue) ? {
-        id: typeof fixture.venue.id === 'number' ? fixture.venue.id : null,
-        name: typeof fixture.venue.name === 'string' ? fixture.venue.name : null,
-        city: typeof fixture.venue.city === 'string' ? fixture.venue.city : null
-      } : undefined,
       status: {
         long: typeof status.long === 'string' ? status.long : null,
         short: typeof status.short === 'string' ? status.short : null,
@@ -154,13 +148,27 @@ function parseFixture(value: unknown): ApiFootballFixture {
         id: readNumber(away.id, 'away team id'),
         name: readString(away.name, 'away team name')
       }
-    },
-    goals: isRecord(root.goals) ? {
+    }
+  };
+
+  if (typeof fixture.timestamp === 'number') {
+    result.fixture.timestamp = fixture.timestamp;
+  }
+  if (isRecord(fixture.venue)) {
+    result.fixture.venue = {
+      id: typeof fixture.venue.id === 'number' ? fixture.venue.id : null,
+      name: typeof fixture.venue.name === 'string' ? fixture.venue.name : null,
+      city: typeof fixture.venue.city === 'string' ? fixture.venue.city : null
+    };
+  }
+  if (isRecord(root.goals)) {
+    result.goals = {
       home: typeof root.goals.home === 'number' ? root.goals.home : null,
       away: typeof root.goals.away === 'number' ? root.goals.away : null
-    } : undefined,
-    score: root.score
-  };
+    };
+  }
+
+  return result;
 }
 
 function mapStatus(shortStatus: string | null | undefined): AppMatchStatus {
@@ -204,10 +212,10 @@ export function normalizeApiFootballFixture(fixture: ApiFootballFixture): AppMat
 
 function parseEnvelope(value: unknown): ApiFootballFixture[] {
   const envelope = readRecord(value, 'response envelope') as ApiFootballEnvelope;
-  if (!Array.size && !Array.isArray(envelope.response)) {
+  if (!Array.isArray(envelope.response)) {
     throw new ApiFootballProviderError('api_football_invalid_payload', 'API-Football response must be an array.', 502);
   }
-  return envelope.response.map(parseFixture);
+  return (envelope.response as unknown[]).map(parseFixture);
 }
 
 export function createApiFootballClient({
