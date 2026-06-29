@@ -1,4 +1,12 @@
-const API_BASE_URL = 'http://localhost:3001';
+declare global {
+  interface Window {
+    MIRAICHI_ENV?: {
+      API_URL?: string;
+    };
+  }
+}
+
+const API_BASE_URL = (typeof window !== 'undefined' && window.MIRAICHI_ENV?.API_URL) || 'http://localhost:3001';
 
 export type AppMatch = {
   id: string;

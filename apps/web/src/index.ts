@@ -9,6 +9,31 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = pathModule.dirname(__filename);
 const ROOT_DIR = pathModule.resolve(__dirname, '../../../');
 
+function loadEnv(rootDir: string) {
+  const envFiles = ['.env', '.env.local'];
+  for (const file of envFiles) {
+    const filePath = pathModule.join(rootDir, file);
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf8');
+      for (const line of content.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const index = trimmed.indexOf('=');
+        if (index > 0) {
+          const key = trimmed.slice(0, index).trim();
+          const value = trimmed.slice(index + 1).trim();
+          const unquoted = value.replace(/^['"]|['"]$/g, '');
+          if (key && process.env[key] === undefined) {
+            process.env[key] = unquoted;
+          }
+        }
+      }
+    }
+  }
+}
+
+loadEnv(ROOT_DIR);
+
 const PORT = process.env.PORT || 3010;
 
 const server = http.createServer((req, res) => {
@@ -122,6 +147,11 @@ export function getIndexHtml() {
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/icon-180.png">
   <link rel="stylesheet" href="/packages/ui/src/index.css">
+  <script>
+    window.MIRAICHI_ENV = {
+      API_URL: "${process.env.API_URL || 'http://localhost:3001'}"
+    };
+  </script>
   <script type="module" src="/apps/web/src/pwa/register-service-worker.js"></script>
   <script type="module" src="/apps/web/src/shell-entry.js"></script>
 </head>

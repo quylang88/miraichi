@@ -1,4 +1,7 @@
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { handleHealth } from './routes/health.js';
 import { handleMatches } from './routes/matches.js';
 import { handlePredictions } from './routes/predictions.mock.js';
@@ -8,7 +11,48 @@ import { handleIngestionStatus } from './routes/ingestion-status.mock.js';
 import { handleMockPredict } from './routes/mock-prediction.js';
 import { handleMockExplain } from './routes/mock-explanation.js';
 
-const PORT = 3001;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function findRootDir(startDir: string): string {
+  let dir = startDir;
+  while (dir !== path.dirname(dir)) {
+    if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) {
+      return dir;
+    }
+    dir = path.dirname(dir);
+  }
+  return startDir;
+}
+
+const ROOT_DIR = findRootDir(__dirname);
+
+function loadEnv(rootDir: string) {
+  const envFiles = ['.env', '.env.local'];
+  for (const file of envFiles) {
+    const filePath = path.join(rootDir, file);
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf8');
+      for (const line of content.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const index = trimmed.indexOf('=');
+        if (index > 0) {
+          const key = trimmed.slice(0, index).trim();
+          const value = trimmed.slice(index + 1).trim();
+          const unquoted = value.replace(/^['"]|['"]$/g, '');
+          if (key && process.env[key] === undefined) {
+            process.env[key] = unquoted;
+          }
+        }
+      }
+    }
+  }
+}
+
+loadEnv(ROOT_DIR);
+
+const PORT = process.env.PORT || 3001;
 
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url || '/', 'http://localhost');
