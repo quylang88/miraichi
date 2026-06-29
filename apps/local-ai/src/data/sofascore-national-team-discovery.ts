@@ -256,3 +256,120 @@ export async function buildSofascoreDiscoveryReport(
     ]
   };
 }
+
+export type OddsSourceStatus =
+  | 'blocked_paid_or_keyed'
+  | 'blocked_keyed_or_unverified'
+  | 'rejected_national_team_coverage_missing'
+  | 'rejected_no_odds_fields';
+
+export type OddsSourceDiscovery = {
+  sourceId: 'the-odds-api' | 'api-football' | 'football-data-match-history' | 'sofascore';
+  discoveryQuestion: string;
+  currentConstraintStatus: OddsSourceStatus;
+  evidence: string;
+};
+
+export type OddsBaselineDiscoveryReport = {
+  reportId: 'phase-8-6b-odds-baseline-source-discovery';
+  phase: '8.6B';
+  status: 'blocked';
+  generatedAt: string;
+  bookmakerBaselineStatus: 'bookmaker_baseline_unavailable_under_current_constraints';
+  bookmakerBaselineAvailableNow: false;
+  sources: OddsSourceDiscovery[];
+  blockedScope: string[];
+};
+
+export function buildOddsBaselineDiscoveryReport(options: { generatedAt?: string } = {}): OddsBaselineDiscoveryReport {
+  return {
+    reportId: 'phase-8-6b-odds-baseline-source-discovery',
+    phase: '8.6B',
+    status: 'blocked',
+    generatedAt: options.generatedAt ?? new Date().toISOString(),
+    bookmakerBaselineStatus: 'bookmaker_baseline_unavailable_under_current_constraints',
+    bookmakerBaselineAvailableNow: false,
+    sources: [
+      {
+        sourceId: 'the-odds-api',
+        discoveryQuestion: 'Can historical 1X2 national-team odds be used under current owner-approved constraints?',
+        currentConstraintStatus: 'blocked_paid_or_keyed',
+        evidence: 'Historical odds require keyed or paid access and are not approved for Phase 8.6B.'
+      },
+      {
+        sourceId: 'api-football',
+        discoveryQuestion: 'Can API-Football expose historical 1X2 odds for target national-team competitions without adding secrets?',
+        currentConstraintStatus: 'blocked_keyed_or_unverified',
+        evidence: 'Coverage and quota require provider verification with a key; Phase 8.6B does not approve keys or secrets.'
+      },
+      {
+        sourceId: 'football-data-match-history',
+        discoveryQuestion: 'Can football-data MatchHistory provide national-team tournament odds?',
+        currentConstraintStatus: 'rejected_national_team_coverage_missing',
+        evidence: 'The local soccerdata MatchHistory league list is club-league only in the current environment.'
+      },
+      {
+        sourceId: 'sofascore',
+        discoveryQuestion: 'Does the current Sofascore discovery path include pre-match 1X2 odds fields?',
+        currentConstraintStatus: 'rejected_no_odds_fields',
+        evidence: 'The accessible schedule/event path provides fixture, team, score, and status fields, not bookmaker odds.'
+      }
+    ],
+    blockedScope: [
+      'api_keys_or_paid_provider',
+      'bookmaker_baseline_faking',
+      'betting_recommendation',
+      'wagering_integration'
+    ]
+  };
+}
+
+export function generateSofascoreDiscoveryMarkdown(
+  discoveryReport: SofascoreDiscoveryReport,
+  oddsReport: OddsBaselineDiscoveryReport
+): string {
+  const competitionRows = discoveryReport.competitions
+    .map(
+      (competition) =>
+        `| ${competition.competitionId} | ${competition.displayName} | ${competition.sofascoreUniqueTournamentId} | ${competition.discoveryStatus} | ${competition.completedSeasonCount} | ${competition.futureSeasonCount} | ${competition.completedEventCount} | ${competition.rejectedEventCount} |`
+    )
+    .join('\n');
+
+  const oddsRows = oddsReport.sources
+    .map((source) => `| ${source.sourceId} | ${source.currentConstraintStatus} | ${source.evidence} |`)
+    .join('\n');
+
+  return `# Phase 8.6B Sofascore National-Team Source Discovery Report
+
+## Status
+- Discovery report status: ${discoveryReport.status}
+- Odds report status: ${oddsReport.status}
+- Generated at: ${discoveryReport.generatedAt}
+- Bookmaker baseline available now: ${oddsReport.bookmakerBaselineAvailableNow ? 'yes' : 'no'}
+- Bookmaker baseline status: ${oddsReport.bookmakerBaselineStatus}
+
+## Sofascore Competition Discovery
+| Competition ID | Display Name | Sofascore ID | Status | Completed Seasons | Future Seasons | Completed Events | Rejected Events |
+| --- | --- | ---: | --- | ---: | ---: | ---: | ---: |
+${competitionRows}
+
+## Odds Baseline Discovery
+| Source | Status | Evidence |
+| --- | --- | --- |
+${oddsRows}
+
+## Verification
+- \`pnpm run phase8:sofascore-national-team-discovery\`: PASS
+- \`pnpm run verify:local\`: Required external verification
+- \`pnpm run test:integration\`: Not required for this discovery/reporting phase
+
+## Explicit Non-Authorizations
+- No main training dataset merge.
+- No fake bookmaker baseline.
+- No model selection.
+- No runtime prediction surface.
+- No betting recommendation.
+- No API keys, secrets, or paid providers.
+- No club competition expansion.
+`;
+}

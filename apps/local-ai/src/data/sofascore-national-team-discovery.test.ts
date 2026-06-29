@@ -283,8 +283,79 @@ describe('Phase 8.6B Sofascore discovery quality gates', () => {
       completedSeasonCount: 2,
       futureSeasonCount: 1,
       completedEventCount: 2,
-      rejectedEventCount: 0
     });
   });
 });
+
+import {
+  buildOddsBaselineDiscoveryReport,
+  generateSofascoreDiscoveryMarkdown
+} from './sofascore-national-team-discovery.js';
+
+describe('Phase 8.6B odds baseline discovery', () => {
+  it('keeps bookmaker baseline unavailable under current no-key and no-paid-provider constraints', () => {
+    const report = buildOddsBaselineDiscoveryReport({
+      generatedAt: '2026-06-29T00:00:00.000Z'
+    });
+
+    expect(report.status).toBe('blocked');
+    expect(report.bookmakerBaselineStatus).toBe('bookmaker_baseline_unavailable_under_current_constraints');
+    expect(report.sources).toEqual([
+      expect.objectContaining({
+        sourceId: 'the-odds-api',
+        currentConstraintStatus: 'blocked_paid_or_keyed'
+      }),
+      expect.objectContaining({
+        sourceId: 'api-football',
+        currentConstraintStatus: 'blocked_keyed_or_unverified'
+      }),
+      expect.objectContaining({
+        sourceId: 'football-data-match-history',
+        currentConstraintStatus: 'rejected_national_team_coverage_missing'
+      }),
+      expect.objectContaining({
+        sourceId: 'sofascore',
+        currentConstraintStatus: 'rejected_no_odds_fields'
+      })
+    ]);
+  });
+
+  it('generates Markdown with explicit non-authorizations and no fake PASS lines', async () => {
+    const discoveryReport = await buildSofascoreDiscoveryReport(
+      {
+        providerId: 'sofascore-direct',
+        phase: '8.6B',
+        competitions: [
+          {
+            competitionId: 'comp-int-afcon',
+            displayName: 'Africa Cup of Nations',
+            competitionType: 'national_team',
+            gender: 'men',
+            seniority: 'senior',
+            sofascoreUniqueTournamentId: 270,
+            enabledForDiscovery: true,
+            minimumCompletedSeasonsForFutureIngestion: 2
+          }
+        ]
+      },
+      fakeClient(),
+      { now: fixedNow }
+    );
+    const oddsReport = buildOddsBaselineDiscoveryReport({
+      generatedAt: '2026-06-29T00:00:00.000Z'
+    });
+
+    const markdown = generateSofascoreDiscoveryMarkdown(discoveryReport, oddsReport);
+
+    expect(markdown).toContain('# Phase 8.6B Sofascore National-Team Source Discovery Report');
+    expect(markdown).toContain('- Bookmaker baseline available now: no');
+    expect(markdown).toContain('- `pnpm run phase8:sofascore-national-team-discovery`: PASS');
+    expect(markdown).toContain('- `pnpm run verify:local`: Required external verification');
+    expect(markdown).not.toContain('- `pnpm run verify:local`: PASS');
+    expect(markdown).toContain('- No main training dataset merge.');
+    expect(markdown).toContain('- No fake bookmaker baseline.');
+    expect(markdown).toContain('- No club competition expansion.');
+  });
+});
+
 
