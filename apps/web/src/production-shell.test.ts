@@ -406,3 +406,259 @@ describe('production shell entry match feed wiring', () => {
     expect(source).not.toContain("Team Alpha vs Team Beta");
   });
 });
+
+describe('production shell match filters panel', () => {
+  const testMatchFeed = {
+    status: 'ready' as const,
+    date: '2026-06-30',
+    warnings: [] as string[],
+    matches: [
+      {
+        id: 'm1',
+        sourceProviderId: 'api-football' as const,
+        providerFixtureId: '101',
+        competitionId: 'c1',
+        competitionName: 'FIFA World Cup',
+        seasonId: 's2026',
+        round: 'Group A',
+        status: 'scheduled' as const,
+        statusLabel: 'Scheduled',
+        kickoffTime: '2026-06-30T14:00:00.000Z',
+        homeTeam: { id: 't1', name: 'Japan' },
+        awayTeam: { id: 't2', name: 'Vietnam' },
+        score: null,
+        venueName: 'Stadium A',
+        elapsedMinute: null
+      },
+      {
+        id: 'm2',
+        sourceProviderId: 'api-football' as const,
+        providerFixtureId: '102',
+        competitionId: 'c2',
+        competitionName: 'English Premier League',
+        seasonId: 's2026',
+        round: 'Matchday 1',
+        status: 'in_play' as const,
+        statusLabel: 'Live',
+        kickoffTime: '2026-06-30T16:00:00.000Z',
+        homeTeam: { id: 't3', name: 'Arsenal' },
+        awayTeam: { id: 't4', name: 'Chelsea' },
+        score: { home: 1, away: 0 },
+        venueName: 'Stadium B',
+        elapsedMinute: 45
+      },
+      {
+        id: 'm3',
+        sourceProviderId: 'api-football' as const,
+        providerFixtureId: '103',
+        competitionId: 'c3',
+        competitionName: 'Women Friendly',
+        seasonId: 's2026',
+        round: 'Friendly',
+        status: 'scheduled' as const,
+        statusLabel: 'Scheduled',
+        kickoffTime: '2026-06-30T10:00:00.000Z',
+        homeTeam: { id: 't5', name: 'USA Women' },
+        awayTeam: { id: 't6', name: 'Germany' },
+        score: null,
+        venueName: 'Stadium C',
+        elapsedMinute: null
+      }
+    ]
+  };
+
+  it('renders the filter panel with radio inputs and checkbox lists', () => {
+    const html = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: testMatchFeed,
+      isFilterPanelOpen: true,
+      filters: {
+        groupby: 'league',
+        type: 'all',
+        gender: 'all',
+        selectedLeagues: new Set<string>()
+      }
+    });
+
+    expect(html).toContain('id="matches-filter-panel"');
+    expect(html).not.toContain('id="matches-filter-panel" hidden');
+    expect(html).toContain('name="filter-groupby" value="league" checked');
+    expect(html).toContain('name="filter-type" value="all" checked');
+    expect(html).toContain('name="filter-gender" value="all" checked');
+    
+    // Check dynamic league checklist population
+    expect(html).toContain('value="FIFA World Cup"');
+    expect(html).toContain('value="English Premier League"');
+    expect(html).toContain('value="Women Friendly"');
+  });
+
+  const getMatchesPanelHtml = (html: string) => {
+    const start = html.indexOf('id="screen-matches"');
+    const end = html.indexOf('</section>', start);
+    return html.slice(start, end);
+  };
+
+  it('filters matches by LIVE state', () => {
+    const html = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: testMatchFeed,
+      isLiveFilterActive: true
+    });
+    const panel = getMatchesPanelHtml(html);
+
+    expect(panel).toContain('Arsenal vs Chelsea');
+    expect(panel).not.toContain('Japan vs Vietnam');
+    expect(panel).not.toContain('USA Women vs Germany');
+  });
+
+  it('filters matches by search query', () => {
+    const html = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: testMatchFeed,
+      searchQuery: 'Japan'
+    });
+    const panel = getMatchesPanelHtml(html);
+
+    expect(panel).toContain('Japan vs Vietnam');
+    expect(panel).not.toContain('Arsenal vs Chelsea');
+    expect(panel).not.toContain('USA Women vs Germany');
+  });
+
+  it('filters matches by competition type (national vs club)', () => {
+    const htmlNational = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: testMatchFeed,
+      filters: {
+        groupby: 'league',
+        type: 'national',
+        gender: 'all',
+        selectedLeagues: new Set<string>()
+      }
+    });
+    const panelNational = getMatchesPanelHtml(htmlNational);
+    expect(panelNational).toContain('Japan vs Vietnam'); // FIFA World Cup is national
+    expect(panelNational).toContain('USA Women vs Germany'); // Women Friendly is national
+    expect(panelNational).not.toContain('Arsenal vs Chelsea'); // English Premier League is club
+
+    const htmlClub = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: testMatchFeed,
+      filters: {
+        groupby: 'league',
+        type: 'club',
+        gender: 'all',
+        selectedLeagues: new Set<string>()
+      }
+    });
+    const panelClub = getMatchesPanelHtml(htmlClub);
+    expect(panelClub).not.toContain('Japan vs Vietnam');
+    expect(panelClub).not.toContain('USA Women vs Germany');
+    expect(panelClub).toContain('Arsenal vs Chelsea');
+  });
+
+  it('filters matches by gender (men vs women)', () => {
+    const htmlWomen = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: testMatchFeed,
+      filters: {
+        groupby: 'league',
+        type: 'all',
+        gender: 'women',
+        selectedLeagues: new Set<string>()
+      }
+    });
+    const panelWomen = getMatchesPanelHtml(htmlWomen);
+    expect(panelWomen).toContain('USA Women vs Germany');
+    expect(panelWomen).not.toContain('Japan vs Vietnam');
+    expect(panelWomen).not.toContain('Arsenal vs Chelsea');
+
+    const htmlMen = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: testMatchFeed,
+      filters: {
+        groupby: 'league',
+        type: 'all',
+        gender: 'men',
+        selectedLeagues: new Set<string>()
+      }
+    });
+    const panelMen = getMatchesPanelHtml(htmlMen);
+    expect(panelMen).not.toContain('USA Women vs Germany');
+    expect(panelMen).toContain('Japan vs Vietnam');
+    expect(panelMen).toContain('Arsenal vs Chelsea');
+  });
+
+  it('filters matches by selected leagues', () => {
+    const htmlLeagues = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: testMatchFeed,
+      filters: {
+        groupby: 'league',
+        type: 'all',
+        gender: 'all',
+        selectedLeagues: new Set<string>(['English Premier League', 'FIFA World Cup'])
+      }
+    });
+    const panelLeagues = getMatchesPanelHtml(htmlLeagues);
+    expect(panelLeagues).toContain('Japan vs Vietnam');
+    expect(panelLeagues).toContain('Arsenal vs Chelsea');
+    expect(panelLeagues).not.toContain('USA Women vs Germany');
+  });
+
+  it('groups matches by league and sorts by kickoff time when groupby is time', () => {
+    const htmlTime = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: testMatchFeed,
+      filters: {
+        groupby: 'time',
+        type: 'all',
+        gender: 'all',
+        selectedLeagues: new Set<string>()
+      }
+    });
+    
+    // When grouped by time, there is only one date group header, e.g. "2026-06-30"
+    expect(htmlTime).toContain('<div class="group-label">2026-06-30</div>');
+    // Ensure all matches are rendered
+    expect(htmlTime).toContain('USA Women vs Germany');
+    expect(htmlTime).toContain('Japan vs Vietnam');
+    expect(htmlTime).toContain('Arsenal vs Chelsea');
+
+    const htmlLeague = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: testMatchFeed,
+      filters: {
+        groupby: 'league',
+        type: 'all',
+        gender: 'all',
+        selectedLeagues: new Set<string>()
+      }
+    });
+    // When grouped by league, there are league group headers:
+    expect(htmlLeague).toContain('<div class="group-label">FIFA World Cup</div>');
+    expect(htmlLeague).toContain('<div class="group-label">English Premier League</div>');
+    expect(htmlLeague).toContain('<div class="group-label">Women Friendly</div>');
+  });
+
+  it('renders matches empty state when no matches match filters', () => {
+    const html = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: testMatchFeed,
+      searchQuery: 'NonExistentTeamName'
+    });
+
+    expect(html).toContain('style="display: block;"');
+    expect(html).toContain('No provider matches match this search.');
+  });
+});

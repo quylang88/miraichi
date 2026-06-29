@@ -8,6 +8,7 @@ import { t, type TranslateFunction } from '../services/i18n-service.js';
 import { renderBottomNavigation } from './bottom-navigation.js';
 import { escapeHtml } from './html.js';
 import type { AppMatch, MatchFeedViewState } from '../services/match-feed-service.js';
+import { NATIONAL_COMPETITION_KEYWORDS } from '../../../../packages/config/src/competition-registry.mock.js';
 
 const icons = Object.freeze({
   back: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -314,11 +315,41 @@ function renderTodayPanel(
   `;
 }
 
+function isNationalMatch(competitionName: string): boolean {
+  const comp = competitionName.toLowerCase();
+  return NATIONAL_COMPETITION_KEYWORDS.some(keyword => comp.includes(keyword));
+}
+
+function isWomenMatch(match: AppMatch): boolean {
+  const comp = match.competitionName.toLowerCase();
+  const home = match.homeTeam.name.toLowerCase();
+  const away = match.awayTeam.name.toLowerCase();
+  const check = (str: string) => {
+    if (str.includes('women') || str.includes('wmn')) return true;
+    return /\s+w\b/i.test(str);
+  };
+  return check(comp) || check(home) || check(away);
+}
+
 function renderMatchesPanel(
   activeTabId: ProductionNavigationTabId,
   translate: TranslateFunction,
   matchFeed: MatchFeedViewState,
-  timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'
+  timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh' = 'local',
+  filters: {
+    groupby: string;
+    type: string;
+    gender: string;
+    selectedLeagues: Set<string>;
+  } = {
+    groupby: 'league',
+    type: 'all',
+    gender: 'all',
+    selectedLeagues: new Set<string>()
+  },
+  searchQuery = '',
+  isLiveFilterActive = false,
+  isFilterPanelOpen = false
 ): string {
   const ribbonDates = getRibbonDates(matchFeed.date);
   const datesHtml = ribbonDates
@@ -332,6 +363,94 @@ function renderMatchesPanel(
       `;
     })
     .join('');
+
+  let filteredMatches = matchFeed.status === 'ready' ? matchFeed.matches : [];
+
+  // 1. LIVE filter
+  if (isLiveFilterActive) {
+    filteredMatches = filteredMatches.filter(m => m.status === 'in_play');
+  }
+
+  // 2. Search query (case-insensitive substring on team names)
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    filteredMatches = filteredMatches.filter(m =>
+      m.homeTeam.name.toLowerCase().includes(q) ||
+      m.awayTeam.name.toLowerCase().includes(q)
+    );
+  }
+
+  // 3. Competition Type
+  if (filters.type === 'national') {
+    filteredMatches = filteredMatches.filter(m => isNationalMatch(m.competitionName));
+  } else if (filters.type === 'club') {
+    filteredMatches = filteredMatches.filter(m => !isNationalMatch(m.competitionName));
+  }
+
+  // 4. Gender
+  if (filters.gender === 'women') {
+    filteredMatches = filteredMatches.filter(m => isWomenMatch(m));
+  } else if (filters.gender === 'men') {
+    filteredMatches = filteredMatches.filter(m => !isWomenMatch(m));
+  }
+
+  // 5. Selected leagues
+  if (filters.selectedLeagues && filters.selectedLeagues.size > 0) {
+    filteredMatches = filteredMatches.filter(m => filters.selectedLeagues.has(m.competitionName));
+  }
+
+  const uniqueLeagues = matchFeed.status === 'ready'
+    ? Array.from(new Set(matchFeed.matches.map(m => m.competitionName))).sort()
+    : [];
+
+  const leaguesHtml = uniqueLeagues.map(league => {
+    const isChecked = filters.selectedLeagues.has(league) ? 'checked' : '';
+    return `
+      <label class="filter-option">
+        <input type="checkbox" name="filter-league" value="${escapeHtml(league)}" ${isChecked}>
+        <span>${escapeHtml(league)}</span>
+      </label>
+    `;
+  }).join('');
+
+  let matchesHtml = '';
+  if (matchFeed.status === 'ready') {
+    if (filteredMatches.length > 0) {
+      if (filters.groupby === 'league') {
+        const groups: Record<string, AppMatch[]> = {};
+        for (const match of filteredMatches) {
+          if (!groups[match.competitionName]) {
+            groups[match.competitionName] = [];
+          }
+          groups[match.competitionName].push(match);
+        }
+
+        const sortedLeagues = Object.keys(groups).sort();
+        matchesHtml = sortedLeagues.map(league => {
+          const leagueMatches = groups[league].sort((a, b) => a.kickoffTime.localeCompare(b.kickoffTime));
+          return `
+            <div class="date-group">
+              <div class="group-label">${escapeHtml(league)}</div>
+              ${leagueMatches.map(m => renderProviderMatchRow(m, timezone)).join('')}
+            </div>
+          `;
+        }).join('');
+      } else {
+        // groupby time: sort all by kickoffTime
+        const sortedMatches = [...filteredMatches].sort((a, b) => a.kickoffTime.localeCompare(b.kickoffTime));
+        matchesHtml = `
+          <div class="date-group">
+            <div class="group-label">${escapeHtml(matchFeed.date)}</div>
+            ${sortedMatches.map(m => renderProviderMatchRow(m, timezone)).join('')}
+          </div>
+        `;
+      }
+    }
+  } else {
+    if (matchFeed.status === 'loading') matchesHtml = renderFeedLoading(matchFeed);
+    else if (matchFeed.status === 'unavailable') matchesHtml = renderFeedUnavailable(matchFeed);
+    else if (matchFeed.status === 'empty') matchesHtml = renderFeedEmpty(matchFeed);
+  }
 
   return `
     <style>
@@ -462,6 +581,96 @@ function renderMatchesPanel(
         color: var(--accent-color-danger);
         box-shadow: 0 0 8px rgba(255, 69, 58, 0.2);
       }
+
+      .filter-panel {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+        background: var(--surface-color-secondary);
+        border: 1px solid var(--border-color-strong);
+        border-radius: var(--radius-control);
+        margin-top: var(--spacing-xs);
+        margin-bottom: var(--spacing-md);
+        transition: all 0.3s ease-in-out;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .filter-panel[hidden] {
+        display: none !important;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+      }
+
+      .filter-group.full-width {
+        grid-column: 1 / -1;
+      }
+
+      .filter-group-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-color-muted);
+        margin-bottom: 2px;
+      }
+
+      .filter-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+      }
+
+      .filter-option {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        background: var(--surface-color-primary);
+        border: 1px solid var(--border-color-strong);
+        border-radius: var(--radius-control);
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: var(--text-color-primary);
+        transition: all 0.2s ease;
+        user-select: none;
+      }
+
+      .filter-option:hover {
+        background: var(--surface-color-tertiary);
+        border-color: var(--text-color-muted);
+      }
+
+      .filter-option input[type="radio"],
+      .filter-option input[type="checkbox"] {
+        margin: 0;
+        cursor: pointer;
+        accent-color: var(--accent-color-primary);
+      }
+
+      .leagues-checklist {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+        max-height: 150px;
+        overflow-y: auto;
+        padding-right: var(--spacing-xs);
+        scrollbar-width: thin;
+      }
+
+      .leagues-checklist::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .leagues-checklist::-webkit-scrollbar-thumb {
+        background: var(--border-color-strong);
+        border-radius: 2px;
+      }
     </style>
 
     <section class="${getScreenClass('matches', activeTabId)}" id="screen-matches" data-shell-tab-panel="matches" aria-labelledby="matches-title">
@@ -493,12 +702,68 @@ function renderMatchesPanel(
         <button class="filter-button" type="button" aria-label="Open match filters">${icons.filter}</button>
       </div>
 
-      <div class="date-group">
-        <div class="group-label">${escapeHtml(matchFeed.date)}</div>
-        ${renderMatchFeedRows(matchFeed, timezone)}
+      <div class="filter-panel" id="matches-filter-panel" ${isFilterPanelOpen ? '' : 'hidden'}>
+        <div class="filter-group">
+          <span class="filter-group-title">Sort & Group</span>
+          <div class="filter-options">
+            <label class="filter-option">
+              <input type="radio" name="filter-groupby" value="league" ${filters.groupby === 'league' ? 'checked' : ''}>
+              <span>League</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="filter-groupby" value="time" ${filters.groupby === 'time' ? 'checked' : ''}>
+              <span>Time</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-group-title">Competition Type</span>
+          <div class="filter-options">
+            <label class="filter-option">
+              <input type="radio" name="filter-type" value="all" ${filters.type === 'all' ? 'checked' : ''}>
+              <span>All</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="filter-type" value="national" ${filters.type === 'national' ? 'checked' : ''}>
+              <span>National</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="filter-type" value="club" ${filters.type === 'club' ? 'checked' : ''}>
+              <span>Club</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-group-title">Gender</span>
+          <div class="filter-options">
+            <label class="filter-option">
+              <input type="radio" name="filter-gender" value="all" ${filters.gender === 'all' ? 'checked' : ''}>
+              <span>All</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="filter-gender" value="men" ${filters.gender === 'men' ? 'checked' : ''}>
+              <span>Men</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="filter-gender" value="women" ${filters.gender === 'women' ? 'checked' : ''}>
+              <span>Women</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="filter-group full-width">
+          <span class="filter-group-title">Leagues</span>
+          <div id="filter-leagues-list" class="leagues-checklist">
+            ${leaguesHtml}
+          </div>
+        </div>
       </div>
 
-      <div class="empty-state" id="matches-empty">No provider matches match this search.</div>
+      ${matchesHtml}
+
+      <div class="empty-state" id="matches-empty" style="display: ${matchFeed.status === 'ready' && filteredMatches.length === 0 ? 'block' : 'none'};">No provider matches match this search.</div>
     </section>
   `;
 }
@@ -837,11 +1102,21 @@ const panelRenderers: Record<
     activeTabId: ProductionNavigationTabId,
     translate: TranslateFunction,
     matchFeed: MatchFeedViewState,
-    timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'
+    timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh',
+    filters?: {
+      groupby: string;
+      type: string;
+      gender: string;
+      selectedLeagues: Set<string>;
+    },
+    searchQuery?: string,
+    isLiveFilterActive?: boolean,
+    isFilterPanelOpen?: boolean
   ) => string
 > = Object.freeze({
   today: renderTodayPanel,
-  matches: renderMatchesPanel,
+  matches: (activeTabId, translate, matchFeed, timezone, filters, searchQuery, isLiveFilterActive, isFilterPanelOpen) =>
+    renderMatchesPanel(activeTabId, translate, matchFeed, timezone, filters, searchQuery, isLiveFilterActive, isFilterPanelOpen),
   bets: (activeTabId, translate) => renderBetsPanel(activeTabId, translate),
   bankroll: (activeTabId, translate) => renderBankrollPanel(activeTabId, translate),
   miraichi: (activeTabId, translate) => renderMiraichiPanel(activeTabId, translate)
@@ -851,16 +1126,45 @@ export function renderAppShell({
   activeTabId = 'today',
   translate = t,
   matchFeed = defaultMatchFeed,
-  timezone = 'local'
+  timezone = 'local',
+  filters = {
+    groupby: 'league',
+    type: 'all',
+    gender: 'all',
+    selectedLeagues: new Set<string>()
+  },
+  searchQuery = '',
+  isLiveFilterActive = false,
+  isFilterPanelOpen = false
 }: {
   readonly activeTabId?: string;
   readonly translate?: TranslateFunction;
   readonly matchFeed?: MatchFeedViewState;
   readonly timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh';
+  readonly filters?: {
+    groupby: string;
+    type: string;
+    gender: string;
+    selectedLeagues: Set<string>;
+  };
+  readonly searchQuery?: string;
+  readonly isLiveFilterActive?: boolean;
+  readonly isFilterPanelOpen?: boolean;
 } = {}): string {
   const safeActiveTabId = getSafeNavigationTabId(activeTabId);
   const activeTab = navigationTabs.find((tab: NavigationTab) => tab.id === safeActiveTabId) ?? navigationTabs[0];
-  const panels = navigationTabs.map((tab) => panelRenderers[tab.id](safeActiveTabId, translate, matchFeed, timezone)).join('');
+  const panels = navigationTabs.map((tab) =>
+    panelRenderers[tab.id](
+      safeActiveTabId,
+      translate,
+      matchFeed,
+      timezone,
+      filters,
+      searchQuery,
+      isLiveFilterActive,
+      isFilterPanelOpen
+    )
+  ).join('');
 
   return `
     <div class="production-page">

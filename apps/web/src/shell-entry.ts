@@ -18,6 +18,14 @@ let matchDetailReturnScreen: ProductionNavigationTabId = 'today';
 let currentSearchQuery = '';
 let isLiveFilterActive = false;
 
+const activeFilters = {
+  groupby: 'league',
+  type: 'all',
+  gender: 'all',
+  selectedLeagues: new Set<string>()
+};
+let isFilterPanelOpen = false;
+
 function todayLocalDate(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -44,11 +52,25 @@ function render(activeTabId: string): void {
   const safeActiveTabId = getSafeNavigationTabId(activeTabId);
   currentScreenName = safeActiveTabId;
   matchDetailReturnScreen = safeActiveTabId;
+
+  // Save focus state
+  const activeElementId = document.activeElement?.id;
+  let selectionStart: number | null = null;
+  let selectionEnd: number | null = null;
+  if (document.activeElement instanceof HTMLInputElement) {
+    selectionStart = document.activeElement.selectionStart;
+    selectionEnd = document.activeElement.selectionEnd;
+  }
+
   appRoot.innerHTML = renderAppShell({
     activeTabId: safeActiveTabId,
     translate: t,
     matchFeed: matchFeedState,
-    timezone: settingsService.getSettings().timezone
+    timezone: settingsService.getSettings().timezone,
+    filters: activeFilters,
+    searchQuery: currentSearchQuery,
+    isLiveFilterActive,
+    isFilterPanelOpen
   });
   appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settingsService.getSettings().locale);
 
@@ -61,7 +83,17 @@ function render(activeTabId: string): void {
   if (liveFilterBtn && isLiveFilterActive) {
     liveFilterBtn.classList.add('active');
   }
-  updateMatchFilters();
+
+  // Restore focus state
+  if (activeElementId) {
+    const elementToFocus = document.getElementById(activeElementId);
+    if (elementToFocus) {
+      elementToFocus.focus();
+      if (elementToFocus instanceof HTMLInputElement && selectionStart !== null && selectionEnd !== null) {
+        elementToFocus.setSelectionRange(selectionStart, selectionEnd);
+      }
+    }
+  }
 }
 
 function updateUrl(tabId: ProductionNavigationTabId): void {
@@ -175,32 +207,7 @@ function updateAddFormState(): void {
   saveDraftShell.disabled = !(market && odds && stake);
 }
 
-function updateMatchFilters(): void {
-  const searchInput = document.getElementById('match-search') as HTMLInputElement | null;
-  const liveFilterBtn = document.getElementById('live-filter-btn');
-  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
-  const isLiveOnly = liveFilterBtn ? liveFilterBtn.classList.contains('active') : false;
-
-  const rows = Array.from(appRoot.querySelectorAll<HTMLElement>('[data-match-row]'));
-  const matchesEmpty = document.getElementById('matches-empty');
-  let visibleCount = 0;
-
-  rows.forEach((row) => {
-    const matchesQuery = (row.textContent ?? '').toLowerCase().includes(query);
-    const matchesLive = !isLiveOnly || row.dataset.status === 'in_play';
-    const visible = matchesQuery && matchesLive;
-
-    row.style.display = visible ? '' : 'none';
-    if (visible) {
-      visibleCount += 1;
-    }
-  });
-
-  if (matchesEmpty) {
-    const showEmpty = matchFeedState.status === 'ready' && visibleCount === 0;
-    matchesEmpty.style.display = showEmpty ? 'block' : 'none';
-  }
-}
+// Removed updateMatchFilters as filtering is done dynamically in renderAppShell before rendering
 
 function setSegmentActive(button: HTMLElement): void {
   const group = button.closest('.segmented');
@@ -306,9 +313,16 @@ appRoot.addEventListener('click', (event) => {
   // Handle LIVE Filter Button Click
   const liveFilterTarget = eventTarget.closest<HTMLElement>('#live-filter-btn');
   if (liveFilterTarget) {
-    liveFilterTarget.classList.toggle('active');
-    isLiveFilterActive = liveFilterTarget.classList.contains('active');
-    updateMatchFilters();
+    isLiveFilterActive = !isLiveFilterActive;
+    render(currentScreenName);
+    return;
+  }
+
+  // Handle Filter Button Click
+  const filterBtn = eventTarget.closest<HTMLElement>('.filter-button');
+  if (filterBtn) {
+    isFilterPanelOpen = !isFilterPanelOpen;
+    render(currentScreenName);
     return;
   }
 
@@ -394,12 +408,40 @@ appRoot.addEventListener('input', (event) => {
 
   if (target instanceof HTMLInputElement && target.id === 'match-search') {
     currentSearchQuery = target.value;
-    updateMatchFilters();
+    render(currentScreenName);
   }
 });
 
 appRoot.addEventListener('change', (event) => {
   const target = event.target;
+  if (target instanceof HTMLInputElement && target.name === 'filter-groupby') {
+    activeFilters.groupby = target.value;
+    render(currentScreenName);
+    return;
+  }
+
+  if (target instanceof HTMLInputElement && target.name === 'filter-type') {
+    activeFilters.type = target.value;
+    render(currentScreenName);
+    return;
+  }
+
+  if (target instanceof HTMLInputElement && target.name === 'filter-gender') {
+    activeFilters.gender = target.value;
+    render(currentScreenName);
+    return;
+  }
+
+  if (target instanceof HTMLInputElement && target.name === 'filter-league') {
+    if (target.checked) {
+      activeFilters.selectedLeagues.add(target.value);
+    } else {
+      activeFilters.selectedLeagues.delete(target.value);
+    }
+    render(currentScreenName);
+    return;
+  }
+
   if (target instanceof HTMLInputElement && target.id === 'date-picker-input') {
     const selectedDate = target.value;
     if (selectedDate) {

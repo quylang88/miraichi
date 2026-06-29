@@ -18,6 +18,19 @@ export const COMPETITION_REGISTRY = {
   }
 };
 
+export const NATIONAL_COMPETITION_KEYWORDS = [
+  'world cup',
+  'word cup',
+  'euro',
+  'copa america',
+  'nations league',
+  'gold cup',
+  'asian cup',
+  'africa cup',
+  'friendly',
+  'qualifiers'
+];
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
