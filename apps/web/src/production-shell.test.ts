@@ -74,7 +74,34 @@ describe('production PWA shell rendering', () => {
   });
 
   it('keeps production aligned with the accepted Black Apple Ledger shell structure', () => {
-    const html = renderAppShell({ activeTabId: 'today', translate: t });
+    const html = renderAppShell({
+      activeTabId: 'today',
+      translate: t,
+      matchFeed: {
+        status: 'ready',
+        date: '2026-06-29',
+        warnings: [],
+        matches: [
+          {
+            id: 'api-football-fixture-1',
+            sourceProviderId: 'api-football',
+            providerFixtureId: '1',
+            competitionId: 'api-football-league-1',
+            competitionName: 'FIFA World Cup',
+            seasonId: 'api-football-season-2026',
+            round: 'Group Stage - 1',
+            status: 'scheduled',
+            statusLabel: 'Not Started',
+            kickoffTime: '2026-06-29T10:00:00.000Z',
+            homeTeam: { id: 'api-football-team-1', name: 'Japan' },
+            awayTeam: { id: 'api-football-team-2', name: 'Vietnam' },
+            score: null,
+            venueName: 'Tokyo Stadium',
+            elapsedMinute: null
+          }
+        ]
+      }
+    });
 
     expect(html).not.toContain('class="top-bar"');
     expect(html).not.toContain('class="notice"');
@@ -188,5 +215,76 @@ describe('production shell settings and i18n boundaries', () => {
   it('keeps translation lookups as a fallback-first stub', () => {
     expect(t('nav.today', 'Today')).toBe('Today');
     expect(t('settings.language', 'Language')).toBe('Language');
+  });
+});
+
+describe('production shell live match feed rendering', () => {
+  it('renders loading and unavailable states for API-Football feed', () => {
+    const loadingHtml = renderAppShell({
+      activeTabId: 'today',
+      translate: t,
+      matchFeed: { status: 'loading', date: '2026-06-29' }
+    });
+    expect(loadingHtml).toContain('Loading match feed');
+
+    const unavailableHtml = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: {
+        status: 'unavailable',
+        date: '2026-06-29',
+        reason: 'API_FOOTBALL_KEY is required for API-Football match feed.',
+        warnings: ['api_football_key_missing']
+      }
+    });
+    expect(unavailableHtml).toContain('Provider setup required');
+    expect(unavailableHtml).toContain('API_FOOTBALL_KEY is required for API-Football match feed.');
+  });
+
+  it('renders real provider matches and removes visible hardcoded live feed labels', () => {
+    const html = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: {
+        status: 'ready',
+        date: '2026-06-29',
+        warnings: [],
+        matches: [
+          {
+            id: 'api-football-fixture-1',
+            sourceProviderId: 'api-football',
+            providerFixtureId: '1',
+            competitionId: 'api-football-league-1',
+            competitionName: 'FIFA World Cup',
+            seasonId: 'api-football-season-2026',
+            round: 'Group Stage - 1',
+            status: 'scheduled',
+            statusLabel: 'Not Started',
+            kickoffTime: '2026-06-29T10:00:00.000Z',
+            homeTeam: { id: 'api-football-team-1', name: 'Japan' },
+            awayTeam: { id: 'api-football-team-2', name: 'Vietnam' },
+            score: null,
+            venueName: 'Tokyo Stadium',
+            elapsedMinute: null
+          }
+        ]
+      }
+    });
+
+    expect(html).toContain('Japan vs Vietnam');
+    expect(html).toContain('FIFA World Cup');
+
+    const todayPanelStart = html.indexOf('id="screen-today"');
+    const todayPanelEnd = html.indexOf('</section>', todayPanelStart);
+    const todayPanelHtml = html.slice(todayPanelStart, todayPanelEnd);
+
+    const matchesPanelStart = html.indexOf('id="screen-matches"');
+    const matchesPanelEnd = html.indexOf('</section>', matchesPanelStart);
+    const matchesPanelHtml = html.slice(matchesPanelStart, matchesPanelEnd);
+
+    expect(todayPanelHtml).not.toContain('Team Alpha vs Team Beta');
+    expect(todayPanelHtml).not.toContain('Team Gamma vs Team Delta');
+    expect(matchesPanelHtml).not.toContain('Team Alpha vs Team Beta');
+    expect(matchesPanelHtml).not.toContain('Team Gamma vs Team Delta');
   });
 });

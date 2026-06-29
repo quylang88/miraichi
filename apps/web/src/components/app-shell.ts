@@ -7,6 +7,7 @@ import {
 import { t, type TranslateFunction } from '../services/i18n-service.js';
 import { renderBottomNavigation } from './bottom-navigation.js';
 import { escapeHtml } from './html.js';
+import type { AppMatch, MatchFeedViewState } from '../services/match-feed-service.js';
 
 const icons = Object.freeze({
   back: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -31,6 +32,113 @@ export function getTodayDateTileParts(date = new Date()): { readonly day: string
 
 function getScreenClass(tabId: ProductionNavigationTabId, activeTabId: ProductionNavigationTabId): string {
   return tabId === activeTabId ? 'screen active' : 'screen';
+}
+
+const defaultMatchFeed: MatchFeedViewState = Object.freeze({
+  status: 'loading',
+  date: new Date().toISOString().slice(0, 10)
+});
+
+function formatKickoffTime(isoValue: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'UTC'
+  }).format(new Date(isoValue));
+}
+
+function matchTitle(match: AppMatch): string {
+  return `${match.homeTeam.name} vs ${match.awayTeam.name}`;
+}
+
+function matchMeta(match: AppMatch): string {
+  const score = match.score ? `Score ${match.score.home}-${match.score.away}` : `Kickoff ${formatKickoffTime(match.kickoffTime)} UTC`;
+  const round = match.round ? ` · ${match.round}` : '';
+  return `${match.competitionName}${round} · ${score} · ${match.statusLabel}`;
+}
+
+function renderFeedUnavailable(feed: Extract<MatchFeedViewState, { status: 'unavailable' }>): string {
+  return `
+    <section class="note-card warning" data-match-feed-state="unavailable">
+      <div class="note-eyebrow">Provider setup required</div>
+      <div class="note-title">API-Football match feed is unavailable.</div>
+      <p class="note-copy">${escapeHtml(feed.reason)}</p>
+    </section>
+  `;
+}
+
+function renderFeedLoading(feed: Extract<MatchFeedViewState, { status: 'loading' }>): string {
+  return `
+    <section class="note-card" data-match-feed-state="loading">
+      <div class="note-eyebrow">API-Football</div>
+      <div class="note-title">Loading match feed</div>
+      <p class="note-copy">Fetching owner-only matchday fixtures for ${escapeHtml(feed.date)}.</p>
+    </section>
+  `;
+}
+
+function renderFeedEmpty(feed: Extract<MatchFeedViewState, { status: 'empty' }>): string {
+  return `
+    <section class="note-card" data-match-feed-state="empty">
+      <div class="note-eyebrow">API-Football</div>
+      <div class="note-title">No fixtures found for ${escapeHtml(feed.date)}.</div>
+      <p class="note-copy">The provider returned an empty fixture list for this date.</p>
+    </section>
+  `;
+}
+
+function renderProviderMatchCard(match: AppMatch): string {
+  const title = matchTitle(match);
+  const meta = matchMeta(match);
+  const statusClass = match.status === 'in_play' ? 'blue' : match.status === 'completed' ? '' : 'amber';
+  return `
+    <article class="match-card" data-match-card data-provider-match-id="${escapeHtml(match.id)}">
+      <div class="match-main">
+        <div class="match-topline">
+          <div class="tag-row">
+            <span class="tag ${statusClass}">${escapeHtml(match.statusLabel)}</span>
+            <span class="tag">${escapeHtml(match.competitionName)}</span>
+          </div>
+          <div class="row-actions">
+            <button class="text-button" type="button" data-open-match data-match-title="${escapeHtml(title)}" data-match-meta="${escapeHtml(meta)}">Open</button>
+            <button class="icon-button" type="button" data-toggle-match aria-expanded="true" aria-label="Collapse ${escapeHtml(title)}">${icons.up}</button>
+          </div>
+        </div>
+        <h3 class="match-title">${escapeHtml(title)}</h3>
+        <p class="match-meta">${escapeHtml(meta)}</p>
+      </div>
+      <div class="ledger-detail">
+        <div class="ledger-row">
+          <div>
+            <div class="ledger-title">Provider fixture</div>
+            <div class="ledger-meta">API-Football fixture ${escapeHtml(match.providerFixtureId)}. No odds or prediction loaded.</div>
+          </div>
+          <span class="ledger-state">${escapeHtml(match.status)}</span>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderProviderMatchRow(match: AppMatch): string {
+  const title = matchTitle(match);
+  const meta = matchMeta(match);
+  return renderMatchRow(title, meta, meta);
+}
+
+function renderMatchFeedCards(feed: MatchFeedViewState): string {
+  if (feed.status === 'loading') return renderFeedLoading(feed);
+  if (feed.status === 'unavailable') return renderFeedUnavailable(feed);
+  if (feed.status === 'empty') return renderFeedEmpty(feed);
+  return feed.matches.map(renderProviderMatchCard).join('');
+}
+
+function renderMatchFeedRows(feed: MatchFeedViewState): string {
+  if (feed.status === 'loading') return renderFeedLoading(feed);
+  if (feed.status === 'unavailable') return renderFeedUnavailable(feed);
+  if (feed.status === 'empty') return renderFeedEmpty(feed);
+  return feed.matches.map(renderProviderMatchRow).join('');
 }
 
 function renderSummaryRow({
@@ -80,7 +188,11 @@ function renderScreenHeader({
   `;
 }
 
-function renderTodayPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction): string {
+function renderTodayPanel(
+  activeTabId: ProductionNavigationTabId,
+  translate: TranslateFunction,
+  matchFeed: MatchFeedViewState
+): string {
   const todayDateTile = getTodayDateTileParts();
 
   return `
@@ -127,77 +239,23 @@ function renderTodayPanel(activeTabId: ProductionNavigationTabId, translate: Tra
       </div>
 
       <div class="stack">
-        <article class="match-card" data-match-card>
-          <div class="match-main">
-            <div class="match-topline">
-              <div class="tag-row">
-                <span class="tag blue">Live</span>
-                <span class="tag">Market 1X2</span>
-                <span class="tag amber">Pending</span>
-              </div>
-              <div class="row-actions">
-                <button class="text-button" type="button" data-open-match data-match-title="Team Alpha vs Team Beta" data-match-meta="Kickoff 18:00 (Mkt) &middot; matchGroupId: group-alpha-beta">Open</button>
-                <button class="icon-button" type="button" data-toggle-match aria-expanded="true" aria-label="Collapse Team Alpha vs Team Beta">${icons.up}</button>
-              </div>
-            </div>
-            <h3 class="match-title">Team Alpha vs Team Beta</h3>
-            <p class="match-meta">Kickoff 18:00 (Mkt) &middot; Pending: 1 journal row</p>
-          </div>
-          <div class="ledger-detail">
-            <div class="ledger-row">
-              <div>
-                <div class="ledger-title">Ongoing market note</div>
-                <div class="ledger-meta">Team Alpha win &middot; Odds: 2.10 &middot; Pending journal row</div>
-              </div>
-              <button class="text-button" type="button" data-open-match data-match-title="Team Alpha vs Team Beta" data-match-meta="Kickoff 18:00 (Mkt) &middot; matchGroupId: group-alpha-beta">Open</button>
-            </div>
-            <div class="ledger-row">
-              <div>
-                <div class="ledger-title">Assistant note</div>
-                <div class="ledger-meta">Context-only boundary note. No ranking, confidence, or stake advice.</div>
-              </div>
-              <span class="ledger-state">Static</span>
-            </div>
-          </div>
-        </article>
-
-        <article class="match-card collapsed" data-match-card>
-          <div class="match-main">
-            <div class="match-topline">
-              <div class="tag-row">
-                <span class="tag">Scheduled</span>
-                <span class="tag">Totals</span>
-              </div>
-              <div class="row-actions">
-                <button class="text-button" type="button" data-open-match data-match-title="Team Gamma vs Team Delta" data-match-meta="Kickoff 21:30 (Mkt) &middot; matchGroupId: group-gamma-delta">Open</button>
-                <button class="icon-button" type="button" data-toggle-match aria-expanded="false" aria-label="Expand Team Gamma vs Team Delta">${icons.down}</button>
-              </div>
-            </div>
-            <h3 class="match-title">Team Gamma vs Team Delta</h3>
-            <p class="match-meta">Kickoff 21:30 (Mkt) &middot; Watchlist only</p>
-          </div>
-          <div class="ledger-detail">
-            <div class="ledger-row">
-              <div>
-                <div class="ledger-title">Watchlist note</div>
-                <div class="ledger-meta">Generic match context reserved for later manual review.</div>
-              </div>
-              <span class="ledger-state">No draft</span>
-            </div>
-          </div>
-        </article>
+        ${renderMatchFeedCards(matchFeed)}
 
         <section class="note-card">
           <div class="note-eyebrow">Miraichi note</div>
           <div class="note-title">This shell is a journal surface, not an advice engine.</div>
-          <p class="note-copy">The assistant area can summarize user-entered context later, but this production shell does not rank picks, estimate confidence, or propose stake size.</p>
+          <p class="note-copy">The match feed can show provider fixture context, but this shell does not rank picks, estimate confidence, or propose stake size.</p>
         </section>
       </div>
     </section>
   `;
 }
 
-function renderMatchesPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction): string {
+function renderMatchesPanel(
+  activeTabId: ProductionNavigationTabId,
+  translate: TranslateFunction,
+  matchFeed: MatchFeedViewState
+): string {
   return `
     <section class="${getScreenClass('matches', activeTabId)}" id="screen-matches" data-shell-tab-panel="matches" aria-labelledby="matches-title">
       ${renderScreenHeader({
@@ -212,12 +270,11 @@ function renderMatchesPanel(activeTabId: ProductionNavigationTabId, translate: T
       </div>
 
       <div class="date-group">
-        <div class="group-label">Today</div>
-        ${renderMatchRow('Team Alpha vs Team Beta', '18:00 &middot; Market 1X2 &middot; 1 pending row', 'Kickoff 18:00 (Mkt) &middot; matchGroupId: group-alpha-beta')}
-        ${renderMatchRow('Team Gamma vs Team Delta', '21:30 &middot; Totals &middot; watchlist', 'Kickoff 21:30 (Mkt) &middot; matchGroupId: group-gamma-delta')}
+        <div class="group-label">${escapeHtml(matchFeed.date)}</div>
+        ${renderMatchFeedRows(matchFeed)}
       </div>
 
-      <div class="empty-state" id="matches-empty">No generic matches match this search.</div>
+      <div class="empty-state" id="matches-empty">No provider matches match this search.</div>
     </section>
   `;
 }
@@ -549,24 +606,29 @@ function renderReviewItem(label: string, value: string): string {
   `;
 }
 
-const panelRenderers: Record<ProductionNavigationTabId, (activeTabId: ProductionNavigationTabId, translate: TranslateFunction) => string> = Object.freeze({
+const panelRenderers: Record<
+  ProductionNavigationTabId,
+  (activeTabId: ProductionNavigationTabId, translate: TranslateFunction, matchFeed: MatchFeedViewState) => string
+> = Object.freeze({
   today: renderTodayPanel,
   matches: renderMatchesPanel,
-  bets: renderBetsPanel,
-  bankroll: renderBankrollPanel,
-  miraichi: renderMiraichiPanel
+  bets: (activeTabId, translate) => renderBetsPanel(activeTabId, translate),
+  bankroll: (activeTabId, translate) => renderBankrollPanel(activeTabId, translate),
+  miraichi: (activeTabId, translate) => renderMiraichiPanel(activeTabId, translate)
 });
 
 export function renderAppShell({
   activeTabId = 'today',
-  translate = t
+  translate = t,
+  matchFeed = defaultMatchFeed
 }: {
   readonly activeTabId?: string;
   readonly translate?: TranslateFunction;
+  readonly matchFeed?: MatchFeedViewState;
 } = {}): string {
   const safeActiveTabId = getSafeNavigationTabId(activeTabId);
   const activeTab = navigationTabs.find((tab: NavigationTab) => tab.id === safeActiveTabId) ?? navigationTabs[0];
-  const panels = navigationTabs.map((tab) => panelRenderers[tab.id](safeActiveTabId, translate)).join('');
+  const panels = navigationTabs.map((tab) => panelRenderers[tab.id](safeActiveTabId, translate, matchFeed)).join('');
 
   return `
     <div class="production-page">
