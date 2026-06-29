@@ -166,6 +166,10 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Result**: Proposed design spec and implementation plan created to replace visible hardcoded app match feed data with backend-mediated API-Football fixture data, plus cache/quota guard and honest unavailable states.
   - **Evidence**: See `docs/superpowers/specs/2026-06-29-phase-8-6e-api-football-owner-only-app-live-data-design.md` and `docs/superpowers/plans/2026-06-29-phase-8-6e-api-football-owner-only-app-live-data.md`.
   - **Constraints**: No odds, no prediction runtime, no betting recommendation, no provider key in browser code, no public traffic, and no raw CSV ingestion changes in this phase.
+- [x] Complete Phase 8.6E API-Football Owner-Only App Live Data.
+  - **Result**: `/api/v1/matches` uses backend-mediated API-Football fixture normalization and the web shell renders provider-backed match feed states.
+  - **Evidence**: Focused API/web tests, typecheck, lifecycle verification, and `git diff --check` passed. Manual provider smoke requires a local `API_FOOTBALL_KEY` and must not record or expose the key.
+  - **Constraint**: Odds, prediction runtime, betting recommendation, public traffic, and raw CSV append-only merge remain out of scope.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
 
 
