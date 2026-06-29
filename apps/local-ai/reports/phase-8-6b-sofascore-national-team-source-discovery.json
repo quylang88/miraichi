@@ -1,0 +1,132 @@
+{
+  "reportId": "phase-8-6b-sofascore-national-team-source-discovery",
+  "phase": "8.6B",
+  "providerId": "sofascore-direct",
+  "status": "pass",
+  "generatedAt": "2026-06-29T02:45:42.393Z",
+  "competitions": [
+    {
+      "competitionId": "comp-int-world-cup",
+      "displayName": "FIFA World Cup",
+      "sofascoreUniqueTournamentId": 16,
+      "discoveryStatus": "ready_for_ingestion_plan",
+      "completedSeasonCount": 23,
+      "futureSeasonCount": 0,
+      "completedEventCount": 120,
+      "rejectedEventCount": 0,
+      "rejectedEventReasons": {},
+      "sampledSeasonIds": [
+        58210,
+        41087
+      ],
+      "providerError": "Sofascore Python probe failed: [2026-06-29 11:47:13] INFO     TLSLibrary:_load_library:397 - Successfully loaded TLS library: C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\tls_requests\\bin\\tls-client-xgo-1.13.1-windows-amd64.dll\r\nTraceback (most recent call last):\r\n  File \"<string>\", line 7, in <module>\r\n    data = json.load(reader.get(\"https://api.sofascore.com/api/v1/unique-tournament/16/season/41087/events/round/29\"))\r\n                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 293, in get\r\n    return self._download_and_save(url, filepath, var)\r\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 535, in _download_and_save\r\n    raise ConnectionError(f\"Could not download {url}.\")\r\nConnectionError: Could not download https://api.sofascore.com/api/v1/unique-tournament/16/season/41087/events/round/29.\r\n"
+    },
+    {
+      "competitionId": "comp-int-euro",
+      "displayName": "UEFA European Championship",
+      "sofascoreUniqueTournamentId": 1,
+      "discoveryStatus": "ready_for_ingestion_plan",
+      "completedSeasonCount": 17,
+      "futureSeasonCount": 0,
+      "completedEventCount": 108,
+      "rejectedEventCount": 0,
+      "rejectedEventReasons": {},
+      "sampledSeasonIds": [
+        56953,
+        26542
+      ],
+      "providerError": "Sofascore Python probe failed: [2026-06-29 11:48:15] INFO     TLSLibrary:_load_library:397 - Successfully loaded TLS library: C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\tls_requests\\bin\\tls-client-xgo-1.13.1-windows-amd64.dll\r\nTraceback (most recent call last):\r\n  File \"<string>\", line 7, in <module>\r\n    data = json.load(reader.get(\"https://api.sofascore.com/api/v1/unique-tournament/1/season/26542/events/round/4\"))\r\n                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 293, in get\r\n    return self._download_and_save(url, filepath, var)\r\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 535, in _download_and_save\r\n    raise ConnectionError(f\"Could not download {url}.\")\r\nConnectionError: Could not download https://api.sofascore.com/api/v1/unique-tournament/1/season/26542/events/round/4.\r\n"
+    },
+    {
+      "competitionId": "comp-int-afcon",
+      "displayName": "Africa Cup of Nations",
+      "sofascoreUniqueTournamentId": 270,
+      "discoveryStatus": "ready_for_ingestion_plan",
+      "completedSeasonCount": 9,
+      "futureSeasonCount": 0,
+      "completedEventCount": 72,
+      "rejectedEventCount": 0,
+      "rejectedEventReasons": {},
+      "sampledSeasonIds": [
+        71636,
+        56021
+      ],
+      "providerError": "Sofascore Python probe failed: [2026-06-29 11:49:57] INFO     TLSLibrary:_load_library:397 - Successfully loaded TLS library: C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\tls_requests\\bin\\tls-client-xgo-1.13.1-windows-amd64.dll\r\nTraceback (most recent call last):\r\n  File \"<string>\", line 7, in <module>\r\n    data = json.load(reader.get(\"https://api.sofascore.com/api/v1/unique-tournament/270/season/56021/events/round/29\"))\r\n                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 293, in get\r\n    return self._download_and_save(url, filepath, var)\r\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 535, in _download_and_save\r\n    raise ConnectionError(f\"Could not download {url}.\")\r\nConnectionError: Could not download https://api.sofascore.com/api/v1/unique-tournament/270/season/56021/events/round/29.\r\n"
+    },
+    {
+      "competitionId": "comp-int-copa-america",
+      "displayName": "Copa America",
+      "sofascoreUniqueTournamentId": 133,
+      "discoveryStatus": "ready_for_ingestion_plan",
+      "completedSeasonCount": 7,
+      "futureSeasonCount": 0,
+      "completedEventCount": 56,
+      "rejectedEventCount": 0,
+      "rejectedEventReasons": {},
+      "sampledSeasonIds": [
+        57114,
+        26681
+      ],
+      "providerError": "Sofascore Python probe failed: [2026-06-29 11:51:37] INFO     TLSLibrary:_load_library:397 - Successfully loaded TLS library: C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\tls_requests\\bin\\tls-client-xgo-1.13.1-windows-amd64.dll\r\nTraceback (most recent call last):\r\n  File \"<string>\", line 7, in <module>\r\n    data = json.load(reader.get(\"https://api.sofascore.com/api/v1/unique-tournament/133/season/26681/events/round/50\"))\r\n                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 293, in get\r\n    return self._download_and_save(url, filepath, var)\r\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 535, in _download_and_save\r\n    raise ConnectionError(f\"Could not download {url}.\")\r\nConnectionError: Could not download https://api.sofascore.com/api/v1/unique-tournament/133/season/26681/events/round/50.\r\n"
+    },
+    {
+      "competitionId": "comp-int-afc-asian-cup",
+      "displayName": "AFC Asian Cup",
+      "sofascoreUniqueTournamentId": 246,
+      "discoveryStatus": "ready_for_ingestion_plan",
+      "completedSeasonCount": 4,
+      "futureSeasonCount": 1,
+      "completedEventCount": 108,
+      "rejectedEventCount": 0,
+      "rejectedEventReasons": {},
+      "sampledSeasonIds": [
+        51384,
+        16919
+      ],
+      "providerError": "Sofascore Python probe failed: [2026-06-29 11:53:15] INFO     TLSLibrary:_load_library:397 - Successfully loaded TLS library: C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\tls_requests\\bin\\tls-client-xgo-1.13.1-windows-amd64.dll\r\nTraceback (most recent call last):\r\n  File \"<string>\", line 7, in <module>\r\n    data = json.load(reader.get(\"https://api.sofascore.com/api/v1/unique-tournament/246/season/16919/events/round/4\"))\r\n                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 293, in get\r\n    return self._download_and_save(url, filepath, var)\r\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 535, in _download_and_save\r\n    raise ConnectionError(f\"Could not download {url}.\")\r\nConnectionError: Could not download https://api.sofascore.com/api/v1/unique-tournament/246/season/16919/events/round/4.\r\n"
+    },
+    {
+      "competitionId": "comp-int-concacaf-gold-cup",
+      "displayName": "CONCACAF Gold Cup",
+      "sofascoreUniqueTournamentId": 140,
+      "discoveryStatus": "ready_for_ingestion_plan",
+      "completedSeasonCount": 8,
+      "futureSeasonCount": 0,
+      "completedEventCount": 72,
+      "rejectedEventCount": 0,
+      "rejectedEventReasons": {},
+      "sampledSeasonIds": [
+        72840,
+        50492
+      ],
+      "providerError": "Sofascore Python probe failed: [2026-06-29 11:55:12] INFO     TLSLibrary:_load_library:397 - Successfully loaded TLS library: C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\tls_requests\\bin\\tls-client-xgo-1.13.1-windows-amd64.dll\r\nTraceback (most recent call last):\r\n  File \"<string>\", line 7, in <module>\r\n    data = json.load(reader.get(\"https://api.sofascore.com/api/v1/unique-tournament/140/season/50492/events/round/29\"))\r\n                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 293, in get\r\n    return self._download_and_save(url, filepath, var)\r\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 535, in _download_and_save\r\n    raise ConnectionError(f\"Could not download {url}.\")\r\nConnectionError: Could not download https://api.sofascore.com/api/v1/unique-tournament/140/season/50492/events/round/29.\r\n"
+    },
+    {
+      "competitionId": "comp-int-uefa-nations-league",
+      "displayName": "UEFA Nations League",
+      "sofascoreUniqueTournamentId": 10783,
+      "discoveryStatus": "ready_for_ingestion_plan",
+      "completedSeasonCount": 4,
+      "futureSeasonCount": 1,
+      "completedEventCount": 337,
+      "rejectedEventCount": 7,
+      "rejectedEventReasons": {
+        "not_finished": 7
+      },
+      "sampledSeasonIds": [
+        58337,
+        40128
+      ],
+      "providerError": "Sofascore Python probe failed: [2026-06-29 11:57:03] INFO     TLSLibrary:_load_library:397 - Successfully loaded TLS library: C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\tls_requests\\bin\\tls-client-xgo-1.13.1-windows-amd64.dll\r\nTraceback (most recent call last):\r\n  File \"<string>\", line 7, in <module>\r\n    data = json.load(reader.get(\"https://api.sofascore.com/api/v1/unique-tournament/10783/season/40128/events/round/29\"))\r\n                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 293, in get\r\n    return self._download_and_save(url, filepath, var)\r\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\CODE\\miraichi\\apps\\local-ai\\.venv\\Lib\\site-packages\\soccerdata\\_common.py\", line 535, in _download_and_save\r\n    raise ConnectionError(f\"Could not download {url}.\")\r\nConnectionError: Could not download https://api.sofascore.com/api/v1/unique-tournament/10783/season/40128/events/round/29.\r\n"
+    }
+  ],
+  "registryErrors": [],
+  "blockedScope": [
+    "main_training_dataset_merge",
+    "model_selection",
+    "runtime_prediction",
+    "bookmaker_baseline_faking",
+    "club_competition_expansion",
+    "api_keys_or_paid_provider"
+  ]
+}
