@@ -6,8 +6,10 @@
   "description": "Miraichi monorepo scaffold",
   "scripts": {
     "dev": "pnpm --filter \"./apps/*\" --parallel run dev",
+    "web": "pnpm run dev:web",
     "dev:web": "pnpm --filter web run dev",
     "start:web": "pnpm --filter web run start",
+    "build": "pnpm run build:web-static",
     "build:web-static": "pnpm --filter web run build:static",
     "dev:api": "pnpm --filter api run dev",
     "dev:local-ai": "pnpm --filter local-ai run dev",

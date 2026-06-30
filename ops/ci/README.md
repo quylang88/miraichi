@@ -3,7 +3,7 @@
 Pipelines and check workflows for automated pull requests.
 
 ## Purpose
-Ensures that all pushes to master/main are built, tested, and audited.
+Ensures that all pushes to master/main are built, tested, type-audited, and guardrail-audited.
 
 ## Status
 - **Status**: Draft
@@ -20,4 +20,5 @@ Maps trigger scenarios, lint parameters, and testing jobs.
 - [x] Review `ops/PHASE-6-TESTING-DEPLOYMENT-HARDENING-PLAN.md`.
 - [x] After owner approval, create an implementation plan before adding workflow YAML.
 - [x] Add check-only CI workflow under `.github/workflows/ci.yml`.
+- [x] Add static build and type-safety audit gates to the check-only workflow.
 - [ ] Keep CI deployment automation out of scope until owner-approved secrets and branch policy exist.

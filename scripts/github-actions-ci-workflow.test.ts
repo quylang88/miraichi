@@ -21,6 +21,8 @@ describe('GitHub Actions CI workflow', () => {
     expect(workflow).toContain('pnpm run lint');
     expect(workflow).toContain('pnpm run typecheck');
     expect(workflow).toContain('pnpm run audit');
+    expect(workflow).toContain('pnpm run audit:type-safety');
+    expect(workflow).toContain('pnpm run build');
   });
 
   it('does not deploy or reference Cloudflare secrets', () => {

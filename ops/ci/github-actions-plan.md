@@ -18,14 +18,16 @@ Directly plans the YAML pipeline configurations under `.github/workflows/` (when
 3. **Syntax**: Run `pnpm run lint`.
 4. **Typecheck**: Run `pnpm run typecheck`.
 5. **Audit**: Run `pnpm run audit`.
-6. **Integration**: Run `pnpm run test:integration` only for large-boundary, staging, or release branches.
-7. **Staging Build**: Run `pnpm run verify:staging` before any staging deployment.
+6. **Type Safety Audit**: Run `pnpm run audit:type-safety`.
+7. **Static Build**: Run `pnpm run build` to generate the web artifact without deploying it.
+8. **Integration**: Run `pnpm run test:integration` only for large-boundary, staging, or release branches.
+9. **Staging Build**: Run `pnpm run verify:staging` before any staging deployment.
 
 Do not add Cloudflare deployment from CI until owner-approved secret handling is explicit.
 
 ## Phase 6 Check-Only Workflow
 
-The first CI workflow is check-only. It runs lifecycle verification, unit tests, syntax checks, typecheck, and guardrail audit.
+The CI workflow is check-only. It runs lifecycle verification, unit tests, syntax checks, typecheck, guardrail audit, type-safety audit, and the static web build.
 
 It intentionally does not run Cloudflare deployment, does not reference Cloudflare secrets, and does not run production promotion.
 

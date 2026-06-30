@@ -47,3 +47,9 @@ jobs:
 
       - name: Guardrail audit
         run: pnpm run audit
+
+      - name: Type safety audit
+        run: pnpm run audit:type-safety
+
+      - name: Static web build
+        run: pnpm run build
