@@ -174,5 +174,8 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Result**: Proposed design spec created for a raw-first, SQL-shaped local JSONL snapshot store for API-Football national-team fixture payloads.
   - **Scope**: National-team competitions only, in owner-approved priority order: World Cup, Euro, Copa America, AFCON, AFC Asian Cup, CONCACAF Gold Cup, and UEFA Nations League.
   - **Constraint**: World Cup 2026 is included first, but only terminal/completed fixtures may be snapshotted while the tournament is active. No live polling, odds, prediction runtime, betting recommendation, club competitions, all-league crawl, or production database schema.
+- [x] Create `phase:implementation-plan Phase 8.6F API-Football National-Team JSONL Snapshot Store`.
+  - **Result**: Implementation plan created with TDD slices for snapshot schemas, national-team priority queue, provider mapping gates, JSONL storage, raw API-Football client, snapshot runner, CLI/verifier, and closeout evidence.
+  - **Plan**: See `docs/superpowers/plans/2026-06-30-phase-8-6f-api-football-national-team-jsonl-snapshot-store.md`.
+  - **Next**: Start with `phase:code-slice Phase 8.6F Snapshot Schema And ID Utilities`.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
-
