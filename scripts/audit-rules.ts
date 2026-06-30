@@ -45,6 +45,8 @@ const RULES = [
   }
 ];
 
+const IGNORED_DIRECTORIES = new Set(['node_modules', '.git', 'docs', 'dist', 'build', 'coverage']);
+
 let violationsCount = 0;
 
 function scanDir(dirPath: string) {
@@ -55,7 +57,7 @@ function scanDir(dirPath: string) {
     const relativePath = path.relative(ROOT_DIR, fullPath).replace(/\\/g, '/');
 
     if (entry.isDirectory()) {
-      if (entry.name !== 'node_modules' && entry.name !== '.git' && entry.name !== 'docs') {
+      if (!IGNORED_DIRECTORIES.has(entry.name)) {
         scanDir(fullPath);
       }
     } else if (

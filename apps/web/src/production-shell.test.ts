@@ -156,6 +156,18 @@ describe('production PWA shell rendering', () => {
     expect(serverSource).not.toContain('preview.html');
   });
 
+  it('serves browser-imported config package modules in dev and static builds', () => {
+    const serverSource = readFileSync(fileURLToPath(new URL('./index.ts', import.meta.url)), 'utf8');
+    const staticBuildSource = readFileSync(fileURLToPath(new URL('../scripts/build-static.ts', import.meta.url)), 'utf8');
+    const serviceWorkerSource = readFileSync(fileURLToPath(new URL('../public/service-worker.ts', import.meta.url)), 'utf8');
+
+    expect(serverSource).toContain("url.startsWith('/packages/config/src/')");
+    expect(serverSource).toContain('function resolveSourcePath');
+    expect(serverSource).toContain('filePath = resolveSourcePath(url);');
+    expect(staticBuildSource).toContain("'packages/config/src'");
+    expect(serviceWorkerSource).toContain('/packages/config/src/competition-registry.mock.js');
+  });
+
   it('renders accessible bottom navigation buttons with the active tab marked', () => {
     const html = renderBottomNavigation({
       activeTabId: 'bets',

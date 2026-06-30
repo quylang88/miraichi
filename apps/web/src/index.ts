@@ -69,17 +69,20 @@ const server = http.createServer((req, res) => {
   }
   // Static File Routing for Packages and Web Client Code
   else if (url.startsWith('/apps/web/src/')) {
-    filePath = resolveWebSourcePath(url);
+    filePath = resolveSourcePath(url);
     contentType = 'application/javascript';
   } else if (url.startsWith('/packages/ui/src/')) {
-    filePath = pathModule.join(ROOT_DIR, url);
+    filePath = resolveSourcePath(url);
     if (url.endsWith('.css')) {
       contentType = 'text/css';
     } else {
       contentType = 'application/javascript';
     }
   } else if (url.startsWith('/packages/shared/src/')) {
-    filePath = pathModule.join(ROOT_DIR, url);
+    filePath = resolveSourcePath(url);
+    contentType = 'application/javascript';
+  } else if (url.startsWith('/packages/config/src/')) {
+    filePath = resolveSourcePath(url);
     contentType = 'application/javascript';
   }
 
@@ -91,7 +94,7 @@ const server = http.createServer((req, res) => {
   }
 });
 
-function resolveWebSourcePath(url: string) {
+function resolveSourcePath(url: string) {
   const requestedPath = pathModule.join(ROOT_DIR, url);
   if (fs.existsSync(requestedPath)) {
     return requestedPath;

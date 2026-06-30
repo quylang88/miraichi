@@ -10,6 +10,7 @@ const ASSETS_TO_CACHE = [
   '/apps/web/src/shell-entry.js',
   '/apps/web/src/config/navigation-tabs.js',
   '/apps/web/src/components/app-shell.js',
+  '/packages/config/src/competition-registry.mock.js',
   '/apps/web/src/components/bottom-navigation.js',
   '/apps/web/src/components/html.js',
   '/apps/web/src/services/settings-service.js',
