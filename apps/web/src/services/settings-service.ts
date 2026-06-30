@@ -6,6 +6,7 @@ export interface ShellSettings {
   readonly locale: SupportedLocale;
   readonly theme: 'dark';
   readonly displayDensity: 'standard' | 'compact';
+  readonly timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh';
 }
 
 type ShellSettingKey = keyof ShellSettings;
@@ -13,13 +14,15 @@ type ShellSettingKey = keyof ShellSettings;
 const DEFAULT_SETTINGS: ShellSettings = Object.freeze({
   locale: 'en',
   theme: 'dark',
-  displayDensity: 'standard'
+  displayDensity: 'standard',
+  timezone: 'local'
 });
 
 const ALLOWED_SETTING_VALUES: Record<ShellSettingKey, ReadonlySet<string>> = Object.freeze({
   locale: new Set(['en', 'vi']),
   theme: new Set(['dark']),
-  displayDensity: new Set(['standard', 'compact'])
+  displayDensity: new Set(['standard', 'compact']),
+  timezone: new Set(['local', 'UTC', 'Asia/Ho_Chi_Minh'])
 });
 
 function getBrowserLanguages(): readonly string[] {
@@ -72,7 +75,10 @@ function normalizeSettings(
         : { navigatorLanguages }
     ),
     theme: rawSettings.theme === 'dark' ? rawSettings.theme : DEFAULT_SETTINGS.theme,
-    displayDensity: rawSettings.displayDensity === 'compact' ? 'compact' : DEFAULT_SETTINGS.displayDensity
+    displayDensity: rawSettings.displayDensity === 'compact' ? 'compact' : DEFAULT_SETTINGS.displayDensity,
+    timezone: (rawSettings.timezone === 'UTC' || rawSettings.timezone === 'Asia/Ho_Chi_Minh' || rawSettings.timezone === 'local')
+      ? rawSettings.timezone
+      : DEFAULT_SETTINGS.timezone
   };
 }
 

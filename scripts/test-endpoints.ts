@@ -60,9 +60,10 @@ setTimeout(async () => {
   // 2. GET /api/v1/matches (Gateway Matches list)
   try {
     const res = await fetch('http://localhost:3001/api/v1/matches');
-    const data = await res.json();
-    assert(res.ok && Array.isArray(data) && data.length > 0, 'GET /api/v1/matches returns array of fixtures');
-    assert(data[0].id === 'match_2026_001', 'Match format uses generic competition-agnostic schema');
+    const data = await res.json() as { matches?: unknown[] };
+    assert(res.ok && data && Array.isArray(data.matches) && data.matches.length > 0, 'GET /api/v1/matches returns match feed object with matches array');
+    const firstMatch = data.matches?.[0] as { id?: string } | undefined;
+    assert(firstMatch?.id != null && firstMatch.id.startsWith('api-football-fixture-'), 'Match format uses normalized provider-backed schema');
   } catch (err) {
     assert(false, `GET /api/v1/matches request failed: ${err instanceof Error ? err.message : String(err)}`);
   }

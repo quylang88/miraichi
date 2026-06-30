@@ -157,14 +157,16 @@ function renderProviderMatchCard(match: AppMatch, timezone?: 'local' | 'UTC' | '
   const statusClass = match.status === 'in_play' ? 'blue' : match.status === 'completed' ? '' : 'amber';
   return `
     <article class="match-card" data-match-card data-provider-match-id="${escapeHtml(match.id)}">
-      <div class="match-main">
+      <div class="match-main clickable" data-open-match
+        data-match-title="${escapeHtml(title)}" data-match-meta="${escapeHtml(meta)}"
+        data-provider-fixture-id="${escapeHtml(match.providerFixtureId)}"
+        role="button" tabindex="0">
         <div class="match-topline">
           <div class="tag-row">
             <span class="tag ${statusClass}">${escapeHtml(match.statusLabel)}</span>
             <span class="tag">${escapeHtml(match.competitionName)}</span>
           </div>
           <div class="row-actions">
-            <button class="text-button" type="button" data-open-match data-match-title="${escapeHtml(title)}" data-match-meta="${escapeHtml(meta)}">Open</button>
             <button class="icon-button" type="button" data-toggle-match aria-expanded="true" aria-label="Collapse ${escapeHtml(title)}">${icons.up}</button>
           </div>
         </div>
@@ -184,10 +186,23 @@ function renderProviderMatchCard(match: AppMatch, timezone?: 'local' | 'UTC' | '
   `;
 }
 
+function renderRowRight(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
+  if (match.status === 'completed' && match.score) {
+    return `<span class="row-score">${match.score.home} – ${match.score.away}</span>`;
+  }
+  if (match.status === 'in_play') {
+    const scoreStr = match.score ? `${match.score.home} – ${match.score.away}` : '– –';
+    const elapsed = match.elapsedMinute != null ? `${match.elapsedMinute}'` : 'LIVE';
+    return `<span class="row-score live"><span class="live-dot"></span>${elapsed} ${scoreStr}</span>`;
+  }
+  return `<span class="row-kickoff">${formatKickoffTime(match.kickoffTime, timezone)}</span>`;
+}
+
 function renderProviderMatchRow(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   const title = matchTitle(match);
   const meta = matchMeta(match, timezone);
-  return renderMatchRow(title, meta, meta, match.status);
+  const right = renderRowRight(match, timezone);
+  return renderMatchRow(title, right, meta, match.status, match.providerFixtureId);
 }
 
 function renderMatchFeedCards(feed: MatchFeedViewState, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
@@ -769,16 +784,16 @@ function renderMatchesPanel(
   `;
 }
 
-function renderMatchRow(title: string, meta: string, detailMeta: string, status?: string): string {
+function renderMatchRow(title: string, rightHtml: string, detailMeta: string, status?: string, providerFixtureId?: string): string {
   const statusAttr = status ? ` data-status="${escapeHtml(status)}"` : '';
+  const fixtureAttr = providerFixtureId ? ` data-provider-fixture-id="${escapeHtml(providerFixtureId)}"` : '';
   return `
-    <article class="match-row" data-match-row${statusAttr}>
+    <article class="match-row clickable" data-match-row${statusAttr}${fixtureAttr}
+      data-open-match data-match-title="${escapeHtml(title)}" data-match-meta="${escapeHtml(detailMeta)}"
+      role="button" tabindex="0">
       <div class="row-split">
-        <div>
-          <div class="row-title">${escapeHtml(title)}</div>
-          <div class="row-meta">${escapeHtml(meta)}</div>
-        </div>
-        <button class="text-button" type="button" data-open-match data-match-title="${escapeHtml(title)}" data-match-meta="${escapeHtml(detailMeta)}">Open</button>
+        <div class="row-title">${escapeHtml(title)}</div>
+        <div class="row-right">${rightHtml}</div>
       </div>
     </article>
   `;

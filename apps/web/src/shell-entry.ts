@@ -25,6 +25,7 @@ const activeFilters = {
   selectedLeagues: new Set<string>()
 };
 let isFilterPanelOpen = false;
+let currentOpenFixtureId = '';
 
 function todayLocalDate(): string {
   const now = new Date();
@@ -112,6 +113,75 @@ function setText(id: string, value: string): void {
     element.textContent = value;
   }
 }
+const API_BASE_URL = (typeof window !== 'undefined' && (window as Window & { MIRAICHI_ENV?: { API_URL?: string } }).MIRAICHI_ENV?.API_URL) || '';
+
+function escapeText(str: string): string {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderEventIcon(type: string): string {
+  if (type === 'Goal') return '⚽';
+  if (type === 'Card') return '🟨';
+  if (type === 'subst') return '🔄';
+  return '📋';
+}
+
+async function loadAndRenderMatchDetail(providerFixtureId: string): Promise<void> {
+  const infoPanel = document.getElementById('match-detail-panel-info');
+  if (!infoPanel) return;
+
+  infoPanel.innerHTML = '<p class="match-info-loading">Loading match details…</p>';
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/matches/detail?id=api-football-fixture-${encodeURIComponent(providerFixtureId)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json() as {
+      fixture?: { homeTeam?: string; awayTeam?: string; score?: { home: number; away: number }; kickoff?: string; venue?: string; referee?: string };
+      events?: Array<{ minute: number; type: string; playerName: string; assistName?: string; team?: string }>;
+    };
+
+    const f = data.fixture ?? {};
+    const home = f.homeTeam ?? '';
+    const away = f.awayTeam ?? '';
+    const score = f.score ? `${f.score.home} – ${f.score.away}` : '– –';
+    const kickoff = f.kickoff ? new Date(f.kickoff).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
+    const venue = f.venue ? ` · ${f.venue}` : '';
+    const referee = f.referee ? ` · Ref: ${f.referee}` : '';
+
+    const events = Array.isArray(data.events) ? data.events : [];
+    const eventsHtml = events.length === 0
+      ? '<p class="match-info-error">No events recorded.</p>'
+      : events.map(ev => `
+        <div class="match-event-item">
+          <span class="match-event-icon">${renderEventIcon(ev.type)}</span>
+          <span class="match-event-time">${ev.minute}'</span>
+          <div class="match-event-detail">
+            <div class="match-event-player">${escapeText(ev.playerName)}</div>
+            ${ev.assistName ? `<div class="match-event-assist">↳ ${escapeText(ev.assistName)}</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+    infoPanel.innerHTML = `
+      <div class="match-info-card">
+        <div class="match-info-scoreline">
+          <div class="match-info-team">${escapeText(home)}</div>
+          <div class="match-info-score">${score}</div>
+          <div class="match-info-team">${escapeText(away)}</div>
+        </div>
+        <div class="match-info-meta">
+          <span>${escapeText(kickoff)}</span>${venue ? `<span>${escapeText(venue)}</span>` : ''}${referee ? `<span>${escapeText(referee)}</span>` : ''}
+        </div>
+        <div class="match-event-timeline">${eventsHtml}</div>
+      </div>
+    `;
+  } catch {
+    infoPanel.innerHTML = '<p class="match-info-error">Could not load match details. Try again later.</p>';
+  }
+}
+
 
 function setActiveScreen(screenName: string): void {
   currentScreenName = screenName;
@@ -344,10 +414,15 @@ appRoot.addEventListener('click', (event) => {
   if (openMatchTarget) {
     const title = openMatchTarget.dataset.matchTitle || 'Selected match group';
     const meta = openMatchTarget.dataset.matchMeta || 'matchGroupId context';
+    const providerFixtureId = openMatchTarget.dataset.providerFixtureId || '';
+    currentOpenFixtureId = providerFixtureId;
     matchDetailReturnScreen = isPrimaryTabId(currentScreenName) ? currentScreenName : 'today';
     setMatchDetailContext(title, meta);
     resetMatchDetailTabs();
     setActiveScreen('match-detail');
+    if (providerFixtureId) {
+      void loadAndRenderMatchDetail(providerFixtureId);
+    }
     return;
   }
 
@@ -381,6 +456,10 @@ appRoot.addEventListener('click', (event) => {
   if (detailTabTarget) {
     setSegmentActive(detailTabTarget);
     updateDetailPanel(detailTabTarget);
+    // If switching to info tab and we have a fixture id, load detail
+    if (detailTabTarget.dataset.detailTab === 'info' && currentOpenFixtureId) {
+      void loadAndRenderMatchDetail(currentOpenFixtureId);
+    }
     return;
   }
 

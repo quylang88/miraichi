@@ -141,5 +141,77 @@ describe('API-Football HTTP client', () => {
     await expect(invalidClient.fetchFixturesByDate('2026-06-29')).rejects.toMatchObject({
       code: 'api_football_invalid_payload'
     });
+
+    const errorClient = createApiFootballClient({
+      config: { apiKey: 'owner-key', baseUrl: 'https://v3.football.api-sports.io', dailyLimit: 100 },
+      fetcher: async () => new Response(JSON.stringify({
+        errors: { rateLimit: 'Too many requests' },
+        response: []
+      }), { status: 200 })
+    });
+    await expect(errorClient.fetchFixturesByDate('2026-06-29')).rejects.toMatchObject({
+      code: 'api_football_api_error',
+      message: 'API-Football returned errors: rateLimit: Too many requests'
+    });
+  });
+
+  it('fetchFixtureDetail returns mock data when apiKey is mock or dummy', async () => {
+    const client = createApiFootballClient({
+      config: { apiKey: 'mock', baseUrl: 'https://v3.football.api-sports.io', dailyLimit: 100 }
+    });
+
+    const result = await client.fetchFixtureDetail('123');
+    expect(result.match.providerFixtureId).toBe('123');
+    expect(result.referee).toBe('Michael Oliver');
+    expect(result.events.length).toBeGreaterThan(0);
+    expect(result.events[0].type).toBe('Goal');
+  });
+
+  it('fetchFixtureDetail fetches real detail when apiKey is valid', async () => {
+    const rawFixtureDetail = {
+      ...fixture,
+      fixture: {
+        ...fixture.fixture,
+        referee: 'Michael Oliver'
+      },
+      score: {
+        halftime: { home: 1, away: 0 },
+        fulltime: { home: 2, away: 1 },
+        extratime: { home: null, away: null },
+        penalty: { home: null, away: null }
+      },
+      events: [
+        {
+          time: { elapsed: 12, extra: null },
+          team: { id: 100, name: 'Japan' },
+          player: { id: 101, name: 'K. Minamino' },
+          assist: { id: 102, name: 'J. Ito' },
+          type: 'Goal',
+          detail: 'Normal Goal',
+          comments: null
+        }
+      ]
+    };
+
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({
+      response: [rawFixtureDetail]
+    }), { status: 200 }));
+
+    const client = createApiFootballClient({
+      config: { apiKey: 'owner-key', baseUrl: 'https://v3.football.api-sports.io', dailyLimit: 100 },
+      fetcher
+    });
+
+    const result = await client.fetchFixtureDetail('123');
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://v3.football.api-sports.io/fixtures?id=123',
+      expect.objectContaining({
+        headers: { 'x-apisports-key': 'owner-key' }
+      })
+    );
+    expect(result.match.providerFixtureId).toBe('120001');
+    expect(result.referee).toBe('Michael Oliver');
+    expect(result.events.length).toBe(1);
+    expect(result.events[0].player.name).toBe('K. Minamino');
   });
 });
