@@ -170,6 +170,9 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Result**: `/api/v1/matches` uses backend-mediated API-Football fixture normalization and the web shell renders provider-backed match feed states.
   - **Evidence**: Focused API/web tests, typecheck, lifecycle verification, and `git diff --check` passed. Manual provider smoke requires a local `API_FOOTBALL_KEY` and must not record or expose the key.
   - **Constraint**: Odds, prediction runtime, betting recommendation, public traffic, and raw CSV append-only merge remain out of scope.
+- [x] Create `phase:plan Phase 8.6F API-Football National-Team JSONL Snapshot Store`.
+  - **Result**: Proposed design spec created for a raw-first, SQL-shaped local JSONL snapshot store for API-Football national-team fixture payloads.
+  - **Scope**: National-team competitions only, in owner-approved priority order: World Cup, Euro, Copa America, AFCON, AFC Asian Cup, CONCACAF Gold Cup, and UEFA Nations League.
+  - **Constraint**: World Cup 2026 is included first, but only terminal/completed fixtures may be snapshotted while the tournament is active. No live polling, odds, prediction runtime, betting recommendation, club competitions, all-league crawl, or production database schema.
 - [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
-
 
