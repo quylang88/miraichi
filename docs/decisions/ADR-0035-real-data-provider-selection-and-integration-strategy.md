@@ -1,13 +1,15 @@
 # ADR-0035: Real Data Provider Selection and Integration Strategy
 
-* **Status**: Accepted
+* **Status**: Superseded
 * **Date**: 2026-06-28
 * **Accepted Date**: 2026-06-28
+* **Superseded Date**: 2026-07-01
+* **Superseded By**: [ADR-0042: Local Manual Data API and API-Football Free-Tier Removal](file:///c:/CODE/miraichi/docs/decisions/ADR-0042-local-data-api-and-api-football-removal.md)
 * **Owner Approval Required**: Yes
 * **Owner Approval**: Approved by project owner
-* **Implementation Status**: Not started
+* **Implementation Status**: Superseded before production implementation
 * **Source Candidate**: [ADR-CANDIDATES-PHASE-7.md](file:///c:/CODE/miraichi/docs/decisions/ADR-CANDIDATES-PHASE-7.md)
-* **Note**: This accepted ADR selects the hybrid ingestion strategy for owner-only free-tier development. It does not authorize live production keys, paid subscriptions, or public traffic rollout.
+* **Note**: This ADR is retained as historical Phase 7 planning context only. Its API-Football free-tier direction is no longer active after the owner's 2026-07-01 roadmap reset.
 
 ---
 
@@ -15,6 +17,20 @@
 Miraichi needs real football fixture, result, statistics, lineup, and odds data for future dataset construction and model evaluation.
 
 Phase 3 accepted a provider adapter boundary without selecting a real provider. Phase 7 select a real provider selection strategy, but final provider approval remains owner-controlled under [OWNER-DECISION-GATES.md](file:///c:/CODE/miraichi/docs/governance/OWNER-DECISION-GATES.md).
+
+## Supersession Notice
+On 2026-07-01, the owner explicitly rejected continuing with API-Football free-tier usage and redirected the roadmap toward a local/manual snapshot API before any further AI training/runtime work.
+
+Do not use this ADR to justify:
+
+* API-Football free-tier dependencies;
+* `API_FOOTBALL_KEY` requirements;
+* API-Football snapshot stores;
+* live polling;
+* public match-data traffic;
+* model training/runtime work before the non-AI app is complete.
+
+Use ADR-0042 for the active Phase 9 data-provider direction.
 
 ## 2. Options Considered
 * **Option A**: Direct scraping/parsing of bookmaker sites and sports directories.
@@ -43,7 +59,7 @@ Current source facts and review notes:
 | Provider / Tool | Current Free-Tier Usefulness | Recommendation |
 | --- | --- | --- |
 | **soccerdata** (Python Lib) | Scraping from FBref, Understat, Sofascore, ESPN. Excellent for bulk historical match stats, standings, and xG. No API keys needed. | **Primary Historical Source**: Run locally to generate training datasets without API limit bottlenecks. |
-| API-Football | 100 requests/day free tier. Good for live scores, fixtures, lineups. | **Primary Live Matchday Source**: Use only for today's matchday score & lineup updates. |
+| API-Football | Historical Phase 7 candidate only. The free-tier path was rejected by the owner on 2026-07-01. | **Superseded**: Do not use as primary, fallback, staging, or roadmap dependency. Use ADR-0042 instead. |
 | The Odds API | 500 requests/month free tier. Good for pre-match and live bookmaker odds. | **Primary Odds Supplement**: Poll once/twice a day per matchday to conserve quota. |
 | Football-Data.org | 12 competitions free, delayed fixtures/results, 10 calls/minute. | Fixture fallback if API-Football is unavailable. |
 

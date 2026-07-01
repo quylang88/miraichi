@@ -19,6 +19,7 @@ Defines the sequential milestones and execution rules for developers and autonom
 5. `PROJECT_PLAN.md` is the source of truth for the current project phase when root docs disagree.
 6. Intermediate phases must close with evidence and a next-phase recommendation, not formal owner-feedback or production promotion. Final owner review and production promotion happen only after all planned release phases are complete or explicitly removed from scope.
 7. Guardrail-sensitive decisions still require explicit owner direction before implementation, even when formal owner review is deferred.
+8. As of 2026-07-01, API-Football free-tier usage is removed from the active roadmap. Existing API-Football code and plans are legacy debt to remove during the next non-AI app completion phase, not a valid future dependency.
 
 ## Project Phases
 
@@ -62,10 +63,20 @@ Defines the sequential milestones and execution rules for developers and autonom
 - **Deliverables**: Owner-approved ADRs for data provider strategy, full World Cup fixture source coverage, dataset boundaries, evaluation criteria, provider adapter contracts, and model-readiness gates.
 - **Status**: Completed.
 
-### Phase 8: Model Training and Prediction Engine R&D
+### Phase 8: Historical Model Training and Prediction Engine R&D
 - **Goal**: Research and prototype owner-only, free-tier model training approaches through World Cup and national-team competition datasets first, then leakage-safe feature specs, chronological evaluation, and model comparison reports before any real inference runtime is selected. Club competitions are expansion scope after the national-team-first path is reviewed.
 - **Deliverables**: Phase 8 owner-only R&D subphase plan, World Cup/national-team dataset snapshot and provenance plan, feature spec and leakage audit plan, evaluation harness and baseline reports, candidate model bake-off report, owner-approved model-selection ADR, and optional runtime packaging plan only if evidence justifies it.
+- **Status**: Paused/Superseded as the active phase on 2026-07-01. Phase 8 evidence remains historical R&D, but AI training/runtime work is no longer the next priority.
+
+### Phase 9: Non-AI App Completion, Local Data API, Cloud Persistence, and Release Readiness
+- **Goal**: Urgently make the app usable across the four non-AI tabs (`Today`, `Matches`, `Bets`, `Bankroll`) before returning to Miraichi AI. Match data must come from an owner-controlled local/manual snapshot pipeline, not API-Football free tier. Bankroll/capital workflows and cloud database persistence must work smoothly without approving prediction, stake sizing, Kelly, ROI, CLV, or automated betting advice.
+- **Deliverables**: API-Football removal plan and code slices, local finished/scheduled match data API, national-team-first manual update workflow, World Cup 2026 first data coverage, Euro latest/past backfill path, cloud database provider ADR, cloud persistence implementation plan, four-tab app completion implementation slices, local/integration/staging verification evidence, and a disabled or honest unavailable state for `Miraichi AI`.
 - **Status**: Active.
+
+### Phase 10: Final Miraichi AI Training and Runtime
+- **Goal**: Resume national-team-first model training only after Phase 9 has delivered a working non-AI app with cloud persistence and verified local/manual match data. This phase may revisit Phase 8 R&D evidence, improve datasets, run model training, and decide whether a runtime prediction surface is justified.
+- **Deliverables**: Updated dataset evidence, leakage audit, evaluation harness, model-selection ADR update, training run reports, runtime packaging plan if approved, `Miraichi AI` tab integration, and final release gating.
+- **Status**: Deferred. Do not start until Phase 9 passes staging and the owner explicitly approves returning to AI training.
 
 ## TODO / Next Steps
 - [x] Review Phase 1 architecture planning package.
@@ -178,4 +189,26 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Result**: Implementation plan created with TDD slices for snapshot schemas, national-team priority queue, provider mapping gates, JSONL storage, raw API-Football client, snapshot runner, CLI/verifier, and closeout evidence.
   - **Plan**: See `docs/superpowers/plans/2026-06-30-phase-8-6f-api-football-national-team-jsonl-snapshot-store.md`.
   - **Next**: Start with `phase:code-slice Phase 8.6F Snapshot Schema And ID Utilities`.
-- [ ] Defer ONNX/runtime packaging until Phase 8.7 and only after owner-approved model-selection evidence.
+- [x] Pause Phase 8 AI/model-training work as the active roadmap priority on 2026-07-01.
+  - **Reason**: The non-AI app is not complete enough to justify spending the next phase on training/runtime work.
+  - **Constraint**: Phase 8 R&D artifacts remain historical evidence only. They do not authorize production predictions, the `Miraichi AI` tab, stake advice, bankroll advice, or model runtime routes.
+- [x] Supersede the Phase 8.6F API-Football National-Team JSONL Snapshot Store before code-slice execution.
+  - **Reason**: Owner explicitly rejected the API-Football free-tier path on 2026-07-01.
+  - **Replacement**: Use Phase 9 local/manual data ingestion and a replaceable source registry.
+- [x] Create ADR-0042 to remove API-Football free-tier usage and select a local/manual snapshot API strategy.
+- [x] Create `phase:plan Phase 9 Non-AI App Completion, Local Data API, Cloud Persistence, and Release Readiness`.
+  - **Plan**: See `docs/product/PHASE-9-NON-AI-APP-COMPLETION-LOCAL-DATA-API-PLAN.md`.
+- [ ] Create `phase:implementation-plan Phase 9 API-Football Removal and Local Data API`.
+- [ ] Complete `phase:code-slice Phase 9 API-Football removal from API routes, web tests, environment assumptions, and endpoint smoke checks`.
+- [ ] Complete `phase:code-slice Phase 9 local/manual national-team match snapshot store`.
+- [ ] Complete `phase:code-slice Phase 9 local data API for finished and scheduled fixtures`.
+- [ ] Complete `phase:code-slice Phase 9 manual daily update command for World Cup 2026 first, then Euro latest/past backfill`.
+- [ ] Create owner-approved cloud database provider ADR before implementing production cloud persistence.
+- [ ] Create `phase:implementation-plan Phase 9 Cloud Persistence for four non-AI tabs`.
+- [ ] Complete `Today` and `Matches` tab flows against the local/cloud match API with loading, empty, stale-data, and unavailable states.
+- [ ] Complete `Bets` tab real draft/history workflows without automated betting, ROI, CLV, Kelly, or stake recommendation logic.
+- [ ] Complete `Bankroll` capital-management workflows as owner-entered ledger/account records only, with no automated risk or stake allocation formulas.
+- [ ] Run `phase:integration-test Phase 9 Non-AI App Completion` only after the four non-AI tabs and persistence boundary are feature-complete.
+- [ ] Run `phase:staging Phase 9 Non-AI App Completion` and record smoke evidence.
+- [ ] Keep `Miraichi AI` disabled or honest-unavailable until Phase 10.
+- [ ] Start Phase 10 AI training/runtime only after Phase 9 staging passes and the owner explicitly approves returning to AI.

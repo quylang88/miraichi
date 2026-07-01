@@ -1,6 +1,6 @@
 # Phase 8.6F API-Football National-Team JSONL Snapshot Store Design Spec
 
-* **Status**: Proposed
+* **Status**: Superseded on 2026-07-01 by [ADR-0042](file:///c:/CODE/miraichi/docs/decisions/ADR-0042-local-data-api-and-api-football-removal.md). Do not implement this API-Football path.
 * **Date**: 2026-06-30
 * **Phase**: 8.6F API-Football National-Team JSONL Snapshot Store
 * **Audience**: Owner, Planner Agent, Architect Agent, Backend Agent, AI/Data Agent, QA Agent
@@ -481,4 +481,3 @@ phase:implementation-plan Phase 8.6F API-Football National-Team JSONL Snapshot S
 ```
 
 Do not start club expansion, all-league crawling, live polling, odds integration, model training, or production database work from this phase.
-

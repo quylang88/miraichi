@@ -1,5 +1,7 @@
 # Phase 8.6E API-Football Owner-Only App Live Data Implementation Plan
 
+> **Status:** Historical/superseded on 2026-07-01 by [ADR-0042](file:///c:/CODE/miraichi/docs/decisions/ADR-0042-local-data-api-and-api-football-removal.md). This plan explains completed legacy work, but Phase 9 must remove API-Football from the active app data path.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the app's visible hardcoded match feed with an owner-only API-Football-backed matchday feed served through the Miraichi API gateway.
@@ -1804,4 +1806,3 @@ or:
 ```text
 phase:plan Phase 8.6G API-Football Match Detail Lazy Loading
 ```
-

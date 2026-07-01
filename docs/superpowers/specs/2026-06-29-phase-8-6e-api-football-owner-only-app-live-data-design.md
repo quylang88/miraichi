@@ -1,6 +1,6 @@
 # Phase 8.6E API-Football Owner-Only App Live Data Design Spec
 
-* **Status**: Proposed
+* **Status**: Historical/superseded on 2026-07-01 by [ADR-0042](file:///c:/CODE/miraichi/docs/decisions/ADR-0042-local-data-api-and-api-football-removal.md). Phase 9 must remove API-Football from the active app data path.
 * **Date**: 2026-06-29
 * **Phase**: 8.6E API-Football Owner-Only App Live Data
 * **Audience**: Owner, Planner Agent, Architect Agent, Backend Agent, Frontend Agent, QA Agent
@@ -225,4 +225,3 @@ Phase 8.6E can close only when:
 4. No provider key is exposed to the browser or repository.
 5. No odds, predictions, model runtime, or betting recommendation behavior is added.
 6. Focused tests, typecheck, lifecycle verification, and `git diff --check` pass.
-

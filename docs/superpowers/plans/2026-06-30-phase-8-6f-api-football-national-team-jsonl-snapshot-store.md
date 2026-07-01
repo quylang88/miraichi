@@ -1,5 +1,7 @@
 # Phase 8.6F API-Football National-Team JSONL Snapshot Store Implementation Plan
 
+> **Status:** Superseded on 2026-07-01 by [ADR-0042](file:///c:/CODE/miraichi/docs/decisions/ADR-0042-local-data-api-and-api-football-removal.md) and [Phase 9 Non-AI App Completion Plan](file:///c:/CODE/miraichi/docs/product/PHASE-9-NON-AI-APP-COMPLETION-LOCAL-DATA-API-PLAN.md). Do not execute this plan. API-Football free-tier usage is no longer an active Miraichi roadmap dependency.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build an owner-only, national-team-first API-Football raw snapshot pipeline that stores SQL-shaped JSONL records locally without adding predictions, odds, club competitions, or production database schema.
