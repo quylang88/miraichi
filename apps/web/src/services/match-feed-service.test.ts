@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getMatchFeed } from './match-feed-service.js';
+import { LocalMatch, LocalDataSnapshotStatus } from '@miraichi/shared';
 
 describe('web match feed service', () => {
   afterEach(() => {
@@ -7,71 +8,93 @@ describe('web match feed service', () => {
     vi.unstubAllGlobals();
   });
 
-  it('returns a ready state from the API gateway payload', async () => {
+  const validMatch: LocalMatch = {
+    id: 'match-1',
+    competition: {
+      id: 'world-cup-2026',
+      name: 'FIFA World Cup',
+      type: 'national-team',
+      season: '2026'
+    },
+    kickoffUtc: '2026-06-11T19:00:00.000Z',
+    status: 'scheduled',
+    homeTeam: { id: 'team-mexico', name: 'Mexico' },
+    awayTeam: { id: 'team-safrica', name: 'South Africa' },
+    score: { home: null, away: null },
+    sourceRefs: [],
+    updatedAt: '2026-07-01T00:00:00.000Z'
+  };
+
+  const validSnapshot: LocalDataSnapshotStatus = {
+    snapshotId: 'test-snapshot',
+    generatedAt: '2026-07-01T00:00:00.000Z',
+    importedAt: '2026-07-01T00:00:00.000Z',
+    matchCount: 1,
+    competitions: [],
+    sources: [],
+    freshness: 'fresh',
+    warnings: []
+  };
+
+  it('returns a ready state from the local snapshot API payload', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
-      sourceProviderId: 'api-football',
-      mode: 'date',
-      fetchedAt: '2026-06-29T00:00:00.000Z',
-      cache: { status: 'miss', ttlSeconds: 900 },
-      quota: { dailyLimit: 100, consumedToday: 1, remainingToday: 99 },
-      matches: [
-        {
-          id: 'api-football-fixture-1',
-          sourceProviderId: 'api-football',
-          providerFixtureId: '1',
-          competitionId: 'api-football-league-1',
-          competitionName: 'FIFA World Cup',
-          seasonId: 'api-football-season-2026',
-          round: 'Group Stage - 1',
-          status: 'scheduled',
-          statusLabel: 'Not Started',
-          kickoffTime: '2026-06-29T10:00:00.000Z',
-          homeTeam: { id: 'api-football-team-1', name: 'Japan' },
-          awayTeam: { id: 'api-football-team-2', name: 'Vietnam' },
-          score: null,
-          venueName: 'Tokyo Stadium',
-          elapsedMinute: null
-        }
-      ],
-      warnings: []
+      matches: [validMatch],
+      snapshot: validSnapshot
     }), { status: 200 })));
 
-    await expect(getMatchFeed('2026-06-29')).resolves.toMatchObject({
-      status: 'ready',
-      date: '2026-06-29',
-      matches: [{ homeTeam: { name: 'Japan' }, awayTeam: { name: 'Vietnam' } }]
-    });
+    const result = await getMatchFeed('2026-06-11');
+    expect(result.status).toBe('ready');
+    if (result.status === 'ready') {
+      expect(result.matches).toHaveLength(1);
+      expect(result.matches[0].id).toBe('match-1');
+      expect(result.snapshot.snapshotId).toBe('test-snapshot');
+    }
   });
 
-  it('returns empty and unavailable states without using hardcoded mock matches', async () => {
+  it('returns empty state including snapshot health', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
-      sourceProviderId: 'api-football',
-      mode: 'date',
-      fetchedAt: '2026-06-29T00:00:00.000Z',
-      cache: { status: 'miss', ttlSeconds: 900 },
-      quota: { dailyLimit: 100, consumedToday: 1, remainingToday: 99 },
       matches: [],
-      warnings: ['no_fixtures_for_date']
+      snapshot: validSnapshot
     }), { status: 200 })));
 
-    await expect(getMatchFeed('2026-06-29')).resolves.toEqual({
-      status: 'empty',
-      date: '2026-06-29',
-      warnings: ['no_fixtures_for_date']
-    });
+    const result = await getMatchFeed('2026-06-11');
+    expect(result.status).toBe('empty');
+    if (result.status === 'empty') {
+      expect(result.snapshot.snapshotId).toBe('test-snapshot');
+    }
+  });
 
+  it('returns unavailable state and maps local_snapshot_missing to actionable copy', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
       error: {
-        code: 'api_football_key_missing',
-        message: 'API_FOOTBALL_KEY is required for API-Football match feed.'
+        code: 'local_snapshot_missing',
+        message: 'Snapshot not found'
       }
     }), { status: 503 })));
 
-    await expect(getMatchFeed('2026-06-29')).resolves.toEqual({
-      status: 'unavailable',
-      date: '2026-06-29',
-      reason: 'API_FOOTBALL_KEY is required for API-Football match feed.',
-      warnings: ['api_football_key_missing']
-    });
+    const result = await getMatchFeed('2026-06-11');
+    expect(result.status).toBe('unavailable');
+    if (result.status === 'unavailable') {
+      expect(result.reason).toContain('Local match snapshot is missing. Run the national-team data update before using match workflows.');
+      expect(result.warnings).toContain('local_snapshot_missing');
+    }
+  });
+
+  it('fails normalization when response contains sourceProviderId or providerFixtureId', async () => {
+    const invalidMatch = {
+      ...validMatch,
+      sourceProviderId: 'api-football'
+    };
+
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      matches: [invalidMatch],
+      snapshot: validSnapshot
+    }), { status: 200 })));
+
+    const result = await getMatchFeed('2026-06-11');
+    expect(result.status).toBe('unavailable');
+    if (result.status === 'unavailable') {
+      expect(result.reason).toContain('Normalization error');
+    }
   });
 });

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { handleMatchDetail, type MatchDetailResponse } from './match-detail.js';
+import { handleMatchDetail } from './match-detail.js';
+import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
+import { LocalMatch, LocalMatchDetail } from '@miraichi/shared';
 
 function responseMock() {
   return {
@@ -17,126 +19,93 @@ function responseMock() {
   };
 }
 
+const mockMatch: LocalMatch = {
+  id: 'match-world-cup-2026-group-a-mexico-south-africa-2026-06-11',
+  competition: {
+    id: 'world-cup-2026',
+    name: 'FIFA World Cup',
+    type: 'national-team',
+    season: '2026'
+  },
+  kickoffUtc: '2026-06-11T19:00:00.000Z',
+  status: 'scheduled',
+  homeTeam: { id: 'team-mexico', name: 'Mexico' },
+  awayTeam: { id: 'team-safrica', name: 'South Africa' },
+  score: { home: null, away: null },
+  sourceRefs: [],
+  updatedAt: '2026-07-01T00:00:00.000Z'
+};
+
+const mockDetail: LocalMatchDetail = {
+  match: mockMatch,
+  referee: undefined,
+  events: [],
+  notes: ['Local snapshot detail does not include live event telemetry.']
+};
+
 describe('match detail route', () => {
-  it('throws 400 if id is missing', async () => {
+  it('returns LocalMatchDetail for valid id', async () => {
+    const response = responseMock();
+    const mockRepo = {
+      findById: async (id: string) => {
+        expect(id).toBe('match-world-cup-2026-group-a-mexico-south-africa-2026-06-11');
+        return mockMatch;
+      }
+    } as unknown as LocalMatchSnapshotRepository;
+
+    await handleMatchDetail(
+      { url: `/api/v1/matches/detail?id=${mockMatch.id}`, method: 'GET' } as import('http').IncomingMessage,
+      response as unknown as import('http').ServerResponse,
+      { repository: mockRepo }
+    );
+
+    expect(response.statusCode).toBe(200);
+    const body = JSON.parse(response.body) as LocalMatchDetail;
+    expect(body.match.id).toBe(mockMatch.id);
+    expect(body.events).toEqual([]);
+    expect(body.notes).toContain('Local snapshot detail does not include live event telemetry.');
+  });
+
+  it('returns 400 if id is missing', async () => {
     const response = responseMock();
 
     await handleMatchDetail(
       { url: '/api/v1/matches/detail', method: 'GET' } as import('http').IncomingMessage,
-      response as unknown as import('http').ServerResponse,
-      {
-        loadDetail: async () => {
-          throw new Error('should not be called');
-        }
-      }
+      response as unknown as import('http').ServerResponse
     );
 
     expect(response.statusCode).toBe(400);
     const body = JSON.parse(response.body);
-    expect(body.error.code).toBe('missing_match_id');
+    expect(body.error.code).toBe('match_id_required');
   });
 
-  it('returns a normalized provider-backed match detail and events', async () => {
-    const response = responseMock();
-
-    const mockDetail: MatchDetailResponse = {
-      match: {
-        id: 'api-football-fixture-123',
-        sourceProviderId: 'api-football',
-        providerFixtureId: '123',
-        competitionId: 'api-football-league-1',
-        competitionName: 'FIFA World Cup',
-        seasonId: 'api-football-season-2026',
-        round: 'Group Stage - 1',
-        status: 'completed',
-        statusLabel: 'Match Finished',
-        kickoffTime: '2026-06-29T10:00:00.000Z',
-        homeTeam: { id: 'api-football-team-1', name: 'Japan' },
-        awayTeam: { id: 'api-football-team-2', name: 'Vietnam' },
-        score: { home: 2, away: 1 },
-        venueName: 'Tokyo Stadium',
-        elapsedMinute: 90
-      },
-      referee: 'Michael Oliver',
-      score: {
-        halftime: { home: 1, away: 0 },
-        fulltime: { home: 2, away: 1 },
-        extratime: { home: null, away: null },
-        penalty: { home: null, away: null }
-      },
-      events: [
-        {
-          time: { elapsed: 12, extra: null },
-          team: { id: 'api-football-team-1', name: 'Japan' },
-          player: { id: 'api-football-player-101', name: 'K. Minamino' },
-          assist: { id: 'api-football-player-102', name: 'J. Ito' },
-          type: 'Goal',
-          detail: 'Normal Goal',
-          comments: null
-        }
-      ]
-    };
-
-    await handleMatchDetail(
-      { url: '/api/v1/matches/detail?id=123', method: 'GET' } as import('http').IncomingMessage,
-      response as unknown as import('http').ServerResponse,
-      {
-        loadDetail: async (id) => {
-          expect(id).toBe('123');
-          return mockDetail;
-        }
-      }
-    );
-
-    expect(response.statusCode).toBe(200);
-    const body = JSON.parse(response.body) as MatchDetailResponse;
-    expect(body.match.id).toBe('api-football-fixture-123');
-    expect(body.referee).toBe('Michael Oliver');
-    expect(body.events.length).toBe(1);
-    expect(body.events[0].player.name).toBe('K. Minamino');
-  });
-
-  it('handles client/provider errors cleanly', async () => {
+  it('returns 400 with legacy_provider_id_not_supported for api-football-fixture- prefix', async () => {
     const response = responseMock();
 
     await handleMatchDetail(
-      { url: '/api/v1/matches/detail?id=123', method: 'GET' } as import('http').IncomingMessage,
-      response as unknown as import('http').ServerResponse,
-      {
-        loadDetail: async () => {
-          const error = new Error('API-Football returned HTTP 502.');
-          Object.assign(error, { code: 'api_football_provider_error', statusCode: 502 });
-          throw error;
-        }
-      }
+      { url: '/api/v1/matches/detail?id=api-football-fixture-123', method: 'GET' } as import('http').IncomingMessage,
+      response as unknown as import('http').ServerResponse
     );
 
-    expect(response.statusCode).toBe(502);
-    expect(JSON.parse(response.body)).toEqual({
-      error: {
-        code: 'api_football_provider_error',
-        message: 'API-Football returned HTTP 502.'
-      }
-    });
+    expect(response.statusCode).toBe(400);
+    const body = JSON.parse(response.body);
+    expect(body.error.code).toBe('legacy_provider_id_not_supported');
   });
 
-  it('falls back to mock data if key is missing', async () => {
+  it('returns 404 if match is not found in the local snapshot', async () => {
     const response = responseMock();
-    const originalKey = process.env.API_FOOTBALL_KEY;
-    delete process.env.API_FOOTBALL_KEY;
+    const mockRepo = {
+      findById: async () => null
+    } as unknown as LocalMatchSnapshotRepository;
 
-    try {
-      await handleMatchDetail(
-        { url: '/api/v1/matches/detail?id=123', method: 'GET' } as import('http').IncomingMessage,
-        response as unknown as import('http').ServerResponse
-      );
+    await handleMatchDetail(
+      { url: '/api/v1/matches/detail?id=non-existent-id', method: 'GET' } as import('http').IncomingMessage,
+      response as unknown as import('http').ServerResponse,
+      { repository: mockRepo }
+    );
 
-      expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body);
-      expect(body.match.providerFixtureId).toBe('123');
-      expect(body.referee).toBe('Michael Oliver');
-    } finally {
-      process.env.API_FOOTBALL_KEY = originalKey;
-    }
+    expect(response.statusCode).toBe(404);
+    const body = JSON.parse(response.body);
+    expect(body.error.code).toBe('match_not_found');
   });
 });

@@ -200,10 +200,10 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Plan**: See `docs/product/PHASE-9-NON-AI-APP-COMPLETION-LOCAL-DATA-API-PLAN.md`.
 - [x] Create `phase:implementation-plan Phase 9 API-Football Removal and Local Data API`.
   - **Plan**: See `docs/superpowers/plans/2026-07-01-phase-9-api-football-removal-local-data-api.md`.
-- [ ] Complete `phase:code-slice Phase 9 API-Football removal from API routes, web tests, environment assumptions, and endpoint smoke checks`.
-- [ ] Complete `phase:code-slice Phase 9 local/manual national-team match snapshot store`.
-- [ ] Complete `phase:code-slice Phase 9 local data API for finished and scheduled fixtures`.
-- [ ] Complete `phase:code-slice Phase 9 manual daily update command for World Cup 2026 first, then Euro latest/past backfill`.
+- [x] Complete `phase:code-slice Phase 9 API-Football removal from API routes, web tests, environment assumptions, and endpoint smoke checks`.
+- [x] Complete `phase:code-slice Phase 9 local/manual national-team match snapshot store`.
+- [x] Complete `phase:code-slice Phase 9 local data API for finished and scheduled fixtures`.
+- [x] Complete `phase:code-slice Phase 9 manual daily update command for World Cup 2026 first, then Euro latest/past backfill`.
 - [ ] Create owner-approved cloud database provider ADR before implementing production cloud persistence.
 - [ ] Create `phase:implementation-plan Phase 9 Cloud Persistence for four non-AI tabs`.
 - [ ] Complete `Today` and `Matches` tab flows against the local/cloud match API with loading, empty, stale-data, and unavailable states.

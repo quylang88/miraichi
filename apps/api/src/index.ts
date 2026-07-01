@@ -11,6 +11,8 @@ import { handleIngestionStatus } from './routes/ingestion-status.mock.js';
 import { handleMockPredict } from './routes/mock-prediction.js';
 import { handleMockExplain } from './routes/mock-explanation.js';
 import { handleMatchDetail } from './routes/match-detail.js';
+import { handleDataSnapshotStatus } from './routes/data-snapshot-status.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,6 +76,8 @@ const server = http.createServer((req, res) => {
     handleHealth(req, res);
   } else if (pathname === '/api/v1/matches/detail') {
     void handleMatchDetail(req, res);
+  } else if (pathname === '/api/v1/data-snapshot/status') {
+    void handleDataSnapshotStatus(req, res);
   } else if (pathname === '/api/v1/matches') {
     void handleMatches(req, res);
   } else if (pathname === '/api/v1/predictions') {

@@ -11,6 +11,8 @@ import { renderBottomNavigation } from './components/bottom-navigation.js';
 import { createSettingsService } from './services/settings-service.js';
 import { resolveLocale, t } from './services/i18n-service.js';
 import { getTodayDateTileParts } from './components/app-shell.js';
+import type { LocalMatchStatus } from '@miraichi/shared';
+
 
 function createMemoryStorage(initial: Record<string, string> = {}): Storage {
   const store = new Map(Object.entries(initial));
@@ -81,23 +83,33 @@ describe('production PWA shell rendering', () => {
         status: 'ready',
         date: '2026-06-29',
         warnings: [],
+        snapshot: {
+          snapshotId: 'test-snapshot',
+          generatedAt: '2026-07-01T00:00:00.000Z',
+          importedAt: '2026-07-01T00:00:00.000Z',
+          matchCount: 1,
+          competitions: [],
+          sources: [],
+          freshness: 'fresh' as const,
+          warnings: []
+        },
         matches: [
           {
-            id: 'api-football-fixture-1',
-            sourceProviderId: 'api-football',
-            providerFixtureId: '1',
-            competitionId: 'api-football-league-1',
-            competitionName: 'FIFA World Cup',
-            seasonId: 'api-football-season-2026',
-            round: 'Group Stage - 1',
+            id: 'match-1',
+            competition: {
+              id: 'world-cup-2026',
+              name: 'FIFA World Cup',
+              type: 'national-team',
+              season: '2026'
+            },
+            kickoffUtc: '2026-06-29T10:00:00.000Z',
             status: 'scheduled',
-            statusLabel: 'Not Started',
-            kickoffTime: '2026-06-29T10:00:00.000Z',
-            homeTeam: { id: 'api-football-team-1', name: 'Japan' },
-            awayTeam: { id: 'api-football-team-2', name: 'Vietnam' },
-            score: null,
-            venueName: 'Tokyo Stadium',
-            elapsedMinute: null
+            homeTeam: { id: 'team-1', name: 'Japan' },
+            awayTeam: { id: 'team-2', name: 'Vietnam' },
+            score: { home: null, away: null },
+            venue: 'Tokyo Stadium',
+            sourceRefs: [],
+            updatedAt: '2026-07-01T00:00:00.000Z'
           }
         ]
       }
@@ -202,6 +214,16 @@ describe('production PWA shell rendering', () => {
         status: 'ready',
         date: '2026-06-30',
         warnings: [],
+        snapshot: {
+          snapshotId: 'test-snapshot',
+          generatedAt: '2026-07-01T00:00:00.000Z',
+          importedAt: '2026-07-01T00:00:00.000Z',
+          matchCount: 0,
+          competitions: [],
+          sources: [],
+          freshness: 'fresh' as const,
+          warnings: []
+        },
         matches: []
       }
     });
@@ -296,23 +318,32 @@ describe('production shell settings and i18n boundaries', () => {
       status: 'ready' as const,
       date: '2026-06-29',
       warnings: [] as string[],
+      snapshot: {
+        snapshotId: 'test-snapshot',
+        generatedAt: '2026-07-01T00:00:00.000Z',
+        importedAt: '2026-07-01T00:00:00.000Z',
+        matchCount: 1,
+        competitions: [],
+        sources: [],
+        freshness: 'fresh' as const,
+        warnings: []
+      },
       matches: [
         {
           id: 'test-fixture-1',
-          sourceProviderId: 'api-football' as const,
-          providerFixtureId: '1',
-          competitionId: 'test-league',
-          competitionName: 'FIFA World Cup',
-          seasonId: 'test-season',
-          round: 'Group Stage - 1',
+          competition: {
+            id: 'test-league',
+            name: 'FIFA World Cup',
+            type: 'national-team' as const,
+            season: '2026'
+          },
+          kickoffUtc: '2026-06-29T10:00:00.000Z',
           status: 'scheduled' as const,
-          statusLabel: 'Not Started',
-          kickoffTime: '2026-06-29T10:00:00.000Z',
           homeTeam: { id: 'team-1', name: 'Japan' },
           awayTeam: { id: 'team-2', name: 'Vietnam' },
-          score: null,
-          venueName: 'Tokyo Stadium',
-          elapsedMinute: null
+          score: { home: null, away: null },
+          updatedAt: '2026-07-01T00:00:00.000Z',
+          sourceRefs: []
         }
       ]
     };
@@ -338,13 +369,13 @@ describe('production shell settings and i18n boundaries', () => {
 });
 
 describe('production shell live match feed rendering', () => {
-  it('renders loading and unavailable states for API-Football feed', () => {
+  it('renders loading and unavailable states for local snapshot feed', () => {
     const loadingHtml = renderAppShell({
       activeTabId: 'today',
       translate: t,
       matchFeed: { status: 'loading', date: '2026-06-29' }
     });
-    expect(loadingHtml).toContain('Loading match feed');
+    expect(loadingHtml).toContain('Loading match snapshot');
 
     const unavailableHtml = renderAppShell({
       activeTabId: 'matches',
@@ -352,12 +383,12 @@ describe('production shell live match feed rendering', () => {
       matchFeed: {
         status: 'unavailable',
         date: '2026-06-29',
-        reason: 'API_FOOTBALL_KEY is required for API-Football match feed.',
-        warnings: ['api_football_key_missing']
+        reason: 'Local match snapshot is missing. Run the national-team data update before using match workflows.',
+        warnings: ['local_snapshot_missing']
       }
     });
-    expect(unavailableHtml).toContain('Provider setup required');
-    expect(unavailableHtml).toContain('API_FOOTBALL_KEY is required for API-Football match feed.');
+    expect(unavailableHtml).toContain('Data update required');
+    expect(unavailableHtml).toContain('Local match snapshot is missing. Run the national-team data update before using match workflows.');
   });
 
   it('renders real provider matches and removes visible hardcoded live feed labels', () => {
@@ -368,23 +399,33 @@ describe('production shell live match feed rendering', () => {
         status: 'ready',
         date: '2026-06-29',
         warnings: [],
+        snapshot: {
+          snapshotId: 'test-snapshot',
+          generatedAt: '2026-07-01T00:00:00.000Z',
+          importedAt: '2026-07-01T00:00:00.000Z',
+          matchCount: 1,
+          competitions: [],
+          sources: [],
+          freshness: 'fresh' as const,
+          warnings: []
+        },
         matches: [
           {
-            id: 'api-football-fixture-1',
-            sourceProviderId: 'api-football',
-            providerFixtureId: '1',
-            competitionId: 'api-football-league-1',
-            competitionName: 'FIFA World Cup',
-            seasonId: 'api-football-season-2026',
-            round: 'Group Stage - 1',
+            id: 'match-1',
+            competition: {
+              id: 'world-cup-2026',
+              name: 'FIFA World Cup',
+              type: 'national-team',
+              season: '2026'
+            },
+            kickoffUtc: '2026-06-29T10:00:00.000Z',
             status: 'scheduled',
-            statusLabel: 'Not Started',
-            kickoffTime: '2026-06-29T10:00:00.000Z',
-            homeTeam: { id: 'api-football-team-1', name: 'Japan' },
-            awayTeam: { id: 'api-football-team-2', name: 'Vietnam' },
-            score: null,
-            venueName: 'Tokyo Stadium',
-            elapsedMinute: null
+            homeTeam: { id: 'team-1', name: 'Japan' },
+            awayTeam: { id: 'team-2', name: 'Vietnam' },
+            score: { home: null, away: null },
+            venue: 'Tokyo Stadium',
+            sourceRefs: [],
+            updatedAt: '2026-07-01T00:00:00.000Z'
           }
         ]
       }
@@ -424,57 +465,67 @@ describe('production shell match filters panel', () => {
     status: 'ready' as const,
     date: '2026-06-30',
     warnings: [] as string[],
+    snapshot: {
+      snapshotId: 'test-snapshot',
+      generatedAt: '2026-07-01T00:00:00.000Z',
+      importedAt: '2026-07-01T00:00:00.000Z',
+      matchCount: 3,
+      competitions: [],
+      sources: [],
+      freshness: 'fresh' as const,
+      warnings: []
+    },
     matches: [
       {
         id: 'm1',
-        sourceProviderId: 'api-football' as const,
-        providerFixtureId: '101',
-        competitionId: 'c1',
-        competitionName: 'FIFA World Cup',
-        seasonId: 's2026',
-        round: 'Group A',
+        competition: {
+          id: 'c1',
+          name: 'FIFA World Cup',
+          type: 'national-team' as const,
+          season: '2026'
+        },
+        kickoffUtc: '2026-06-30T14:00:00.000Z',
         status: 'scheduled' as const,
-        statusLabel: 'Scheduled',
-        kickoffTime: '2026-06-30T14:00:00.000Z',
         homeTeam: { id: 't1', name: 'Japan' },
         awayTeam: { id: 't2', name: 'Vietnam' },
-        score: null,
-        venueName: 'Stadium A',
-        elapsedMinute: null
+        score: { home: null, away: null },
+        venue: 'Stadium A',
+        sourceRefs: [],
+        updatedAt: '2026-07-01T00:00:00.000Z'
       },
       {
         id: 'm2',
-        sourceProviderId: 'api-football' as const,
-        providerFixtureId: '102',
-        competitionId: 'c2',
-        competitionName: 'English Premier League',
-        seasonId: 's2026',
-        round: 'Matchday 1',
-        status: 'in_play' as const,
-        statusLabel: 'Live',
-        kickoffTime: '2026-06-30T16:00:00.000Z',
+        competition: {
+          id: 'c2',
+          name: 'English Premier League',
+          type: 'national-team' as const,
+          season: '2026'
+        },
+        kickoffUtc: '2026-06-30T16:00:00.000Z',
+        status: 'in_play' as unknown as LocalMatchStatus,
         homeTeam: { id: 't3', name: 'Arsenal' },
         awayTeam: { id: 't4', name: 'Chelsea' },
         score: { home: 1, away: 0 },
-        venueName: 'Stadium B',
-        elapsedMinute: 45
+        venue: 'Stadium B',
+        sourceRefs: [],
+        updatedAt: '2026-07-01T00:00:00.000Z'
       },
       {
         id: 'm3',
-        sourceProviderId: 'api-football' as const,
-        providerFixtureId: '103',
-        competitionId: 'c3',
-        competitionName: 'Women Friendly',
-        seasonId: 's2026',
-        round: 'Friendly',
+        competition: {
+          id: 'c3',
+          name: 'Women Friendly',
+          type: 'national-team' as const,
+          season: '2026'
+        },
+        kickoffUtc: '2026-06-30T10:00:00.000Z',
         status: 'scheduled' as const,
-        statusLabel: 'Scheduled',
-        kickoffTime: '2026-06-30T10:00:00.000Z',
         homeTeam: { id: 't5', name: 'USA Women' },
         awayTeam: { id: 't6', name: 'Germany' },
-        score: null,
-        venueName: 'Stadium C',
-        elapsedMinute: null
+        score: { home: null, away: null },
+        venue: 'Stadium C',
+        sourceRefs: [],
+        updatedAt: '2026-07-01T00:00:00.000Z'
       }
     ]
   };

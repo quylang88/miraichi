@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { handleMatches, type MatchFeedResponse } from './matches.js';
-import type { AppMatch } from '../providers/api-football-client.js';
+import { handleMatches } from './matches.js';
+import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
+import { LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery } from '@miraichi/shared';
 
 function responseMock() {
   return {
@@ -18,84 +19,153 @@ function responseMock() {
   };
 }
 
-const match: AppMatch = {
-  id: 'api-football-fixture-1',
-  sourceProviderId: 'api-football',
-  providerFixtureId: '1',
-  competitionId: 'api-football-league-1',
-  competitionName: 'FIFA World Cup',
-  seasonId: 'api-football-season-2026',
-  round: 'Group Stage - 1',
+const mockMatch: LocalMatch = {
+  id: 'match-world-cup-2026-group-a-mexico-south-africa-2026-06-11',
+  competition: {
+    id: 'world-cup-2026',
+    name: 'FIFA World Cup',
+    type: 'national-team',
+    season: '2026'
+  },
+  kickoffUtc: '2026-06-11T19:00:00.000Z',
   status: 'scheduled',
-  statusLabel: 'Not Started',
-  kickoffTime: '2026-06-29T10:00:00.000Z',
-  homeTeam: { id: 'api-football-team-1', name: 'Japan' },
-  awayTeam: { id: 'api-football-team-2', name: 'Vietnam' },
-  score: null,
-  venueName: 'Tokyo Stadium',
-  elapsedMinute: null
+  homeTeam: { id: 'team-mexico', name: 'Mexico' },
+  awayTeam: { id: 'team-safrica', name: 'South Africa' },
+  score: { home: null, away: null },
+  sourceRefs: [],
+  updatedAt: '2026-07-01T00:00:00.000Z'
+};
+
+const mockFeedResponse: LocalMatchFeedResponse = {
+  matches: [mockMatch],
+  snapshot: {
+    snapshotId: 'test-snapshot',
+    generatedAt: '2026-07-01T00:00:00.000Z',
+    importedAt: '2026-07-01T00:00:00.000Z',
+    matchCount: 1,
+    competitions: [
+      { id: 'world-cup-2026', name: 'FIFA World Cup', seasons: ['2026'], matchCount: 1 }
+    ],
+    sources: [],
+    freshness: 'fresh',
+    warnings: []
+  }
 };
 
 describe('matches route', () => {
-  it('returns a normalized provider-backed match feed', async () => {
+  it('returns a local match feed response', async () => {
     const response = responseMock();
+    const mockRepo = {
+      listMatches: async () => mockFeedResponse
+    } as unknown as LocalMatchSnapshotRepository;
 
     await handleMatches(
-      { url: '/api/v1/matches?date=2026-06-29', method: 'GET' } as import('http').IncomingMessage,
+      { url: '/api/v1/matches', method: 'GET' } as import('http').IncomingMessage,
       response as unknown as import('http').ServerResponse,
-      {
-        loadMatches: async () => ({
-          sourceProviderId: 'api-football',
-          mode: 'date',
-          fetchedAt: '2026-06-29T00:00:00.000Z',
-          cache: { status: 'miss', ttlSeconds: 900 },
-          quota: { dailyLimit: 100, consumedToday: 1, remainingToday: 99 },
-          matches: [match],
-          warnings: []
-        })
-      }
+      { repository: mockRepo }
     );
 
     expect(response.statusCode).toBe(200);
-    const body = JSON.parse(response.body) as MatchFeedResponse;
-    expect(body.matches).toEqual([match]);
-    expect(body.cache.status).toBe('miss');
+    const body = JSON.parse(response.body);
+    expect(body.matches).toEqual([mockMatch]);
+    expect(body.snapshot.snapshotId).toBe('test-snapshot');
+
+    // Assert absence of old API-Football/cache/quota structures
+    expect(body.quota).toBeUndefined();
+    expect(body.cache).toBeUndefined();
+    expect(body.sourceProviderId).toBeUndefined();
+    expect(body.matches[0].providerFixtureId).toBeUndefined();
   });
 
-  it('uses a structured error instead of mock fallback when provider setup fails', async () => {
+  it('filters by date when provided', async () => {
     const response = responseMock();
+    let calledQuery: LocalMatchSnapshotQuery | null = null;
+    const mockRepo = {
+      listMatches: async (query: LocalMatchSnapshotQuery) => {
+        calledQuery = query;
+        return mockFeedResponse;
+      }
+    } as unknown as LocalMatchSnapshotRepository;
 
     await handleMatches(
-      { url: '/api/v1/matches?date=2026-06-29', method: 'GET' } as import('http').IncomingMessage,
+      { url: '/api/v1/matches?date=2026-06-11', method: 'GET' } as import('http').IncomingMessage,
       response as unknown as import('http').ServerResponse,
-      {
-        loadMatches: async () => {
-          const error = new Error('API_FOOTBALL_KEY is required for API-Football match feed.');
-          Object.assign(error, { code: 'api_football_key_missing', statusCode: 503 });
-          throw error;
-        }
-      }
+      { repository: mockRepo }
     );
 
-    expect(response.statusCode).toBe(503);
-    expect(JSON.parse(response.body)).toEqual({
-      error: {
-        code: 'api_football_key_missing',
-        message: 'API_FOOTBALL_KEY is required for API-Football match feed.'
-      }
+    expect(response.statusCode).toBe(200);
+    expect(calledQuery).toEqual({
+      date: '2026-06-11',
+      competitionId: undefined,
+      status: undefined
     });
   });
 
-  it('rejects unsafe date query values', async () => {
+  it('rejects invalid date format', async () => {
     const response = responseMock();
 
     await handleMatches(
       { url: '/api/v1/matches?date=not-a-date', method: 'GET' } as import('http').IncomingMessage,
-      response as unknown as import('http').ServerResponse,
-      { loadMatches: async () => { throw new Error('should not be called'); } }
+      response as unknown as import('http').ServerResponse
     );
 
     expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).error.code).toBe('invalid_match_date');
+    expect(JSON.parse(response.body).error.code).toBe('invalid_date');
+  });
+
+  it('rejects status in_play', async () => {
+    const response = responseMock();
+
+    await handleMatches(
+      { url: '/api/v1/matches?status=in_play', method: 'GET' } as import('http').IncomingMessage,
+      response as unknown as import('http').ServerResponse
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).error.code).toBe('unsupported_match_status');
+  });
+
+  it('returns 503 when snapshot is missing', async () => {
+    const response = responseMock();
+    const mockRepo = {
+      listMatches: async () => {
+        const error = new Error('Local snapshot file not found');
+        const errObj = error as unknown as { code: string; statusCode: number };
+        errObj.code = 'local_snapshot_missing';
+        errObj.statusCode = 503;
+        throw error;
+      }
+    } as unknown as LocalMatchSnapshotRepository;
+
+    await handleMatches(
+      { url: '/api/v1/matches', method: 'GET' } as import('http').IncomingMessage,
+      response as unknown as import('http').ServerResponse,
+      { repository: mockRepo }
+    );
+
+    expect(response.statusCode).toBe(503);
+    expect(JSON.parse(response.body).error.code).toBe('local_snapshot_missing');
+  });
+
+  it('returns 500 when snapshot is invalid', async () => {
+    const response = responseMock();
+    const mockRepo = {
+      listMatches: async () => {
+        const error = new Error('Malformed snapshot');
+        const errObj = error as unknown as { code: string; statusCode: number };
+        errObj.code = 'local_snapshot_invalid';
+        errObj.statusCode = 500;
+        throw error;
+      }
+    } as unknown as LocalMatchSnapshotRepository;
+
+    await handleMatches(
+      { url: '/api/v1/matches', method: 'GET' } as import('http').IncomingMessage,
+      response as unknown as import('http').ServerResponse,
+      { repository: mockRepo }
+    );
+
+    expect(response.statusCode).toBe(500);
+    expect(JSON.parse(response.body).error.code).toBe('local_snapshot_invalid');
   });
 });

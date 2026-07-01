@@ -58,14 +58,43 @@ setTimeout(async () => {
   }
 
   // 2. GET /api/v1/matches (Gateway Matches list)
+  let firstMatchId = '';
   try {
     const res = await fetch('http://localhost:3001/api/v1/matches');
-    const data = await res.json() as { matches?: unknown[] };
+    const data = await res.json() as { matches?: Record<string, unknown>[] };
     assert(res.ok && data && Array.isArray(data.matches) && data.matches.length > 0, 'GET /api/v1/matches returns match feed object with matches array');
     const firstMatch = data.matches?.[0] as { id?: string } | undefined;
-    assert(firstMatch?.id != null && firstMatch.id.startsWith('api-football-fixture-'), 'Match format uses normalized provider-backed schema');
+    firstMatchId = firstMatch?.id || '';
+    assert(firstMatchId.startsWith('match-'), 'Match ID starts with "match-"');
+
+    const hasSourceProviderId = data.matches?.some(m => 'sourceProviderId' in m);
+    const hasProviderFixtureId = data.matches?.some(m => 'providerFixtureId' in m);
+    assert(!hasSourceProviderId, 'No matches contain sourceProviderId');
+    assert(!hasProviderFixtureId, 'No matches contain providerFixtureId');
   } catch (err) {
     assert(false, `GET /api/v1/matches request failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 2B. GET /api/v1/matches/detail (Gateway Match Detail)
+  if (firstMatchId) {
+    try {
+      const res = await fetch(`http://localhost:3001/api/v1/matches/detail?id=${encodeURIComponent(firstMatchId)}`);
+      const data = await res.json() as { match?: { id?: string }; events?: unknown[] };
+      assert(res.ok && data && data.match?.id === firstMatchId, 'GET /api/v1/matches/detail returns detail for same local ID');
+      assert(Array.isArray(data.events), 'GET /api/v1/matches/detail returns events array');
+    } catch (err) {
+      assert(false, `GET /api/v1/matches/detail request failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // 2C. GET /api/v1/data-snapshot/status (Snapshot status)
+  try {
+    const res = await fetch('http://localhost:3001/api/v1/data-snapshot/status');
+    const data = await res.json() as { matchCount?: number; freshness?: string };
+    assert(res.ok && data && typeof data.matchCount === 'number' && data.matchCount > 0, 'GET /api/v1/data-snapshot/status returns status with matchCount > 0');
+    assert(data.freshness === 'fresh' || data.freshness === 'stale', 'Status has valid freshness');
+  } catch (err) {
+    assert(false, `GET /api/v1/data-snapshot/status request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // 3. GET /api/v1/predictions?matchId=match_2026_001 (Proxies to local-ai statistics processor)

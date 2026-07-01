@@ -1,3 +1,9 @@
+import {
+  LocalMatch,
+  LocalDataSnapshotStatus,
+  validateLocalMatchFeedResponse
+} from '@miraichi/shared';
+
 declare global {
   interface Window {
     MIRAICHI_ENV?: {
@@ -8,39 +14,11 @@ declare global {
 
 const API_BASE_URL = (typeof window !== 'undefined' && window.MIRAICHI_ENV?.API_URL) || '';
 
-export type AppMatch = {
-  id: string;
-  sourceProviderId: 'api-football';
-  providerFixtureId: string;
-  competitionId: string;
-  competitionName: string;
-  seasonId: string;
-  round: string | null;
-  status: 'scheduled' | 'in_play' | 'completed' | 'postponed' | 'cancelled' | 'unknown';
-  statusLabel: string;
-  kickoffTime: string;
-  homeTeam: { id: string; name: string };
-  awayTeam: { id: string; name: string };
-  score: { home: number; away: number } | null;
-  venueName: string | null;
-  elapsedMinute: number | null;
-};
-
 export type MatchFeedViewState =
   | { status: 'loading'; date: string }
-  | { status: 'ready'; date: string; matches: AppMatch[]; warnings: string[] }
-  | { status: 'empty'; date: string; warnings: string[] }
-  | { status: 'unavailable'; date: string; reason: string; warnings: string[] };
-
-type MatchFeedApiResponse = {
-  matches?: unknown;
-  warnings?: unknown;
-  error?: { code?: string; message?: string };
-};
-
-function readWarnings(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
-}
+  | { status: 'ready'; date: string; matches: LocalMatch[]; snapshot: LocalDataSnapshotStatus; warnings: string[] }
+  | { status: 'empty'; date: string; snapshot: LocalDataSnapshotStatus; warnings: string[] }
+  | { status: 'unavailable'; date: string; reason: string; warnings: string[]; snapshot?: LocalDataSnapshotStatus | undefined };
 
 export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
   try {
@@ -49,30 +27,48 @@ export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
     if (!response.ok) {
       let message = `Match feed unavailable with HTTP ${response.status}.`;
       let code = 'match_feed_unavailable';
+      let snapshot: LocalDataSnapshotStatus | undefined = undefined;
       try {
-        const payload = await response.json() as MatchFeedApiResponse;
+        const payload = await response.json() as { error?: { message?: string; code?: string }; snapshot?: LocalDataSnapshotStatus };
         if (payload.error?.message) message = payload.error.message;
         if (payload.error?.code) code = payload.error.code;
+        if (payload.snapshot) snapshot = payload.snapshot;
       } catch {
-        // Response is not JSON, use default HTTP status message
+        // Response is not JSON
       }
+
+      if (code === 'local_snapshot_missing') {
+        message = 'Local match snapshot is missing. Run the national-team data update before using match workflows.';
+      } else if (code === 'local_snapshot_invalid') {
+        message = 'Local match snapshot is invalid. Fix the snapshot file and rerun validation.';
+      } else if (code === 'unsupported_match_status') {
+        message = 'This app does not support live match status in Phase 9.';
+      }
+
       return {
         status: 'unavailable',
         date,
         reason: message,
-        warnings: [code]
+        warnings: [code],
+        snapshot
       };
     }
 
-    const payload = await response.json() as MatchFeedApiResponse;
-    const warnings = readWarnings(payload.warnings);
-    const matches = Array.isArray(payload.matches) ? payload.matches as AppMatch[] : [];
-
-    if (matches.length === 0) {
-      return { status: 'empty', date, warnings };
+    const payload = await response.json() as Record<string, unknown>;
+    const validationResult = validateLocalMatchFeedResponse(payload);
+    if (!validationResult.ok) {
+      throw new Error(`Normalization error: ${validationResult.errors.join(', ')}`);
     }
 
-    return { status: 'ready', date, matches, warnings };
+    const warnings: string[] = Array.isArray(payload.warnings) ? payload.warnings : [];
+    const matches = payload.matches as LocalMatch[];
+    const snapshot = payload.snapshot as LocalDataSnapshotStatus;
+
+    if (matches.length === 0) {
+      return { status: 'empty', date, snapshot, warnings };
+    }
+
+    return { status: 'ready', date, matches, snapshot, warnings };
   } catch (error) {
     return {
       status: 'unavailable',
@@ -82,3 +78,4 @@ export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
     };
   }
 }
+export type AppMatch = LocalMatch;

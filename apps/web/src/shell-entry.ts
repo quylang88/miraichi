@@ -25,7 +25,7 @@ const activeFilters = {
   selectedLeagues: new Set<string>()
 };
 let isFilterPanelOpen = false;
-let currentOpenFixtureId = '';
+let currentOpenMatchId = '';
 
 function todayLocalDate(): string {
   const now = new Date();
@@ -128,27 +128,27 @@ function renderEventIcon(type: string): string {
   return '📋';
 }
 
-async function loadAndRenderMatchDetail(providerFixtureId: string): Promise<void> {
+async function loadAndRenderMatchDetail(matchId: string): Promise<void> {
   const infoPanel = document.getElementById('match-detail-panel-info');
   if (!infoPanel) return;
 
   infoPanel.innerHTML = '<p class="match-info-loading">Loading match details…</p>';
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/matches/detail?id=api-football-fixture-${encodeURIComponent(providerFixtureId)}`);
+    const res = await fetch(`${API_BASE_URL}/api/v1/matches/detail?id=${encodeURIComponent(matchId)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json() as {
-      fixture?: { homeTeam?: string; awayTeam?: string; score?: { home: number; away: number }; kickoff?: string; venue?: string; referee?: string };
-      events?: Array<{ minute: number; type: string; playerName: string; assistName?: string; team?: string }>;
+      match: { homeTeam: { name: string }; awayTeam: { name: string }; score: { home: number | null; away: number | null }; kickoffUtc: string; venue?: string };
+      events?: Array<{ minute: number | null; type: 'goal' | 'card' | 'substitution' | 'penalty' | 'other'; teamId?: string; label: string }>;
+      notes?: string[];
     };
 
-    const f = data.fixture ?? {};
-    const home = f.homeTeam ?? '';
-    const away = f.awayTeam ?? '';
-    const score = f.score ? `${f.score.home} – ${f.score.away}` : '– –';
-    const kickoff = f.kickoff ? new Date(f.kickoff).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
-    const venue = f.venue ? ` · ${f.venue}` : '';
-    const referee = f.referee ? ` · Ref: ${f.referee}` : '';
+    const m = data.match;
+    const home = m.homeTeam.name;
+    const away = m.awayTeam.name;
+    const score = (m.score && m.score.home !== null) ? `${m.score.home} – ${m.score.away}` : '– –';
+    const kickoff = m.kickoffUtc ? new Date(m.kickoffUtc).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
+    const venue = m.venue ? ` · ${m.venue}` : '';
 
     const events = Array.isArray(data.events) ? data.events : [];
     const eventsHtml = events.length === 0
@@ -156,13 +156,17 @@ async function loadAndRenderMatchDetail(providerFixtureId: string): Promise<void
       : events.map(ev => `
         <div class="match-event-item">
           <span class="match-event-icon">${renderEventIcon(ev.type)}</span>
-          <span class="match-event-time">${ev.minute}'</span>
+          <span class="match-event-time">${ev.minute ?? ''}'</span>
           <div class="match-event-detail">
-            <div class="match-event-player">${escapeText(ev.playerName)}</div>
-            ${ev.assistName ? `<div class="match-event-assist">↳ ${escapeText(ev.assistName)}</div>` : ''}
+            <div class="match-event-player">${escapeText(ev.label)}</div>
           </div>
         </div>
       `).join('');
+
+    const notes = Array.isArray(data.notes) ? data.notes : [];
+    const notesHtml = notes.length === 0
+      ? ''
+      : `<div class="match-info-notes">${notes.map(n => `<p>${escapeText(n)}</p>`).join('')}</div>`;
 
     infoPanel.innerHTML = `
       <div class="match-info-card">
@@ -172,9 +176,10 @@ async function loadAndRenderMatchDetail(providerFixtureId: string): Promise<void
           <div class="match-info-team">${escapeText(away)}</div>
         </div>
         <div class="match-info-meta">
-          <span>${escapeText(kickoff)}</span>${venue ? `<span>${escapeText(venue)}</span>` : ''}${referee ? `<span>${escapeText(referee)}</span>` : ''}
+          <span>${escapeText(kickoff)}</span>${venue ? `<span>${escapeText(venue)}</span>` : ''}
         </div>
         <div class="match-event-timeline">${eventsHtml}</div>
+        ${notesHtml}
       </div>
     `;
   } catch {
@@ -414,14 +419,14 @@ appRoot.addEventListener('click', (event) => {
   if (openMatchTarget) {
     const title = openMatchTarget.dataset.matchTitle || 'Selected match group';
     const meta = openMatchTarget.dataset.matchMeta || 'matchGroupId context';
-    const providerFixtureId = openMatchTarget.dataset.providerFixtureId || '';
-    currentOpenFixtureId = providerFixtureId;
+    const matchId = openMatchTarget.dataset.matchId || '';
+    currentOpenMatchId = matchId;
     matchDetailReturnScreen = isPrimaryTabId(currentScreenName) ? currentScreenName : 'today';
     setMatchDetailContext(title, meta);
     resetMatchDetailTabs();
     setActiveScreen('match-detail');
-    if (providerFixtureId) {
-      void loadAndRenderMatchDetail(providerFixtureId);
+    if (matchId) {
+      void loadAndRenderMatchDetail(matchId);
     }
     return;
   }
@@ -456,9 +461,9 @@ appRoot.addEventListener('click', (event) => {
   if (detailTabTarget) {
     setSegmentActive(detailTabTarget);
     updateDetailPanel(detailTabTarget);
-    // If switching to info tab and we have a fixture id, load detail
-    if (detailTabTarget.dataset.detailTab === 'info' && currentOpenFixtureId) {
-      void loadAndRenderMatchDetail(currentOpenFixtureId);
+    // If switching to info tab and we have a match id, load detail
+    if (detailTabTarget.dataset.detailTab === 'info' && currentOpenMatchId) {
+      void loadAndRenderMatchDetail(currentOpenMatchId);
     }
     return;
   }

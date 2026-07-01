@@ -116,16 +116,16 @@ function matchTitle(match: AppMatch): string {
 
 function matchMeta(match: AppMatch, timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh' = 'local'): string {
   const suffix = timezone === 'local' ? '' : ` ${timezone}`;
-  const score = match.score ? `Score ${match.score.home}-${match.score.away}` : `Kickoff ${formatKickoffTime(match.kickoffTime, timezone)}${suffix}`;
+  const score = (match.status === 'completed' && match.score.home !== null) ? `Score ${match.score.home}-${match.score.away}` : `Kickoff ${formatKickoffTime(match.kickoffUtc, timezone)}${suffix}`;
   const round = match.round ? ` · ${match.round}` : '';
-  return `${match.competitionName}${round} · ${score} · ${match.statusLabel}`;
+  return `${match.competition.name}${round} · ${score} · ${match.status}`;
 }
 
 function renderFeedUnavailable(feed: Extract<MatchFeedViewState, { status: 'unavailable' }>): string {
   return `
     <section class="note-card warning" data-match-feed-state="unavailable">
-      <div class="note-eyebrow">Provider setup required</div>
-      <div class="note-title">API-Football match feed is unavailable.</div>
+      <div class="note-eyebrow">Data update required</div>
+      <div class="note-title">Local data snapshot is unavailable.</div>
       <p class="note-copy">${escapeHtml(feed.reason)}</p>
     </section>
   `;
@@ -134,9 +134,9 @@ function renderFeedUnavailable(feed: Extract<MatchFeedViewState, { status: 'unav
 function renderFeedLoading(feed: Extract<MatchFeedViewState, { status: 'loading' }>): string {
   return `
     <section class="note-card" data-match-feed-state="loading">
-      <div class="note-eyebrow">API-Football</div>
-      <div class="note-title">Loading match feed</div>
-      <p class="note-copy">Fetching owner-only matchday fixtures for ${escapeHtml(feed.date)}.</p>
+      <div class="note-eyebrow">Local data snapshot</div>
+      <div class="note-title">Loading match snapshot</div>
+      <p class="note-copy">Loading national-team matches for ${escapeHtml(feed.date)}.</p>
     </section>
   `;
 }
@@ -144,9 +144,9 @@ function renderFeedLoading(feed: Extract<MatchFeedViewState, { status: 'loading'
 function renderFeedEmpty(feed: Extract<MatchFeedViewState, { status: 'empty' }>): string {
   return `
     <section class="note-card" data-match-feed-state="empty">
-      <div class="note-eyebrow">API-Football</div>
-      <div class="note-title">No fixtures found for ${escapeHtml(feed.date)}.</div>
-      <p class="note-copy">The provider returned an empty fixture list for this date.</p>
+      <div class="note-eyebrow">Local data snapshot</div>
+      <div class="note-title">No matches found for ${escapeHtml(feed.date)}.</div>
+      <p class="note-copy">No national-team matches are recorded for this date in the local snapshot.</p>
     </section>
   `;
 }
@@ -154,17 +154,17 @@ function renderFeedEmpty(feed: Extract<MatchFeedViewState, { status: 'empty' }>)
 function renderProviderMatchCard(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   const title = matchTitle(match);
   const meta = matchMeta(match, timezone);
-  const statusClass = match.status === 'in_play' ? 'blue' : match.status === 'completed' ? '' : 'amber';
+  const statusClass = (match.status as string) === 'in_play' ? 'blue' : match.status === 'completed' ? '' : 'amber';
   return `
-    <article class="match-card" data-match-card data-provider-match-id="${escapeHtml(match.id)}">
+    <article class="match-card" data-match-card data-match-id="${escapeHtml(match.id)}">
       <div class="match-main clickable" data-open-match
         data-match-title="${escapeHtml(title)}" data-match-meta="${escapeHtml(meta)}"
-        data-provider-fixture-id="${escapeHtml(match.providerFixtureId)}"
+        data-match-id="${escapeHtml(match.id)}"
         role="button" tabindex="0">
         <div class="match-topline">
           <div class="tag-row">
-            <span class="tag ${statusClass}">${escapeHtml(match.statusLabel)}</span>
-            <span class="tag">${escapeHtml(match.competitionName)}</span>
+            <span class="tag ${statusClass}">${escapeHtml(match.status)}</span>
+            <span class="tag">${escapeHtml(match.competition.name)}</span>
           </div>
           <div class="row-actions">
             <button class="icon-button" type="button" data-toggle-match aria-expanded="true" aria-label="Collapse ${escapeHtml(title)}">${icons.up}</button>
@@ -176,8 +176,8 @@ function renderProviderMatchCard(match: AppMatch, timezone?: 'local' | 'UTC' | '
       <div class="ledger-detail">
         <div class="ledger-row">
           <div>
-            <div class="ledger-title">Provider fixture</div>
-            <div class="ledger-meta">API-Football fixture ${escapeHtml(match.providerFixtureId)}. No odds or prediction loaded.</div>
+            <div class="ledger-title">Snapshot match</div>
+            <div class="ledger-meta">Local match ID ${escapeHtml(match.id)}. No odds or prediction loaded.</div>
           </div>
           <span class="ledger-state">${escapeHtml(match.status)}</span>
         </div>
@@ -187,22 +187,17 @@ function renderProviderMatchCard(match: AppMatch, timezone?: 'local' | 'UTC' | '
 }
 
 function renderRowRight(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
-  if (match.status === 'completed' && match.score) {
+  if (match.status === 'completed' && match.score && match.score.home !== null) {
     return `<span class="row-score">${match.score.home} – ${match.score.away}</span>`;
   }
-  if (match.status === 'in_play') {
-    const scoreStr = match.score ? `${match.score.home} – ${match.score.away}` : '– –';
-    const elapsed = match.elapsedMinute != null ? `${match.elapsedMinute}'` : 'LIVE';
-    return `<span class="row-score live"><span class="live-dot"></span>${elapsed} ${scoreStr}</span>`;
-  }
-  return `<span class="row-kickoff">${formatKickoffTime(match.kickoffTime, timezone)}</span>`;
+  return `<span class="row-kickoff">${formatKickoffTime(match.kickoffUtc, timezone)}</span>`;
 }
 
 function renderProviderMatchRow(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   const title = matchTitle(match);
   const meta = matchMeta(match, timezone);
   const right = renderRowRight(match, timezone);
-  return renderMatchRow(title, right, meta, match.status, match.providerFixtureId);
+  return renderMatchRow(title, right, meta, match.status, match.id);
 }
 
 function renderMatchFeedCards(feed: MatchFeedViewState, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
@@ -336,7 +331,7 @@ function isNationalMatch(competitionName: string): boolean {
 }
 
 function isWomenMatch(match: AppMatch): boolean {
-  const comp = match.competitionName.toLowerCase();
+  const comp = match.competition.name.toLowerCase();
   const home = match.homeTeam.name.toLowerCase();
   const away = match.awayTeam.name.toLowerCase();
   const check = (str: string) => {
@@ -381,9 +376,8 @@ function renderMatchesPanel(
 
   let filteredMatches = matchFeed.status === 'ready' ? matchFeed.matches : [];
 
-  // 1. LIVE filter
   if (isLiveFilterActive) {
-    filteredMatches = filteredMatches.filter(m => m.status === 'in_play');
+    filteredMatches = filteredMatches.filter(m => (m.status as string) === 'in_play');
   }
 
   // 2. Search query (case-insensitive substring on team names)
@@ -397,9 +391,9 @@ function renderMatchesPanel(
 
   // 3. Competition Type
   if (filters.type === 'national') {
-    filteredMatches = filteredMatches.filter(m => isNationalMatch(m.competitionName));
+    filteredMatches = filteredMatches.filter(m => isNationalMatch(m.competition.name));
   } else if (filters.type === 'club') {
-    filteredMatches = filteredMatches.filter(m => !isNationalMatch(m.competitionName));
+    filteredMatches = filteredMatches.filter(m => !isNationalMatch(m.competition.name));
   }
 
   // 4. Gender
@@ -411,11 +405,11 @@ function renderMatchesPanel(
 
   // 5. Selected leagues
   if (filters.selectedLeagues && filters.selectedLeagues.size > 0) {
-    filteredMatches = filteredMatches.filter(m => filters.selectedLeagues.has(m.competitionName));
+    filteredMatches = filteredMatches.filter(m => filters.selectedLeagues.has(m.competition.name));
   }
 
   const uniqueLeagues = matchFeed.status === 'ready'
-    ? Array.from(new Set(matchFeed.matches.map(m => m.competitionName))).sort()
+    ? Array.from(new Set(matchFeed.matches.map(m => m.competition.name))).sort()
     : [];
 
   const leaguesHtml = uniqueLeagues.map(league => {
@@ -435,15 +429,15 @@ function renderMatchesPanel(
       if (filters.groupby === 'league') {
         const groups: Record<string, AppMatch[]> = {};
         for (const match of filteredMatches) {
-          if (!groups[match.competitionName]) {
-            groups[match.competitionName] = [];
+          if (!groups[match.competition.name]) {
+            groups[match.competition.name] = [];
           }
-          groups[match.competitionName].push(match);
+          groups[match.competition.name].push(match);
         }
 
         const sortedLeagues = Object.keys(groups).sort();
         matchesHtml = sortedLeagues.map(league => {
-          const leagueMatches = groups[league].sort((a, b) => a.kickoffTime.localeCompare(b.kickoffTime));
+          const leagueMatches = groups[league].sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc));
           return `
             <div class="date-group">
               <div class="group-label">${escapeHtml(league)}</div>
@@ -452,8 +446,8 @@ function renderMatchesPanel(
           `;
         }).join('');
       } else {
-        // groupby time: sort all by kickoffTime
-        const sortedMatches = [...filteredMatches].sort((a, b) => a.kickoffTime.localeCompare(b.kickoffTime));
+        // groupby time: sort all by kickoffUtc
+        const sortedMatches = [...filteredMatches].sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc));
         matchesHtml = `
           <div class="date-group">
             <div class="group-label">${escapeHtml(matchFeed.date)}</div>
@@ -784,11 +778,11 @@ function renderMatchesPanel(
   `;
 }
 
-function renderMatchRow(title: string, rightHtml: string, detailMeta: string, status?: string, providerFixtureId?: string): string {
+function renderMatchRow(title: string, rightHtml: string, detailMeta: string, status?: string, matchId?: string): string {
   const statusAttr = status ? ` data-status="${escapeHtml(status)}"` : '';
-  const fixtureAttr = providerFixtureId ? ` data-provider-fixture-id="${escapeHtml(providerFixtureId)}"` : '';
+  const matchIdAttr = matchId ? ` data-match-id="${escapeHtml(matchId)}"` : '';
   return `
-    <article class="match-row clickable" data-match-row${statusAttr}${fixtureAttr}
+    <article class="match-row clickable" data-match-row${statusAttr}${matchIdAttr}
       data-open-match data-match-title="${escapeHtml(title)}" data-match-meta="${escapeHtml(detailMeta)}"
       role="button" tabindex="0">
       <div class="row-split">
