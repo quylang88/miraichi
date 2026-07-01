@@ -198,7 +198,8 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Create ADR-0042 to remove API-Football free-tier usage and select a local/manual snapshot API strategy.
 - [x] Create `phase:plan Phase 9 Non-AI App Completion, Local Data API, Cloud Persistence, and Release Readiness`.
   - **Plan**: See `docs/product/PHASE-9-NON-AI-APP-COMPLETION-LOCAL-DATA-API-PLAN.md`.
-- [ ] Create `phase:implementation-plan Phase 9 API-Football Removal and Local Data API`.
+- [x] Create `phase:implementation-plan Phase 9 API-Football Removal and Local Data API`.
+  - **Plan**: See `docs/superpowers/plans/2026-07-01-phase-9-api-football-removal-local-data-api.md`.
 - [ ] Complete `phase:code-slice Phase 9 API-Football removal from API routes, web tests, environment assumptions, and endpoint smoke checks`.
 - [ ] Complete `phase:code-slice Phase 9 local/manual national-team match snapshot store`.
 - [ ] Complete `phase:code-slice Phase 9 local data API for finished and scheduled fixtures`.
