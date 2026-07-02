@@ -235,6 +235,8 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Files**: `provider-ingestion-contracts.ts`, `provider-ingestion-contracts.test.ts`, `local-match-contracts.ts` (added `sportmonks`), `index.ts`.
 - [x] Complete `phase:code-slice Phase 9 Provider-Neutral Raw Cache, Manifest, And Warehouse Writers`.
   - **Evidence**: `scripts/providers/shared/raw-cache.ts`, `manifest.ts`, `canonical-warehouse.ts` and tests created; `.gitignore` updated; `apps/api/data/providers/sportmonks/{raw,manifests,reports}/.gitkeep` and `apps/api/data/warehouse/.gitkeep` scaffolded; 5 unit tests pass; `pnpm run typecheck` clean on 2026-07-02.
+- [x] Complete `phase:code-slice Phase 9 Entity Resolution And Provenance Utilities`.
+  - **Evidence**: `scripts/providers/shared/entity-resolution.ts` (canonical match ID builder, team-name normalizer, candidate scorer) and `provenance.ts` (SHA-256 value-hashed FieldProvenance factory) created with tests; 4 unit tests pass; `pnpm run typecheck` clean on 2026-07-02.
 - [ ] Complete Sportmonks trial data capture before the trial window expires.
   - **Priority**: Provider-neutral contracts/cache/warehouse first, then Sportmonks raw capture, fixture enrichment, and warehouse-to-local-snapshot export. Provider expansion remains deferred until Sportmonks capture is stable.
 - [ ] Run `phase:staging Phase 9 Non-AI App Completion` and record smoke evidence.
