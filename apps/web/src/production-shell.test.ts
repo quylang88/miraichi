@@ -59,6 +59,30 @@ describe('production PWA shell configuration', () => {
   });
 });
 
+describe('phase 9 cloud persistence workflows', () => {
+  it('renders honest Bets loading, empty, unavailable, and durable record states', () => {
+    expect(renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'loading' } })).toContain('data-bet-records-state="loading"');
+    expect(renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'empty' } })).toContain('data-bet-records-state="empty"');
+    expect(renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'unavailable', reason: 'Setup required' } })).toContain('Setup required');
+    const html = renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'ready', drafts: [{ draftId: 'd1', matchGroupId: 'm1', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], pending: [{ betId: 'b1', ownerProfileId: 'owner-primary', matchGroupId: 'm1', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, status: 'pending', createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], settled: [] } });
+    expect(html).toContain('Japan vs Vietnam');
+    expect(html).toContain('data-delete-draft-confirm="d1"');
+  });
+
+  it('renders persisted Bankroll and backup controls without formula placeholders', () => {
+    const html = renderAppShell({ activeTabId: 'bankroll', bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], ledger: [{ entryId: 'e', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'withdrawal', amountPoints: -10, occurredAt: '2026-07-02T00:00:00.000Z', createdAt: '2026-07-02T00:00:00.000Z' }] } });
+    expect(html).toContain('90 pts');
+    expect(html).toContain('data-ledger-type="deposit"');
+    expect(html).toContain('data-ledger-type="withdrawal"');
+    expect(html).toContain('data-ledger-type="transfer_out"');
+    expect(html).toContain('data-ledger-type="correction"');
+    expect(html).toContain('data-backup-export');
+    expect(html).toContain('data-backup-import');
+    expect(html).not.toContain('24,500 pts');
+    expect(html).not.toContain('Formula status');
+  });
+});
+
 describe('production PWA shell rendering', () => {
   it('renders the production app shell with bottom navigation and all tab panels', () => {
     const html = renderAppShell({ activeTabId: 'today', translate: t });
@@ -125,8 +149,8 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('id="screen-match-detail"');
     expect(html).toContain('data-open-match');
     expect(html).toContain('data-open-scoped-add');
-    expect(html).toContain('data-open-edit');
-    expect(html).toContain('data-review-only');
+    expect(html).toContain('data-bet-records-state');
+    expect(html).toContain('data-backup-export');
     expect(html).toContain('class="sheet-backdrop"');
     expect(html).toContain('class="sheet" id="add-sheet"');
     expect(html).toContain('id="match-summary-readonly"');

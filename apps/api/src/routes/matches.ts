@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
+import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
 import type { LocalMatchFeedResponse, LocalMatchStatus } from '@miraichi/shared';
 
 const repository = new LocalMatchSnapshotRepository();
@@ -13,7 +14,7 @@ const VALID_STATUSES: string[] = ['scheduled', 'completed', 'postponed', 'cancel
 export async function handleMatches(
   req: IncomingMessage,
   res: ServerResponse,
-  dependencies: { repository?: LocalMatchSnapshotRepository } = {}
+  dependencies: { repository?: MatchSnapshotRepository } = {}
 ): Promise<void> {
   const repo = dependencies.repository ?? repository;
   const parsedUrl = new URL(req.url || '/', 'http://localhost');

@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
+import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
 import type { LocalMatchDetail } from '@miraichi/shared';
 
 const repository = new LocalMatchSnapshotRepository();
@@ -7,7 +8,7 @@ const repository = new LocalMatchSnapshotRepository();
 export async function handleMatchDetail(
   req: IncomingMessage,
   res: ServerResponse,
-  dependencies: { repository?: LocalMatchSnapshotRepository } = {}
+  dependencies: { repository?: MatchSnapshotRepository } = {}
 ): Promise<void> {
   const repo = dependencies.repository ?? repository;
   const parsedUrl = new URL(req.url || '/', 'http://localhost');

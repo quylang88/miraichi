@@ -6,12 +6,21 @@ import { handleHealth } from './routes/health.js';
 import { handleMatches } from './routes/matches.js';
 import { handlePredictions } from './routes/predictions.mock.js';
 import { handleExplanations } from './routes/explanations.mock.js';
-import { handleBetHistory } from './routes/bet-history.mock.js';
+import { handleBets } from './routes/bets.js';
+import { handleBetDrafts } from './routes/bet-drafts.js';
+import { handleCloudPersistenceStatus } from './routes/cloud-persistence-status.js';
+import { handleBankroll } from './routes/bankroll.js';
+import { handleBackups } from './routes/backups.js';
 import { handleIngestionStatus } from './routes/ingestion-status.mock.js';
 import { handleMockPredict } from './routes/mock-prediction.js';
 import { handleMockExplain } from './routes/mock-explanation.js';
 import { handleMatchDetail } from './routes/match-detail.js';
 import { handleDataSnapshotStatus } from './routes/data-snapshot-status.js';
+import { readCloudPersistenceConfig } from './config/cloud-persistence-config.js';
+import { createCloudPersistenceAdapter } from './persistence/create-cloud-persistence-adapter.js';
+import { LocalMatchSnapshotRepository } from './repositories/local-match-snapshot-repository.js';
+import { CloudMatchSnapshotRepository } from './repositories/cloud-match-snapshot-repository.js';
+import { FallbackMatchSnapshotRepository } from './repositories/fallback-match-snapshot-repository.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +63,12 @@ function loadEnv(rootDir: string) {
 }
 
 loadEnv(ROOT_DIR);
+const cloudConfig = readCloudPersistenceConfig();
+const cloudDependencies = { adapter: createCloudPersistenceAdapter(cloudConfig), ownerProfileId: cloudConfig.ownerProfileId };
+const matchRepository = new FallbackMatchSnapshotRepository(
+  new LocalMatchSnapshotRepository(),
+  new CloudMatchSnapshotRepository(cloudDependencies.adapter, cloudConfig.ownerProfileId)
+);
 
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url || '/', 'http://localhost');
@@ -61,7 +76,7 @@ const server = http.createServer((req, res) => {
 
   // Global CORS headers for dev frontend communication
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -75,17 +90,25 @@ const server = http.createServer((req, res) => {
   if (pathname === '/api/v1/health') {
     handleHealth(req, res);
   } else if (pathname === '/api/v1/matches/detail') {
-    void handleMatchDetail(req, res);
+    void handleMatchDetail(req, res, { repository: matchRepository });
   } else if (pathname === '/api/v1/data-snapshot/status') {
-    void handleDataSnapshotStatus(req, res);
+    void handleDataSnapshotStatus(req, res, { repository: matchRepository });
   } else if (pathname === '/api/v1/matches') {
-    void handleMatches(req, res);
+    void handleMatches(req, res, { repository: matchRepository });
   } else if (pathname === '/api/v1/predictions') {
     handlePredictions(req, res);
   } else if (pathname === '/api/v1/chat') {
     handleExplanations(req, res);
   } else if (pathname === '/api/v1/bets') {
-    handleBetHistory(req, res);
+    void handleBets(req, res, cloudDependencies);
+  } else if (pathname === '/api/v1/bet-drafts') {
+    void handleBetDrafts(req, res, cloudDependencies);
+  } else if (pathname === '/api/v1/cloud-persistence/status') {
+    void handleCloudPersistenceStatus(req, res, cloudDependencies);
+  } else if (pathname === '/api/v1/bankroll/accounts' || pathname === '/api/v1/bankroll/ledger') {
+    void handleBankroll(req, res, cloudDependencies);
+  } else if (pathname === '/api/v1/backups/export' || pathname === '/api/v1/backups/import' || pathname === '/api/v1/backups/log') {
+    void handleBackups(req, res, cloudDependencies);
   } else if (pathname === '/api/v1/ingestion/status') {
     handleIngestionStatus(req, res);
   } else if (pathname === '/api/v1/mock/predict') {
