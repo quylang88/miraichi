@@ -230,6 +230,9 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Create `phase:implementation-plan Phase 9 Sportmonks Trial Data Capture Sprint`.
   - **Plan**: See `docs/superpowers/plans/2026-07-02-phase-9-sportmonks-trial-data-capture-sprint.md`.
   - **Scope**: Provider-neutral raw cache/warehouse first, Sportmonks as removable trial adapter, manifest/resume, fixture enrichment, normalized local match snapshot, no live polling, no AI training, no betting formulas.
+- [x] Complete `phase:code-slice Phase 9 Provider-Neutral Ingestion Contracts`.
+  - **Evidence**: `packages/shared/src/contracts/provider-ingestion-contracts.ts` and `.test.ts` created; `sportmonks` added to `LocalDataSourceId`; 14 unit tests pass; `pnpm run typecheck` clean on 2026-07-02.
+  - **Files**: `provider-ingestion-contracts.ts`, `provider-ingestion-contracts.test.ts`, `local-match-contracts.ts` (added `sportmonks`), `index.ts`.
 - [ ] Complete Sportmonks trial data capture before the trial window expires.
   - **Priority**: Provider-neutral contracts/cache/warehouse first, then Sportmonks raw capture, fixture enrichment, and warehouse-to-local-snapshot export. Provider expansion remains deferred until Sportmonks capture is stable.
 - [ ] Run `phase:staging Phase 9 Non-AI App Completion` and record smoke evidence.
