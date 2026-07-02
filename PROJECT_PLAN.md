@@ -227,6 +227,11 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete `phase:code-slice Phase 9 Local Supabase Developer Workflow Hardening`.
   - **Evidence**: `pnpm run supabase:local:status`, `pnpm run supabase:local:sync`, and `pnpm run supabase:local:verify` passed against the local Docker Supabase Postgres DB on 2026-07-02.
   - **Scope**: Local developer scripts and docs only; no staging deploy, no cloud Supabase promotion, no Phase 10 AI/runtime work.
+- [x] Create `phase:implementation-plan Phase 9 Sportmonks Trial Data Capture Sprint`.
+  - **Plan**: See `docs/superpowers/plans/2026-07-02-phase-9-sportmonks-trial-data-capture-sprint.md`.
+  - **Scope**: Provider-neutral raw cache/warehouse first, Sportmonks as removable trial adapter, manifest/resume, fixture enrichment, normalized local match snapshot, no live polling, no AI training, no betting formulas.
+- [ ] Complete Sportmonks trial data capture before the trial window expires.
+  - **Priority**: Provider-neutral contracts/cache/warehouse first, then Sportmonks raw capture, fixture enrichment, and warehouse-to-local-snapshot export. Provider expansion remains deferred until Sportmonks capture is stable.
 - [ ] Run `phase:staging Phase 9 Non-AI App Completion` and record smoke evidence.
   - **Blocker**: Requires a real Supabase project/database URL, applying `supabase/migrations/20260702052851_phase9_cloud_persistence.sql`, running Supabase advisors, and setting staging server secrets before smoke evidence can be recorded.
 - [x] Keep `Miraichi AI` disabled or honest-unavailable until Phase 10.
