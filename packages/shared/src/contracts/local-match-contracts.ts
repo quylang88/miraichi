@@ -3,7 +3,8 @@ export type LocalDataSourceId =
   | 'sofascore-local'
   | 'football-data-org'
   | 'international-results'
-  | 'manual-snapshot';
+  | 'manual-snapshot'
+  | 'sportmonks';
 
 export type LocalMatchStatus =
   | 'scheduled'
@@ -114,7 +115,8 @@ const VALID_DATA_SOURCES: LocalDataSourceId[] = [
   'sofascore-local',
   'football-data-org',
   'international-results',
-  'manual-snapshot'
+  'manual-snapshot',
+  'sportmonks'
 ];
 
 const VALID_MATCH_STATUSES: LocalMatchStatus[] = [
