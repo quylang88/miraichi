@@ -130,7 +130,7 @@ describe('Local Match Contracts Validation', () => {
   it('rejects custom/mock fields like sourceProviderId or providerFixtureId', () => {
     const invalidMatch1 = {
       ...validScheduledMatch,
-      sourceProviderId: 'api-football'
+      sourceProviderId: 'legacy-provider'
     };
     const result1 = validateLocalMatch(invalidMatch1);
     expect(result1.ok).toBe(false);
@@ -138,7 +138,7 @@ describe('Local Match Contracts Validation', () => {
 
     const invalidMatch2 = {
       ...validScheduledMatch,
-      providerFixtureId: 'api-football-123'
+      providerFixtureId: 'legacy-provider-123'
     };
     const result2 = validateLocalMatch(invalidMatch2);
     expect(result2.ok).toBe(false);

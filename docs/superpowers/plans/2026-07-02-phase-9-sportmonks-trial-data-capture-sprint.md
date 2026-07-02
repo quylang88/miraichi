@@ -52,7 +52,7 @@ If a future provider is added, it must implement a new adapter folder, for examp
 
 ```text
 scripts/providers/football-data/
-scripts/providers/api-football/
+scripts/providers/provider-alpha/
 ```
 
 and write into the same provider-neutral warehouse contracts.
@@ -237,7 +237,7 @@ Expected: fail because `provider-ingestion-contracts.ts` does not exist and `spo
 Create `provider-ingestion-contracts.ts` with these exported interfaces:
 
 ```ts
-export type ProviderId = 'sportmonks' | 'football-data-org' | 'api-football' | 'manual-snapshot';
+export type ProviderId = 'sportmonks' | 'football-data-org' | 'manual-snapshot';
 export type CanonicalMatchStatus = 'scheduled' | 'completed' | 'postponed' | 'cancelled' | 'unknown';
 
 export interface RawProviderPayloadEnvelope {
