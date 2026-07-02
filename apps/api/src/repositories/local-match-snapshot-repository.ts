@@ -143,10 +143,11 @@ export class LocalMatchSnapshotRepository {
     } catch (err) {
       const errorWithCode = err as { code?: string };
       if (errorWithCode.code === 'local_snapshot_missing') {
+        const now = this.nowFn().toISOString();
         return {
-          snapshotId: '',
-          generatedAt: '',
-          importedAt: '',
+          snapshotId: 'missing-local-snapshot',
+          generatedAt: now,
+          importedAt: now,
           matchCount: 0,
           competitions: [],
           sources: [],

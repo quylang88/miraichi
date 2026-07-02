@@ -19,7 +19,8 @@ export async function handleDataSnapshotStatus(
         error: {
           code: 'local_snapshot_missing',
           message: 'Local match snapshot is missing. Run the national-team data update before using match workflows.'
-        }
+        },
+        snapshot: status
       }));
       return;
     }

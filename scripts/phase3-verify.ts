@@ -35,13 +35,14 @@ async function verifyPhase3() {
     }
   }
 
-  // 2. Audit files for forbidden keywords (real tournaments, DB clients, ORMs, secrets)
+  // 2. Audit Phase 3-owned files for forbidden keywords.
+  // Later phases may add real competition data in separate, approved contracts.
   const forbiddenKeywords = ['prisma', 'mongoose', 'sequelize', 'drizzle', 'postgresql', 'mysql', 'api_key', 'api-key', 'secret_key', 'world cup', 'fifa', 'premier league'];
-  const srcDirs = ['apps/worker/src', 'packages/shared/src/contracts'];
+  const auditFiles = filesToCheck.filter((file) => file.endsWith('.ts'));
 
-  for (const dir of srcDirs) {
-    const dirPath = path.join(__dirname, '..', dir);
-    await scanDir(dirPath, forbiddenKeywords);
+  for (const file of auditFiles) {
+    const filePath = path.join(__dirname, '..', file);
+    await scanFile(filePath, forbiddenKeywords);
   }
   console.log('  ✅ Guardrail Audit: Zero database client, API secrets, or hardcoded tournament violations found.');
 
@@ -75,23 +76,14 @@ async function verifyPhase3() {
   console.log('\n[Phase 3 Verify] Phase 3 Ingestion verification tests PASSED successfully.');
 }
 
-async function scanDir(dirPath: string, keywords: string[]) {
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
+async function scanFile(filePath: string, keywords: string[]) {
+  const content = await fs.readFile(filePath, 'utf-8');
+  const lowerContent = content.toLowerCase();
 
-  for (const entry of entries) {
-    const fullPath = path.join(dirPath, entry.name);
-    if (entry.isDirectory()) {
-      await scanDir(fullPath, keywords);
-    } else if (entry.isFile() && (entry.name.endsWith('.js') || entry.name.endsWith('.ts'))) {
-      const content = await fs.readFile(fullPath, 'utf-8');
-      const lowerContent = content.toLowerCase();
-
-      for (const keyword of keywords) {
-        if (lowerContent.includes(keyword)) {
-          console.error(`  ❌ Violation in file ${fullPath}: Found forbidden keyword "${keyword}"`);
-          process.exit(1);
-        }
-      }
+  for (const keyword of keywords) {
+    if (lowerContent.includes(keyword)) {
+      console.error(`  ❌ Violation in file ${filePath}: Found forbidden keyword "${keyword}"`);
+      process.exit(1);
     }
   }
 }

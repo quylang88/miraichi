@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { handleDataSnapshotStatus } from './data-snapshot-status.js';
 import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
-import { LocalDataSnapshotStatus } from '@miraichi/shared';
+import { LocalDataSnapshotStatus, validateLocalDataSnapshotStatus } from '@miraichi/shared';
 
 function responseMock() {
   return {
@@ -55,17 +55,18 @@ describe('data snapshot status route', () => {
 
   it('returns 503 if snapshot file is missing', async () => {
     const response = responseMock();
+    const missingStatus: LocalDataSnapshotStatus = {
+      snapshotId: 'missing-local-snapshot',
+      generatedAt: '2026-07-02T00:00:00.000Z',
+      importedAt: '2026-07-02T00:00:00.000Z',
+      matchCount: 0,
+      competitions: [],
+      sources: [],
+      freshness: 'missing',
+      warnings: ['Local snapshot file is missing']
+    };
     const mockRepo = {
-      getStatus: async () => ({
-        snapshotId: '',
-        generatedAt: '',
-        importedAt: '',
-        matchCount: 0,
-        competitions: [],
-        sources: [],
-        freshness: 'missing',
-        warnings: ['Local snapshot file is missing']
-      })
+      getStatus: async () => missingStatus
     } as unknown as LocalMatchSnapshotRepository;
 
     await handleDataSnapshotStatus(
@@ -77,6 +78,8 @@ describe('data snapshot status route', () => {
     expect(response.statusCode).toBe(503);
     const body = JSON.parse(response.body);
     expect(body.error.code).toBe('local_snapshot_missing');
+    expect(body.snapshot).toEqual(missingStatus);
+    expect(validateLocalDataSnapshotStatus(body.snapshot).ok).toBe(true);
   });
 
   it('returns 500 if snapshot parsing throws an error', async () => {

@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { LocalMatchSnapshotRepository } from './local-match-snapshot-repository.js';
-import { LocalMatch } from '@miraichi/shared';
+import { LocalMatch, validateLocalDataSnapshotStatus } from '@miraichi/shared';
 
 describe('LocalMatchSnapshotRepository', () => {
   const mockMatch1: LocalMatch = {
@@ -164,9 +164,17 @@ describe('LocalMatchSnapshotRepository', () => {
   });
 
   it('returns missing freshness status when snapshot file is not found', async () => {
-    const repo = new LocalMatchSnapshotRepository({ snapshotPath: 'nonexistent-file.json' });
+    const now = new Date('2026-07-02T00:00:00.000Z');
+    const repo = new LocalMatchSnapshotRepository({
+      snapshotPath: 'nonexistent-file.json',
+      now: () => now
+    });
     const status = await repo.getStatus();
 
+    expect(validateLocalDataSnapshotStatus(status).ok).toBe(true);
+    expect(status.snapshotId).toBe('missing-local-snapshot');
+    expect(status.generatedAt).toBe(now.toISOString());
+    expect(status.importedAt).toBe(now.toISOString());
     expect(status.freshness).toBe('missing');
     expect(status.matchCount).toBe(0);
     expect(status.warnings).toContain('Local snapshot file is missing');

@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
-import { LocalMatchDetail } from '@miraichi/shared';
+import type { LocalMatchDetail } from '@miraichi/shared';
 
 const repository = new LocalMatchSnapshotRepository();
 
@@ -72,4 +72,4 @@ export async function handleMatchDetail(
     }));
   }
 }
-export type MatchDetailResponse = unknown; // backward compat with other type exports if any
+export type MatchDetailResponse = LocalMatchDetail;

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { updateNationalTeamData } from './update-national-team-data.js';
+import { updateNationalTeamData, validateNationalTeamSnapshotFile } from './update-national-team-data.js';
 import { validateLocalMatch } from '../packages/shared/src/contracts/local-match-contracts.js';
 
 describe('update-national-team-data script', () => {
@@ -103,6 +103,39 @@ describe('update-national-team-data script', () => {
     }
 
     await fs.rm(path.dirname(tempSeedPath), { recursive: true, force: true });
+  });
+
+  it('validates an existing snapshot without rewriting the file', async () => {
+    const tempSeedPath = await createTempSeed(mockSeed);
+    const tempOutputPath = path.join(path.dirname(tempSeedPath), 'output.json');
+    const testTime = new Date('2026-07-01T12:00:00.000Z');
+
+    await updateNationalTeamData({
+      inputPath: tempSeedPath,
+      outputPath: tempOutputPath,
+      now: () => testTime
+    });
+    const before = await fs.readFile(tempOutputPath, 'utf-8');
+
+    const result = await validateNationalTeamSnapshotFile({
+      snapshotPath: tempOutputPath
+    });
+    const after = await fs.readFile(tempOutputPath, 'utf-8');
+
+    expect(result.matchCount).toBe(2);
+    expect(result.snapshotId).toBe('snapshot-test-batch');
+    expect(after).toBe(before);
+
+    await fs.rm(path.dirname(tempSeedPath), { recursive: true, force: true });
+  });
+
+  it('keeps the Phase 9 local data API verifier idempotent', async () => {
+    const packageJson = JSON.parse(await fs.readFile('package.json', 'utf-8')) as {
+      scripts: Record<string, string>;
+    };
+
+    expect(packageJson.scripts['phase9:local-data-api-verify']).toContain('data:validate:national-teams');
+    expect(packageJson.scripts['phase9:local-data-api-verify']).not.toContain('data:update:national-teams');
   });
 
   it('rejects match with in_play status', async () => {

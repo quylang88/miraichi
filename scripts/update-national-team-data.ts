@@ -14,6 +14,23 @@ export interface UpdateNationalTeamDataOptions {
   now?: () => Date;
 }
 
+export interface ValidateNationalTeamSnapshotFileOptions {
+  snapshotPath: string;
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+const ISO_DATETIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+
+function assertIsoDateTime(value: unknown, fieldName: string): string {
+  if (typeof value !== 'string' || !ISO_DATETIME_REGEX.test(value)) {
+    throw new Error(`${fieldName} must be a valid ISO datetime string`);
+  }
+  return value;
+}
+
 function compareMatches(a: LocalMatch, b: LocalMatch): number {
   const aCompleted = a.status === 'completed';
   const bCompleted = b.status === 'completed';
@@ -116,18 +133,59 @@ export async function updateNationalTeamData(
   };
 }
 
+export async function validateNationalTeamSnapshotFile(
+  options: ValidateNationalTeamSnapshotFileOptions
+): Promise<{ snapshotPath: string; matchCount: number; snapshotId: string }> {
+  const content = await fs.readFile(options.snapshotPath, 'utf-8');
+  const snapshot = JSON.parse(content) as unknown;
+
+  if (!isObject(snapshot)) {
+    throw new Error('Snapshot is not a valid JSON object');
+  }
+
+  if (typeof snapshot.snapshotId !== 'string' || snapshot.snapshotId.trim() === '') {
+    throw new Error('snapshotId must be a non-empty string');
+  }
+  assertIsoDateTime(snapshot.generatedAt, 'generatedAt');
+  assertIsoDateTime(snapshot.importedAt, 'importedAt');
+
+  if (!Array.isArray(snapshot.sources)) {
+    throw new Error('sources must be an array');
+  }
+
+  if (!Array.isArray(snapshot.matches)) {
+    throw new Error('matches must be an array');
+  }
+
+  for (let i = 0; i < snapshot.matches.length; i++) {
+    const validation = validateLocalMatch(snapshot.matches[i]);
+    if (!validation.ok) {
+      throw new Error(`Match validation failed at index ${i}: ${validation.errors.join(', ')}`);
+    }
+  }
+
+  return {
+    snapshotPath: options.snapshotPath,
+    matchCount: snapshot.matches.length,
+    snapshotId: snapshot.snapshotId
+  };
+}
+
 // CLI entrypoint
 async function run() {
   // Simple arg parser
   const args = process.argv.slice(2);
   let inputPath = '';
   let outputPath = '';
+  let validateOnly = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--input' && args[i + 1]) {
       inputPath = args[i + 1];
     } else if (args[i] === '--output' && args[i + 1]) {
       outputPath = args[i + 1];
+    } else if (args[i] === '--validate-only') {
+      validateOnly = true;
     }
   }
 
@@ -140,6 +198,12 @@ async function run() {
   outputPath = outputPath || path.resolve(rootDir, 'apps/api/data/local-match-snapshots/national-team-matches.json');
 
   try {
+    if (validateOnly) {
+      const result = await validateNationalTeamSnapshotFile({ snapshotPath: outputPath });
+      console.log(`Validated national-team snapshot: ${result.matchCount} matches -> ${result.snapshotPath}`);
+      return;
+    }
+
     const result = await updateNationalTeamData({ inputPath, outputPath });
     console.log(`Updated national-team snapshot: ${result.matchCount} matches -> ${result.outputPath}`);
   } catch (err) {

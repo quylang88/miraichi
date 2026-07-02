@@ -151,7 +151,7 @@ function renderFeedEmpty(feed: Extract<MatchFeedViewState, { status: 'empty' }>)
   `;
 }
 
-function renderProviderMatchCard(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
+function renderSnapshotMatchCard(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   const title = matchTitle(match);
   const meta = matchMeta(match, timezone);
   const statusClass = (match.status as string) === 'in_play' ? 'blue' : match.status === 'completed' ? '' : 'amber';
@@ -193,7 +193,7 @@ function renderRowRight(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_C
   return `<span class="row-kickoff">${formatKickoffTime(match.kickoffUtc, timezone)}</span>`;
 }
 
-function renderProviderMatchRow(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
+function renderSnapshotMatchRow(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   const title = matchTitle(match);
   const meta = matchMeta(match, timezone);
   const right = renderRowRight(match, timezone);
@@ -204,14 +204,14 @@ function renderMatchFeedCards(feed: MatchFeedViewState, timezone?: 'local' | 'UT
   if (feed.status === 'loading') return renderFeedLoading(feed);
   if (feed.status === 'unavailable') return renderFeedUnavailable(feed);
   if (feed.status === 'empty') return renderFeedEmpty(feed);
-  return feed.matches.map(m => renderProviderMatchCard(m, timezone)).join('');
+  return feed.matches.map(m => renderSnapshotMatchCard(m, timezone)).join('');
 }
 
 function renderMatchFeedRows(feed: MatchFeedViewState, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   if (feed.status === 'loading') return renderFeedLoading(feed);
   if (feed.status === 'unavailable') return renderFeedUnavailable(feed);
   if (feed.status === 'empty') return renderFeedEmpty(feed);
-  return feed.matches.map(m => renderProviderMatchRow(m, timezone)).join('');
+  return feed.matches.map(m => renderSnapshotMatchRow(m, timezone)).join('');
 }
 
 function renderSummaryRow({
@@ -318,7 +318,7 @@ function renderTodayPanel(
         <section class="note-card">
           <div class="note-eyebrow">Miraichi note</div>
           <div class="note-title">This shell is a journal surface, not an advice engine.</div>
-          <p class="note-copy">The match feed can show provider fixture context, but this shell does not rank picks, estimate confidence, or propose stake size.</p>
+          <p class="note-copy">The match feed shows local snapshot context, but this shell does not rank picks, estimate confidence, or propose stake size.</p>
         </section>
       </div>
     </section>
@@ -441,7 +441,7 @@ function renderMatchesPanel(
           return `
             <div class="date-group">
               <div class="group-label">${escapeHtml(league)}</div>
-              ${leagueMatches.map(m => renderProviderMatchRow(m, timezone)).join('')}
+              ${leagueMatches.map(m => renderSnapshotMatchRow(m, timezone)).join('')}
             </div>
           `;
         }).join('');
@@ -451,7 +451,7 @@ function renderMatchesPanel(
         matchesHtml = `
           <div class="date-group">
             <div class="group-label">${escapeHtml(matchFeed.date)}</div>
-            ${sortedMatches.map(m => renderProviderMatchRow(m, timezone)).join('')}
+            ${sortedMatches.map(m => renderSnapshotMatchRow(m, timezone)).join('')}
           </div>
         `;
       }
@@ -773,7 +773,7 @@ function renderMatchesPanel(
 
       ${matchesHtml}
 
-      <div class="empty-state" id="matches-empty" style="display: ${matchFeed.status === 'ready' && filteredMatches.length === 0 ? 'block' : 'none'};">No provider matches match this search.</div>
+      <div class="empty-state" id="matches-empty" style="display: ${matchFeed.status === 'ready' && filteredMatches.length === 0 ? 'block' : 'none'};">No local snapshot matches match the current filters.</div>
     </section>
   `;
 }

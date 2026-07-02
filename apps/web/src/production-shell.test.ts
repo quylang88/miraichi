@@ -391,7 +391,7 @@ describe('production shell live match feed rendering', () => {
     expect(unavailableHtml).toContain('Local match snapshot is missing. Run the national-team data update before using match workflows.');
   });
 
-  it('renders real provider matches and removes visible hardcoded live feed labels', () => {
+  it('renders local snapshot matches and removes visible hardcoded live feed labels', () => {
     const html = renderAppShell({
       activeTabId: 'matches',
       translate: t,
@@ -433,6 +433,9 @@ describe('production shell live match feed rendering', () => {
 
     expect(html).toContain('Japan vs Vietnam');
     expect(html).toContain('FIFA World Cup');
+    expect(html).toContain('Local match ID match-1');
+    expect(html).not.toContain('provider fixture context');
+    expect(html).not.toContain('No provider matches');
 
     const todayPanelStart = html.indexOf('id="screen-today"');
     const todayPanelEnd = html.indexOf('</section>', todayPanelStart);
@@ -722,6 +725,7 @@ describe('production shell match filters panel', () => {
     });
 
     expect(html).toContain('style="display: block;"');
-    expect(html).toContain('No provider matches match this search.');
+    expect(html).toContain('No local snapshot matches match the current filters.');
+    expect(html).not.toContain('No provider matches');
   });
 });

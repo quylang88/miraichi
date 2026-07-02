@@ -204,6 +204,10 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete `phase:code-slice Phase 9 local/manual national-team match snapshot store`.
 - [x] Complete `phase:code-slice Phase 9 local data API for finished and scheduled fixtures`.
 - [x] Complete `phase:code-slice Phase 9 manual daily update command for World Cup 2026 first, then Euro latest/past backfill`.
+- [x] Complete `phase:code-slice Phase 9 Local Data API Closeout Fixes - integration verifier, idempotent verification, UI copy, and snapshot status contract`.
+  - **Evidence**: Focused closeout tests, `pnpm run phase9:local-data-api-verify`, `pnpm run verify:local`, and `pnpm run test:integration` passed on 2026-07-02.
+- [x] Run `phase:integration-test Phase 9 API-Football Removal and Local Data API`.
+  - **Result**: The local data API boundary passed integration. This does not close Phase 9 Non-AI App Completion, because cloud persistence and the four non-AI tab workflows remain pending.
 - [ ] Create owner-approved cloud database provider ADR before implementing production cloud persistence.
 - [ ] Create `phase:implementation-plan Phase 9 Cloud Persistence for four non-AI tabs`.
 - [ ] Complete `Today` and `Matches` tab flows against the local/cloud match API with loading, empty, stale-data, and unavailable states.
