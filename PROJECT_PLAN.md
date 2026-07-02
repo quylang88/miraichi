@@ -224,6 +224,9 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Evidence**: Phase 9 cloud persistence verifier and endpoint boundary integration covered account creation and signed manual ledger entries in memory integration mode on 2026-07-02.
 - [x] Run `phase:integration-test Phase 9 Non-AI App Completion` only after the four non-AI tabs and persistence boundary are feature-complete.
   - **Evidence**: `pnpm run test:integration` passed on 2026-07-02, including API/local-AI boundary checks, Phase 9 cloud-persistence endpoints in memory integration mode, and PWA verification.
+- [x] Complete `phase:code-slice Phase 9 Local Supabase Developer Workflow Hardening`.
+  - **Evidence**: `pnpm run supabase:local:status`, `pnpm run supabase:local:sync`, and `pnpm run supabase:local:verify` passed against the local Docker Supabase Postgres DB on 2026-07-02.
+  - **Scope**: Local developer scripts and docs only; no staging deploy, no cloud Supabase promotion, no Phase 10 AI/runtime work.
 - [ ] Run `phase:staging Phase 9 Non-AI App Completion` and record smoke evidence.
   - **Blocker**: Requires a real Supabase project/database URL, applying `supabase/migrations/20260702052851_phase9_cloud_persistence.sql`, running Supabase advisors, and setting staging server secrets before smoke evidence can be recorded.
 - [x] Keep `Miraichi AI` disabled or honest-unavailable until Phase 10.
