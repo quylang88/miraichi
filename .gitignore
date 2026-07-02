@@ -89,3 +89,14 @@ models/
 checkpoint-*/
 cache/
 .huggingface/
+
+# Provider capture data — local raw payloads and manifests are gitignored;
+# .gitkeep sentinels are explicitly unignored to preserve directory structure.
+# Warehouse JSONL files are NOT globally ignored; promotion is an explicit decision.
+apps/api/data/providers/*/raw/**
+apps/api/data/providers/*/manifests/**
+apps/api/data/providers/*/reports/**
+!apps/api/data/providers/*/raw/.gitkeep
+!apps/api/data/providers/*/manifests/.gitkeep
+!apps/api/data/providers/*/reports/.gitkeep
+
