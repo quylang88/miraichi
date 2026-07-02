@@ -24,7 +24,8 @@ const RULES = [
       'packages/config/src/competition-registry.mock.ts',
       'scripts/phase2-verify.ts',
       'apps/local-ai/src/data/sofascore-national-team-discovery.test.ts',
-      'apps/api/src/services/cloud-match-snapshot-sync.test.ts'
+      'apps/api/src/services/cloud-match-snapshot-sync.test.ts',
+      'packages/shared/src/contracts/provider-ingestion-contracts.test.ts'
     ]
   },
   {
