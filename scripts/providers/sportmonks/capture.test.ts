@@ -126,4 +126,46 @@ describe('sportmonks raw capture', () => {
     });
     expect(line.payloadHash).toBeUndefined();
   });
+
+  it('stops pagination at maxPagesPerEndpoint without logging a failed entry', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
+    const catalog: SportmonksEndpointEntry[] = [
+      { endpointKey: 'fixtures.all', group: 'fixtures', urlPath: '/fixtures', capturePolicy: 'allowed' }
+    ];
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async () => ({
+        ok: true as const,
+        statusCode: 200,
+        body: { data: [{ id: 1 }], pagination: { has_more: true } },
+        rateLimit: {}
+      }))
+    };
+
+    const result = await runSportmonksRawCapture({
+      captureRoot: root,
+      allowGatedEndpoints: false,
+      catalog,
+      client,
+      maxPagesPerEndpoint: 1,
+      now: () => '2026-07-02T00:00:00.000Z'
+    });
+
+    expect(result).toEqual({
+      captured: 1,
+      skipped: 0,
+      unavailable: 0,
+      failed: 0
+    });
+
+    const manifestPath = join(root, 'providers', 'sportmonks', 'manifests', 'capture-manifest.jsonl');
+    const manifestLines = (await readFile(manifestPath, 'utf8')).trim().split(/\r?\n/).map((line) => JSON.parse(line));
+    expect(manifestLines).toHaveLength(1);
+    expect(manifestLines[0]).toMatchObject({
+      endpointKey: 'fixtures.all',
+      status: 'captured',
+      page: 1,
+      hasMore: true
+    });
+  });
 });
+

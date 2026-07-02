@@ -770,7 +770,7 @@ git commit -m "feat(data): configure removable sportmonks provider"
 - Create `scripts/providers/sportmonks/capture.test.ts`
 - Create `scripts/capture-sportmonks-trial-data.ts`
 
-- [ ] **Step 1: Write failing client and capture tests**
+- [x] **Step 1: Write failing client and capture tests**
 
 ```ts
 import { mkdtemp, readFile } from 'node:fs/promises';
@@ -820,7 +820,7 @@ describe('sportmonks raw capture', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests and observe failure**
+- [x] **Step 2: Run tests and observe failure**
 
 ```powershell
 pnpm exec vitest run scripts/providers/sportmonks/client.test.ts scripts/providers/sportmonks/capture.test.ts
@@ -828,7 +828,7 @@ pnpm exec vitest run scripts/providers/sportmonks/client.test.ts scripts/provide
 
 Expected: fail because modules do not exist.
 
-- [ ] **Step 3: Implement client**
+- [x] **Step 3: Implement client**
 
 Rules:
 
@@ -839,7 +839,7 @@ Rules:
 - Retry `5xx` twice with backoff.
 - Parse rate-limit metadata from response body/headers.
 
-- [ ] **Step 4: Implement raw capture**
+- [x] **Step 4: Implement raw capture**
 
 Rules:
 
@@ -852,7 +852,7 @@ Rules:
 
 CLI `scripts/capture-sportmonks-trial-data.ts` wires config, catalog, client, and capture runner.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 ```powershell
 pnpm exec vitest run scripts/providers/sportmonks/client.test.ts scripts/providers/sportmonks/capture.test.ts
@@ -861,7 +861,7 @@ pnpm run typecheck
 
 Expected: pass.
 
-- [ ] **Step 6: First real capture**
+- [x] **Step 6: First real capture**
 
 Local `.env`:
 
@@ -880,7 +880,7 @@ pnpm run data:capture:sportmonks
 
 Expected: raw files and manifests appear under `apps/api/data/providers/sportmonks/`, not under warehouse.
 
-- [ ] **Step 7: Commit code only**
+- [x] **Step 7: Commit code only**
 
 ```powershell
 git add scripts/capture-sportmonks-trial-data.ts scripts/providers/sportmonks/client.ts scripts/providers/sportmonks/client.test.ts scripts/providers/sportmonks/capture.ts scripts/providers/sportmonks/capture.test.ts

@@ -161,17 +161,7 @@ async function captureEndpointPages(input: {
     }
   }
 
-  await appendProviderManifestEntry(input.captureRoot, 'sportmonks', {
-    provider: 'sportmonks',
-    endpointKey: input.endpoint.endpointKey,
-    urlPath: input.endpoint.urlPath,
-    query: { page: String(input.maxPagesPerEndpoint) },
-    status: 'failed',
-    page: input.maxPagesPerEndpoint,
-    errorCode: 'max_pages_exceeded',
-    errorMessage: `Stopped after ${input.maxPagesPerEndpoint} pages`
-  });
-  result.failed += 1;
+  input.log?.(`sportmonks:capture ${input.endpoint.endpointKey} stopped at page limit (${input.maxPagesPerEndpoint} pages)`);
   return result;
 }
 
