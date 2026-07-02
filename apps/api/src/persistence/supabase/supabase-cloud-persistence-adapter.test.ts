@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { CloudMatchSnapshot } from '@miraichi/shared/src/contracts/index.js';
 import type { PostgresQueryClient } from './postgres-query-client.js';
 import { createSupabaseCloudPersistenceAdapter } from './supabase-cloud-persistence-adapter.js';
 
@@ -48,5 +49,34 @@ describe('supabase cloud persistence adapter', () => {
     };
     const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary', now: () => '2026-07-02T00:00:00.000Z' });
     await expect(adapter.getStatus()).resolves.toEqual({ provider: 'supabase-postgres', mode: 'supabase', state: 'unavailable', checkedAt: '2026-07-02T00:00:00.000Z', message: 'Cloud database is unavailable.' });
+  });
+
+  it('serializes JSONB values before sending them to pg', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    const snapshot: CloudMatchSnapshot = {
+      snapshotId: 'snapshot-001',
+      generatedAt: '2026-07-02T00:00:00.000Z',
+      importedAt: '2026-07-02T00:01:00.000Z',
+      sources: [{ sourceId: 'manual-snapshot', importedAt: '2026-07-02T00:00:00.000Z' }],
+      matches: [{
+        id: 'match-001',
+        competition: { id: 'fixture-cup', name: 'Fixture Cup', type: 'national-team', season: '2026' },
+        kickoffUtc: '2026-06-11T19:00:00.000Z',
+        status: 'scheduled',
+        homeTeam: { id: 'team-a', name: 'Team A' },
+        awayTeam: { id: 'team-b', name: 'Team B' },
+        score: { home: null, away: null },
+        sourceRefs: [{ sourceId: 'manual-snapshot', sourceMatchId: 'fixture-001', importedAt: '2026-07-02T00:00:00.000Z' }],
+        updatedAt: '2026-07-02T00:00:00.000Z'
+      }]
+    };
+
+    await adapter.upsertMatchSnapshot('owner-primary', snapshot);
+
+    const snapshotCall = client.calls.find((call) => call.text.includes('miraichi_app.match_snapshot'));
+    const matchCall = client.calls.find((call) => call.text.includes('miraichi_app.match_record'));
+    expect(snapshotCall?.values[4]).toBe(JSON.stringify(snapshot.sources));
+    expect(matchCall?.values[20]).toBe(JSON.stringify(snapshot.matches[0]!.sourceRefs));
   });
 });
