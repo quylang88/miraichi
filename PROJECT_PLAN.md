@@ -208,8 +208,14 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Evidence**: Focused closeout tests, `pnpm run phase9:local-data-api-verify`, `pnpm run verify:local`, and `pnpm run test:integration` passed on 2026-07-02.
 - [x] Run `phase:integration-test Phase 9 API-Football Removal and Local Data API`.
   - **Result**: The local data API boundary passed integration. This does not close Phase 9 Non-AI App Completion, because cloud persistence and the four non-AI tab workflows remain pending.
-- [ ] Create owner-approved cloud database provider ADR before implementing production cloud persistence.
-- [ ] Create `phase:implementation-plan Phase 9 Cloud Persistence for four non-AI tabs`.
+- [x] Create owner-approved cloud database provider ADR before implementing production cloud persistence.
+  - **Decision**: ADR-0043 accepted on 2026-07-02. Supabase hosted Postgres is the Phase 9 cloud persistence provider.
+  - **Boundary**: `apps/web -> apps/api -> Supabase Postgres`; no direct browser Supabase client, no browser secrets, owner-only persistence, no public auth in this phase.
+  - **ADR**: See `docs/decisions/ADR-0043-phase-9-cloud-database-provider.md`.
+- [x] Create `phase:implementation-plan Phase 9 Cloud Persistence for four non-AI tabs`.
+  - **Plan**: See `docs/superpowers/plans/2026-07-02-phase-9-cloud-persistence-four-non-ai-tabs.md`.
+  - **Scope**: Server-only Supabase Postgres adapter, private schema, manual snapshot cloud sync/fallback, durable Bets and Bankroll workflows, backup/import/export, and non-AI closeout verification.
+  - **Next**: Start `phase:code-slice Phase 9 Cloud Persistence Contracts and Server-Only Configuration`.
 - [ ] Complete `Today` and `Matches` tab flows against the local/cloud match API with loading, empty, stale-data, and unavailable states.
 - [ ] Complete `Bets` tab real draft/history workflows without automated betting, ROI, CLV, Kelly, or stake recommendation logic.
 - [ ] Complete `Bankroll` capital-management workflows as owner-entered ledger/account records only, with no automated risk or stake allocation formulas.
