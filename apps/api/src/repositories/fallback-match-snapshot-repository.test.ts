@@ -1,0 +1,9 @@
+import { describe, expect, it } from 'vitest';
+import { FallbackMatchSnapshotRepository } from './fallback-match-snapshot-repository.js';
+const feed={matches:[],snapshot:{snapshotId:'cloud',generatedAt:'2026-07-02T00:00:00.000Z',importedAt:'2026-07-02T00:00:00.000Z',matchCount:0,competitions:[],sources:[],freshness:'fresh' as const,warnings:[]}};
+const missing=()=>Object.assign(new Error('missing'),{code:'local_snapshot_missing',statusCode:503});
+describe('fallback match snapshot repository',()=>{
+  it('prefers local success',async()=>{const localFeed={...feed,snapshot:{...feed.snapshot,snapshotId:'local'}};const repo=new FallbackMatchSnapshotRepository({listMatches:async()=>localFeed,findById:async()=>null,getStatus:async()=>localFeed.snapshot},{listMatches:async()=>feed,findById:async()=>null,getStatus:async()=>feed.snapshot});expect((await repo.listMatches({})).snapshot.snapshotId).toBe('local');});
+  it('falls back only when local snapshot is missing',async()=>{const repo=new FallbackMatchSnapshotRepository({listMatches:async()=>{throw missing();},findById:async()=>{throw missing();},getStatus:async()=>({...feed.snapshot,freshness:'missing'})},{listMatches:async()=>feed,findById:async()=>null,getStatus:async()=>feed.snapshot});expect((await repo.listMatches({})).snapshot.warnings).toContain('cloud_snapshot_fallback');});
+  it('does not hide invalid local data',async()=>{const invalid=Object.assign(new Error('invalid'),{code:'local_snapshot_invalid'});const repo=new FallbackMatchSnapshotRepository({listMatches:async()=>{throw invalid;},findById:async()=>null,getStatus:async()=>feed.snapshot},{listMatches:async()=>feed,findById:async()=>null,getStatus:async()=>feed.snapshot});await expect(repo.listMatches({})).rejects.toMatchObject({code:'local_snapshot_invalid'});});
+});

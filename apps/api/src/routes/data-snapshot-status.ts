@@ -1,12 +1,13 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
+import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
 
 const repository = new LocalMatchSnapshotRepository();
 
 export async function handleDataSnapshotStatus(
   req: IncomingMessage,
   res: ServerResponse,
-  dependencies: { repository?: LocalMatchSnapshotRepository } = {}
+  dependencies: { repository?: MatchSnapshotRepository } = {}
 ): Promise<void> {
   const repo = dependencies.repository ?? repository;
 

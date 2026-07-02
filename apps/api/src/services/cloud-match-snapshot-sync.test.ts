@@ -1,0 +1,11 @@
+import { describe, expect, it } from 'vitest';
+import { createCloudPersistenceAdapter } from '../persistence/create-cloud-persistence-adapter.js';
+import { createMemoryCloudPersistenceAdapter } from '../persistence/memory-cloud-persistence-adapter.js';
+import { syncLocalMatchSnapshotToCloud } from './cloud-match-snapshot-sync.js';
+const match={id:'m1',competition:{id:'world-cup-2026',name:'World Cup',type:'national-team' as const,season:'2026'},kickoffUtc:'2026-06-11T00:00:00.000Z',status:'scheduled' as const,homeTeam:{id:'jpn',name:'Japan'},awayTeam:{id:'vnm',name:'Vietnam'},score:{home:null,away:null},sourceRefs:[],updatedAt:'2026-07-02T00:00:00.000Z'};
+const snapshot={snapshotId:'s1',generatedAt:'2026-07-02T00:00:00.000Z',importedAt:'2026-07-02T00:00:00.000Z',sources:[],matches:[match]};
+describe('cloud match snapshot sync',()=>{
+  it('upserts validated local snapshots idempotently',async()=>{const adapter=createMemoryCloudPersistenceAdapter();const local={loadSnapshot:async()=>snapshot};await syncLocalMatchSnapshotToCloud({localRepository:local,adapter,ownerProfileId:'owner-primary'});await syncLocalMatchSnapshotToCloud({localRepository:local,adapter,ownerProfileId:'owner-primary'});expect((await adapter.listCloudMatches('owner-primary',{})).matches).toHaveLength(1);});
+  it('refuses live and club snapshots',async()=>{const adapter=createMemoryCloudPersistenceAdapter();await expect(syncLocalMatchSnapshotToCloud({localRepository:{loadSnapshot:async()=>({...snapshot,matches:[{...match,status:'in_play'}]}) as never},adapter,ownerProfileId:'owner-primary'})).rejects.toThrow('invalid');await expect(syncLocalMatchSnapshotToCloud({localRepository:{loadSnapshot:async()=>({...snapshot,matches:[{...match,competition:{...match.competition,type:'club'}}]}) as never},adapter,ownerProfileId:'owner-primary'})).rejects.toThrow('invalid');});
+  it('fails honestly when cloud persistence is disabled',async()=>{await expect(syncLocalMatchSnapshotToCloud({localRepository:{loadSnapshot:async()=>snapshot},adapter:createCloudPersistenceAdapter({mode:'disabled',appEnv:'local',ownerProfileId:'owner-primary'}),ownerProfileId:'owner-primary'})).rejects.toMatchObject({code:'cloud_persistence_unconfigured'});});
+});

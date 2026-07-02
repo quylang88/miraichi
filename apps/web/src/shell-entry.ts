@@ -3,6 +3,9 @@ import { renderAppShell } from './components/app-shell.js';
 import { createSettingsService } from './services/settings-service.js';
 import { t } from './services/i18n-service.js';
 import { getMatchFeed, type MatchFeedViewState } from './services/match-feed-service.js';
+import { deleteCloudBetDraft, loadBetRecordsViewState, patchCloudBetRecord, saveCloudBetDraft, updateCloudBetDraft, type BetRecordsViewState } from './services/bet-record-service.js';
+import { createBankrollAccount, createLedgerEntry, loadBankrollViewState, type BankrollViewState } from './services/bankroll-service.js';
+import { exportCloudBackup, importCloudBackup } from './services/backup-service.js';
 
 const root = document.getElementById('app-root');
 
@@ -26,6 +29,10 @@ const activeFilters = {
 };
 let isFilterPanelOpen = false;
 let currentOpenMatchId = '';
+let editingDraftId = '';
+let editingBetId = '';
+let betRecordsState: BetRecordsViewState = { status: 'loading' };
+let bankrollState: BankrollViewState = { status: 'loading' };
 
 function todayLocalDate(): string {
   const now = new Date();
@@ -71,7 +78,9 @@ function render(activeTabId: string): void {
     filters: activeFilters,
     searchQuery: currentSearchQuery,
     isLiveFilterActive,
-    isFilterPanelOpen
+    isFilterPanelOpen,
+    betRecordsState,
+    bankrollState
   });
   appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settingsService.getSettings().locale);
 
@@ -322,9 +331,52 @@ function toggleMatchCard(button: HTMLElement): void {
     : '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 14 6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 }
 
+async function refreshBetRecords(): Promise<void> {
+  betRecordsState = await loadBetRecordsViewState();
+  render(currentScreenName);
+}
+
+async function refreshBankroll(selectedAccountId?: string): Promise<void> {
+  bankrollState = await loadBankrollViewState(fetch, selectedAccountId);
+  render(currentScreenName);
+}
+
+async function exportBackup(): Promise<void> {
+  const envelope = await exportCloudBackup();
+  const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `miraichi-backup-${envelope.exportedAt.slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 appRoot.addEventListener('click', (event) => {
   const eventTarget = event.target instanceof Element ? event.target : null;
   if (!eventTarget) {
+    return;
+  }
+
+  const deleteDraft = eventTarget.closest<HTMLElement>('[data-delete-draft-confirm]');
+  if (deleteDraft?.dataset.deleteDraftConfirm) {
+    void deleteCloudBetDraft(deleteDraft.dataset.deleteDraftConfirm).then(refreshBetRecords);
+    return;
+  }
+
+  const ledgerAction = eventTarget.closest<HTMLElement>('[data-ledger-type]');
+  if (ledgerAction?.dataset.ledgerType && bankrollState.status === 'ready') {
+    const rawAmount = window.prompt('Enter a signed points amount. Deposits are positive; withdrawals and transfers are negative.');
+    if (rawAmount === null) return;
+    const amountPoints = Number(rawAmount);
+    if (!Number.isFinite(amountPoints) || amountPoints === 0) return;
+    const note = window.prompt('Optional ledger note') || undefined;
+    void createLedgerEntry({ entryId: crypto.randomUUID(), accountId: bankrollState.selectedAccountId, entryType: ledgerAction.dataset.ledgerType as 'deposit' | 'withdrawal' | 'transfer_in' | 'transfer_out' | 'correction', amountPoints, ...(note ? { note } : {}), occurredAt: new Date().toISOString() }).then(() => refreshBankroll(bankrollState.status === 'ready' ? bankrollState.selectedAccountId : undefined));
+    return;
+  }
+
+  if (eventTarget.closest('[data-backup-export]')) {
+    void exportBackup().then(() => setText('backup-feedback', 'Backup exported.')).catch(() => setText('backup-feedback', 'Backup export failed.'));
     return;
   }
 
@@ -438,8 +490,20 @@ appRoot.addEventListener('click', (event) => {
 
   const openEditTarget = eventTarget.closest<HTMLElement>('[data-open-edit]');
   if (openEditTarget) {
-    setText('edit-subtitle', openEditTarget.dataset.editTitle || 'Ongoing record');
+    editingDraftId = openEditTarget.dataset.draftId || '';
+    editingBetId = openEditTarget.dataset.betId || '';
+    const draft = betRecordsState.status === 'ready' ? betRecordsState.drafts.find((item) => item.draftId === editingDraftId) : undefined;
+    const bet = betRecordsState.status === 'ready' ? betRecordsState.pending.find((item) => item.betId === editingBetId) : undefined;
+    setText('edit-subtitle', draft ? `${draft.marketType} draft` : bet?.selectionLabel || 'Saved record');
     openSheet('edit');
+    const market = document.getElementById('edit-market-field') as HTMLSelectElement | null;
+    const odds = document.getElementById('edit-odds-field') as HTMLInputElement | null;
+    const stake = document.getElementById('edit-stake-field') as HTMLInputElement | null;
+    const note = document.getElementById('edit-note-field') as HTMLTextAreaElement | null;
+    if (market) market.value = draft?.marketType ?? bet?.marketType ?? '1X2';
+    if (odds) odds.value = String(draft?.oddsValue ?? bet?.oddsValue ?? '');
+    if (stake) stake.value = String(draft?.stakePoints ?? bet?.stakePoints ?? '');
+    if (note) note.value = draft?.notes ?? bet?.notes ?? '';
     return;
   }
 
@@ -498,6 +562,19 @@ appRoot.addEventListener('input', (event) => {
 
 appRoot.addEventListener('change', (event) => {
   const target = event.target;
+  if (target instanceof HTMLSelectElement && target.matches('[data-bankroll-account-select]')) {
+    void refreshBankroll(target.value);
+    return;
+  }
+  if (target instanceof HTMLInputElement && target.matches('[data-backup-import]')) {
+    const file = target.files?.[0];
+    if (!file || !window.confirm('Import this backup? Existing conflicting records will be kept.')) return;
+    void file.text().then((content) => importCloudBackup(JSON.parse(content))).then(async () => {
+      await Promise.all([refreshBetRecords(), refreshBankroll()]);
+      setText('backup-feedback', 'Backup imported.');
+    }).catch(() => setText('backup-feedback', 'Backup import failed or conflicts with existing records.'));
+    return;
+  }
   if (target instanceof HTMLInputElement && target.name === 'filter-groupby') {
     activeFilters.groupby = target.value;
     render(currentScreenName);
@@ -542,16 +619,54 @@ appRoot.addEventListener('change', (event) => {
 
 appRoot.addEventListener('submit', (event) => {
   const target = event.target;
-  if (!(target instanceof HTMLFormElement) || target.id !== 'add-form') {
+  if (!(target instanceof HTMLFormElement)) {
+    return;
+  }
+  event.preventDefault();
+
+  if (target.id === 'create-bankroll-form') {
+    const form = new FormData(target);
+    const label = String(form.get('label') || '').trim();
+    const openingBalancePoints = Number(form.get('opening'));
+    if (!label || !Number.isFinite(openingBalancePoints)) return;
+    void createBankrollAccount({ accountId: crypto.randomUUID(), label, openingBalancePoints }).then(() => refreshBankroll());
     return;
   }
 
-  event.preventDefault();
+  if (target.id === 'edit-form') {
+    const market = (document.getElementById('edit-market-field') as HTMLSelectElement | null)?.value;
+    const oddsValue = Number((document.getElementById('edit-odds-field') as HTMLInputElement | null)?.value);
+    const stakePoints = Number((document.getElementById('edit-stake-field') as HTMLInputElement | null)?.value);
+    const notes = (document.getElementById('edit-note-field') as HTMLTextAreaElement | null)?.value.trim();
+    if (editingDraftId && betRecordsState.status === 'ready') {
+      const draft = betRecordsState.drafts.find((item) => item.draftId === editingDraftId);
+      if (!draft || !market || !Number.isFinite(oddsValue) || !Number.isFinite(stakePoints)) return;
+      void updateCloudBetDraft({ ...draft, marketType: market as typeof draft.marketType, oddsValue, stakePoints, ...(notes ? { notes } : {}), updatedAt: new Date().toISOString() }).then(() => { closeSheets(); return refreshBetRecords(); });
+    } else if (editingBetId) {
+      void patchCloudBetRecord(editingBetId, { ...(notes ? { notes } : {}) }).then(() => { closeSheets(); return refreshBetRecords(); });
+    }
+    return;
+  }
+
+  if (target.id !== 'add-form') return;
   const saveDraftShell = document.getElementById('save-draft-shell') as HTMLButtonElement | null;
   if (saveDraftShell?.disabled) {
     return;
   }
-  setText('add-feedback', 'Shell only: draft validated, no data saved.');
+  const form = new FormData(target);
+  const marketType = String(form.get('market-field') || '');
+  const oddsValue = Number(form.get('odds-field'));
+  const stakePoints = Number(form.get('stake-field'));
+  const notes = String(form.get('note-field') || '').trim();
+  if (!currentOpenMatchId || !marketType || !Number.isFinite(oddsValue) || !Number.isFinite(stakePoints)) {
+    setText('add-feedback', 'Select a match and enter valid market, odds, and stake points.');
+    return;
+  }
+  const timestamp = new Date().toISOString();
+  void saveCloudBetDraft({ draftId: crypto.randomUUID(), matchGroupId: currentOpenMatchId, marketType: marketType as '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom', oddsFormat: 'HK', oddsValue, stakePoints, ...(notes ? { notes } : {}), createdAt: timestamp, updatedAt: timestamp }).then(() => {
+    setText('add-feedback', 'Draft saved.');
+    return loadBetRecordsViewState();
+  }).then((state) => { betRecordsState = state; }).catch(() => setText('add-feedback', 'Draft save failed.'));
 });
 
 document.addEventListener('keydown', (event) => {
@@ -578,3 +693,5 @@ async function refreshMatchFeed(): Promise<void> {
 
 render(getInitialTabId());
 void refreshMatchFeed();
+void refreshBetRecords();
+void refreshBankroll();

@@ -1,5 +1,11 @@
 export type JsonObject = Record<string, unknown>;
 
+export async function readJsonObjectRequest(req: import('http').IncomingMessage): Promise<JsonObject> {
+  let rawBody = '';
+  for await (const chunk of req) rawBody += String(chunk);
+  return parseJsonObjectBody(rawBody);
+}
+
 export function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

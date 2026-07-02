@@ -5,7 +5,7 @@ console.log('[Test-Endpoints] Starting API Gateway and Local AI servers...');
 
 // Spawn background processes for apps/api and apps/local-ai
 const tsxCli = path.resolve('node_modules/tsx/dist/cli.mjs');
-const spawnOptions = { stdio: 'inherit' as const };
+const spawnOptions = { stdio: 'inherit' as const, env: { ...process.env, APP_ENV: 'test', CLOUD_PERSISTENCE_MODE: 'memory', API_URL: 'http://localhost:3001', LOCAL_AI_URL: 'http://localhost:3002' } };
 const apiProcess = spawn(process.execPath, [tsxCli, 'apps/api/src/index.ts'], spawnOptions);
 const aiProcess = spawn(process.execPath, [tsxCli, 'apps/local-ai/src/index.ts'], spawnOptions);
 
@@ -136,14 +136,37 @@ setTimeout(async () => {
     assert(false, `POST /api/v1/chat out-of-scope query failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // 6. GET /api/v1/bets (Read-only bet log audits check)
+  // 6. Phase 9 owner-only cloud persistence in memory integration mode
   try {
-    const res = await fetch('http://localhost:3001/api/v1/bets');
-    const data = await res.json();
-    assert(res.ok && Array.isArray(data), 'GET /api/v1/bets returns simulated bet logs array');
-    assert(data[0].betId === 'bet_2026_1001', 'Bet log matches mock boundary contracts');
+    const statusRes = await fetch('http://localhost:3001/api/v1/cloud-persistence/status');
+    const status = await statusRes.json() as { state?: string };
+    assert(statusRes.ok && status.state === 'ready', 'Cloud persistence status is ready in memory integration mode');
+
+    const timestamp = '2026-07-02T00:00:00.000Z';
+    const draft = { draftId: 'e2e-draft', matchGroupId: firstMatchId || 'match-e2e', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: timestamp, updatedAt: timestamp };
+    const draftCreate = await fetch('http://localhost:3001/api/v1/bet-drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
+    assert(draftCreate.status === 201, 'POST /api/v1/bet-drafts creates a draft');
+    const draftList = await fetch('http://localhost:3001/api/v1/bet-drafts');
+    assert(draftList.ok && (await draftList.json() as unknown[]).length === 1, 'GET /api/v1/bet-drafts lists drafts');
+
+    const bet = { betId: 'e2e-bet', matchGroupId: firstMatchId || 'match-e2e', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, status: 'pending', createdAt: timestamp, updatedAt: timestamp };
+    const betCreate = await fetch('http://localhost:3001/api/v1/bets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bet) });
+    assert(betCreate.status === 201, 'POST /api/v1/bets creates a bet record');
+    const betPatch = await fetch('http://localhost:3001/api/v1/bets?id=e2e-bet', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: 'integration update' }) });
+    assert(betPatch.ok, 'PATCH /api/v1/bets updates an allowed field');
+
+    const accountCreate = await fetch('http://localhost:3001/api/v1/bankroll/accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountId: 'e2e-account', label: 'Integration', unit: 'points', openingBalancePoints: 100 }) });
+    assert(accountCreate.status === 201, 'POST /api/v1/bankroll/accounts creates a points account');
+    const ledgerCreate = await fetch('http://localhost:3001/api/v1/bankroll/ledger', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entryId: 'e2e-entry', accountId: 'e2e-account', entryType: 'withdrawal', amountPoints: -10, occurredAt: timestamp }) });
+    assert(ledgerCreate.status === 201, 'POST /api/v1/bankroll/ledger creates a signed manual entry');
+    const backupExport = await fetch('http://localhost:3001/api/v1/backups/export', { method: 'POST' });
+    const backup = await backupExport.json() as { schemaVersion?: string };
+    assert(backupExport.ok && backup.schemaVersion === 'miraichi.cloud-backup.v1', 'POST /api/v1/backups/export returns a cloud backup');
+
+    const draftDelete = await fetch('http://localhost:3001/api/v1/bet-drafts?id=e2e-draft', { method: 'DELETE' });
+    assert(draftDelete.status === 204, 'DELETE /api/v1/bet-drafts removes the integration draft');
   } catch (err) {
-    assert(false, `GET /api/v1/bets request failed: ${err instanceof Error ? err.message : String(err)}`);
+    assert(false, `Phase 9 cloud persistence integration failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // 7. POST /ai/v1/predict (Local AI stats calculator stub)

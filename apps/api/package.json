@@ -11,8 +11,12 @@
     "lint": "tsx ../../scripts/check-js-syntax.ts ."
   },
   "dependencies": {
-    "@miraichi/shared": "workspace:*",
+    "@miraichi/agent-protocol": "workspace:*",
     "@miraichi/config": "workspace:*",
-    "@miraichi/agent-protocol": "workspace:*"
+    "@miraichi/shared": "workspace:*",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0"
   }
 }

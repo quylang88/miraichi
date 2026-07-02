@@ -9,6 +9,8 @@ import { renderBottomNavigation } from './bottom-navigation.js';
 import { escapeHtml } from './html.js';
 import type { AppMatch, MatchFeedViewState } from '../services/match-feed-service.js';
 import { NATIONAL_COMPETITION_KEYWORDS } from '../../../../packages/config/src/competition-registry.mock.js';
+import type { BetRecordsViewState } from '../services/bet-record-service.js';
+import type { BankrollViewState } from '../services/bankroll-service.js';
 
 const icons = Object.freeze({
   back: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -89,6 +91,8 @@ const defaultMatchFeed: MatchFeedViewState = Object.freeze({
   status: 'loading',
   date: new Date().toISOString().slice(0, 10)
 });
+const defaultBetRecordsState: BetRecordsViewState = Object.freeze({ status: 'loading' });
+const defaultBankrollState: BankrollViewState = Object.freeze({ status: 'loading' });
 
 function formatKickoffTime(isoValue: string, timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh' = 'local'): string {
   const date = new Date(isoValue);
@@ -793,7 +797,29 @@ function renderMatchRow(title: string, rightHtml: string, detailMeta: string, st
   `;
 }
 
-function renderBetsPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction): string {
+function renderBetRecordsState(state: BetRecordsViewState): string {
+  if (state.status === 'loading') return '<section class="note-card" data-bet-records-state="loading"><div class="note-title">Loading saved bet records</div></section>';
+  if (state.status === 'empty') return '<section class="note-card" data-bet-records-state="empty"><div class="note-title">No drafts or bet records saved.</div></section>';
+  if (state.status === 'unavailable') return `<section class="note-card warning" data-bet-records-state="unavailable"><div class="note-title">Cloud records unavailable</div><p class="note-copy">${escapeHtml(state.reason)}</p></section>`;
+  const drafts = state.drafts.map((draft) => renderBetRow(
+    `${draft.marketType} draft`,
+    `${escapeHtml(draft.matchGroupId)} &middot; Odds ${draft.oddsValue} &middot; Stake ${draft.stakePoints} pts`,
+    `<div class="row-actions"><button class="text-button" type="button" data-open-edit data-draft-id="${escapeHtml(draft.draftId)}">Edit</button><button class="text-button" type="button" data-delete-draft-confirm="${escapeHtml(draft.draftId)}">Confirm delete</button></div>`
+  )).join('');
+  const pending = state.pending.map((record) => renderBetRow(
+    record.selectionLabel,
+    `${escapeHtml(record.homeTeamName)} vs ${escapeHtml(record.awayTeamName)} &middot; Odds ${record.oddsValue} &middot; Stake ${record.stakePoints} pts`,
+    `<button class="text-button" type="button" data-open-edit data-bet-id="${escapeHtml(record.betId)}">Edit</button>`
+  )).join('');
+  const settled = state.settled.map((record) => renderBetRow(
+    record.selectionLabel,
+    `${escapeHtml(record.homeTeamName)} vs ${escapeHtml(record.awayTeamName)} &middot; ${escapeHtml(record.status)}`,
+    `<button class="text-button" type="button" data-open-sheet="review" data-review-only data-review-title="${escapeHtml(record.selectionLabel)}">Review</button>`
+  )).join('');
+  return `<div data-bet-records-state="ready"><div class="section-heading"><h2>Drafts</h2></div>${drafts || '<p class="empty-state">No drafts.</p>'}<div class="section-heading"><h2>Pending</h2></div>${pending || '<p class="empty-state">No pending records.</p>'}<div class="section-heading"><h2>Settled</h2></div>${settled || '<p class="empty-state">No settled records.</p>'}</div>`;
+}
+
+function renderBetsPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction, state: BetRecordsViewState): string {
   return `
     <section class="${getScreenClass('bets', activeTabId)}" id="screen-bets" data-shell-tab-panel="bets" aria-labelledby="bets-title">
       ${renderScreenHeader({
@@ -809,13 +835,7 @@ function renderBetsPanel(activeTabId: ProductionNavigationTabId, translate: Tran
       </div>
 
       <div class="stack">
-        ${renderBetRow('Team Alpha win', 'Ongoing &middot; Team Alpha vs Team Beta &middot; Odds 2.10 &middot; Stake 100 pts', '<button class="text-button" type="button" data-open-edit data-edit-title="Team Alpha win">Edit</button>')}
-        ${renderBetRow('Totals draft', 'Team Gamma vs Team Delta &middot; Needs market confirmation', '<button class="text-button" type="button" data-open-edit data-edit-title="Totals draft">Edit</button>')}
-        <article class="note-card warning">
-          <div class="note-eyebrow">Boundary</div>
-          <div class="note-title">Ongoing records can be edited here; settled records are review-only in this shell.</div>
-          <p class="note-copy">Adding a new record starts from a match group so the shell stays aligned with matchGroupId grouping. No storage, settlement, or formula is run.</p>
-        </article>
+        ${renderBetRecordsState(state)}
       </div>
     </section>
   `;
@@ -846,8 +866,8 @@ function renderMatchDetailPanel(): string {
       <div class="screen-header">
         <div>
           <p class="screen-label">Match group</p>
-          <h1 class="screen-title" id="match-detail-title">Team Alpha vs Team Beta</h1>
-          <p class="screen-subtitle" id="match-detail-meta">Kickoff 18:00 (Mkt) &middot; matchGroupId: group-alpha-beta</p>
+          <h1 class="screen-title" id="match-detail-title">Selected match</h1>
+          <p class="screen-subtitle" id="match-detail-meta">Choose a local snapshot match to view details.</p>
         </div>
       </div>
 
@@ -876,8 +896,7 @@ function renderMatchDetailPanel(): string {
         </div>
 
         <div class="stack">
-          ${renderBetRow('Team Alpha win', 'Ongoing &middot; Odds 2.10 &middot; Stake 100 pts', '<button class="text-button" type="button" data-open-edit data-edit-title="Team Alpha win">Edit</button>')}
-          ${renderBetRow('Settled context row', 'Review-only shell. No settlement math.', '<button class="text-button" type="button" data-open-sheet="review" data-review-only data-review-title="Settled context row">Review</button>')}
+          <p class="empty-state">Open the Bets tab to review persisted records for this match.</p>
         </div>
       </div>
 
@@ -892,7 +911,17 @@ function renderMatchDetailPanel(): string {
   `;
 }
 
-function renderBankrollPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction): string {
+function renderBankrollState(state: BankrollViewState): string {
+  if (state.status === 'loading') return '<section class="note-card" data-bankroll-state="loading"><div class="note-title">Loading accounts and ledger</div></section>';
+  if (state.status === 'unavailable') return `<section class="note-card warning" data-bankroll-state="unavailable"><div class="note-title">Cloud bankroll unavailable</div><p class="note-copy">${escapeHtml(state.reason)}</p></section>`;
+  if (state.status === 'empty') return '<section class="note-card" data-bankroll-state="empty"><div class="note-title">No points account exists.</div><form id="create-bankroll-form"><label for="bankroll-label">Account label</label><input id="bankroll-label" name="label" required><label for="bankroll-opening">Opening points</label><input id="bankroll-opening" name="opening" type="number" step="0.0001" required><button class="primary-button" type="submit">Create points account</button></form></section>';
+  const selected = state.accounts.find((account) => account.accountId === state.selectedAccountId) ?? state.accounts[0]!;
+  const options = state.accounts.map((account) => `<option value="${escapeHtml(account.accountId)}" ${account.accountId === selected.accountId ? 'selected' : ''}>${escapeHtml(account.label)}</option>`).join('');
+  const ledger = state.ledger.map((entry) => `<div class="ledger-row"><div><div class="ledger-title">${escapeHtml(entry.entryType)}</div><div class="ledger-meta">${escapeHtml(entry.occurredAt)}${entry.note ? ` · ${escapeHtml(entry.note)}` : ''}</div></div><span class="ledger-state">${entry.amountPoints > 0 ? '+' : ''}${entry.amountPoints} pts</span></div>`).join('') || '<p class="empty-state">No ledger entries.</p>';
+  return `<div data-bankroll-state="ready"><label for="bankroll-account-select">Account</label><select id="bankroll-account-select" data-bankroll-account-select>${options}</select>${renderPointsRow('Current points', `${selected.currentBalancePoints} pts`, selected.archived ? 'Archived' : 'Active')}<div class="action-row" aria-label="Manual ledger actions"><button type="button" class="secondary-button" data-ledger-type="deposit">Deposit</button><button type="button" class="secondary-button" data-ledger-type="withdrawal">Withdrawal</button><button type="button" class="secondary-button" data-ledger-type="transfer_out">Transfer</button><button type="button" class="secondary-button" data-ledger-type="correction">Correction</button></div><div class="stack">${ledger}</div></div>`;
+}
+
+function renderBankrollPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction, state: BankrollViewState): string {
   return `
     <section class="${getScreenClass('bankroll', activeTabId)}" id="screen-bankroll" data-shell-tab-panel="bankroll" aria-labelledby="bankroll-title">
       ${renderScreenHeader({
@@ -901,17 +930,8 @@ function renderBankrollPanel(activeTabId: ProductionNavigationTabId, translate: 
         titleId: 'bankroll-title'
       })}
 
-      <div class="points-grid">
-        ${renderPointsRow('Current points', '24,500 pts', 'Static')}
-        ${renderPointsRow('Source', 'Manual ledger', 'Manual')}
-        ${renderPointsRow('Formula status', 'Not run', 'Blocked')}
-      </div>
-
-      <section class="note-card warning">
-        <div class="note-eyebrow">Shell boundary</div>
-        <div class="note-title">No charts are shown here because charts can imply real calculation.</div>
-        <p class="note-copy">If charts return later, they must be explicitly marked static or backed by a separate approved formula and data plan.</p>
-      </section>
+      <div class="points-grid">${renderBankrollState(state)}</div>
+      <div class="action-row"><button type="button" class="secondary-button" data-backup-export>Export backup</button><label class="secondary-button" for="backup-import-file">Import backup</label><input id="backup-import-file" type="file" accept="application/json" data-backup-import><span id="backup-feedback" aria-live="polite"></span></div>
     </section>
   `;
 }
@@ -975,7 +995,7 @@ function renderSheets(): string {
       <div class="sheet-header">
         <div>
           <h2 class="sheet-title" id="add-sheet-title">Add Bet</h2>
-          <p class="sheet-subtitle" id="add-sheet-subtitle">Scoped to Team Alpha vs Team Beta</p>
+          <p class="sheet-subtitle" id="add-sheet-subtitle">Select a local match first</p>
         </div>
         <button class="icon-button" type="button" data-close-sheet aria-label="Close Add Bet sheet">${icons.close}</button>
       </div>
@@ -984,7 +1004,7 @@ function renderSheets(): string {
           <div class="readonly-summary" id="match-summary-readonly" aria-label="Selected match summary">
             <div class="context-line">
               <div class="context-label">Selected match</div>
-              <div class="context-value" id="add-summary-title">Team Alpha vs Team Beta</div>
+              <div class="context-value" id="add-summary-title">Selected local match</div>
             </div>
             <div class="context-line">
               <div class="context-label">Scope</div>
@@ -996,8 +1016,8 @@ function renderSheets(): string {
             <select class="field-select" id="market-field" name="market-field" required>
               <option value="">Select market</option>
               <option value="1X2">Market 1X2</option>
-              <option value="Totals">Totals</option>
-              <option value="Manual note">Manual note</option>
+              <option value="over_under">Totals</option>
+              <option value="custom">Custom</option>
             </select>
           </div>
           <div class="field">
@@ -1026,12 +1046,12 @@ function renderSheets(): string {
       <div class="sheet-header">
         <div>
           <h2 class="sheet-title" id="edit-sheet-title">Edit Ongoing Bet</h2>
-          <p class="sheet-subtitle" id="edit-subtitle">Team Alpha win</p>
+          <p class="sheet-subtitle" id="edit-subtitle">Selected saved record</p>
         </div>
         <button class="icon-button" type="button" data-close-sheet aria-label="Close Edit Bet sheet">${icons.close}</button>
       </div>
       <div class="sheet-body">
-        <form class="form-grid" novalidate>
+        <form class="form-grid" id="edit-form" novalidate>
           <div class="readonly-summary" aria-label="Editable record scope">
             <div class="context-line">
               <div class="context-label">Edit policy</div>
@@ -1039,15 +1059,15 @@ function renderSheets(): string {
             </div>
             <div class="context-line">
               <div class="context-label">Match scope</div>
-              <div class="context-value">Team Alpha vs Team Beta</div>
+              <div class="context-value">Persisted match group</div>
             </div>
           </div>
           <div class="field">
             <label for="edit-market-field">Market</label>
             <select class="field-select" id="edit-market-field" name="edit-market-field">
               <option value="1X2">Market 1X2</option>
-              <option value="Totals">Totals</option>
-              <option value="Manual note">Manual note</option>
+              <option value="over_under">Totals</option>
+              <option value="custom">Custom</option>
             </select>
           </div>
           <div class="field">
@@ -1058,11 +1078,12 @@ function renderSheets(): string {
             <label for="edit-stake-field">Stake points</label>
             <input class="field-input" id="edit-stake-field" name="edit-stake-field" inputmode="numeric" value="100">
           </div>
+          <div class="field"><label for="edit-note-field">Note</label><textarea class="field-textarea" id="edit-note-field" name="edit-note-field"></textarea></div>
           <div class="sheet-actions">
             <button class="secondary-button" type="button" data-close-sheet>Cancel</button>
-            <button class="primary-button" type="button" data-close-sheet>Save Edit</button>
+            <button class="primary-button" type="submit">Save Edit</button>
           </div>
-          <div class="sheet-feedback">Shell only: ongoing edit surface, no data saved.</div>
+          <div class="sheet-feedback">Only pending records and drafts can be edited.</div>
         </form>
       </div>
     </section>
@@ -1072,7 +1093,7 @@ function renderSheets(): string {
       <div class="sheet-header">
         <div>
           <h2 class="sheet-title" id="review-sheet-title">Review Draft</h2>
-          <p class="sheet-subtitle" id="review-subtitle">Team Alpha vs Team Beta</p>
+          <p class="sheet-subtitle" id="review-subtitle">Selected settled record</p>
         </div>
         <button class="icon-button" type="button" data-close-sheet aria-label="Close Review sheet">${icons.close}</button>
       </div>
@@ -1121,14 +1142,16 @@ const panelRenderers: Record<
     },
     searchQuery?: string,
     isLiveFilterActive?: boolean,
-    isFilterPanelOpen?: boolean
+    isFilterPanelOpen?: boolean,
+    betRecordsState?: BetRecordsViewState,
+    bankrollState?: BankrollViewState
   ) => string
 > = Object.freeze({
   today: renderTodayPanel,
   matches: (activeTabId, translate, matchFeed, timezone, filters, searchQuery, isLiveFilterActive, isFilterPanelOpen) =>
     renderMatchesPanel(activeTabId, translate, matchFeed, timezone, filters, searchQuery, isLiveFilterActive, isFilterPanelOpen),
-  bets: (activeTabId, translate) => renderBetsPanel(activeTabId, translate),
-  bankroll: (activeTabId, translate) => renderBankrollPanel(activeTabId, translate),
+  bets: (activeTabId, translate, _matchFeed, _timezone, _filters, _searchQuery, _isLiveFilterActive, _isFilterPanelOpen, betRecordsState) => renderBetsPanel(activeTabId, translate, betRecordsState ?? defaultBetRecordsState),
+  bankroll: (activeTabId, translate, _matchFeed, _timezone, _filters, _searchQuery, _isLiveFilterActive, _isFilterPanelOpen, _betRecordsState, bankrollState) => renderBankrollPanel(activeTabId, translate, bankrollState ?? defaultBankrollState),
   miraichi: (activeTabId, translate) => renderMiraichiPanel(activeTabId, translate)
 });
 
@@ -1145,7 +1168,9 @@ export function renderAppShell({
   },
   searchQuery = '',
   isLiveFilterActive = false,
-  isFilterPanelOpen = false
+  isFilterPanelOpen = false,
+  betRecordsState = defaultBetRecordsState,
+  bankrollState = defaultBankrollState
 }: {
   readonly activeTabId?: string;
   readonly translate?: TranslateFunction;
@@ -1160,6 +1185,8 @@ export function renderAppShell({
   readonly searchQuery?: string;
   readonly isLiveFilterActive?: boolean;
   readonly isFilterPanelOpen?: boolean;
+  readonly betRecordsState?: BetRecordsViewState;
+  readonly bankrollState?: BankrollViewState;
 } = {}): string {
   const safeActiveTabId = getSafeNavigationTabId(activeTabId);
   const activeTab = navigationTabs.find((tab: NavigationTab) => tab.id === safeActiveTabId) ?? navigationTabs[0];
@@ -1172,7 +1199,9 @@ export function renderAppShell({
       filters,
       searchQuery,
       isLiveFilterActive,
-      isFilterPanelOpen
+      isFilterPanelOpen,
+      betRecordsState,
+      bankrollState
     )
   ).join('');
 
