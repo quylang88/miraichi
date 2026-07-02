@@ -215,11 +215,17 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Create `phase:implementation-plan Phase 9 Cloud Persistence for four non-AI tabs`.
   - **Plan**: See `docs/superpowers/plans/2026-07-02-phase-9-cloud-persistence-four-non-ai-tabs.md`.
   - **Scope**: Server-only Supabase Postgres adapter, private schema, manual snapshot cloud sync/fallback, durable Bets and Bankroll workflows, backup/import/export, and non-AI closeout verification.
-  - **Next**: Start `phase:code-slice Phase 9 Cloud Persistence Contracts and Server-Only Configuration`.
-- [ ] Complete `Today` and `Matches` tab flows against the local/cloud match API with loading, empty, stale-data, and unavailable states.
-- [ ] Complete `Bets` tab real draft/history workflows without automated betting, ROI, CLV, Kelly, or stake recommendation logic.
-- [ ] Complete `Bankroll` capital-management workflows as owner-entered ledger/account records only, with no automated risk or stake allocation formulas.
-- [ ] Run `phase:integration-test Phase 9 Non-AI App Completion` only after the four non-AI tabs and persistence boundary are feature-complete.
+  - **Result**: Local code-slice implementation completed on 2026-07-02 and merged to local `main`.
+- [x] Complete `Today` and `Matches` tab flows against the local/cloud match API with loading, empty, stale-data, and unavailable states.
+  - **Evidence**: `pnpm run verify:local`, `pnpm run phase9:non-ai-app-verify`, and `pnpm run test:integration` passed on 2026-07-02.
+- [x] Complete `Bets` tab real draft/history workflows without automated betting, ROI, CLV, Kelly, or stake recommendation logic.
+  - **Evidence**: Phase 9 cloud persistence verifier and endpoint boundary integration covered draft create/list/delete and bet create/update flows in memory integration mode on 2026-07-02.
+- [x] Complete `Bankroll` capital-management workflows as owner-entered ledger/account records only, with no automated risk or stake allocation formulas.
+  - **Evidence**: Phase 9 cloud persistence verifier and endpoint boundary integration covered account creation and signed manual ledger entries in memory integration mode on 2026-07-02.
+- [x] Run `phase:integration-test Phase 9 Non-AI App Completion` only after the four non-AI tabs and persistence boundary are feature-complete.
+  - **Evidence**: `pnpm run test:integration` passed on 2026-07-02, including API/local-AI boundary checks, Phase 9 cloud-persistence endpoints in memory integration mode, and PWA verification.
 - [ ] Run `phase:staging Phase 9 Non-AI App Completion` and record smoke evidence.
-- [ ] Keep `Miraichi AI` disabled or honest-unavailable until Phase 10.
+  - **Blocker**: Requires a real Supabase project/database URL, applying `supabase/migrations/20260702052851_phase9_cloud_persistence.sql`, running Supabase advisors, and setting staging server secrets before smoke evidence can be recorded.
+- [x] Keep `Miraichi AI` disabled or honest-unavailable until Phase 10.
+  - **Constraint**: Continue to treat this as a guardrail until Phase 10 is explicitly approved; Phase 9 does not authorize production prediction runtime or betting recommendations.
 - [ ] Start Phase 10 AI training/runtime only after Phase 9 staging passes and the owner explicitly approves returning to AI.

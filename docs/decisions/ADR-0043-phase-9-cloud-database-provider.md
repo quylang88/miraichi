@@ -5,7 +5,7 @@
 * **Accepted Date**: 2026-07-02
 * **Owner Approval Required**: Yes
 * **Owner Approval**: Approved by owner chat response "ok" on 2026-07-02 after the explicit approval wording: `approve ADR-0043 Supabase hosted Postgres for Phase 9 cloud persistence`
-* **Implementation Status**: Implementation plan created; concrete code, schema application, integration, and staging work remain pending
+* **Implementation Status**: Local implementation and integration verification completed on 2026-07-02; remote Supabase schema application, Supabase advisor checks, and staging verification remain pending
 * **Depends On**:
   * [ADR-0033: Local-First Betting Data Persistence and Backup Boundary](file:///c:/CODE/miraichi/docs/decisions/ADR-0033-local-first-betting-data-persistence-and-backup-boundary.md)
   * [ADR-0042: Local Manual Data API and API-Football Free-Tier Removal](file:///c:/CODE/miraichi/docs/decisions/ADR-0042-local-data-api-and-api-football-removal.md)
@@ -301,10 +301,27 @@ Negative:
 
 Owner approved the recommended answers on 2026-07-02 for implementation planning. Supabase Pro remains a later staging/production decision, not an immediate requirement for local code-slice work.
 
-## 13. Handoff
+## 13. Implementation Closeout
+
+The Phase 9 cloud persistence code slice has now implemented the ADR-0043 server-mediated architecture locally:
+
+- `apps/web` continues to call `apps/api`; it does not call Supabase directly.
+- `apps/api` owns the persistence adapter boundary and the Supabase/Postgres adapter.
+- The SQL migration is recorded at `supabase/migrations/20260702052851_phase9_cloud_persistence.sql`.
+- Local verification passed on 2026-07-02 with `pnpm run verify:local`, `pnpm run phase9:non-ai-app-verify`, and `pnpm run test:integration`.
+
+The remaining release blocker is remote/staging validation against a real Supabase project. Before staging closeout, the owner or deployment operator must:
+
+1. create or choose the Supabase project;
+2. apply `supabase/migrations/20260702052851_phase9_cloud_persistence.sql`;
+3. run Supabase database advisors against the linked or URL-targeted database;
+4. configure server-side staging secrets for `CLOUD_PERSISTENCE_MODE=supabase` and `SUPABASE_DATABASE_URL`;
+5. run the Phase 9 staging gate and record smoke evidence.
+
+## 14. Handoff
 
 The next lifecycle command is:
 
-`phase:implementation-plan Phase 9 Cloud Persistence for four non-AI tabs`
+`phase:staging Phase 9 Non-AI App Completion`
 
-The implementation plan is recorded at `docs/superpowers/plans/2026-07-02-phase-9-cloud-persistence-four-non-ai-tabs.md`. Implementation must proceed one TDD code slice at a time.
+This handoff is blocked until the real Supabase project/database connection details are available and the migration/advisor checks above have been run. The implementation plan remains recorded at `docs/superpowers/plans/2026-07-02-phase-9-cloud-persistence-four-non-ai-tabs.md`.

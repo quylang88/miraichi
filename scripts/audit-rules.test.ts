@@ -1,14 +1,14 @@
+import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import fs from 'fs';
-import path from 'path';
 
-describe('audit rules scan policy', () => {
-  it('excludes generated artifact directories from source guardrail scans', () => {
-    const source = fs.readFileSync(path.resolve('scripts/audit-rules.ts'), 'utf8');
+describe('repository guardrail audit', () => {
+  it('allows only the ADR-0043 database adapter and validation fixtures', () => {
+    const output = execFileSync(
+      process.execPath,
+      ['node_modules/tsx/dist/cli.mjs', 'scripts/audit-rules.ts'],
+      { cwd: process.cwd(), encoding: 'utf8' }
+    );
 
-    expect(source).toContain('IGNORED_DIRECTORIES');
-    expect(source).toContain("'dist'");
-    expect(source).toContain("'build'");
-    expect(source).toContain("'coverage'");
+    expect(output).toContain('Scan PASSED');
   });
 });

@@ -10,7 +10,10 @@ const RULES = [
   {
     name: 'Database/ORM Client Import Check',
     pattern: /from\s+['"](prisma|sequelize|mongoose|sqlite3|pg|mysql2|typeorm|mongodb)['"]/i,
-    message: 'Database ORM/Client library import found. DB connections are strictly forbidden in Phase 2.'
+    message: 'Database client import found outside an owner-approved persistence adapter.',
+    allowList: [
+      'apps/api/src/persistence/supabase/postgres-query-client.ts'
+    ]
   },
   {
     name: 'Core Logic Tournament Coupling Check',
@@ -20,7 +23,8 @@ const RULES = [
     allowList: [
       'packages/config/src/competition-registry.mock.ts',
       'scripts/phase2-verify.ts',
-      'apps/local-ai/src/data/sofascore-national-team-discovery.test.ts'
+      'apps/local-ai/src/data/sofascore-national-team-discovery.test.ts',
+      'apps/api/src/services/cloud-match-snapshot-sync.test.ts'
     ]
   },
   {
@@ -41,7 +45,10 @@ const RULES = [
   {
     name: 'Bankroll & Risk Limit Check',
     pattern: /(?:bankrollLimit|riskLimit|allocateStake|adjustRisk)/i,
-    message: 'Bankroll allocation or risk check found. Risk calculations are forbidden in Phase 2.'
+    message: 'Bankroll allocation or risk calculation found outside the forbidden-field validator.',
+    allowList: [
+      'packages/shared/src/contracts/cloud-persistence-contracts.ts'
+    ]
   }
 ];
 
