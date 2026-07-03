@@ -25,6 +25,7 @@ try {
     captureRoot: config.captureRoot,
     client,
     ...(args.fixtureIds.length === 0 ? {} : { fixtureIds: args.fixtureIds }),
+    ...(args.leagueIds.length === 0 ? {} : { leagueIds: args.leagueIds }),
     ...(maxFixtures === undefined ? {} : { maxFixtures }),
     skipAlreadyCaptured: args.skipAlreadyCaptured,
     log: (message) => console.log(message)
@@ -34,9 +35,11 @@ try {
     provider: config.provider,
     captureRoot: config.captureRoot,
     mode: args.all ? 'all' : args.fixtureIds.length > 0 ? 'fixture-ids' : 'limited',
+    leagueIds: args.leagueIds,
     skipAlreadyCaptured: args.skipAlreadyCaptured,
     report: {
       sourceFixtureCount: report.sourceFixtureCount,
+      filteredFixtureCount: report.filteredFixtureCount,
       alreadyCapturedCount: report.alreadyCapturedCount,
       selectedFixtureCount: report.selectedFixtureCount,
       attempted: report.attempted,
@@ -60,12 +63,14 @@ try {
 function parseEnrichmentArgs(args: string[]): {
   all: boolean;
   fixtureIds: number[];
+  leagueIds: number[];
   maxFixtures: number;
   skipAlreadyCaptured: boolean;
 } {
   const parsed = {
     all: false,
     fixtureIds: [] as number[],
+    leagueIds: [] as number[],
     maxFixtures: 100,
     skipAlreadyCaptured: true
   };
@@ -80,6 +85,11 @@ function parseEnrichmentArgs(args: string[]): {
       if (id !== undefined) {
         parsed.fixtureIds.push(id);
       }
+    } else if (arg.startsWith('--league-id=')) {
+      const id = parsePositiveInteger(arg.slice('--league-id='.length));
+      if (id !== undefined) {
+        parsed.leagueIds.push(id);
+      }
     } else if (arg.startsWith('--max-fixtures=')) {
       parsed.maxFixtures = parsePositiveInteger(arg.slice('--max-fixtures='.length)) ?? parsed.maxFixtures;
     }
@@ -87,6 +97,9 @@ function parseEnrichmentArgs(args: string[]): {
 
   if (parsed.all && parsed.fixtureIds.length > 0) {
     throw new Error('Use either --all or --fixture-id=<id>, not both.');
+  }
+  if (parsed.fixtureIds.length > 0 && parsed.leagueIds.length > 0) {
+    throw new Error('Use either --league-id=<id> or --fixture-id=<id>, not both.');
   }
 
   return parsed;

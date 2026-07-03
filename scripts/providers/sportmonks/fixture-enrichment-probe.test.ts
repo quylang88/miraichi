@@ -217,6 +217,64 @@ describe('sportmonks fixture enrichment probe', () => {
     });
   });
 
+  it('runs a full fixture enrichment batch for all fixtures in selected leagues', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-league-batch-'));
+    const fixtureListPayload = {
+      data: [
+        { id: 100, league_id: 85, season_id: 1 },
+        { id: 200, league_id: 85, season_id: 2 },
+        { id: 300, league_id: 8, season_id: 1 },
+        { id: 400, league_id: 85, season_id: 3 }
+      ]
+    };
+    await writeRawProviderPayload(root, {
+      schemaVersion: 'miraichi.provider.raw.v1',
+      provider: 'sportmonks',
+      endpointKey: 'fixtures.all',
+      urlPath: '/fixtures',
+      query: { page: '1' },
+      fetchedAt: '2026-07-03T00:00:00.000Z',
+      payloadHash: createPayloadHash(fixtureListPayload),
+      rateLimit: {},
+      payload: fixtureListPayload
+    });
+
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async (urlPath: string) => ({
+        ok: true as const,
+        statusCode: 200,
+        body: {
+          data: {
+            id: Number(urlPath.split('/').at(-1)),
+            participants: [{ id: 1 }, { id: 2 }],
+            scores: [{ score: { goals: 1 } }]
+          }
+        },
+        rateLimit: {}
+      }))
+    };
+
+    const report = await runSportmonksFixtureEnrichmentBatch({
+      captureRoot: root,
+      client,
+      leagueIds: [85],
+      now: () => '2026-07-03T00:00:00.000Z',
+      reportFileName: 'fixture-enrichment-league-batch-report.json'
+    });
+
+    expect(client.get).toHaveBeenCalledTimes(3);
+    expect(client.get).toHaveBeenNthCalledWith(1, '/fixtures/100', { include: SPORTMONKS_NON_LIVE_FIXTURE_INCLUDE });
+    expect(client.get).toHaveBeenNthCalledWith(2, '/fixtures/200', { include: SPORTMONKS_NON_LIVE_FIXTURE_INCLUDE });
+    expect(client.get).toHaveBeenNthCalledWith(3, '/fixtures/400', { include: SPORTMONKS_NON_LIVE_FIXTURE_INCLUDE });
+    expect(report).toMatchObject({
+      sourceFixtureCount: 4,
+      filteredFixtureCount: 3,
+      selectedFixtureCount: 3,
+      selectedFixtureIds: [100, 200, 400],
+      filters: { leagueIds: [85] }
+    });
+  });
+
   it('builds and captures subscription probe requests outside the football base path', async () => {
     expect(buildSportmonksSubscriptionProbeRequests().map((request) => request.urlPath)).toEqual([
       '/my/enrichments',

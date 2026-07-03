@@ -72,6 +72,7 @@ export interface FixtureEnrichmentCoverageReport {
 export interface FixtureEnrichmentBatchReport {
   generatedAt: string;
   sourceFixtureCount: number;
+  filteredFixtureCount: number;
   alreadyCapturedCount: number;
   selectedFixtureCount: number;
   selectedFixtureIds: number[];
@@ -81,9 +82,17 @@ export interface FixtureEnrichmentBatchReport {
   failed: number;
   stoppedEarlyReason?: 'rate_limited';
   include: string;
+  filters: {
+    leagueIds: number[];
+  };
   fields: Record<string, FixtureCoverageFieldSummary>;
   localMatchReadiness: FixtureEnrichmentCoverageReport['localMatchReadiness'];
   errors: FixtureEnrichmentCoverageReport['errors'];
+}
+
+interface FixtureInventoryItem {
+  id: number;
+  leagueId?: number;
 }
 
 const COVERAGE_FIELDS = [
@@ -210,6 +219,7 @@ export async function runSportmonksFixtureEnrichmentBatch(options: {
   captureRoot: string;
   client: SportmonksCaptureClient;
   fixtureIds?: number[];
+  leagueIds?: number[];
   maxFixtures?: number;
   skipAlreadyCaptured?: boolean;
   now?: () => string;
@@ -217,13 +227,17 @@ export async function runSportmonksFixtureEnrichmentBatch(options: {
   log?: (message: string) => void;
 }): Promise<FixtureEnrichmentBatchReport> {
   const now = options.now ?? (() => new Date().toISOString());
+  const leagueIds = dedupePositiveIds(options.leagueIds ?? []).sort((left, right) => left - right);
   const inventory = options.fixtureIds === undefined
-    ? await extractSortedFixtureIdsFromRawCapture(options.captureRoot)
-    : dedupePositiveIds(options.fixtureIds).sort((left, right) => left - right);
+    ? await extractFixtureInventoryFromRawCapture(options.captureRoot)
+    : dedupePositiveIds(options.fixtureIds)
+        .sort((left, right) => left - right)
+        .map((id) => ({ id }));
+  const filteredInventory = filterFixtureInventory(inventory, { leagueIds });
   const alreadyCaptured = options.skipAlreadyCaptured === false
     ? new Set<number>()
     : await readCapturedEnrichedFixtureIds(options.captureRoot);
-  const candidates = inventory.filter((fixtureId) => !alreadyCaptured.has(fixtureId));
+  const candidates = filteredInventory.map((item) => item.id).filter((fixtureId) => !alreadyCaptured.has(fixtureId));
   const selectedFixtureIds = options.maxFixtures === undefined
     ? candidates
     : candidates.slice(0, options.maxFixtures);
@@ -249,7 +263,8 @@ export async function runSportmonksFixtureEnrichmentBatch(options: {
   const report: FixtureEnrichmentBatchReport = {
     generatedAt: coverage.generatedAt,
     sourceFixtureCount: inventory.length,
-    alreadyCapturedCount: inventory.filter((fixtureId) => alreadyCaptured.has(fixtureId)).length,
+    filteredFixtureCount: filteredInventory.length,
+    alreadyCapturedCount: filteredInventory.filter((item) => alreadyCaptured.has(item.id)).length,
     selectedFixtureCount: selectedFixtureIds.length,
     selectedFixtureIds,
     attempted: results.length,
@@ -258,6 +273,9 @@ export async function runSportmonksFixtureEnrichmentBatch(options: {
     failed: coverage.failed,
     ...(stoppedEarlyReason === undefined ? {} : { stoppedEarlyReason }),
     include: SPORTMONKS_NON_LIVE_FIXTURE_INCLUDE,
+    filters: {
+      leagueIds
+    },
     fields: coverage.fields,
     localMatchReadiness: coverage.localMatchReadiness,
     errors: coverage.errors
@@ -449,20 +467,39 @@ function timestampedBatchReportName(now: string): string {
 }
 
 async function extractSortedFixtureIdsFromRawCapture(captureRoot: string): Promise<number[]> {
+  return (await extractFixtureInventoryFromRawCapture(captureRoot)).map((item) => item.id);
+}
+
+async function extractFixtureInventoryFromRawCapture(captureRoot: string): Promise<FixtureInventoryItem[]> {
   const fixtureRoot = join(captureRoot, 'providers', 'sportmonks', 'raw', 'fixtures.all');
-  const seen = new Set<number>();
+  const byId = new Map<number, FixtureInventoryItem>();
 
   for (const filePath of await listJsonFiles(fixtureRoot)) {
     const envelope = JSON.parse(await readFile(filePath, 'utf8')) as RawProviderPayloadEnvelope;
     for (const item of readPayloadDataArray(envelope.payload)) {
       const id = readNumberProperty(item, 'id');
       if (id !== undefined) {
-        seen.add(id);
+        const leagueId = readNumberProperty(item, 'league_id');
+        byId.set(id, {
+          id,
+          ...(leagueId === undefined ? {} : { leagueId })
+        });
       }
     }
   }
 
-  return [...seen].sort((left, right) => left - right);
+  return [...byId.values()].sort((left, right) => left.id - right.id);
+}
+
+function filterFixtureInventory(
+  inventory: FixtureInventoryItem[],
+  filters: { leagueIds: number[] }
+): FixtureInventoryItem[] {
+  if (filters.leagueIds.length === 0) {
+    return inventory;
+  }
+  const allowedLeagueIds = new Set(filters.leagueIds);
+  return inventory.filter((item) => item.leagueId !== undefined && allowedLeagueIds.has(item.leagueId));
 }
 
 async function readCapturedEnrichedFixtureIds(captureRoot: string): Promise<Set<number>> {
