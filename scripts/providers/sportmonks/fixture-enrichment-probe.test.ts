@@ -8,11 +8,13 @@ import {
   buildSportmonksSubscriptionProbeRequests,
   createFixtureEnrichmentCoverageReport,
   extractFixtureIdsFromRawCapture,
+  runSportmonksFixtureEnrichmentBatch,
   runSportmonksFixtureEnrichmentProbe,
   runSportmonksSubscriptionProbe
 } from './fixture-enrichment-probe.js';
 import type { SportmonksCaptureClient } from './capture.js';
 import { createPayloadHash, writeRawProviderPayload } from '../shared/raw-cache.js';
+import { appendProviderManifestEntry } from '../shared/manifest.js';
 
 describe('sportmonks fixture enrichment probe', () => {
   it('builds non-live fixture enrichment requests with score/detail/odds includes', () => {
@@ -140,6 +142,78 @@ describe('sportmonks fixture enrichment probe', () => {
         events: { fixturesWithData: 1 },
         statistics: { fixturesWithData: 1 }
       }
+    });
+  });
+
+  it('runs a fixture enrichment batch from raw fixture inventory while skipping captured fixtures', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-batch-'));
+    const fixtureListPayload = { data: [{ id: 300 }, { id: 100 }, { id: 200 }, { id: 200 }] };
+    await writeRawProviderPayload(root, {
+      schemaVersion: 'miraichi.provider.raw.v1',
+      provider: 'sportmonks',
+      endpointKey: 'fixtures.all',
+      urlPath: '/fixtures',
+      query: { page: '1' },
+      fetchedAt: '2026-07-03T00:00:00.000Z',
+      payloadHash: createPayloadHash(fixtureListPayload),
+      rateLimit: {},
+      payload: fixtureListPayload
+    });
+    await appendProviderManifestEntry(root, 'sportmonks', {
+      provider: 'sportmonks',
+      endpointKey: 'fixtures.enrichedById',
+      urlPath: '/fixtures/100',
+      query: { include: SPORTMONKS_NON_LIVE_FIXTURE_INCLUDE },
+      status: 'captured',
+      payloadHash: 'already-captured',
+      fetchedAt: '2026-07-03T00:00:00.000Z',
+      recordCount: 1
+    });
+
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async (urlPath: string) => ({
+        ok: true as const,
+        statusCode: 200,
+        body: {
+          data: {
+            id: Number(urlPath.split('/').at(-1)),
+            participants: [{ id: 1 }, { id: 2 }],
+            scores: [{ score: { goals: 1 } }]
+          }
+        },
+        rateLimit: { remaining: 90 }
+      }))
+    };
+
+    const report = await runSportmonksFixtureEnrichmentBatch({
+      captureRoot: root,
+      client,
+      maxFixtures: 2,
+      now: () => '2026-07-03T00:00:00.000Z',
+      reportFileName: 'fixture-enrichment-batch-report.json'
+    });
+
+    expect(client.get).toHaveBeenNthCalledWith(1, '/fixtures/200', { include: SPORTMONKS_NON_LIVE_FIXTURE_INCLUDE });
+    expect(client.get).toHaveBeenNthCalledWith(2, '/fixtures/300', { include: SPORTMONKS_NON_LIVE_FIXTURE_INCLUDE });
+    expect(report).toMatchObject({
+      sourceFixtureCount: 3,
+      alreadyCapturedCount: 1,
+      selectedFixtureCount: 2,
+      attempted: 2,
+      captured: 2,
+      unavailable: 0,
+      failed: 0,
+      selectedFixtureIds: [200, 300],
+      fields: {
+        participants: { fixturesWithData: 2 },
+        scores: { fixturesWithData: 2 }
+      }
+    });
+
+    const reportPath = join(root, 'providers', 'sportmonks', 'reports', 'fixture-enrichment-batch-report.json');
+    expect(JSON.parse(await readFile(reportPath, 'utf8'))).toMatchObject({
+      selectedFixtureCount: 2,
+      selectedFixtureIds: [200, 300]
     });
   });
 

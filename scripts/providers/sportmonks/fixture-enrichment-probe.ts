@@ -69,6 +69,23 @@ export interface FixtureEnrichmentCoverageReport {
   errors: Array<{ fixtureId: number; status: 'unavailable' | 'failed'; errorCode: string; errorMessage: string }>;
 }
 
+export interface FixtureEnrichmentBatchReport {
+  generatedAt: string;
+  sourceFixtureCount: number;
+  alreadyCapturedCount: number;
+  selectedFixtureCount: number;
+  selectedFixtureIds: number[];
+  attempted: number;
+  captured: number;
+  unavailable: number;
+  failed: number;
+  stoppedEarlyReason?: 'rate_limited';
+  include: string;
+  fields: Record<string, FixtureCoverageFieldSummary>;
+  localMatchReadiness: FixtureEnrichmentCoverageReport['localMatchReadiness'];
+  errors: FixtureEnrichmentCoverageReport['errors'];
+}
+
 const COVERAGE_FIELDS = [
   'participants',
   'scores',
@@ -187,6 +204,123 @@ export async function runSportmonksFixtureEnrichmentProbe(options: {
   const report = createFixtureEnrichmentCoverageReport(results, now());
   await writeSportmonksReport(options.captureRoot, options.reportFileName ?? timestampedReportName(now()), report);
   return report;
+}
+
+export async function runSportmonksFixtureEnrichmentBatch(options: {
+  captureRoot: string;
+  client: SportmonksCaptureClient;
+  fixtureIds?: number[];
+  maxFixtures?: number;
+  skipAlreadyCaptured?: boolean;
+  now?: () => string;
+  reportFileName?: string;
+  log?: (message: string) => void;
+}): Promise<FixtureEnrichmentBatchReport> {
+  const now = options.now ?? (() => new Date().toISOString());
+  const inventory = options.fixtureIds === undefined
+    ? await extractSortedFixtureIdsFromRawCapture(options.captureRoot)
+    : dedupePositiveIds(options.fixtureIds).sort((left, right) => left - right);
+  const alreadyCaptured = options.skipAlreadyCaptured === false
+    ? new Set<number>()
+    : await readCapturedEnrichedFixtureIds(options.captureRoot);
+  const candidates = inventory.filter((fixtureId) => !alreadyCaptured.has(fixtureId));
+  const selectedFixtureIds = options.maxFixtures === undefined
+    ? candidates
+    : candidates.slice(0, options.maxFixtures);
+  const results: FixtureProbeItem[] = [];
+  let stoppedEarlyReason: FixtureEnrichmentBatchReport['stoppedEarlyReason'];
+
+  for (const request of buildFixtureEnrichmentRequests(selectedFixtureIds)) {
+    const item = await captureFixtureEnrichmentRequest({
+      captureRoot: options.captureRoot,
+      client: options.client,
+      request,
+      now,
+      ...(options.log === undefined ? {} : { log: options.log })
+    });
+    results.push(item);
+    if (item.status === 'failed' && item.errorCode === 'rate_limited') {
+      stoppedEarlyReason = 'rate_limited';
+      break;
+    }
+  }
+
+  const coverage = createFixtureEnrichmentCoverageReport(results, now());
+  const report: FixtureEnrichmentBatchReport = {
+    generatedAt: coverage.generatedAt,
+    sourceFixtureCount: inventory.length,
+    alreadyCapturedCount: inventory.filter((fixtureId) => alreadyCaptured.has(fixtureId)).length,
+    selectedFixtureCount: selectedFixtureIds.length,
+    selectedFixtureIds,
+    attempted: results.length,
+    captured: coverage.captured,
+    unavailable: coverage.unavailable,
+    failed: coverage.failed,
+    ...(stoppedEarlyReason === undefined ? {} : { stoppedEarlyReason }),
+    include: SPORTMONKS_NON_LIVE_FIXTURE_INCLUDE,
+    fields: coverage.fields,
+    localMatchReadiness: coverage.localMatchReadiness,
+    errors: coverage.errors
+  };
+
+  await writeSportmonksReport(options.captureRoot, options.reportFileName ?? timestampedBatchReportName(now()), report);
+  return report;
+}
+
+async function captureFixtureEnrichmentRequest(input: {
+  captureRoot: string;
+  client: SportmonksCaptureClient;
+  request: SportmonksProbeRequest;
+  now: () => string;
+  log?: (message: string) => void;
+}): Promise<FixtureProbeItem> {
+  const fixtureId = Number(input.request.urlPath.split('/').at(-1));
+  input.log?.(`sportmonks:enrich fixture=${fixtureId}`);
+  const response = await input.client.get(input.request.urlPath, input.request.query);
+  if (!response.ok) {
+    const status = response.status === 'unavailable' ? 'unavailable' : 'failed';
+    const errorCode = response.status === 'unavailable' ? String(response.statusCode) : response.status;
+    await appendProviderManifestEntry(input.captureRoot, 'sportmonks', {
+      provider: 'sportmonks',
+      endpointKey: input.request.endpointKey,
+      urlPath: input.request.urlPath,
+      query: input.request.query,
+      status,
+      errorCode,
+      errorMessage: response.message
+    });
+    return {
+      fixtureId,
+      status,
+      errorCode,
+      errorMessage: response.message
+    };
+  }
+
+  const fetchedAt = input.now();
+  const payloadHash = createPayloadHash(response.body);
+  await writeRawProviderPayload(input.captureRoot, {
+    schemaVersion: 'miraichi.provider.raw.v1',
+    provider: 'sportmonks',
+    endpointKey: input.request.endpointKey,
+    urlPath: input.request.urlPath,
+    query: input.request.query,
+    fetchedAt,
+    payloadHash,
+    rateLimit: response.rateLimit,
+    payload: response.body
+  });
+  await appendProviderManifestEntry(input.captureRoot, 'sportmonks', {
+    provider: 'sportmonks',
+    endpointKey: input.request.endpointKey,
+    urlPath: input.request.urlPath,
+    query: input.request.query,
+    status: 'captured',
+    payloadHash,
+    fetchedAt,
+    recordCount: 1
+  });
+  return { fixtureId, status: 'captured', payload: response.body };
 }
 
 export async function runSportmonksSubscriptionProbe(options: {
@@ -308,6 +442,60 @@ async function writeSportmonksReport(captureRoot: string, fileName: string, repo
 
 function timestampedReportName(now: string): string {
   return `fixture-enrichment-coverage-report-${now.replace(/[:.]/g, '-')}.json`;
+}
+
+function timestampedBatchReportName(now: string): string {
+  return `fixture-enrichment-batch-report-${now.replace(/[:.]/g, '-')}.json`;
+}
+
+async function extractSortedFixtureIdsFromRawCapture(captureRoot: string): Promise<number[]> {
+  const fixtureRoot = join(captureRoot, 'providers', 'sportmonks', 'raw', 'fixtures.all');
+  const seen = new Set<number>();
+
+  for (const filePath of await listJsonFiles(fixtureRoot)) {
+    const envelope = JSON.parse(await readFile(filePath, 'utf8')) as RawProviderPayloadEnvelope;
+    for (const item of readPayloadDataArray(envelope.payload)) {
+      const id = readNumberProperty(item, 'id');
+      if (id !== undefined) {
+        seen.add(id);
+      }
+    }
+  }
+
+  return [...seen].sort((left, right) => left - right);
+}
+
+async function readCapturedEnrichedFixtureIds(captureRoot: string): Promise<Set<number>> {
+  const manifestPath = join(captureRoot, 'providers', 'sportmonks', 'manifests', 'capture-manifest.jsonl');
+  const captured = new Set<number>();
+  let content: string;
+  try {
+    content = await readFile(manifestPath, 'utf8');
+  } catch {
+    return captured;
+  }
+
+  for (const line of content.split(/\r?\n/)) {
+    if (line.trim() === '') {
+      continue;
+    }
+    let entry: unknown;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (!isRecord(entry) || entry.endpointKey !== 'fixtures.enrichedById' || entry.status !== 'captured') {
+      continue;
+    }
+    const urlPath = typeof entry.urlPath === 'string' ? entry.urlPath : '';
+    const match = /^\/fixtures\/(\d+)$/.exec(urlPath);
+    if (match !== null) {
+      captured.add(Number(match[1]));
+    }
+  }
+
+  return captured;
 }
 
 async function listJsonFiles(root: string): Promise<string[]> {
