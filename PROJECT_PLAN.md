@@ -239,6 +239,9 @@ Defines the sequential milestones and execution rules for developers and autonom
   - **Evidence**: `scripts/providers/shared/entity-resolution.ts` (canonical match ID builder, team-name normalizer, candidate scorer) and `provenance.ts` (SHA-256 value-hashed FieldProvenance factory) created with tests; 4 unit tests pass; `pnpm run typecheck` clean on 2026-07-02.
 - [x] Complete `phase:code-slice Phase 9 Sportmonks Config, Endpoint Catalog, And Token Boundary`.
   - **Evidence**: `scripts/providers/sportmonks/config.ts` (token-required, provider-neutral defaults) and `endpoint-catalog.ts` (allowed families + 5 gated groups) created; `.env.example` updated; `data:capture:sportmonks`, `data:verify:sportmonks`, `data:export:warehouse:matches` added to `package.json`; 3 unit tests pass; `pnpm run typecheck` clean on 2026-07-02.
+- [x] Complete `phase:code-slice Phase 9 Sportmonks Season Scoped Capture Runner`.
+  - **Scope**: Added a season-scoped raw capture runner for `/schedules/seasons/{id}`, `/teams/seasons/{id}`, `/standings/seasons/{id}`, and standing corrections, driven by known fixture `season_id` values. The app contract remains light fixture/score context for bet selection; rich match detail, standings, xG, odds, and squads stay raw/warehouse-only until a later approved normalization/training phase.
+  - **Command**: `pnpm run data:capture:sportmonks:season-scope -- --league-id=<leagueId>`.
 - [ ] Complete Sportmonks trial data capture before the trial window expires.
   - **Priority**: Provider-neutral contracts/cache/warehouse first, then Sportmonks raw capture, fixture enrichment, and warehouse-to-local-snapshot export. Provider expansion remains deferred until Sportmonks capture is stable.
 - [ ] Run `phase:staging Phase 9 Non-AI App Completion` and record smoke evidence.

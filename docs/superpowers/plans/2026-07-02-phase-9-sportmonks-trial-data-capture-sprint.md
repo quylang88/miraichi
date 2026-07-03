@@ -28,6 +28,8 @@
 - Captured raw payloads are local artifacts, not git history.
 - Canonical warehouse artifacts are provider-neutral JSONL files.
 - App output is generated from the canonical warehouse into the existing local match snapshot path.
+- App match data is deliberately light: fixture, kickoff, status, teams, competition, season, score, source refs, and freshness. Rich Sportmonks details are archived for future normalization/training work, not pushed into the Phase 9 UI contract.
+- Season-scoped Sportmonks capture must be driven by known `season_id` values from `fixtures.all`, not by blind date crawling. Date endpoints are for daily refresh discovery only.
 - Provider expansion is deferred but architecturally supported.
 - Live polling, AI training, predictions, betting recommendations, ROI, CLV, Kelly, stake sizing, and bankroll-risk formulas remain out of scope.
 - Odds, predictions, news, livescores, and xG endpoint families are catalogued but gated by default.
@@ -107,12 +109,16 @@ scripts/providers/sportmonks/client.ts
 scripts/providers/sportmonks/client.test.ts
 scripts/providers/sportmonks/capture.ts
 scripts/providers/sportmonks/capture.test.ts
+scripts/providers/sportmonks/season-scoped-capture.ts
+scripts/providers/sportmonks/season-scoped-capture.test.ts
 scripts/providers/sportmonks/normalize-to-warehouse.ts
 scripts/providers/sportmonks/normalize-to-warehouse.test.ts
 scripts/providers/sportmonks/verify-capture.ts
 scripts/providers/sportmonks/verify-capture.test.ts
 
 scripts/capture-sportmonks-trial-data.ts
+scripts/capture-sportmonks-season-scoped-data.ts
+scripts/capture-sportmonks-season-scoped-data.test.ts
 scripts/export-warehouse-to-local-match-snapshot.ts
 scripts/export-warehouse-to-local-match-snapshot.test.ts
 
@@ -1222,9 +1228,10 @@ Execute one lifecycle slice at a time:
 4. `phase:code-slice Phase 9 Sportmonks Config And Endpoint Catalog`
 5. `phase:code-slice Phase 9 Sportmonks Raw Capture`
 6. `phase:code-slice Phase 9 Sportmonks Fixture Enrichment And Warehouse Normalization`
-7. `phase:code-slice Phase 9 Warehouse To Local Match Snapshot Export`
-8. `phase:code-slice Phase 9 Sportmonks Capture Verification And Deletion Boundary`
-9. `phase:integration-test Phase 9 Sportmonks Trial Data Capture Sprint`
+7. `phase:code-slice Phase 9 Sportmonks Season Scoped Capture Runner`
+8. `phase:code-slice Phase 9 Warehouse To Local Match Snapshot Export`
+9. `phase:code-slice Phase 9 Sportmonks Capture Verification And Deletion Boundary`
+10. `phase:integration-test Phase 9 Sportmonks Trial Data Capture Sprint`
 
 ## Daily Trial Operating Procedure
 
@@ -1233,6 +1240,7 @@ Run this during the trial after code slices 1-7 exist:
 ```powershell
 pnpm run data:capture:sportmonks
 pnpm run data:capture:sportmonks -- --enrich-fixtures
+pnpm run data:capture:sportmonks:season-scope -- --league-id=732
 pnpm exec tsx scripts/providers/sportmonks/normalize-to-warehouse.ts
 pnpm run data:export:warehouse:matches
 pnpm run data:validate:national-teams
@@ -1249,6 +1257,7 @@ If `data:capture:sportmonks` hits rate limits, stop and resume after reset. Do n
 - Committing raw Sportmonks payloads unless explicitly approved for a tiny fixture sample.
 - Using Sportmonks IDs as canonical Miraichi IDs.
 - Storing `sportmonksFixtureId` or `sportmonksTeamId` in app contracts.
+- Expanding the app match snapshot into a detail-heavy match-centre contract. Corners, cards, xG, odds, squads, standings, and match facts remain raw/warehouse data until a later approved normalization/training phase.
 - Live polling or in-play app state.
 - AI training, prediction runtime, prompts, embeddings, or model registry.
 - Betting recommendations, ROI, CLV, Kelly, expected-return, stake sizing, or bankroll-risk formulas.
