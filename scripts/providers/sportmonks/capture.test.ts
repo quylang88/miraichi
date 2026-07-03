@@ -6,7 +6,7 @@ import type { SportmonksEndpointEntry } from './endpoint-catalog.js';
 import { runSportmonksRawCapture, type SportmonksCaptureClient } from './capture.js';
 
 describe('sportmonks raw capture', () => {
-  it('captures allowed paginated endpoints and skips gated or per-id endpoints', async () => {
+  it('captures paginated endpoints and skips per-id endpoints', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
     const catalog: SportmonksEndpointEntry[] = [
       { endpointKey: 'fixtures.all', group: 'fixtures', urlPath: '/fixtures', capturePolicy: 'allowed' },
@@ -16,8 +16,7 @@ describe('sportmonks raw capture', () => {
         urlPath: '/fixtures/{id}',
         capturePolicy: 'allowed',
         requiresId: true
-      },
-      { endpointKey: 'odds.prematch', group: 'odds', urlPath: '/odds/pre-match', capturePolicy: 'gated' }
+      }
     ];
     const client: SportmonksCaptureClient = {
       get: vi.fn(async (_urlPath: string, query: Record<string, string> = {}) => ({
@@ -32,7 +31,6 @@ describe('sportmonks raw capture', () => {
 
     const result = await runSportmonksRawCapture({
       captureRoot: root,
-      allowGatedEndpoints: false,
       catalog,
       client,
       now: () => '2026-07-02T00:00:00.000Z'
@@ -40,7 +38,7 @@ describe('sportmonks raw capture', () => {
 
     expect(result).toEqual({
       captured: 2,
-      skipped: 2,
+      skipped: 1,
       unavailable: 0,
       failed: 0
     });
@@ -50,7 +48,7 @@ describe('sportmonks raw capture', () => {
     const manifestPath = join(root, 'providers', 'sportmonks', 'manifests', 'capture-manifest.jsonl');
     const manifestLines = (await readFile(manifestPath, 'utf8')).trim().split(/\r?\n/).map((line) => JSON.parse(line));
 
-    expect(manifestLines).toHaveLength(4);
+    expect(manifestLines).toHaveLength(3);
     expect(manifestLines[0]).toMatchObject({
       provider: 'sportmonks',
       endpointKey: 'fixtures.all',
@@ -67,10 +65,6 @@ describe('sportmonks raw capture', () => {
     });
     expect(manifestLines[2]).toMatchObject({
       endpointKey: 'fixtures.enrichedById',
-      status: 'skipped'
-    });
-    expect(manifestLines[3]).toMatchObject({
-      endpointKey: 'odds.prematch',
       status: 'skipped'
     });
 
@@ -103,7 +97,6 @@ describe('sportmonks raw capture', () => {
 
     const result = await runSportmonksRawCapture({
       captureRoot: root,
-      allowGatedEndpoints: false,
       catalog,
       client,
       now: () => '2026-07-02T00:00:00.000Z'
@@ -143,7 +136,6 @@ describe('sportmonks raw capture', () => {
 
     const result = await runSportmonksRawCapture({
       captureRoot: root,
-      allowGatedEndpoints: false,
       catalog,
       client,
       maxPagesPerEndpoint: 1,
@@ -167,5 +159,75 @@ describe('sportmonks raw capture', () => {
       hasMore: true
     });
   });
-});
 
+  it('captures all non-live endpoints by default while still skipping live endpoints', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
+    const catalog: SportmonksEndpointEntry[] = [
+      { endpointKey: 'odds.prematch.all', group: 'odds', urlPath: '/odds/pre-match', capturePolicy: 'gated' },
+      { endpointKey: 'livescores.all', group: 'livescores', urlPath: '/livescores', capturePolicy: 'gated', isLive: true }
+    ];
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async () => ({
+        ok: true as const,
+        statusCode: 200,
+        body: { data: [{ id: 1 }], pagination: { has_more: false } },
+        rateLimit: {}
+      }))
+    };
+
+    const result = await runSportmonksRawCapture({
+      captureRoot: root,
+      allowLiveEndpoints: false,
+      catalog,
+      client,
+      now: () => '2026-07-03T00:00:00.000Z'
+    });
+
+    expect(result).toEqual({
+      captured: 1,
+      skipped: 1,
+      unavailable: 0,
+      failed: 0
+    });
+    expect(client.get).toHaveBeenCalledTimes(1);
+    expect(client.get).toHaveBeenCalledWith('/odds/pre-match', { page: '1' });
+
+    const manifestPath = join(root, 'providers', 'sportmonks', 'manifests', 'capture-manifest.jsonl');
+    const manifestLines = (await readFile(manifestPath, 'utf8')).trim().split(/\r?\n/).map((line) => JSON.parse(line));
+    expect(manifestLines.map((line) => [line.endpointKey, line.status, line.errorCode])).toEqual([
+      ['odds.prematch.all', 'captured', undefined],
+      ['livescores.all', 'skipped', 'live_endpoint']
+    ]);
+  });
+
+  it('captures live endpoints only when explicitly allowed', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
+    const catalog: SportmonksEndpointEntry[] = [
+      { endpointKey: 'livescores.all', group: 'livescores', urlPath: '/livescores', capturePolicy: 'gated', isLive: true }
+    ];
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async () => ({
+        ok: true as const,
+        statusCode: 200,
+        body: { data: [{ id: 1 }], pagination: { has_more: false } },
+        rateLimit: {}
+      }))
+    };
+
+    const result = await runSportmonksRawCapture({
+      captureRoot: root,
+      allowLiveEndpoints: true,
+      catalog,
+      client,
+      now: () => '2026-07-03T00:00:00.000Z'
+    });
+
+    expect(result).toEqual({
+      captured: 1,
+      skipped: 0,
+      unavailable: 0,
+      failed: 0
+    });
+    expect(client.get).toHaveBeenCalledWith('/livescores', { page: '1' });
+  });
+});

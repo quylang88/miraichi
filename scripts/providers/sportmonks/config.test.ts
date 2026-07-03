@@ -11,16 +11,17 @@ describe('sportmonks provider config', () => {
     })).toMatchObject({
       provider: 'sportmonks',
       captureRoot: 'apps/api/data',
-      allowGatedEndpoints: false
+      allowLiveEndpoints: false
     });
   });
 });
 
 describe('sportmonks endpoint catalog', () => {
-  it('contains broad allowed endpoint families and gated risky families', () => {
+  it('contains broad endpoint families and marks only live feeds as live', () => {
     const catalog = buildSportmonksEndpointCatalog();
     expect(catalog.map((item) => item.endpointKey)).toEqual(expect.arrayContaining([
       'types.all',
+      'continents.all',
       'states.all',
       'countries.all',
       'leagues.all',
@@ -30,14 +31,21 @@ describe('sportmonks endpoint catalog', () => {
       'venues.all',
       'fixtures.all',
       'fixtures.enrichedById',
-      'standings.all'
+      'standings.all',
+      'fixtures.latestUpdated',
+      'players.latestUpdated',
+      'odds.prematch.all',
+      'predictions.probabilities',
+      'news.prematch',
+      'news.prematch.upcoming',
+      'expected.fixtures',
+      'expected.lineups',
+      'transferRumours.all',
+      'teamOfWeek.all'
     ]));
-    expect(catalog.filter((item) => item.capturePolicy === 'gated').map((item) => item.group).sort()).toEqual([
-      'livescores',
-      'news',
-      'odds',
-      'predictions',
-      'xg'
+    expect(catalog.filter((item) => item.isLive === true).map((item) => item.endpointKey).sort()).toEqual([
+      'livescores.all',
+      'odds.inplay.all'
     ]);
   });
 });

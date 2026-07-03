@@ -55,6 +55,7 @@
     "pwa:verify": "tsx scripts/pwa-verify.ts",
     "typecheck": "tsc -p tsconfig.base.json --noEmit",
     "data:capture:sportmonks": "tsx scripts/capture-sportmonks-trial-data.ts",
+    "data:probe:sportmonks": "tsx scripts/probe-sportmonks-fixture-enrichment.ts",
     "data:verify:sportmonks": "tsx scripts/providers/sportmonks/verify-capture.ts",
     "data:export:warehouse:matches": "tsx scripts/export-warehouse-to-local-match-snapshot.ts"
   },

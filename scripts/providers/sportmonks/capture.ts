@@ -13,12 +13,12 @@ export interface SportmonksCaptureClient {
 
 export interface SportmonksRawCaptureOptions {
   captureRoot: string;
-  allowGatedEndpoints: boolean;
   catalog: SportmonksEndpointEntry[];
   client: SportmonksCaptureClient;
   now?: () => string;
   log?: (message: string) => void;
   maxPagesPerEndpoint?: number;
+  allowLiveEndpoints?: boolean;
 }
 
 export interface SportmonksRawCaptureResult {
@@ -41,10 +41,11 @@ export async function runSportmonksRawCapture(
   };
   const now = options.now ?? (() => new Date().toISOString());
   const maxPagesPerEndpoint = options.maxPagesPerEndpoint ?? DEFAULT_MAX_PAGES_PER_ENDPOINT;
+  const allowLiveEndpoints = options.allowLiveEndpoints ?? false;
 
   for (const endpoint of options.catalog) {
-    if (endpoint.capturePolicy === 'gated' && !options.allowGatedEndpoints) {
-      await appendSkippedManifest(options.captureRoot, endpoint, 'gated_endpoint', 'Endpoint is gated by config');
+    if (endpoint.isLive === true && !allowLiveEndpoints) {
+      await appendSkippedManifest(options.captureRoot, endpoint, 'live_endpoint', 'Live/in-play endpoint is excluded from Phase 9 capture');
       result.skipped += 1;
       continue;
     }

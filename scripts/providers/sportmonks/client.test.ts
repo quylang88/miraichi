@@ -60,6 +60,30 @@ describe('sportmonks http client', () => {
     }
   });
 
+  it('uses absolute Sportmonks endpoint URLs without prefixing the football base URL', async () => {
+    const requestedUrls: string[] = [];
+    const fetchImpl = vi.fn(async (url: string) => {
+      requestedUrls.push(url);
+      return jsonResponse(200, { data: [{ id: 1 }] });
+    });
+
+    const client = createSportmonksClient({
+      apiBaseUrl: 'https://api.sportmonks.com/v3/football',
+      apiToken: 'secret-token',
+      fetchImpl,
+      wait: async () => undefined
+    });
+
+    await client.get('https://api.sportmonks.com/v3/odds/markets', { page: '1' });
+
+    expect(requestedUrls).toHaveLength(1);
+    const url = new URL(requestedUrls[0] ?? '');
+    expect(url.origin).toBe('https://api.sportmonks.com');
+    expect(url.pathname).toBe('/v3/odds/markets');
+    expect(url.searchParams.get('api_token')).toBe('secret-token');
+    expect(url.searchParams.get('page')).toBe('1');
+  });
+
   it('classifies inaccessible endpoints as unavailable without leaking token details', async () => {
     const client = createSportmonksClient({
       apiBaseUrl: 'https://api.sportmonks.com/v3/football',

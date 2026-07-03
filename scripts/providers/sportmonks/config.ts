@@ -15,7 +15,7 @@ export interface SportmonksCaptureConfig {
   apiBaseUrl: string;
   captureRoot: string;
   maxRequestsPerMinute: number;
-  allowGatedEndpoints: boolean;
+  allowLiveEndpoints: boolean;
 }
 
 /** Shape of a raw environment variable record accepted by readSportmonksCaptureConfig. */
@@ -43,7 +43,7 @@ export function readSportmonksCaptureConfig(env: EnvRecord): SportmonksCaptureCo
   const apiBaseUrl = env['SPORTMONKS_API_BASE_URL'] ?? DEFAULT_API_BASE_URL;
   const captureRoot = env['PROVIDER_CAPTURE_ROOT'] ?? DEFAULT_CAPTURE_ROOT;
   const maxRequestsPerMinute = parseIntDefault(env['SPORTMONKS_MAX_REQUESTS_PER_MINUTE'], DEFAULT_MAX_RPM);
-  const allowGatedEndpoints = env['SPORTMONKS_ALLOW_GATED_ENDPOINTS'] === 'true';
+  const allowLiveEndpoints = env['SPORTMONKS_ALLOW_LIVE_ENDPOINTS'] === 'true';
 
   return {
     provider: 'sportmonks',
@@ -51,7 +51,7 @@ export function readSportmonksCaptureConfig(env: EnvRecord): SportmonksCaptureCo
     apiBaseUrl,
     captureRoot,
     maxRequestsPerMinute,
-    allowGatedEndpoints
+    allowLiveEndpoints
   };
 }
 

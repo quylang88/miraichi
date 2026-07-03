@@ -182,13 +182,18 @@ function buildSportmonksUrl(
   query: Record<string, string>,
   apiToken: string
 ): string {
-  const path = urlPath.startsWith('/') ? urlPath : `/${urlPath}`;
-  const url = new URL(`${baseUrl}${path}`);
+  const url = isAbsoluteHttpUrl(urlPath)
+    ? new URL(urlPath)
+    : new URL(`${baseUrl}${urlPath.startsWith('/') ? urlPath : `/${urlPath}`}`);
   for (const [key, value] of Object.entries(query)) {
     url.searchParams.set(key, value);
   }
   url.searchParams.set('api_token', apiToken);
   return url.toString();
+}
+
+function isAbsoluteHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
 }
 
 function toMinRequestSpacingMs(maxRequestsPerMinute: number | undefined): number {
