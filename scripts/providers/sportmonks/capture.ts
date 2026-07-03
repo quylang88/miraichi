@@ -19,6 +19,12 @@ export interface SportmonksRawCaptureOptions {
   log?: (message: string) => void;
   maxPagesPerEndpoint?: number;
   allowLiveEndpoints?: boolean;
+  initialRequestsByEndpointKey?: Record<string, SportmonksEndpointInitialRequest>;
+}
+
+export interface SportmonksEndpointInitialRequest {
+  query: Record<string, string>;
+  page: number;
 }
 
 export interface SportmonksRawCaptureResult {
@@ -60,6 +66,7 @@ export async function runSportmonksRawCapture(
       captureRoot: options.captureRoot,
       client: options.client,
       endpoint,
+      initialRequest: options.initialRequestsByEndpointKey?.[endpoint.endpointKey],
       now,
       maxPagesPerEndpoint,
       log: options.log
@@ -81,6 +88,7 @@ async function captureEndpointPages(input: {
   captureRoot: string;
   client: SportmonksCaptureClient;
   endpoint: SportmonksEndpointEntry;
+  initialRequest: SportmonksEndpointInitialRequest | undefined;
   now: () => string;
   maxPagesPerEndpoint: number;
   log: ((message: string) => void) | undefined;
@@ -93,8 +101,9 @@ async function captureEndpointPages(input: {
     rateLimited: false
   };
 
-  for (let page = 1; page <= input.maxPagesPerEndpoint; page += 1) {
-    const query = { page: String(page) };
+  let query: Record<string, string> = input.initialRequest?.query ?? { page: '1' };
+  let page = input.initialRequest?.page ?? 1;
+  for (let capturedPages = 0; capturedPages < input.maxPagesPerEndpoint; capturedPages += 1) {
     input.log?.(`sportmonks:capture ${input.endpoint.endpointKey} page=${page}`);
 
     const response = await input.client.get(input.endpoint.urlPath, query);
@@ -160,6 +169,9 @@ async function captureEndpointPages(input: {
     if (!hasMore) {
       return result;
     }
+
+    query = readNextCursorQuery(response.body) ?? { page: String(page + 1) };
+    page += 1;
   }
 
   input.log?.(`sportmonks:capture ${input.endpoint.endpointKey} stopped at page limit (${input.maxPagesPerEndpoint} pages)`);
@@ -223,6 +235,49 @@ function hasMorePages(body: unknown): boolean {
     ?? readNestedBoolean(body, ['meta', 'pagination', 'has_more'])
     ?? readNestedBoolean(body, ['meta', 'pagination', 'hasMore'])
     ?? false;
+}
+
+function readNextCursorQuery(body: unknown): Record<string, string> | undefined {
+  const nextCursor = readNestedString(body, ['pagination', 'next_cursor'])
+    ?? readNestedString(body, ['pagination', 'nextCursor'])
+    ?? readNestedString(body, ['meta', 'pagination', 'next_cursor'])
+    ?? readNestedString(body, ['meta', 'pagination', 'nextCursor']);
+  if (nextCursor === undefined) {
+    return undefined;
+  }
+
+  const cursor = extractCursor(nextCursor);
+  return cursor === undefined ? undefined : { cursor };
+}
+
+function extractCursor(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (trimmed === '') {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(trimmed, 'https://api.sportmonks.com');
+    const cursor = url.searchParams.get('cursor');
+    if (cursor !== null && cursor.trim() !== '') {
+      return cursor;
+    }
+  } catch {
+    // Fall back to treating next_cursor as a raw cursor token.
+  }
+
+  return trimmed;
+}
+
+function readNestedString(value: unknown, path: string[]): string | undefined {
+  let current = value;
+  for (const segment of path) {
+    if (!isRecord(current)) {
+      return undefined;
+    }
+    current = current[segment];
+  }
+  return typeof current === 'string' && current.trim() !== '' ? current : undefined;
 }
 
 function readNestedBoolean(value: unknown, path: string[]): boolean | undefined {

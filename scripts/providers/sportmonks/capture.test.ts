@@ -160,6 +160,103 @@ describe('sportmonks raw capture', () => {
     });
   });
 
+  it('continues deep pagination with next_cursor instead of page offsets', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
+    const catalog: SportmonksEndpointEntry[] = [
+      { endpointKey: 'fixtures.all', group: 'fixtures', urlPath: '/fixtures', capturePolicy: 'allowed' }
+    ];
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async (_urlPath: string, query: Record<string, string> = {}) => ({
+        ok: true as const,
+        statusCode: 200,
+        body: query.cursor === 'cursor-after-page-1'
+          ? { data: [{ id: 2 }], pagination: { has_more: false } }
+          : {
+              data: [{ id: 1 }],
+              pagination: {
+                has_more: true,
+                next_cursor: 'https://api.sportmonks.com/v3/football/fixtures?cursor=cursor-after-page-1'
+              }
+            },
+        rateLimit: {}
+      }))
+    };
+
+    const result = await runSportmonksRawCapture({
+      captureRoot: root,
+      catalog,
+      client,
+      maxPagesPerEndpoint: 2,
+      now: () => '2026-07-02T00:00:00.000Z'
+    });
+
+    expect(result).toEqual({
+      captured: 2,
+      skipped: 0,
+      unavailable: 0,
+      failed: 0
+    });
+    expect(client.get).toHaveBeenNthCalledWith(1, '/fixtures', { page: '1' });
+    expect(client.get).toHaveBeenNthCalledWith(2, '/fixtures', { cursor: 'cursor-after-page-1' });
+
+    const manifestPath = join(root, 'providers', 'sportmonks', 'manifests', 'capture-manifest.jsonl');
+    const manifestLines = (await readFile(manifestPath, 'utf8')).trim().split(/\r?\n/).map((line) => JSON.parse(line));
+    expect(manifestLines[1]).toMatchObject({
+      endpointKey: 'fixtures.all',
+      status: 'captured',
+      query: { cursor: 'cursor-after-page-1' },
+      page: 2,
+      hasMore: false
+    });
+  });
+
+  it('can resume an endpoint from a stored cursor and logical page number', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
+    const catalog: SportmonksEndpointEntry[] = [
+      { endpointKey: 'fixtures.all', group: 'fixtures', urlPath: '/fixtures', capturePolicy: 'allowed' }
+    ];
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async () => ({
+        ok: true as const,
+        statusCode: 200,
+        body: { data: [{ id: 802 }], pagination: { has_more: false } },
+        rateLimit: {}
+      }))
+    };
+
+    const result = await runSportmonksRawCapture({
+      captureRoot: root,
+      catalog,
+      client,
+      initialRequestsByEndpointKey: {
+        'fixtures.all': {
+          query: { cursor: 'cursor-after-page-801' },
+          page: 802
+        }
+      },
+      now: () => '2026-07-02T00:00:00.000Z'
+    });
+
+    expect(result).toEqual({
+      captured: 1,
+      skipped: 0,
+      unavailable: 0,
+      failed: 0
+    });
+    expect(client.get).toHaveBeenCalledWith('/fixtures', { cursor: 'cursor-after-page-801' });
+
+    const manifestPath = join(root, 'providers', 'sportmonks', 'manifests', 'capture-manifest.jsonl');
+    const [line] = (await readFile(manifestPath, 'utf8')).trim().split(/\r?\n/).map((entry) => JSON.parse(entry));
+    expect(line).toMatchObject({
+      endpointKey: 'fixtures.all',
+      status: 'captured',
+      query: { cursor: 'cursor-after-page-801' },
+      page: 802,
+      hasMore: false,
+      recordCount: 1
+    });
+  });
+
   it('captures all non-live endpoints by default while still skipping live endpoints', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
     const catalog: SportmonksEndpointEntry[] = [
