@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { SportmonksEndpointEntry } from './endpoint-catalog.js';
 import { runSportmonksRawCapture, type SportmonksCaptureClient } from './capture.js';
+import { createPayloadHash, writeRawProviderPayload } from '../shared/raw-cache.js';
 
 describe('sportmonks raw capture', () => {
   it('captures paginated endpoints and skips per-id endpoints', async () => {
@@ -257,6 +258,99 @@ describe('sportmonks raw capture', () => {
     });
   });
 
+  it('skips an endpoint that already has a completed captured page in the manifest', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
+    const catalog: SportmonksEndpointEntry[] = [
+      { endpointKey: 'leagues.all', group: 'leagues', urlPath: '/leagues', capturePolicy: 'allowed' }
+    ];
+    await writeFixtureCaptureManifest(root, {
+      endpointKey: 'leagues.all',
+      urlPath: '/leagues',
+      page: 1,
+      hasMore: false,
+      payloadHash: 'a'.repeat(64)
+    });
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async () => ({
+        ok: true as const,
+        statusCode: 200,
+        body: { data: [{ id: 1 }], pagination: { has_more: false } },
+        rateLimit: {}
+      }))
+    };
+
+    const result = await runSportmonksRawCapture({
+      captureRoot: root,
+      catalog,
+      client,
+      now: () => '2026-07-03T00:00:00.000Z'
+    });
+
+    expect(result).toEqual({
+      captured: 0,
+      skipped: 1,
+      unavailable: 0,
+      failed: 0
+    });
+    expect(client.get).not.toHaveBeenCalled();
+  });
+
+  it('auto-resumes an incomplete endpoint from the next cursor in the latest raw payload', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
+    const catalog: SportmonksEndpointEntry[] = [
+      { endpointKey: 'fixtures.all', group: 'fixtures', urlPath: '/fixtures', capturePolicy: 'allowed' }
+    ];
+    const firstPayload = {
+      data: [{ id: 1 }],
+      pagination: {
+        has_more: true,
+        next_cursor: 'https://api.sportmonks.com/v3/football/fixtures?cursor=cursor-after-page-1'
+      }
+    };
+    const firstPayloadHash = createPayloadHash(firstPayload);
+    await writeRawProviderPayload(root, {
+      schemaVersion: 'miraichi.provider.raw.v1',
+      provider: 'sportmonks',
+      endpointKey: 'fixtures.all',
+      urlPath: '/fixtures',
+      query: { page: '1' },
+      fetchedAt: '2026-07-03T00:00:00.000Z',
+      payloadHash: firstPayloadHash,
+      rateLimit: {},
+      payload: firstPayload
+    });
+    await writeFixtureCaptureManifest(root, {
+      endpointKey: 'fixtures.all',
+      urlPath: '/fixtures',
+      page: 1,
+      hasMore: true,
+      payloadHash: firstPayloadHash
+    });
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async () => ({
+        ok: true as const,
+        statusCode: 200,
+        body: { data: [{ id: 2 }], pagination: { has_more: false } },
+        rateLimit: {}
+      }))
+    };
+
+    const result = await runSportmonksRawCapture({
+      captureRoot: root,
+      catalog,
+      client,
+      now: () => '2026-07-03T00:00:01.000Z'
+    });
+
+    expect(result).toEqual({
+      captured: 1,
+      skipped: 0,
+      unavailable: 0,
+      failed: 0
+    });
+    expect(client.get).toHaveBeenCalledWith('/fixtures', { cursor: 'cursor-after-page-1' });
+  });
+
   it('captures all non-live endpoints by default while still skipping live endpoints', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
     const catalog: SportmonksEndpointEntry[] = [
@@ -328,3 +422,28 @@ describe('sportmonks raw capture', () => {
     expect(client.get).toHaveBeenCalledWith('/livescores', { page: '1' });
   });
 });
+
+async function writeFixtureCaptureManifest(
+  root: string,
+  input: {
+    endpointKey: string;
+    urlPath: string;
+    page: number;
+    hasMore: boolean;
+    payloadHash: string;
+  }
+): Promise<void> {
+  const { appendProviderManifestEntry } = await import('../shared/manifest.js');
+  await appendProviderManifestEntry(root, 'sportmonks', {
+    provider: 'sportmonks',
+    endpointKey: input.endpointKey,
+    urlPath: input.urlPath,
+    query: { page: String(input.page) },
+    status: 'captured',
+    page: input.page,
+    hasMore: input.hasMore,
+    payloadHash: input.payloadHash,
+    fetchedAt: '2026-07-03T00:00:00.000Z',
+    recordCount: 1
+  });
+}

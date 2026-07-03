@@ -2,6 +2,8 @@ import type {
   ProviderCaptureManifestEntry,
   RawProviderPayloadEnvelope
 } from '../../../packages/shared/src/contracts/provider-ingestion-contracts.js';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { appendProviderManifestEntry } from '../shared/manifest.js';
 import { createPayloadHash, writeRawProviderPayload } from '../shared/raw-cache.js';
 import type { SportmonksClientResult } from './client.js';
@@ -73,6 +75,7 @@ export async function runSportmonksRawCapture(
     });
 
     result.captured += endpointResult.captured;
+    result.skipped += endpointResult.skipped;
     result.unavailable += endpointResult.unavailable;
     result.failed += endpointResult.failed;
 
@@ -101,8 +104,19 @@ async function captureEndpointPages(input: {
     rateLimited: false
   };
 
-  let query: Record<string, string> = input.initialRequest?.query ?? { page: '1' };
-  let page = input.initialRequest?.page ?? 1;
+  const existingProgress = input.initialRequest === undefined
+    ? await readEndpointCaptureProgress(input.captureRoot, input.endpoint.endpointKey)
+    : undefined;
+
+  if (existingProgress?.completed === true) {
+    input.log?.(`sportmonks:capture ${input.endpoint.endpointKey} skipped; already complete`);
+    result.skipped += 1;
+    return result;
+  }
+
+  const startRequest = input.initialRequest ?? existingProgress?.nextRequest;
+  let query: Record<string, string> = startRequest?.query ?? { page: '1' };
+  let page = startRequest?.page ?? 1;
   for (let capturedPages = 0; capturedPages < input.maxPagesPerEndpoint; capturedPages += 1) {
     input.log?.(`sportmonks:capture ${input.endpoint.endpointKey} page=${page}`);
 
@@ -176,6 +190,107 @@ async function captureEndpointPages(input: {
 
   input.log?.(`sportmonks:capture ${input.endpoint.endpointKey} stopped at page limit (${input.maxPagesPerEndpoint} pages)`);
   return result;
+}
+
+interface EndpointCaptureProgress {
+  completed: boolean;
+  nextRequest?: SportmonksEndpointInitialRequest;
+}
+
+async function readEndpointCaptureProgress(
+  captureRoot: string,
+  endpointKey: string
+): Promise<EndpointCaptureProgress> {
+  const entries = await readCapturedManifestEntries(captureRoot, endpointKey);
+  if (entries.length === 0) {
+    return { completed: false };
+  }
+
+  if (entries.some((entry) => entry.hasMore === false)) {
+    return { completed: true };
+  }
+
+  const latest = entries
+    .filter((entry) => entry.page !== undefined)
+    .sort((left, right) => (right.page ?? 0) - (left.page ?? 0))[0];
+  if (latest === undefined || latest.page === undefined) {
+    return { completed: false };
+  }
+
+  return {
+    completed: false,
+    nextRequest: {
+      query: await readNextQueryFromRawPayload(captureRoot, latest) ?? { page: String(latest.page + 1) },
+      page: latest.page + 1
+    }
+  };
+}
+
+async function readCapturedManifestEntries(
+  captureRoot: string,
+  endpointKey: string
+): Promise<ProviderCaptureManifestEntry[]> {
+  const manifestPath = join(captureRoot, 'providers', 'sportmonks', 'manifests', 'capture-manifest.jsonl');
+  let content: string;
+  try {
+    content = await readFile(manifestPath, 'utf8');
+  } catch {
+    return [];
+  }
+
+  const entries: ProviderCaptureManifestEntry[] = [];
+  for (const line of content.split(/\r?\n/)) {
+    if (line.trim() === '') {
+      continue;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (!isRecord(parsed)) {
+      continue;
+    }
+    if (parsed.provider !== 'sportmonks' || parsed.endpointKey !== endpointKey || parsed.status !== 'captured') {
+      continue;
+    }
+    entries.push(parsed as unknown as ProviderCaptureManifestEntry);
+  }
+  return entries;
+}
+
+async function readNextQueryFromRawPayload(
+  captureRoot: string,
+  entry: ProviderCaptureManifestEntry
+): Promise<Record<string, string> | undefined> {
+  if (entry.payloadHash === undefined || entry.fetchedAt === undefined) {
+    return undefined;
+  }
+
+  const rawPath = join(
+    captureRoot,
+    'providers',
+    'sportmonks',
+    'raw',
+    entry.endpointKey,
+    entry.fetchedAt.slice(0, 10),
+    `${entry.payloadHash}.json`
+  );
+
+  let content: string;
+  try {
+    content = await readFile(rawPath, 'utf8');
+  } catch {
+    return undefined;
+  }
+
+  try {
+    const envelope = JSON.parse(content) as RawProviderPayloadEnvelope;
+    return readNextCursorQuery(envelope.payload);
+  } catch {
+    return undefined;
+  }
 }
 
 async function appendSkippedManifest(
