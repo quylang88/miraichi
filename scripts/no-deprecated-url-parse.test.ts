@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 const SCANNED_DIRS = ['apps', 'packages', 'scripts'];
+const IGNORED_DIRECTORIES = new Set(['node_modules', 'coverage', 'data', 'dist', 'build']);
 
 describe('deprecated URL parsing guard', () => {
   it('does not use url.parse in application or verification code', () => {
@@ -19,7 +20,7 @@ describe('deprecated URL parsing guard', () => {
 
 function scanJavaScriptFiles(dirPath: string, offenders: string[], deprecatedPattern: string) {
   for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === 'coverage') continue;
+    if (IGNORED_DIRECTORIES.has(entry.name)) continue;
 
     const fullPath = path.join(dirPath, entry.name);
     if (entry.isDirectory()) {

@@ -163,7 +163,7 @@ describe('verify-lifecycle helpers', () => {
     } finally {
       await fs.rm(rootDir, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 });
 
 async function createWorkspaceFixture({

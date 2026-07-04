@@ -1,9 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
+import { ServingMatchStoreRepository } from '../repositories/serving-match-store-repository.js';
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
 import type { LocalMatchFeedResponse, LocalMatchStatus } from '@miraichi/shared';
 
-const repository = new LocalMatchSnapshotRepository();
+const repository = new ServingMatchStoreRepository();
 
 function validDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
@@ -67,7 +67,7 @@ export async function handleMatches(
   } catch (error) {
     const err = error as { statusCode?: number; code?: string; message?: string };
     const statusCode = err.statusCode || 500;
-    const code = err.code || 'local_snapshot_invalid';
+    const code = err.code || 'serving_match_store_invalid';
     res.writeHead(statusCode, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       error: {

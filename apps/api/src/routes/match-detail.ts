@@ -1,9 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
+import { ServingMatchStoreRepository } from '../repositories/serving-match-store-repository.js';
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
 import type { LocalMatchDetail } from '@miraichi/shared';
 
-const repository = new LocalMatchSnapshotRepository();
+const repository = new ServingMatchStoreRepository();
 
 export async function handleMatchDetail(
   req: IncomingMessage,
@@ -43,7 +43,7 @@ export async function handleMatchDetail(
       res.end(JSON.stringify({
         error: {
           code: 'match_not_found',
-          message: `Match with ID ${id} was not found in the local snapshot.`
+          message: `Match with ID ${id} was not found in the serving match store.`
         }
       }));
       return;
@@ -54,7 +54,7 @@ export async function handleMatchDetail(
       referee: undefined,
       events: [],
       notes: [
-        'Local snapshot detail does not include live event telemetry.'
+        'Serving match store detail does not include live event telemetry.'
       ]
     };
 

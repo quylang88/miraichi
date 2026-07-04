@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { handleMatchDetail } from './match-detail.js';
-import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
-import { LocalMatch, LocalMatchDetail } from '@miraichi/shared';
+import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
+import type { LocalMatch, LocalMatchDetail } from '@miraichi/shared';
 
 function responseMock() {
   return {
@@ -40,7 +40,7 @@ const mockDetail: LocalMatchDetail = {
   match: mockMatch,
   referee: undefined,
   events: [],
-  notes: ['Local snapshot detail does not include live event telemetry.']
+  notes: ['Serving match store detail does not include live event telemetry.']
 };
 
 describe('match detail route', () => {
@@ -51,7 +51,7 @@ describe('match detail route', () => {
         expect(id).toBe('match-world-cup-2026-group-a-mexico-south-africa-2026-06-11');
         return mockMatch;
       }
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleMatchDetail(
       { url: `/api/v1/matches/detail?id=${mockMatch.id}`, method: 'GET' } as import('http').IncomingMessage,
@@ -63,7 +63,7 @@ describe('match detail route', () => {
     const body = JSON.parse(response.body) as LocalMatchDetail;
     expect(body.match.id).toBe(mockMatch.id);
     expect(body.events).toEqual([]);
-    expect(body.notes).toContain('Local snapshot detail does not include live event telemetry.');
+    expect(body.notes).toContain('Serving match store detail does not include live event telemetry.');
   });
 
   it('returns 400 if id is missing', async () => {
@@ -92,11 +92,11 @@ describe('match detail route', () => {
     expect(body.error.code).toBe('legacy_provider_id_not_supported');
   });
 
-  it('returns 404 if match is not found in the local snapshot', async () => {
+  it('returns 404 if match is not found in the serving match store', async () => {
     const response = responseMock();
     const mockRepo = {
       findById: async () => null
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleMatchDetail(
       { url: '/api/v1/matches/detail?id=non-existent-id', method: 'GET' } as import('http').IncomingMessage,

@@ -99,6 +99,6 @@ describe('supabase local developer workflow', () => {
       SUPABASE_DATABASE_URL: LOCAL_SUPABASE_DATABASE_URL,
       MIRAICHI_OWNER_PROFILE_ID: 'owner-local'
     });
-    expect(logs).toContain('[Supabase Local] Synced national-team snapshot into local Supabase.');
+    expect(logs).toContain('[Supabase Local] Synced serving match store into local Supabase.');
   });
 });

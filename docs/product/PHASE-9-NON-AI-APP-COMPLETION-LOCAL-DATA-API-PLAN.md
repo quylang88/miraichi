@@ -73,15 +73,16 @@ Historical completed work may remain in git history and old reports, but it is n
    - Not useful for upcoming fixtures.
 
 ### Practical Local API Shape
-Phase 9 should create an owner-controlled local data API that serves from local/cloud snapshots, not from live third-party fetches:
+Phase 9 should create an owner-controlled local data API that serves from a provider-neutral serving store built from canonical warehouse, not from live third-party fetches and not from a single `national-team-matches.json` file:
 
 - `GET /api/v1/matches?date=YYYY-MM-DD`
 - `GET /api/v1/matches?competitionId=...&status=scheduled|finished`
 - `GET /api/v1/matches/:id`
 - `GET /api/v1/data-snapshot/status`
-- manual command: `pnpm run data:update:national-teams`
+- normalize command: `pnpm run data:normalize:sportmonks:warehouse`
+- build command: `pnpm run data:build:serving:matches`
 
-The manual update command should prioritize:
+The canonical-to-serving build path should prioritize:
 
 1. World Cup 2026 scheduled/finished fixtures.
 2. Euro latest available edition and future official schedule when available.
@@ -91,12 +92,14 @@ The manual update command should prioritize:
 
 No live polling is part of Phase 9.
 
+The removed path is explicit: do not recreate `apps/api/data/local-match-snapshots/`, `national-team-matches.seed.json`, `national-team-matches.json`, or `scripts/update-national-team-data.ts`.
+
 ## Phase 9 Scope
 ### In Scope
 - Remove API-Football from active app data flow.
-- Replace app match feed with local/manual snapshot-backed API.
+- Replace app match feed with serving-store-backed API.
 - Keep source adapters replaceable.
-- Complete `Today` and `Matches` against real snapshot data states.
+- Complete `Today` and `Matches` against real serving-store data states.
 - Complete `Bets` as user-entered records and draft/history workflows.
 - Complete `Bankroll` as owner-entered capital ledger/account records.
 - Add cloud database persistence after a provider ADR is approved.
@@ -129,9 +132,9 @@ Goal: create exact TDD slices before code changes.
 
 Required implementation-plan slices:
 - remove API-Football provider module usage from active API routes;
-- replace tests with local snapshot provider expectations;
-- add normalized local match snapshot contracts;
-- add local snapshot repository;
+- replace tests with serving-store provider-neutral expectations;
+- keep the app contract provider-neutral and light;
+- add serving match store repository;
 - add route handlers for list/detail/status;
 - update web match-feed service expected states;
 - verify no API-Football env var is required.
@@ -141,8 +144,9 @@ Goal: make finished and scheduled fixtures updateable by the owner once per day.
 
 Required implementation-plan slices:
 - source registry for OpenFootball, SofaScore local ingestion, optional football-data.org, and historical-results baseline;
-- mirror/import command for OpenFootball World Cup and Euro;
-- local snapshot writer with provenance metadata;
+- mirror/import command for raw/canonical World Cup and Euro data;
+- canonical warehouse writer with provenance metadata;
+- serving-store builder from canonical warehouse;
 - freshness/staleness status report;
 - safe failure output when a source is unavailable;
 - World Cup 2026 first queue;
@@ -155,7 +159,7 @@ Owner decision required:
 - Which cloud database provider and auth boundary are approved?
 
 Recommended answer:
-- Choose one managed Postgres-compatible cloud database path through an ADR, then implement only the minimum tables needed for user-owned app state and match snapshots.
+- Choose one managed Postgres-compatible cloud database path through an ADR, then implement only the minimum tables needed for user-owned app state and serving-store match sync.
 
 Reason:
 - A vague "cloud database" requirement is not implementable. Without a provider and auth boundary, agents will either fake persistence or hardcode the wrong infrastructure.
@@ -187,7 +191,7 @@ Required evidence:
 Phase 9 can close only when:
 
 1. The app no longer requires API-Football free-tier credentials or API-Football route behavior.
-2. Local/manual match data can be updated and served through the API.
+2. Canonical warehouse data can be materialized into the serving store and served through the API.
 3. World Cup 2026 is the first scheduled/finished fixture target.
 4. Euro latest/past backfill has a working path.
 5. `Today`, `Matches`, `Bets`, and `Bankroll` operate against persisted data.
@@ -201,7 +205,7 @@ Phase 9 can close only when:
 | --- | --- | --- | --- |
 | Should API-Football free tier stay anywhere in the active app path? | No. Remove it completely from active Phase 9 implementation. | Owner rejected it and quota limits make it a bad foundation. | The app remains fragile and tied to a source the owner already rejected. |
 | Should SofaScore be treated as an official API? | No. Treat it as local-only scraper-backed enrichment. | SofaScore says API endpoints are not available for sharing. | Legal/terms risk and broken assumptions when endpoints change. |
-| Should the app require football-data.org? | No. Keep it optional unless the owner approves key usage. | OpenFootball plus local snapshots should keep the app usable without another API dependency. | Another key/quota dependency replaces the API-Football problem. |
+| Should the app require football-data.org? | No. Keep it optional unless the owner approves key usage. | Canonical warehouse plus serving store should keep the app usable without another API dependency. | Another key/quota dependency replaces the API-Football problem. |
 | What cloud database should Phase 9 implement? | Approve one provider in an ADR before code. | Persistence is guardrail-sensitive and cannot be guessed safely. | Wrong schema, wrong auth model, or data-loss-prone sync. |
 | Should bankroll calculate stakes/risk automatically now? | No. Manual ledger/account records only. | Stake/risk math is explicitly blocked without owner-approved formulas. | Accidental betting advice and false financial confidence. |
 

@@ -4,7 +4,14 @@ import { handlePredict, handleExplain } from './routes/prediction-candidates.moc
 import { handleMockPredict } from './routes/mock-prediction.js';
 import { handleMockExplain } from './routes/mock-explanation.js';
 
-const PORT = 3002;
+const configuredPort = process.env.PORT
+  ?? (process.env.LOCAL_AI_URL ? new URL(process.env.LOCAL_AI_URL).port : undefined)
+  ?? '3002';
+const PORT = Number(configuredPort);
+
+if (!Number.isInteger(PORT) || PORT <= 0) {
+  throw new Error('Local AI PORT must be a positive integer.');
+}
 
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url || '/', 'http://localhost');

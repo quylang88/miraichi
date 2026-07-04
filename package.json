@@ -14,14 +14,14 @@
     "dev:api": "pnpm --filter api run dev",
     "dev:local-ai": "pnpm --filter local-ai run dev",
     "dev:worker": "pnpm --filter worker run dev",
-    "data:update:national-teams": "tsx scripts/update-national-team-data.ts",
-    "data:validate:national-teams": "tsx scripts/update-national-team-data.ts --validate-only",
-    "data:sync:national-teams:cloud": "tsx scripts/sync-national-team-data-to-cloud.ts",
+    "data:build:serving:matches": "tsx scripts/build-serving-match-store.ts",
+    "data:validate:serving:matches": "tsx scripts/build-serving-match-store.ts --validate-only",
+    "data:sync:serving:cloud": "tsx scripts/sync-serving-match-store-to-cloud.ts",
     "supabase:local:start": "supabase db start",
     "supabase:local:status": "tsx scripts/supabase-local-workflow.ts status",
     "supabase:local:sync": "tsx scripts/supabase-local-workflow.ts sync",
     "supabase:local:verify": "tsx scripts/supabase-local-workflow.ts verify",
-    "phase9:local-data-api-verify": "pnpm run data:validate:national-teams && pnpm exec vitest run packages/shared/src/contracts/local-match-contracts.test.ts apps/api/src/repositories/local-match-snapshot-repository.test.ts apps/api/src/routes/matches.test.ts apps/api/src/routes/match-detail.test.ts apps/api/src/routes/data-snapshot-status.test.ts apps/web/src/services/match-feed-service.test.ts apps/web/src/production-shell.test.ts scripts/update-national-team-data.test.ts scripts/phase3-verify.test.ts",
+    "phase9:local-data-api-verify": "pnpm exec vitest run packages/shared/src/contracts/local-match-contracts.test.ts apps/api/src/repositories/serving-match-store.test.ts apps/api/src/repositories/serving-match-store-repository.test.ts apps/api/src/routes/matches.test.ts apps/api/src/routes/match-detail.test.ts apps/api/src/routes/data-snapshot-status.test.ts apps/web/src/services/match-feed-service.test.ts apps/web/src/production-shell.test.ts scripts/build-serving-match-store.test.ts scripts/phase3-verify.test.ts",
     "phase9:cloud-persistence-verify": "tsx scripts/phase9-cloud-persistence-verify.ts",
     "phase9:non-ai-app-verify": "pnpm run phase9:local-data-api-verify && pnpm run phase9:cloud-persistence-verify",
     "check": "tsx scripts/check-files.ts",
@@ -59,8 +59,8 @@
     "data:capture:sportmonks:expected": "tsx scripts/capture-sportmonks-expected-data.ts",
     "data:probe:sportmonks": "tsx scripts/probe-sportmonks-fixture-enrichment.ts",
     "data:enrich:sportmonks:fixtures": "tsx scripts/enrich-sportmonks-fixtures.ts",
-    "data:verify:sportmonks": "tsx scripts/providers/sportmonks/verify-capture.ts",
-    "data:export:warehouse:matches": "tsx scripts/export-warehouse-to-local-match-snapshot.ts"
+    "data:normalize:sportmonks:warehouse": "tsx scripts/providers/sportmonks/normalize-to-warehouse.ts",
+    "data:verify:sportmonks": "tsx scripts/providers/sportmonks/verify-capture.ts"
   },
   "engines": {
     "node": ">=18.0.0"

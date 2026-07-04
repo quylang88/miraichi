@@ -20,7 +20,7 @@ API_URL=http://localhost:3001
 CLOUD_PERSISTENCE_MODE=supabase
 SUPABASE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
 MIRAICHI_OWNER_PROFILE_ID=owner-primary
-LOCAL_MATCH_SNAPSHOT_PATH=apps/api/data/local-match-snapshots/national-team-matches.json
+LOCAL_MATCH_SERVING_ROOT=apps/api/data/serving
 ```
 
 ## Daily local workflow
@@ -37,9 +37,10 @@ Print the local DBeaver connection fields:
 pnpm run supabase:local:status
 ```
 
-Sync the current national-team snapshot into local Supabase:
+Build the current app serving store from canonical warehouse, then sync it into local Supabase:
 
 ```powershell
+pnpm run data:build:serving:matches
 pnpm run supabase:local:sync
 ```
 
@@ -54,7 +55,7 @@ The verifier checks:
 - local Supabase DB URL;
 - Phase 9 migration `20260702052851`;
 - all 8 expected `miraichi_app` tables;
-- synced snapshot/match data;
+- synced serving match data;
 - `supabase db lint --local`;
 - `supabase db advisors --local --type security`.
 
@@ -94,6 +95,7 @@ Resetting local DB deletes local Supabase data and reapplies migrations:
 
 ```powershell
 pnpm exec supabase db reset --local
+pnpm run data:build:serving:matches
 pnpm run supabase:local:sync
 pnpm run supabase:local:verify
 ```

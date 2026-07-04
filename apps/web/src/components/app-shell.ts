@@ -129,7 +129,7 @@ function renderFeedUnavailable(feed: Extract<MatchFeedViewState, { status: 'unav
   return `
     <section class="note-card warning" data-match-feed-state="unavailable">
       <div class="note-eyebrow">Data update required</div>
-      <div class="note-title">Local data snapshot is unavailable.</div>
+      <div class="note-title">Serving match store is unavailable.</div>
       <p class="note-copy">${escapeHtml(feed.reason)}</p>
     </section>
   `;
@@ -138,8 +138,8 @@ function renderFeedUnavailable(feed: Extract<MatchFeedViewState, { status: 'unav
 function renderFeedLoading(feed: Extract<MatchFeedViewState, { status: 'loading' }>): string {
   return `
     <section class="note-card" data-match-feed-state="loading">
-      <div class="note-eyebrow">Local data snapshot</div>
-      <div class="note-title">Loading match snapshot</div>
+      <div class="note-eyebrow">Serving match store</div>
+      <div class="note-title">Loading match store</div>
       <p class="note-copy">Loading national-team matches for ${escapeHtml(feed.date)}.</p>
     </section>
   `;
@@ -148,9 +148,9 @@ function renderFeedLoading(feed: Extract<MatchFeedViewState, { status: 'loading'
 function renderFeedEmpty(feed: Extract<MatchFeedViewState, { status: 'empty' }>): string {
   return `
     <section class="note-card" data-match-feed-state="empty">
-      <div class="note-eyebrow">Local data snapshot</div>
+      <div class="note-eyebrow">Serving match store</div>
       <div class="note-title">No matches found for ${escapeHtml(feed.date)}.</div>
-      <p class="note-copy">No national-team matches are recorded for this date in the local snapshot.</p>
+      <p class="note-copy">No national-team matches are recorded for this date in the serving match store.</p>
     </section>
   `;
 }
@@ -322,7 +322,7 @@ function renderTodayPanel(
         <section class="note-card">
           <div class="note-eyebrow">Miraichi note</div>
           <div class="note-title">This shell is a journal surface, not an advice engine.</div>
-          <p class="note-copy">The match feed shows local snapshot context, but this shell does not rank picks, estimate confidence, or propose stake size.</p>
+          <p class="note-copy">The match feed shows serving match store context, but this shell does not rank picks, estimate confidence, or propose stake size.</p>
         </section>
       </div>
     </section>
@@ -777,7 +777,7 @@ function renderMatchesPanel(
 
       ${matchesHtml}
 
-      <div class="empty-state" id="matches-empty" style="display: ${matchFeed.status === 'ready' && filteredMatches.length === 0 ? 'block' : 'none'};">No local snapshot matches match the current filters.</div>
+      <div class="empty-state" id="matches-empty" style="display: ${matchFeed.status === 'ready' && filteredMatches.length === 0 ? 'block' : 'none'};">No serving match store matches match the current filters.</div>
     </section>
   `;
 }
@@ -867,7 +867,7 @@ function renderMatchDetailPanel(): string {
         <div>
           <p class="screen-label">Match group</p>
           <h1 class="screen-title" id="match-detail-title">Selected match</h1>
-          <p class="screen-subtitle" id="match-detail-meta">Choose a local snapshot match to view details.</p>
+          <p class="screen-subtitle" id="match-detail-meta">Choose a serving match store match to view details.</p>
         </div>
       </div>
 

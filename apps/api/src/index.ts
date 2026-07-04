@@ -18,7 +18,7 @@ import { handleMatchDetail } from './routes/match-detail.js';
 import { handleDataSnapshotStatus } from './routes/data-snapshot-status.js';
 import { readCloudPersistenceConfig } from './config/cloud-persistence-config.js';
 import { createCloudPersistenceAdapter } from './persistence/create-cloud-persistence-adapter.js';
-import { LocalMatchSnapshotRepository } from './repositories/local-match-snapshot-repository.js';
+import { ServingMatchStoreRepository } from './repositories/serving-match-store-repository.js';
 import { CloudMatchSnapshotRepository } from './repositories/cloud-match-snapshot-repository.js';
 import { FallbackMatchSnapshotRepository } from './repositories/fallback-match-snapshot-repository.js';
 
@@ -66,7 +66,7 @@ loadEnv(ROOT_DIR);
 const cloudConfig = readCloudPersistenceConfig();
 const cloudDependencies = { adapter: createCloudPersistenceAdapter(cloudConfig), ownerProfileId: cloudConfig.ownerProfileId };
 const matchRepository = new FallbackMatchSnapshotRepository(
-  new LocalMatchSnapshotRepository(),
+  new ServingMatchStoreRepository(),
   new CloudMatchSnapshotRepository(cloudDependencies.adapter, cloudConfig.ownerProfileId)
 );
 

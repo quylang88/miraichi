@@ -1,0 +1,4 @@
+import { describe, expect, it } from 'vitest';
+import { createMemoryCloudPersistenceAdapter } from '../apps/api/src/persistence/memory-cloud-persistence-adapter.js';
+import { runServingMatchStoreCloudSync } from './sync-serving-match-store-to-cloud.js';
+describe('serving match store cloud sync command',()=>{it('prints a stable summary',async()=>{const messages:string[]=[];const result=await runServingMatchStoreCloudSync({servingRepository:{loadSnapshot:async()=>({snapshotId:'s1',generatedAt:'2026-07-02T00:00:00.000Z',importedAt:'2026-07-02T00:00:00.000Z',sources:[],matches:[]})},adapter:createMemoryCloudPersistenceAdapter(),ownerProfileId:'owner-primary',log:(message)=>messages.push(message)});expect(result.matchCount).toBe(0);expect(messages).toEqual(['Synced serving match store s1: 0 matches to supabase-postgres']);});});

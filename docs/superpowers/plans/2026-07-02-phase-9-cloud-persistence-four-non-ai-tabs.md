@@ -4,7 +4,7 @@
 
 **Goal:** Add owner-only Supabase Postgres persistence behind `apps/api` so Today, Matches, Bets, and Bankroll work with durable records while the Miraichi AI tab, public auth, betting formulas, live data, and AI training remain disabled.
 
-**Architecture:** The browser continues to call only `apps/api`. The API uses a tested persistence adapter with disabled, in-memory test, and Supabase Postgres implementations. Local national-team snapshots remain the manually updated source of truth; an explicit sync command copies them to Supabase, and API match reads may fall back to the cloud copy when the local snapshot is missing. Bets, bankroll, and backup workflows are server-mediated and owner-only.
+**Architecture:** The browser continues to call only `apps/api`. The API uses a tested persistence adapter with disabled, in-memory test, and Supabase Postgres implementations. As of 2026-07-05, local national-team snapshots are superseded: canonical warehouse is the source layer, the serving match store is the app projection, and the sync command copies serving matches to Supabase. Bets, bankroll, and backup workflows are server-mediated and owner-only.
 
 **Tech Stack:** TypeScript, Node.js HTTP handlers, Vitest, pnpm workspaces, `pg` with parameterized SQL, Supabase hosted Postgres, private Postgres schema, JSON backup envelopes.
 
@@ -16,7 +16,7 @@
 - Runtime path is `apps/web -> apps/api -> Supabase Postgres`.
 - `apps/web` must not import `@supabase/supabase-js`, contain a database URL, or receive a service-role/secret key.
 - Phase 9 remains owner-only. Public signup, login, sessions, and multi-user row ownership need a later ADR.
-- Local national-team data remains manually updated. There is no live polling.
+- Local national-team data remains manually built from canonical warehouse into the serving match store. There is no live polling.
 - World Cup and Euro remain the current match-data priority.
 - The only bankroll arithmetic allowed in this phase is deterministic ledger balance reconciliation. ROI, yield, CLV, Kelly, risk sizing, recommended stake, expected return, and betting advice remain forbidden.
 - The Miraichi AI tab remains honest-unavailable and receives no cloud model/runtime work.
@@ -118,8 +118,8 @@ apps/web/src/components/app-shell.ts
 apps/web/src/production-shell.test.ts
 apps/web/src/shell-entry.ts
 
-scripts/sync-national-team-data-to-cloud.ts
-scripts/sync-national-team-data-to-cloud.test.ts
+scripts/sync-serving-match-store-to-cloud.ts
+scripts/sync-serving-match-store-to-cloud.test.ts
 scripts/phase9-cloud-persistence-verify.ts
 scripts/phase9-cloud-persistence-verify.test.ts
 scripts/test-endpoints.ts
@@ -649,7 +649,7 @@ The SQL must:
 
 - Create private schema `miraichi_app`.
 - Create the eight tables listed above.
-- Use text IDs because local snapshot and draft IDs are already stable text identifiers.
+- Use text IDs because serving match IDs and draft IDs are stable text identifiers.
 - Use `numeric(18,4)` for points and odds values.
 - Use `timestamptz` for all timestamps.
 - Use `jsonb` only for source refs, tags, settings, and backup counts.
@@ -999,15 +999,15 @@ git commit -m "feat(api): add bankroll ledger and backup routes"
 - Modify `apps/api/src/routes/matches.ts`
 - Modify `apps/api/src/routes/match-detail.ts`
 - Modify `apps/api/src/routes/data-snapshot-status.ts`
-- Create `scripts/sync-national-team-data-to-cloud.ts`
-- Create `scripts/sync-national-team-data-to-cloud.test.ts`
+- Create `scripts/sync-serving-match-store-to-cloud.ts`
+- Create `scripts/sync-serving-match-store-to-cloud.test.ts`
 - Modify `package.json`
 
 - [ ] **Step 1: Write failing sync tests**
 
 Test that:
 
-- The service reads the validated local snapshot.
+- The service reads the validated serving match store.
 - It upserts one snapshot plus all matches.
 - Running it twice produces the same cloud record count.
 - It refuses `in_play` status.
@@ -1027,7 +1027,7 @@ Required behavior:
 - [ ] **Step 3: Observe failure**
 
 ```powershell
-pnpm exec vitest run apps/api/src/services/cloud-match-snapshot-sync.test.ts apps/api/src/repositories/cloud-match-snapshot-repository.test.ts apps/api/src/repositories/fallback-match-snapshot-repository.test.ts scripts/sync-national-team-data-to-cloud.test.ts
+pnpm exec vitest run apps/api/src/services/cloud-match-snapshot-sync.test.ts apps/api/src/repositories/cloud-match-snapshot-repository.test.ts apps/api/src/repositories/fallback-match-snapshot-repository.test.ts scripts/sync-serving-match-store-to-cloud.test.ts
 ```
 
 Expected: fail because the services and repositories do not exist.
@@ -1039,7 +1039,7 @@ Add root script:
 ```json
 {
   "scripts": {
-    "data:sync:national-teams:cloud": "tsx scripts/sync-national-team-data-to-cloud.ts"
+    "data:sync:serving:cloud": "tsx scripts/sync-serving-match-store-to-cloud.ts"
   }
 }
 ```
@@ -1047,7 +1047,7 @@ Add root script:
 CLI output:
 
 ```text
-Synced national-team snapshot <snapshotId>: <matchCount> matches to supabase-postgres
+Synced serving match store <snapshotId>: <matchCount> matches to supabase-postgres
 ```
 
 Do not run automatically on API startup. The owner requested manual daily updates.
@@ -1061,7 +1061,7 @@ Update route tests so existing endpoint contracts remain stable.
 - [ ] **Step 6: Verify**
 
 ```powershell
-pnpm exec vitest run apps/api/src/services/cloud-match-snapshot-sync.test.ts apps/api/src/repositories/cloud-match-snapshot-repository.test.ts apps/api/src/repositories/fallback-match-snapshot-repository.test.ts apps/api/src/routes/matches.test.ts apps/api/src/routes/match-detail.test.ts apps/api/src/routes/data-snapshot-status.test.ts scripts/sync-national-team-data-to-cloud.test.ts
+pnpm exec vitest run apps/api/src/services/cloud-match-snapshot-sync.test.ts apps/api/src/repositories/cloud-match-snapshot-repository.test.ts apps/api/src/repositories/fallback-match-snapshot-repository.test.ts apps/api/src/routes/matches.test.ts apps/api/src/routes/match-detail.test.ts apps/api/src/routes/data-snapshot-status.test.ts scripts/sync-serving-match-store-to-cloud.test.ts
 ```
 
 Expected: pass.
@@ -1069,7 +1069,7 @@ Expected: pass.
 - [ ] **Step 7: Commit the slice**
 
 ```powershell
-git add apps/api/src/services apps/api/src/repositories apps/api/src/routes scripts/sync-national-team-data-to-cloud.ts scripts/sync-national-team-data-to-cloud.test.ts package.json
+git add apps/api/src/services apps/api/src/repositories apps/api/src/routes scripts/sync-serving-match-store-to-cloud.ts scripts/sync-serving-match-store-to-cloud.test.ts package.json
 git commit -m "feat(data): sync local match snapshots to cloud"
 ```
 

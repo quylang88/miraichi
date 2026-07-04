@@ -37,10 +37,10 @@ export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
         // Response is not JSON
       }
 
-      if (code === 'local_snapshot_missing') {
-        message = 'Local match snapshot is missing. Run the national-team data update before using match workflows.';
-      } else if (code === 'local_snapshot_invalid') {
-        message = 'Local match snapshot is invalid. Fix the snapshot file and rerun validation.';
+      if (code === 'serving_match_store_missing') {
+        message = 'Serving match store is missing. Build it from canonical warehouse before using match workflows.';
+      } else if (code === 'serving_match_store_invalid') {
+        message = 'Serving match store is invalid. Rebuild it from canonical warehouse after fixing canonical data.';
       } else if (code === 'unsupported_match_status') {
         message = 'This app does not support live match status in Phase 9.';
       }

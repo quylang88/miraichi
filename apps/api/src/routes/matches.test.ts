@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { handleMatches } from './matches.js';
-import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
-import { LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery } from '@miraichi/shared';
+import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
+import type { LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery } from '@miraichi/shared';
 
 function responseMock() {
   return {
@@ -57,7 +57,7 @@ describe('matches route', () => {
     const response = responseMock();
     const mockRepo = {
       listMatches: async () => mockFeedResponse
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleMatches(
       { url: '/api/v1/matches', method: 'GET' } as import('http').IncomingMessage,
@@ -85,7 +85,7 @@ describe('matches route', () => {
         calledQuery = query;
         return mockFeedResponse;
       }
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleMatches(
       { url: '/api/v1/matches?date=2026-06-11', method: 'GET' } as import('http').IncomingMessage,
@@ -125,17 +125,17 @@ describe('matches route', () => {
     expect(JSON.parse(response.body).error.code).toBe('unsupported_match_status');
   });
 
-  it('returns 503 when snapshot is missing', async () => {
+  it('returns 503 when serving match store is missing', async () => {
     const response = responseMock();
     const mockRepo = {
       listMatches: async () => {
-        const error = new Error('Local snapshot file not found');
+        const error = new Error('Serving match store manifest not found');
         const errObj = error as unknown as { code: string; statusCode: number };
-        errObj.code = 'local_snapshot_missing';
+        errObj.code = 'serving_match_store_missing';
         errObj.statusCode = 503;
         throw error;
       }
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleMatches(
       { url: '/api/v1/matches', method: 'GET' } as import('http').IncomingMessage,
@@ -144,20 +144,20 @@ describe('matches route', () => {
     );
 
     expect(response.statusCode).toBe(503);
-    expect(JSON.parse(response.body).error.code).toBe('local_snapshot_missing');
+    expect(JSON.parse(response.body).error.code).toBe('serving_match_store_missing');
   });
 
-  it('returns 500 when snapshot is invalid', async () => {
+  it('returns 500 when serving match store is invalid', async () => {
     const response = responseMock();
     const mockRepo = {
       listMatches: async () => {
-        const error = new Error('Malformed snapshot');
+        const error = new Error('Malformed serving match store');
         const errObj = error as unknown as { code: string; statusCode: number };
-        errObj.code = 'local_snapshot_invalid';
+        errObj.code = 'serving_match_store_invalid';
         errObj.statusCode = 500;
         throw error;
       }
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleMatches(
       { url: '/api/v1/matches', method: 'GET' } as import('http').IncomingMessage,
@@ -166,6 +166,6 @@ describe('matches route', () => {
     );
 
     expect(response.statusCode).toBe(500);
-    expect(JSON.parse(response.body).error.code).toBe('local_snapshot_invalid');
+    expect(JSON.parse(response.body).error.code).toBe('serving_match_store_invalid');
   });
 });

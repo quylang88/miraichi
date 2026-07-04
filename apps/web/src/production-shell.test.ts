@@ -393,13 +393,13 @@ describe('production shell settings and i18n boundaries', () => {
 });
 
 describe('production shell live match feed rendering', () => {
-  it('renders loading and unavailable states for local snapshot feed', () => {
+  it('renders loading and unavailable states for serving match feed', () => {
     const loadingHtml = renderAppShell({
       activeTabId: 'today',
       translate: t,
       matchFeed: { status: 'loading', date: '2026-06-29' }
     });
-    expect(loadingHtml).toContain('Loading match snapshot');
+    expect(loadingHtml).toContain('Loading match store');
 
     const unavailableHtml = renderAppShell({
       activeTabId: 'matches',
@@ -407,15 +407,15 @@ describe('production shell live match feed rendering', () => {
       matchFeed: {
         status: 'unavailable',
         date: '2026-06-29',
-        reason: 'Local match snapshot is missing. Run the national-team data update before using match workflows.',
-        warnings: ['local_snapshot_missing']
+        reason: 'Serving match store is missing. Build it from canonical warehouse before using match workflows.',
+        warnings: ['serving_match_store_missing']
       }
     });
     expect(unavailableHtml).toContain('Data update required');
-    expect(unavailableHtml).toContain('Local match snapshot is missing. Run the national-team data update before using match workflows.');
+    expect(unavailableHtml).toContain('Serving match store is missing. Build it from canonical warehouse before using match workflows.');
   });
 
-  it('renders local snapshot matches and removes visible hardcoded live feed labels', () => {
+  it('renders serving store matches and removes visible hardcoded live feed labels', () => {
     const html = renderAppShell({
       activeTabId: 'matches',
       translate: t,
@@ -749,7 +749,7 @@ describe('production shell match filters panel', () => {
     });
 
     expect(html).toContain('style="display: block;"');
-    expect(html).toContain('No local snapshot matches match the current filters.');
+    expect(html).toContain('No serving match store matches match the current filters.');
     expect(html).not.toContain('No provider matches');
   });
 });
