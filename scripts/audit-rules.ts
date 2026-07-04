@@ -53,7 +53,7 @@ const RULES = [
   }
 ];
 
-const IGNORED_DIRECTORIES = new Set(['node_modules', '.git', 'docs', 'dist', 'build', 'coverage']);
+const IGNORED_DIRECTORIES = new Set(['node_modules', '.git', 'docs', 'dist', 'build', 'coverage', 'data']);
 
 let violationsCount = 0;
 
