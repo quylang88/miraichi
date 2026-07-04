@@ -104,8 +104,9 @@ async function captureEndpointPages(input: {
     rateLimited: false
   };
 
+  const defaultQuery = input.endpoint.defaultQuery ?? {};
   const existingProgress = input.initialRequest === undefined
-    ? await readEndpointCaptureProgress(input.captureRoot, input.endpoint.endpointKey)
+    ? await readEndpointCaptureProgress(input.captureRoot, input.endpoint.endpointKey, defaultQuery)
     : undefined;
 
   if (existingProgress?.completed === true) {
@@ -115,7 +116,7 @@ async function captureEndpointPages(input: {
   }
 
   const startRequest = input.initialRequest ?? existingProgress?.nextRequest;
-  let query: Record<string, string> = startRequest?.query ?? { page: '1' };
+  let query: Record<string, string> = startRequest?.query ?? withPageQuery(defaultQuery, 1);
   let page = startRequest?.page ?? 1;
   for (let capturedPages = 0; capturedPages < input.maxPagesPerEndpoint; capturedPages += 1) {
     input.log?.(`sportmonks:capture ${input.endpoint.endpointKey} page=${page}`);
@@ -184,7 +185,8 @@ async function captureEndpointPages(input: {
       return result;
     }
 
-    query = readNextCursorQuery(response.body) ?? { page: String(page + 1) };
+    const nextCursorQuery = readNextCursorQuery(response.body);
+    query = nextCursorQuery === undefined ? withPageQuery(defaultQuery, page + 1) : { ...defaultQuery, ...nextCursorQuery };
     page += 1;
   }
 
@@ -199,9 +201,10 @@ interface EndpointCaptureProgress {
 
 async function readEndpointCaptureProgress(
   captureRoot: string,
-  endpointKey: string
+  endpointKey: string,
+  defaultQuery: Record<string, string>
 ): Promise<EndpointCaptureProgress> {
-  const entries = await readCapturedManifestEntries(captureRoot, endpointKey);
+  const entries = await readCapturedManifestEntries(captureRoot, endpointKey, defaultQuery);
   if (entries.length === 0) {
     return { completed: false };
   }
@@ -220,7 +223,7 @@ async function readEndpointCaptureProgress(
   return {
     completed: false,
     nextRequest: {
-      query: await readNextQueryFromRawPayload(captureRoot, latest) ?? { page: String(latest.page + 1) },
+      query: await readNextQueryFromRawPayload(captureRoot, latest, defaultQuery) ?? withPageQuery(defaultQuery, latest.page + 1),
       page: latest.page + 1
     }
   };
@@ -228,7 +231,8 @@ async function readEndpointCaptureProgress(
 
 async function readCapturedManifestEntries(
   captureRoot: string,
-  endpointKey: string
+  endpointKey: string,
+  defaultQuery: Record<string, string>
 ): Promise<ProviderCaptureManifestEntry[]> {
   const manifestPath = join(captureRoot, 'providers', 'sportmonks', 'manifests', 'capture-manifest.jsonl');
   let content: string;
@@ -255,6 +259,9 @@ async function readCapturedManifestEntries(
     if (parsed.provider !== 'sportmonks' || parsed.endpointKey !== endpointKey || parsed.status !== 'captured') {
       continue;
     }
+    if (!queryContainsDefaultValues(isRecord(parsed.query) ? parsed.query : {}, defaultQuery)) {
+      continue;
+    }
     entries.push(parsed as unknown as ProviderCaptureManifestEntry);
   }
   return entries;
@@ -262,7 +269,8 @@ async function readCapturedManifestEntries(
 
 async function readNextQueryFromRawPayload(
   captureRoot: string,
-  entry: ProviderCaptureManifestEntry
+  entry: ProviderCaptureManifestEntry,
+  defaultQuery: Record<string, string>
 ): Promise<Record<string, string> | undefined> {
   if (entry.payloadHash === undefined || entry.fetchedAt === undefined) {
     return undefined;
@@ -287,7 +295,8 @@ async function readNextQueryFromRawPayload(
 
   try {
     const envelope = JSON.parse(content) as RawProviderPayloadEnvelope;
-    return readNextCursorQuery(envelope.payload);
+    const nextCursorQuery = readNextCursorQuery(envelope.payload);
+    return nextCursorQuery === undefined ? undefined : { ...defaultQuery, ...nextCursorQuery };
   } catch {
     return undefined;
   }
@@ -335,6 +344,19 @@ function createCapturedManifestEntry(input: {
     entry.recordCount = recordCount;
   }
   return entry;
+}
+
+function withPageQuery(query: Record<string, string>, page: number): Record<string, string> {
+  return { ...query, page: String(page) };
+}
+
+function queryContainsDefaultValues(query: Record<string, unknown>, defaultQuery: Record<string, string>): boolean {
+  for (const [key, expectedValue] of Object.entries(defaultQuery)) {
+    if (query[key] !== expectedValue) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function countDataRecords(body: unknown): number | undefined {

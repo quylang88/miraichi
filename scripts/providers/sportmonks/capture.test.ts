@@ -351,6 +351,72 @@ describe('sportmonks raw capture', () => {
     expect(client.get).toHaveBeenCalledWith('/fixtures', { cursor: 'cursor-after-page-1' });
   });
 
+  it('keeps endpoint default query values when resuming from a stored cursor', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
+    const catalog: SportmonksEndpointEntry[] = [
+      {
+        endpointKey: 'expected.fixtures',
+        group: 'xg',
+        urlPath: '/expected/fixtures',
+        capturePolicy: 'gated',
+        defaultQuery: { include: 'type;fixture;participant' }
+      }
+    ];
+    const firstPayload = {
+      data: [{ id: 1 }],
+      pagination: {
+        has_more: true,
+        next_cursor: 'https://api.sportmonks.com/v3/football/expected/fixtures?cursor=cursor-after-page-1'
+      }
+    };
+    const firstPayloadHash = createPayloadHash(firstPayload);
+    await writeRawProviderPayload(root, {
+      schemaVersion: 'miraichi.provider.raw.v1',
+      provider: 'sportmonks',
+      endpointKey: 'expected.fixtures',
+      urlPath: '/expected/fixtures',
+      query: { include: 'type;fixture;participant', page: '1' },
+      fetchedAt: '2026-07-03T00:00:00.000Z',
+      payloadHash: firstPayloadHash,
+      rateLimit: {},
+      payload: firstPayload
+    });
+    await writeFixtureCaptureManifest(root, {
+      endpointKey: 'expected.fixtures',
+      urlPath: '/expected/fixtures',
+      page: 1,
+      hasMore: true,
+      payloadHash: firstPayloadHash,
+      query: { include: 'type;fixture;participant', page: '1' }
+    });
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async () => ({
+        ok: true as const,
+        statusCode: 200,
+        body: { data: [{ id: 2 }], pagination: { has_more: false } },
+        rateLimit: {}
+      }))
+    };
+
+    const result = await runSportmonksRawCapture({
+      captureRoot: root,
+      catalog,
+      client,
+      now: () => '2026-07-03T00:00:01.000Z'
+    });
+
+    expect(result).toEqual({
+      captured: 1,
+      skipped: 0,
+      unavailable: 0,
+      failed: 0
+    });
+    expect(client.get).toHaveBeenCalledWith('/expected/fixtures', {
+      include: 'type;fixture;participant',
+      cursor: 'cursor-after-page-1'
+    });
+  });
+
   it('captures all non-live endpoints by default while still skipping live endpoints', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
     const catalog: SportmonksEndpointEntry[] = [
@@ -421,6 +487,91 @@ describe('sportmonks raw capture', () => {
     });
     expect(client.get).toHaveBeenCalledWith('/livescores', { page: '1' });
   });
+
+  it('applies endpoint default query values to the first captured page', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
+    const catalog: SportmonksEndpointEntry[] = [
+      {
+        endpointKey: 'expected.fixtures',
+        group: 'xg',
+        urlPath: '/expected/fixtures',
+        capturePolicy: 'gated',
+        defaultQuery: { include: 'type;fixture;participant' }
+      }
+    ];
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async () => ({
+        ok: true as const,
+        statusCode: 200,
+        body: { data: [{ id: 1 }], pagination: { has_more: false } },
+        rateLimit: {}
+      }))
+    };
+
+    const result = await runSportmonksRawCapture({
+      captureRoot: root,
+      catalog,
+      client,
+      now: () => '2026-07-04T00:00:00.000Z'
+    });
+
+    expect(result).toEqual({
+      captured: 1,
+      skipped: 0,
+      unavailable: 0,
+      failed: 0
+    });
+    expect(client.get).toHaveBeenCalledWith('/expected/fixtures', {
+      include: 'type;fixture;participant',
+      page: '1'
+    });
+  });
+
+  it('does not treat a completed capture with a different default query as complete', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-sportmonks-capture-'));
+    await writeFixtureCaptureManifest(root, {
+      endpointKey: 'expected.fixtures',
+      urlPath: '/expected/fixtures',
+      page: 1,
+      hasMore: false,
+      payloadHash: 'a'.repeat(64)
+    });
+    const catalog: SportmonksEndpointEntry[] = [
+      {
+        endpointKey: 'expected.fixtures',
+        group: 'xg',
+        urlPath: '/expected/fixtures',
+        capturePolicy: 'gated',
+        defaultQuery: { include: 'type;fixture;participant' }
+      }
+    ];
+    const client: SportmonksCaptureClient = {
+      get: vi.fn(async () => ({
+        ok: true as const,
+        statusCode: 200,
+        body: { data: [{ id: 2 }], pagination: { has_more: false } },
+        rateLimit: {}
+      }))
+    };
+
+    const result = await runSportmonksRawCapture({
+      captureRoot: root,
+      catalog,
+      client,
+      now: () => '2026-07-04T00:00:00.000Z'
+    });
+
+    expect(result).toEqual({
+      captured: 1,
+      skipped: 0,
+      unavailable: 0,
+      failed: 0
+    });
+    expect(client.get).toHaveBeenCalledWith('/expected/fixtures', {
+      include: 'type;fixture;participant',
+      page: '1'
+    });
+  });
 });
 
 async function writeFixtureCaptureManifest(
@@ -431,6 +582,7 @@ async function writeFixtureCaptureManifest(
     page: number;
     hasMore: boolean;
     payloadHash: string;
+    query?: Record<string, string>;
   }
 ): Promise<void> {
   const { appendProviderManifestEntry } = await import('../shared/manifest.js');
@@ -438,7 +590,7 @@ async function writeFixtureCaptureManifest(
     provider: 'sportmonks',
     endpointKey: input.endpointKey,
     urlPath: input.urlPath,
-    query: { page: String(input.page) },
+    query: input.query ?? { page: String(input.page) },
     status: 'captured',
     page: input.page,
     hasMore: input.hasMore,

@@ -26,6 +26,8 @@ export interface SportmonksEndpointEntry {
   group: string;
   /** URL path template relative to the football API base URL, or an absolute Sportmonks component URL. `{id}` is a per-request substitution. */
   urlPath: string;
+  /** Query values that should be present on the first page request. Pagination controls are added by the capture runner. */
+  defaultQuery?: Record<string, string>;
   /** Whether this endpoint is captured by default or requires explicit opt-in. */
   capturePolicy: EndpointCapturePolicy;
   /** If true, this endpoint requires a per-record ID (e.g. fixture enrichment). */
