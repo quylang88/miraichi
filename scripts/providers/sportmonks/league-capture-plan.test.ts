@@ -16,7 +16,6 @@ describe('sportmonks league capture request graph', () => {
       ['topscorers.bySeasonId', '/topscorers/seasons/2025'],
       ['fixtures.enrichedById', '/fixtures/100'],
       ['odds.prematchByFixtureId', '/odds/pre-match/fixtures/100'],
-      ['commentaries.byFixtureId', '/commentaries/fixtures/100'],
       ['squads.bySeasonAndTeamId', '/squads/seasons/2025/teams/1'],
       ['statistics.byTeamId', '/statistics/seasons/teams/1'],
       ['predictions.predictabilityByLeagueId', '/predictions/predictability/leagues/8'],
@@ -82,7 +81,7 @@ describe('sportmonks league capture request graph', () => {
       teamSeasons: [{ teamId: 1, seasonId: 2025 }]
     });
 
-    const nonPaginatedKeys = ['fixtures.enrichedById', 'commentaries.byFixtureId', 'squads.bySeasonAndTeamId'];
+    const nonPaginatedKeys = ['fixtures.enrichedById', 'squads.bySeasonAndTeamId'];
     for (const key of nonPaginatedKeys) {
       const req = requests.find((r) => r.endpointKey === key);
       if (req) {

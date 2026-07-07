@@ -80,7 +80,6 @@ export function buildSportmonksLeagueCaptureRequests(
         makeFixture('odds.prematchByFixtureId', `/odds/pre-match/fixtures/${fid}`, {
           include: 'market;bookmaker;fixture'
         }, fid),
-        makeFixture('commentaries.byFixtureId', `/commentaries/fixtures/${fid}`, {}, fid),
         makeFixture('predictions.probabilitiesByFixtureId', `/predictions/probabilities/fixtures/${fid}`, {
           include: 'type;fixture'
         }, fid),
