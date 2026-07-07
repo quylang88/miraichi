@@ -21,8 +21,7 @@ export interface SportmonksLeagueCaptureRequest {
 const NON_PAGINATED_KEYS = new Set([
   'fixtures.enrichedById',
   'commentaries.byFixtureId',
-  'squads.bySeasonAndTeamId',
-  'venues.bySeasonId'
+  'squads.bySeasonAndTeamId'
 ]);
 
 // ─── Main exported function ───────────────────────────────────────────────────
@@ -57,8 +56,6 @@ export function buildSportmonksLeagueCaptureRequests(
 
       seasonRequests.push(
         make('schedules.bySeasonId', 'season', `/schedules/seasons/${sid}`, {}, sid),
-        make('venues.bySeasonId', 'season', `/venues/seasons/${sid}`, {}, sid),
-        make('referees.bySeasonId', 'season', `/referees/seasons/${sid}`, {}, sid),
         make('topscorers.bySeasonId', 'season', `/topscorers/seasons/${sid}`, {}, sid),
         make('standings.bySeasonId', 'season', `/standings/seasons/${sid}`, {
           include: 'participant;league;season;stage;round;details.type;rule'

@@ -13,8 +13,6 @@ describe('sportmonks league capture request graph', () => {
 
     expect(requests.map((item) => [item.endpointKey, item.urlPath])).toEqual(expect.arrayContaining([
       ['schedules.bySeasonId', '/schedules/seasons/2025'],
-      ['venues.bySeasonId', '/venues/seasons/2025'],
-      ['referees.bySeasonId', '/referees/seasons/2025'],
       ['topscorers.bySeasonId', '/topscorers/seasons/2025'],
       ['fixtures.enrichedById', '/fixtures/100'],
       ['odds.prematchByFixtureId', '/odds/pre-match/fixtures/100'],
@@ -87,7 +85,7 @@ describe('sportmonks league capture request graph', () => {
       teamSeasons: [{ teamId: 1, seasonId: 2025 }]
     });
 
-    const nonPaginatedKeys = ['fixtures.enrichedById', 'commentaries.byFixtureId', 'squads.bySeasonAndTeamId', 'venues.bySeasonId'];
+    const nonPaginatedKeys = ['fixtures.enrichedById', 'commentaries.byFixtureId', 'squads.bySeasonAndTeamId'];
     for (const key of nonPaginatedKeys) {
       const req = requests.find((r) => r.endpointKey === key);
       if (req) {

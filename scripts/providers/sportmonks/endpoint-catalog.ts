@@ -59,6 +59,8 @@ export function buildSportmonksEndpointCatalog(): SportmonksEndpointEntry[] {
     { endpointKey: 'cities.all',      group: 'reference', urlPath: 'https://api.sportmonks.com/v3/core/cities',     capturePolicy: 'allowed' },
     { endpointKey: 'filters.entityAll', group: 'reference', urlPath: 'https://api.sportmonks.com/v3/my/filters/entity', capturePolicy: 'allowed' },
     { endpointKey: 'timezones.all',   group: 'reference', urlPath: 'https://api.sportmonks.com/v3/core/timezones',  capturePolicy: 'allowed' },
+    { endpointKey: 'venues.all',      group: 'venues',    urlPath: '/venues',     capturePolicy: 'allowed' },
+    { endpointKey: 'referees.all',    group: 'referees',  urlPath: '/referees',   capturePolicy: 'allowed' },
     { endpointKey: 'coaches.all',     group: 'coaches',   urlPath: '/coaches',    capturePolicy: 'allowed' },
 
     // ── Competitions / seasons ────────────────────────────────────────────────

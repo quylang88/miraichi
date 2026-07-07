@@ -30,6 +30,7 @@ describe('buildSportmonksEndpointCatalog', () => {
       'expected.lineups',
       'news.prematch',
       'news.prematch.upcoming',
+      'venues.all',
       'teamOfWeek.all'
     ]));
     expect(keys).not.toEqual(expect.arrayContaining([
@@ -61,6 +62,8 @@ describe('buildSportmonksEndpointCatalog', () => {
     expect(catalogByKey.get('continents.all')?.urlPath).toBe('https://api.sportmonks.com/v3/core/continents');
     expect(catalogByKey.get('filters.entityAll')?.urlPath).toBe('https://api.sportmonks.com/v3/my/filters/entity');
     expect(catalogByKey.get('timezones.all')?.urlPath).toBe('https://api.sportmonks.com/v3/core/timezones');
+    expect(catalogByKey.get('venues.all')?.urlPath).toBe('/venues');
+    expect(catalogByKey.get('referees.all')?.urlPath).toBe('/referees');
 
     expect(catalogByKey.get('bookmakers.all')?.urlPath).toBe('https://api.sportmonks.com/v3/odds/bookmakers');
     expect(catalogByKey.get('bookmakers.premiumAll')?.urlPath).toBe('https://api.sportmonks.com/v3/odds/bookmakers/premium');

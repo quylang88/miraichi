@@ -28,6 +28,7 @@ describe('sportmonks endpoint catalog', () => {
       'seasons.all',
       'teams.all',
       'players.all',
+      'venues.all',
       'fixtures.all',
       'fixtures.enrichedById',
       'standings.all',
