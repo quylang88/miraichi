@@ -316,8 +316,8 @@ describe('runSportmonksLeagueScopedCapture', () => {
     expect(calls[1]).toMatchObject({ query: { cursor: 'cursor-next' } });
     expect(calls[1]?.query.page).toBeUndefined();
     expect(logs.filter((line) => line.includes('[capture]'))).toEqual([
-      '[capture] schedules.bySeasonId /schedules/seasons/2025 page=1',
-      '[capture] schedules.bySeasonId /schedules/seasons/2025 page=2'
+      '[capture] referees.bySeasonId /referees/seasons/2025 page=1',
+      '[capture] referees.bySeasonId /referees/seasons/2025 page=2'
     ]);
   });
 });

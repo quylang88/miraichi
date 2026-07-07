@@ -57,6 +57,8 @@ export function buildSportmonksLeagueCaptureRequests(
 
       seasonRequests.push(
         make('schedules.bySeasonId', 'season', `/schedules/seasons/${sid}`, {}, sid),
+        make('venues.bySeasonId', 'season', `/venues/seasons/${sid}`, {}, sid),
+        make('referees.bySeasonId', 'season', `/referees/seasons/${sid}`, {}, sid),
         make('topscorers.bySeasonId', 'season', `/topscorers/seasons/${sid}`, {}, sid),
         make('standings.bySeasonId', 'season', `/standings/seasons/${sid}`, {
           include: 'participant;league;season;stage;round;details.type;rule'
@@ -80,6 +82,7 @@ export function buildSportmonksLeagueCaptureRequests(
         makeFixture('odds.prematchByFixtureId', `/odds/pre-match/fixtures/${fid}`, {
           include: 'market;bookmaker;fixture'
         }, fid),
+        makeFixture('commentaries.byFixtureId', `/commentaries/fixtures/${fid}`, {}, fid),
         makeFixture('predictions.probabilitiesByFixtureId', `/predictions/probabilities/fixtures/${fid}`, {
           include: 'type;fixture'
         }, fid),
@@ -99,6 +102,15 @@ export function buildSportmonksLeagueCaptureRequests(
 
     for (const tid of inventory.teamIds) {
       teamRequests.push(
+        makeTeam('transfers.byTeamId', `/transfers/teams/${tid}`, {
+          include: 'player;type;fromTeam;toTeam;position;detailedPosition'
+        }, tid),
+        makeTeam('transferRumours.byTeamId', `/transfer-rumours/teams/${tid}`, {
+          include: 'player;type;fromTeam;toTeam;position;detailedPosition'
+        }, tid),
+        makeTeam('rankings.byTeamId', `/team-rankings/teams/${tid}`, {
+          include: 'team'
+        }, tid),
         makeTeam('statistics.byTeamId', `/statistics/seasons/teams/${tid}`, {
           include: 'season;details.type',
           filters: `seasonLeagues:${inventory.leagueId}`

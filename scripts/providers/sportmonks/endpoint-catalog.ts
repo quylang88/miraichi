@@ -59,8 +59,6 @@ export function buildSportmonksEndpointCatalog(): SportmonksEndpointEntry[] {
     { endpointKey: 'cities.all',      group: 'reference', urlPath: 'https://api.sportmonks.com/v3/core/cities',     capturePolicy: 'allowed' },
     { endpointKey: 'filters.entityAll', group: 'reference', urlPath: 'https://api.sportmonks.com/v3/my/filters/entity', capturePolicy: 'allowed' },
     { endpointKey: 'timezones.all',   group: 'reference', urlPath: 'https://api.sportmonks.com/v3/core/timezones',  capturePolicy: 'allowed' },
-    { endpointKey: 'venues.all',      group: 'venues',    urlPath: '/venues',     capturePolicy: 'allowed' },
-    { endpointKey: 'referees.all',    group: 'referees',  urlPath: '/referees',   capturePolicy: 'allowed' },
     { endpointKey: 'coaches.all',     group: 'coaches',   urlPath: '/coaches',    capturePolicy: 'allowed' },
 
     // ── Competitions / seasons ────────────────────────────────────────────────
@@ -74,8 +72,6 @@ export function buildSportmonksEndpointCatalog(): SportmonksEndpointEntry[] {
     { endpointKey: 'teams.all',       group: 'teams',   urlPath: '/teams',    capturePolicy: 'allowed' },
     { endpointKey: 'players.all',     group: 'players', urlPath: '/players',  capturePolicy: 'allowed' },
     { endpointKey: 'players.latestUpdated', group: 'players', urlPath: '/players/latest', capturePolicy: 'allowed', note: 'Recently updated players; non-live incremental feed' },
-    { endpointKey: 'transfers.all',   group: 'transfers', urlPath: '/transfers', capturePolicy: 'allowed' },
-    { endpointKey: 'transferRumours.all', group: 'transfer-rumours', urlPath: '/transfer-rumours', capturePolicy: 'gated', note: 'Transfer rumours raw payloads only; add-on dependent' },
 
     // ── Fixtures ──────────────────────────────────────────────────────────────
     { endpointKey: 'fixtures.all',         group: 'fixtures', urlPath: '/fixtures',       capturePolicy: 'allowed', note: 'Paginated fixture list' },
@@ -109,9 +105,7 @@ export function buildSportmonksEndpointCatalog(): SportmonksEndpointEntry[] {
     { endpointKey: 'expected.lineups',    group: 'xg',         urlPath: '/expected/lineups',         capturePolicy: 'gated', note: 'Expected-goals lineup/player data raw payloads only' },
 
     // ── Additional non-live information families ──────────────────────────────
-    { endpointKey: 'commentaries.all',    group: 'commentaries', urlPath: '/commentaries',           capturePolicy: 'gated', note: 'Match commentaries, raw only' },
     { endpointKey: 'matchFacts.all',      group: 'match-facts',  urlPath: '/match-facts',            capturePolicy: 'gated', note: 'Match facts, raw only' },
-    { endpointKey: 'rankings.teams',      group: 'rankings',     urlPath: '/team-rankings',          capturePolicy: 'gated', note: 'Team rankings, raw only' },
     { endpointKey: 'teamOfWeek.all',      group: 'team-of-week', urlPath: '/team-of-the-week',       capturePolicy: 'gated', note: 'Team of the week raw payloads only' },
     { endpointKey: 'tvStations.all',      group: 'tv',           urlPath: '/tv-stations',            capturePolicy: 'gated', note: 'TV station reference data' },
     { endpointKey: 'rivals.all',          group: 'rivals',       urlPath: '/rivals',                 capturePolicy: 'gated', note: 'Rival reference data' }

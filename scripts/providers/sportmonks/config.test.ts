@@ -28,7 +28,6 @@ describe('sportmonks endpoint catalog', () => {
       'seasons.all',
       'teams.all',
       'players.all',
-      'venues.all',
       'fixtures.all',
       'fixtures.enrichedById',
       'standings.all',
@@ -40,7 +39,6 @@ describe('sportmonks endpoint catalog', () => {
       'news.prematch.upcoming',
       'expected.fixtures',
       'expected.lineups',
-      'transferRumours.all',
       'teamOfWeek.all'
     ]));
     expect(catalog.filter((item) => item.isLive === true).map((item) => item.endpointKey).sort()).toEqual([

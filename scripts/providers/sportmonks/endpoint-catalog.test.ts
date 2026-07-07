@@ -30,7 +30,6 @@ describe('buildSportmonksEndpointCatalog', () => {
       'expected.lineups',
       'news.prematch',
       'news.prematch.upcoming',
-      'transferRumours.all',
       'teamOfWeek.all'
     ]));
     expect(keys).not.toEqual(expect.arrayContaining([
@@ -72,7 +71,6 @@ describe('buildSportmonksEndpointCatalog', () => {
     expect(catalogByKey.has('odds.premium.latest')).toBe(false);
     expect(catalogByKey.get('expected.fixtures')?.urlPath).toBe('/expected/fixtures');
     expect(catalogByKey.get('expected.lineups')?.urlPath).toBe('/expected/lineups');
-    expect(catalogByKey.get('transferRumours.all')?.urlPath).toBe('/transfer-rumours');
     expect(catalogByKey.get('teamOfWeek.all')?.urlPath).toBe('/team-of-the-week');
   });
 });
