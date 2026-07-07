@@ -1,10 +1,11 @@
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { appendProviderManifestEntry } from '../shared/manifest.js';
 import { createPayloadHash, writeRawProviderPayload } from '../shared/raw-cache.js';
 import {
+  createSportmonksCaptureCoverageIndex,
   createSportmonksRequestFamilyKey,
   readSportmonksFixtureFieldCoverage,
   readSportmonksGlobalReferenceCoverage,
@@ -78,6 +79,29 @@ describe('createSportmonksRequestFamilyKey', () => {
 });
 
 describe('resolveSportmonksRequestProgress', () => {
+  it('reuses one in-memory manifest index across multiple request lookups', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-coverage-'));
+    const { fetchedAt, payloadHash } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', { data: { id: 100 } });
+    await appendProviderManifestEntry(root, 'sportmonks', {
+      provider: 'sportmonks',
+      endpointKey: 'fixtures.enrichedById',
+      urlPath: '/fixtures/100',
+      query: {},
+      status: 'captured',
+      page: 1,
+      hasMore: false,
+      fetchedAt,
+      payloadHash
+    });
+
+    const index = await createSportmonksCaptureCoverageIndex(root);
+    await rm(join(root, 'providers', 'sportmonks', 'manifests', 'capture-manifest.jsonl'));
+
+    const request = makeRequest('fixtures.enrichedById', '/fixtures/100', {}, false, { fixtureId: 100 });
+    await expect(index.resolveRequestProgress(request)).resolves.toMatchObject({ action: 'skip' });
+    await expect(index.resolveRequestProgress(request)).resolves.toMatchObject({ action: 'skip' });
+  });
+
   it('skips only when terminal manifest evidence and a valid raw envelope both exist', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-coverage-'));
     const { fetchedAt, payloadHash } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', { data: { id: 100 } });

@@ -282,4 +282,42 @@ describe('runSportmonksLeagueScopedCapture', () => {
     expect(report.missingGlobalReferences).toBeDefined();
     expect(report.excludedEndpointFamilies).toEqual(['global-all', 'livescores', 'inplay-odds', 'expected-lineups']);
   });
+
+  it('increments logical pages and sends cursor requests without page=1', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-executor-'));
+    await writeInventory(root);
+    const calls: Array<{ path: string; query: Record<string, string> }> = [];
+    const logs: string[] = [];
+    const client: SportmonksCaptureClient = {
+      async get(urlPath: string, query: Record<string, string> = {}) {
+        calls.push({ path: urlPath, query });
+        return {
+          ok: true as const,
+          statusCode: 200,
+          body: calls.length === 1
+            ? { data: [{ id: 1 }], pagination: { has_more: true, next_cursor: 'cursor-next' } }
+            : { data: [{ id: 2 }], pagination: { has_more: false } },
+          rateLimit: {}
+        };
+      }
+    };
+
+    await runSportmonksLeagueScopedCapture({
+      captureRoot: root,
+      client,
+      leagueId: 8,
+      groups: ['season'],
+      maxRequests: 2,
+      skipExisting: true,
+      log: (message) => logs.push(message)
+    });
+
+    expect(calls[0]).toMatchObject({ query: { page: '1' } });
+    expect(calls[1]).toMatchObject({ query: { cursor: 'cursor-next' } });
+    expect(calls[1]?.query.page).toBeUndefined();
+    expect(logs.filter((line) => line.includes('[capture]'))).toEqual([
+      '[capture] referees.bySeasonId /referees/seasons/2025 page=1',
+      '[capture] referees.bySeasonId /referees/seasons/2025 page=2'
+    ]);
+  });
 });

@@ -5,9 +5,7 @@ import { appendProviderManifestEntry } from '../shared/manifest.js';
 import { createPayloadHash, writeRawProviderPayload } from '../shared/raw-cache.js';
 import type { SportmonksCaptureClient } from './capture.js';
 import {
-  readSportmonksFixtureFieldCoverage,
-  readSportmonksGlobalReferenceCoverage,
-  resolveSportmonksRequestProgress
+  createSportmonksCaptureCoverageIndex
 } from './league-capture-coverage.js';
 import { buildSportmonksLeagueCaptureInventory } from './league-capture-inventory.js';
 import {
@@ -81,8 +79,11 @@ export async function runSportmonksLeagueScopedCapture(options: {
   // ── 2. Build request graph ─────────────────────────────────────────────────
   const requests = buildSportmonksLeagueCaptureRequests(inventory, groups);
 
-  // ── 3. Read global reference coverage ─────────────────────────────────────
-  const globalReferences = await readSportmonksGlobalReferenceCoverage(captureRoot);
+  // ── 3. Load coverage once for the whole run ────────────────────────────────
+  log('[index] loading manifest and raw coverage');
+  const coverageIndex = await createSportmonksCaptureCoverageIndex(captureRoot);
+  const globalReferences = await coverageIndex.readGlobalReferenceCoverage();
+  log('[index] coverage ready');
 
   // ── 4. Initialize result counters ─────────────────────────────────────────
   const initialGroup: SportmonksLeagueCaptureGroupResult = { planned: 0, skipped: 0, resumed: 0, captured: 0, unavailable: 0, failed: 0 };
@@ -123,7 +124,7 @@ export async function runSportmonksLeagueScopedCapture(options: {
 
     // Suppress narrower odds/prediction requests if enrichment already has them
     if (request.fixtureId !== undefined && skipExisting) {
-      const coverage = await readSportmonksFixtureFieldCoverage(captureRoot, request.fixtureId);
+      const coverage = await coverageIndex.readFixtureFieldCoverage(request.fixtureId);
       if (request.endpointKey === 'odds.prematchByFixtureId' && coverage.odds) {
         log(`[skip] ${request.endpointKey} ${request.urlPath} (odds in enrichment)`);
         result.skipped++;
@@ -140,7 +141,7 @@ export async function runSportmonksLeagueScopedCapture(options: {
 
     // Resolve whether to skip or capture
     const progress = skipExisting
-      ? await resolveSportmonksRequestProgress(captureRoot, request)
+      ? await coverageIndex.resolveRequestProgress(request)
       : { action: 'capture' as const, page: 1, query: { ...request.query, ...(request.paginated ? { page: '1' } : {}) }, resumed: false };
 
     if (progress.action === 'skip') {
@@ -169,7 +170,7 @@ export async function runSportmonksLeagueScopedCapture(options: {
       }
 
       // Add page to paginated query
-      const queryWithPage = request.paginated
+      const queryWithPage = request.paginated && currentQuery['cursor'] === undefined
         ? { ...currentQuery, page: String(currentPage) }
         : currentQuery;
 
@@ -182,13 +183,13 @@ export async function runSportmonksLeagueScopedCapture(options: {
         if (clientResult.status === 'rate_limited') {
           log(`[rate_limited] ${request.urlPath}`);
           result.stoppedEarlyReason = 'rate_limited';
-          await appendManifestEntry(captureRoot, request, 'failed', undefined, undefined, currentPage, false, 'rate_limited', clientResult.message);
+          await appendManifestEntry(captureRoot, request, queryWithPage, 'failed', undefined, undefined, currentPage, false, 'rate_limited', clientResult.message);
           return await writeReportAndReturn(captureRoot, result, now);
         }
 
         // unavailable (403/404) or unexpected failure
         const manifestStatus = clientResult.status === 'unavailable' ? 'unavailable' : 'failed';
-        await appendManifestEntry(captureRoot, request, manifestStatus, undefined, undefined, currentPage, false, clientResult.status, clientResult.message);
+        await appendManifestEntry(captureRoot, request, queryWithPage, manifestStatus, undefined, undefined, currentPage, false, clientResult.status, clientResult.message);
 
         if (clientResult.status === 'unavailable') {
           result.unavailable++;
@@ -222,7 +223,7 @@ export async function runSportmonksLeagueScopedCapture(options: {
         : undefined;
       const hasMore = pagination !== null && pagination !== undefined && pagination.has_more === true;
 
-      await appendManifestEntry(captureRoot, request, 'captured', fetchedAt, payloadHash, currentPage, hasMore);
+      await appendManifestEntry(captureRoot, request, queryWithPage, 'captured', fetchedAt, payloadHash, currentPage, hasMore);
 
       result.captured++;
       gr.captured++;
@@ -233,11 +234,11 @@ export async function runSportmonksLeagueScopedCapture(options: {
           ? pagination.next_cursor
           : undefined;
 
+        currentPage++;
         if (nextCursor !== undefined) {
-          currentQuery = { ...currentQuery, cursor: nextCursor };
-          delete currentQuery['page'];
+          currentQuery = { ...request.query, cursor: extractCursor(nextCursor) };
         } else {
-          currentPage++;
+          currentQuery = { ...request.query };
         }
         pageLoop = true;
 
@@ -258,6 +259,7 @@ export async function runSportmonksLeagueScopedCapture(options: {
 async function appendManifestEntry(
   captureRoot: string,
   request: SportmonksLeagueCaptureRequest,
+  query: Record<string, string>,
   status: ProviderCaptureManifestEntry['status'],
   fetchedAt?: string,
   payloadHash?: string,
@@ -270,7 +272,7 @@ async function appendManifestEntry(
     provider: 'sportmonks',
     endpointKey: request.endpointKey,
     urlPath: request.urlPath,
-    query: request.query,
+    query,
     status
   };
   if (page !== undefined) entry.page = page;
@@ -280,6 +282,15 @@ async function appendManifestEntry(
   if (errorCode !== undefined) entry.errorCode = errorCode;
   if (errorMessage !== undefined) entry.errorMessage = errorMessage;
   await appendProviderManifestEntry(captureRoot, 'sportmonks', entry);
+}
+
+function extractCursor(value: string): string {
+  try {
+    const url = new URL(value, 'https://api.sportmonks.com');
+    return url.searchParams.get('cursor') ?? value;
+  } catch {
+    return value;
+  }
 }
 
 async function writeReportAndReturn(

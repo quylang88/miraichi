@@ -110,6 +110,10 @@ export function buildSportmonksLeagueCaptureRequests(
         }, tid),
         makeTeam('rankings.byTeamId', `/team-rankings/teams/${tid}`, {
           include: 'team'
+        }, tid),
+        makeTeam('statistics.byTeamId', `/statistics/seasons/teams/${tid}`, {
+          include: 'season;details.type',
+          filters: `seasonLeagues:${inventory.leagueId}`
         }, tid)
       );
     }
@@ -119,10 +123,6 @@ export function buildSportmonksLeagueCaptureRequests(
       teamRequests.push(
         makeTeamSeason('squads.bySeasonAndTeamId', `/squads/seasons/${ts.seasonId}/teams/${ts.teamId}`, {
           include: 'player;team;season;details;position'
-        }, ts.teamId, ts.seasonId),
-        makeTeamSeason('statistics.byTeamId', `/statistics/seasons/teams/${ts.teamId}`, {
-          include: 'season;details.type',
-          filters: `seasonLeagues:${inventory.leagueId}`
         }, ts.teamId, ts.seasonId)
       );
     }

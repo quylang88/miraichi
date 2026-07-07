@@ -130,4 +130,19 @@ describe('sportmonks league capture request graph', () => {
     expect(squadPaths).toContain('/squads/seasons/2024/teams/1');
     expect(squadPaths).toContain('/squads/seasons/2025/teams/2');
   });
+
+  it('creates team statistics once per team instead of once per team-season pair', () => {
+    const requests = buildSportmonksLeagueCaptureRequests({
+      leagueId: 8,
+      seasons: [{ seasonId: 2024 }, { seasonId: 2025 }],
+      fixtureIds: [],
+      teamIds: [1],
+      teamSeasons: [
+        { teamId: 1, seasonId: 2024 },
+        { teamId: 1, seasonId: 2025 }
+      ]
+    }, ['team']);
+
+    expect(requests.filter((request) => request.endpointKey === 'statistics.byTeamId')).toHaveLength(1);
+  });
 });
