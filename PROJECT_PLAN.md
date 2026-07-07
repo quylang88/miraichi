@@ -245,6 +245,13 @@ Defines the sequential milestones and execution rules for developers and autonom
 - [x] Complete `phase:code-slice Phase 9 Sportmonks Expected/xG Full Page Capture Runner`.
   - **Scope**: Added a focused raw capture runner for Sportmonks `/expected/fixtures` and `/expected/lineups`, preserving full pagination and endpoint-specific include context. xG remains raw provider evidence only; no AI training, normalization into model features, betting recommendations, or runtime prediction logic is approved in Phase 9.
   - **Command**: `pnpm run data:capture:sportmonks:expected`.
+- [x] Complete `phase:code-slice Phase 9 Sportmonks League Inventory Discovery`.
+  - **Scope**: Added `buildSportmonksLeagueCaptureInventory` which reads existing raw Sportmonks envelopes to produce a deterministic league/season/fixture/team inventory. Never writes files or calls the API. Supports `explicitSeasonIds`, `maxSeasons`, and validates that local fixture evidence exists.
+- [x] Complete `phase:code-slice Phase 9 Sportmonks League Request Graph`.
+  - **Scope**: Added `buildSportmonksLeagueCaptureRequests` which converts a `SportmonksLeagueCaptureInventory` into the exact Sportmonks API requests needed for non-live league capture. Groups are emitted in deterministic order (season → fixture → team → ai). Forbidden endpoint families (`global-all`, `livescores`, `inplay-odds`, `expected-lineups`) are excluded.
+- [x] Complete `phase:code-slice Phase 9 Sportmonks League Coverage, Executor, and CLI`.
+  - **Scope**: Added `resolveSportmonksRequestProgress` (manifest + raw validation for skip/resume/capture), `readSportmonksFixtureFieldCoverage` (suppresses redundant odds/predictions requests when enrichment already contains the data), `runSportmonksLeagueScopedCapture` (orchestrates inventory → plan → execute with maxRequests budget, rate-limit stop, and timestamped report), and the `capture-sportmonks-league-data.ts` CLI entry point.
+  - **Command**: `pnpm run data:capture:sportmonks:league -- --league-id=<leagueId> [--season-id=<id>...] [--group=season|fixture|team|ai] [--max-seasons=<n>] [--max-requests=<n>] [--no-skip-existing]`.
 - [ ] Complete Sportmonks trial data capture before the trial window expires.
   - **Priority**: Provider-neutral contracts/cache/warehouse first, then Sportmonks raw capture, fixture enrichment, and warehouse-to-local-snapshot export. Provider expansion remains deferred until Sportmonks capture is stable.
 - [ ] Run `phase:staging Phase 9 Non-AI App Completion` and record smoke evidence.
