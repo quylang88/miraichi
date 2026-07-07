@@ -96,6 +96,28 @@ export function createSportmonksClient(options: CreateSportmonksClientOptions): 
         const rateLimit = parseSportmonksRateLimit({ body, headers: response.headers });
 
         if (response.status >= 200 && response.status < 300) {
+          if (isRecord(body)) {
+            const message = typeof body.message === 'string' ? body.message : '';
+            const errorObj = getObjectProperty(body, 'error');
+            const errorMessage = errorObj && typeof errorObj.message === 'string' ? errorObj.message : '';
+            
+            if (
+              message.includes("don't have access") ||
+              message.includes("subscription") ||
+              errorMessage.includes("don't have access") ||
+              errorMessage.includes("subscription")
+            ) {
+              const errMsg = message || errorMessage || 'Subscription restriction';
+              return {
+                ok: false,
+                status: 'unavailable',
+                statusCode: 403,
+                message: errMsg,
+                rateLimit
+              };
+            }
+          }
+
           return {
             ok: true,
             statusCode: response.status,

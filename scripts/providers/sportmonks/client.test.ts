@@ -140,6 +140,52 @@ describe('sportmonks http client', () => {
     expect(wait).toHaveBeenCalledTimes(2);
   });
 
+  it('detects subscription errors disguised as 200 OK and classifies them as unavailable', async () => {
+    const subscriptionErrorBody = {
+      message: "No result(s) found matching your request. Either the query did not return any results or you don't have access to it via your current subscription."
+    };
+
+    const client = createSportmonksClient({
+      apiBaseUrl: 'https://api.sportmonks.com/v3/football',
+      apiToken: 'secret-token',
+      fetchImpl: async () => jsonResponse(200, subscriptionErrorBody),
+      wait: async () => undefined
+    });
+
+    const result = await client.get('/fixtures');
+
+    expect(result).toMatchObject({
+      ok: false,
+      status: 'unavailable',
+      statusCode: 403,
+      message: expect.stringContaining('subscription')
+    });
+  });
+
+  it('detects subscription errors nested in error object disguised as 200 OK', async () => {
+    const nestedErrorBody = {
+      error: {
+        message: "No result(s) found matching your request. Either the query did not return any results or you don't have access to it via your current subscription."
+      }
+    };
+
+    const client = createSportmonksClient({
+      apiBaseUrl: 'https://api.sportmonks.com/v3/football',
+      apiToken: 'secret-token',
+      fetchImpl: async () => jsonResponse(200, nestedErrorBody),
+      wait: async () => undefined
+    });
+
+    const result = await client.get('/fixtures');
+
+    expect(result).toMatchObject({
+      ok: false,
+      status: 'unavailable',
+      statusCode: 403,
+      message: expect.stringContaining('subscription')
+    });
+  });
+
   it('parses Sportmonks rate-limit snapshots from response bodies and headers', () => {
     expect(parseSportmonksRateLimit({
       body: {
