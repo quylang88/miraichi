@@ -82,7 +82,8 @@ describe('runSportmonksLeagueScopedCapture', () => {
         id: 100,
         participants: [{ id: 1, meta: { location: 'home' } }],
         scores: [],
-        odds: []
+        odds: [],
+        xGFixture: []
       }
     };
     const enrichedHash = createPayloadHash(enrichedPayload);

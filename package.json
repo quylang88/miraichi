@@ -56,7 +56,6 @@
     "typecheck": "tsc -p tsconfig.base.json --noEmit",
     "data:capture:sportmonks": "tsx scripts/capture-sportmonks-trial-data.ts",
     "data:capture:sportmonks:season-scope": "tsx scripts/capture-sportmonks-season-scoped-data.ts",
-    "data:capture:sportmonks:expected": "tsx scripts/capture-sportmonks-expected-data.ts",
     "data:capture:sportmonks:league": "tsx scripts/capture-sportmonks-league-data.ts",
     "data:probe:sportmonks": "tsx scripts/probe-sportmonks-fixture-enrichment.ts",
     "data:enrich:sportmonks:fixtures": "tsx scripts/enrich-sportmonks-fixtures.ts",

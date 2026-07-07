@@ -81,7 +81,7 @@ describe('createSportmonksRequestFamilyKey', () => {
 describe('resolveSportmonksRequestProgress', () => {
   it('reuses one in-memory manifest index across multiple request lookups', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-coverage-'));
-    const { fetchedAt, payloadHash } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', { data: { id: 100 } });
+    const { fetchedAt, payloadHash } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', { data: { id: 100, xGFixture: [] } });
     await appendProviderManifestEntry(root, 'sportmonks', {
       provider: 'sportmonks',
       endpointKey: 'fixtures.enrichedById',
@@ -104,7 +104,7 @@ describe('resolveSportmonksRequestProgress', () => {
 
   it('skips only when terminal manifest evidence and a valid raw envelope both exist', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-coverage-'));
-    const { fetchedAt, payloadHash } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', { data: { id: 100 } });
+    const { fetchedAt, payloadHash } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', { data: { id: 100, xGFixture: [] } });
     await appendProviderManifestEntry(root, 'sportmonks', {
       provider: 'sportmonks',
       endpointKey: 'fixtures.enrichedById',
@@ -174,6 +174,48 @@ describe('resolveSportmonksRequestProgress', () => {
     expect(progress.action).toBe('capture');
     expect(progress.page).toBe(1);
     expect(progress.resumed).toBe(false);
+  });
+
+  it('rejects skip for enriched fixtures that do not contain xGFixture in raw envelope', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-coverage-'));
+    
+    // Write outdated payload (no xGFixture)
+    const outdatedPayload = { data: { id: 100, scores: [], participants: [] } };
+    const { fetchedAt: fat1, payloadHash: ph1 } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', outdatedPayload);
+    await appendProviderManifestEntry(root, 'sportmonks', {
+      provider: 'sportmonks',
+      endpointKey: 'fixtures.enrichedById',
+      urlPath: '/fixtures/100',
+      query: {},
+      status: 'captured',
+      page: 1,
+      hasMore: false,
+      fetchedAt: fat1,
+      payloadHash: ph1
+    });
+
+    const req = makeRequest('fixtures.enrichedById', '/fixtures/100', {}, false, { fixtureId: 100 });
+    const progress1 = await resolveSportmonksRequestProgress(root, req);
+    expect(progress1.action).toBe('capture'); // Should NOT skip
+
+    // Write updated payload (has xGFixture, even if empty array)
+    const updatedPayload = { data: { id: 100, scores: [], participants: [], xGFixture: [] } };
+    const { fetchedAt: fat2, payloadHash: ph2 } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', updatedPayload);
+    // Overwrite manifest with the new entry
+    await appendProviderManifestEntry(root, 'sportmonks', {
+      provider: 'sportmonks',
+      endpointKey: 'fixtures.enrichedById',
+      urlPath: '/fixtures/100',
+      query: {},
+      status: 'captured',
+      page: 1,
+      hasMore: false,
+      fetchedAt: fat2,
+      payloadHash: ph2
+    });
+
+    const progress2 = await resolveSportmonksRequestProgress(root, req);
+    expect(progress2.action).toBe('skip'); // Should skip
   });
 });
 

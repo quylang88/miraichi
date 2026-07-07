@@ -146,13 +146,29 @@ async function resolveProgressFromEntries(
   }
 
   for (const entry of newestFirst(matchingEntries)) {
-    if (entry.status === 'captured' && entry.hasMore === false && await validateRawEnvelope(captureRoot, entry)) {
-      return {
-        action: 'skip',
-        page: entry.page ?? 1,
-        query: stripPaginationKeys(entry.query ?? {}),
-        resumed: false
-      };
+    if (entry.status === 'captured' && entry.hasMore === false) {
+      const envelope = await readValidRawEnvelope(captureRoot, entry);
+      if (envelope !== undefined) {
+        // Special validation for enriched fixtures: ensure it has the xGFixture include (camelCase)
+        if (request.endpointKey === 'fixtures.enrichedById') {
+          const payload = envelope.payload;
+          if (
+            !isRecord(payload) ||
+            !isRecord(payload.data) ||
+            !('xGFixture' in payload.data)
+          ) {
+            // If the payload does not contain xGFixture, it is outdated; we do NOT skip.
+            continue;
+          }
+        }
+
+        return {
+          action: 'skip',
+          page: entry.page ?? 1,
+          query: stripPaginationKeys(entry.query ?? {}),
+          resumed: false
+        };
+      }
     }
   }
 
