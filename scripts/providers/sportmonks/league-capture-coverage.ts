@@ -86,7 +86,6 @@ export async function createSportmonksCaptureCoverageIndex(
       const urlPath = `/fixtures/${fixtureId}`;
       const matchingEntries = entriesByEndpointUrl.get(endpointUrlKey('fixtures.enrichedById', urlPath)) ?? [];
       const coverage = await readFixtureCoverageFromManifest(captureRoot, matchingEntries)
-        ?? await readFixtureCoverageFromRawFallback(captureRoot, urlPath)
         ?? { ...EMPTY_FIXTURE_COVERAGE };
       fixtureCoverageCache.set(fixtureId, coverage);
       return coverage;
@@ -214,14 +213,7 @@ async function readFixtureCoverageFromManifest(
   return undefined;
 }
 
-async function readFixtureCoverageFromRawFallback(
-  captureRoot: string,
-  urlPath: string
-): Promise<SportmonksFixtureFieldCoverage | undefined> {
-  const envelopes = await readRawEnvelopesByUrl(captureRoot, 'fixtures.enrichedById', urlPath);
-  envelopes.sort((left, right) => right.fetchedAt.localeCompare(left.fetchedAt));
-  return envelopes[0] === undefined ? undefined : fixtureCoverageFromPayload(envelopes[0].payload);
-}
+
 
 function fixtureCoverageFromPayload(payload: unknown): SportmonksFixtureFieldCoverage {
   if (!isRecord(payload) || !isRecord(payload.data)) {
@@ -349,42 +341,7 @@ async function readNextCursorFromRaw(
   }
 }
 
-async function readRawEnvelopesByUrl(
-  root: string,
-  endpointKey: string,
-  urlPath: string
-): Promise<RawProviderPayloadEnvelope[]> {
-  const endpointDir = join(root, 'providers', 'sportmonks', 'raw', endpointKey);
-  let dateDirs: string[];
-  try {
-    dateDirs = await readdir(endpointDir);
-  } catch {
-    return [];
-  }
-  const envelopes: RawProviderPayloadEnvelope[] = [];
-  for (const dateDir of dateDirs) {
-    let files: string[];
-    try {
-      files = await readdir(join(endpointDir, dateDir));
-    } catch {
-      continue;
-    }
-    for (const fileName of files) {
-      if (!fileName.endsWith('.json')) continue;
-      try {
-        const envelope = JSON.parse(
-          await readFile(join(endpointDir, dateDir, fileName), 'utf8')
-        ) as RawProviderPayloadEnvelope;
-        if (envelope.urlPath === urlPath && createPayloadHash(envelope.payload) === envelope.payloadHash) {
-          envelopes.push(envelope);
-        }
-      } catch {
-        // Ignore malformed historical raw files.
-      }
-    }
-  }
-  return envelopes;
-}
+
 
 function isNonEmptyArray(value: unknown): boolean {
   return Array.isArray(value) && value.length > 0;

@@ -230,14 +230,39 @@ describe('resolveSportmonksRequestProgress', () => {
 describe('readSportmonksFixtureFieldCoverage', () => {
   it('reads odds, predictions, xGFixture, and comments presence from enriched fixture raw data', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-coverage-'));
-    await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', {
+    const payload = {
       data: {
         id: 100,
         odds: [{ id: 1 }],
         predictions: [{ id: 2 }],
-        xGFixture: [{ id: 3 }],
-        // no comments
+        xGFixture: [{ id: 3 }]
       }
+    };
+    const payloadHash = createPayloadHash(payload);
+    const fetchedAt = '2026-07-07T00:00:00.000Z';
+
+    await writeRawProviderPayload(root, {
+      schemaVersion: 'miraichi.provider.raw.v1',
+      provider: 'sportmonks',
+      endpointKey: 'fixtures.enrichedById',
+      urlPath: '/fixtures/100',
+      query: {},
+      fetchedAt,
+      payloadHash,
+      rateLimit: {},
+      payload
+    });
+
+    await appendProviderManifestEntry(root, 'sportmonks', {
+      provider: 'sportmonks',
+      endpointKey: 'fixtures.enrichedById',
+      urlPath: '/fixtures/100',
+      query: {},
+      status: 'captured',
+      page: 1,
+      hasMore: false,
+      fetchedAt,
+      payloadHash
     });
 
     const coverage = await readSportmonksFixtureFieldCoverage(root, 100);
@@ -255,7 +280,7 @@ describe('readSportmonksFixtureFieldCoverage', () => {
 
   it('treats empty arrays as missing coverage', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-coverage-'));
-    await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', {
+    const payload = {
       data: {
         id: 100,
         odds: [],
@@ -263,6 +288,32 @@ describe('readSportmonksFixtureFieldCoverage', () => {
         xGFixture: [],
         comments: []
       }
+    };
+    const payloadHash = createPayloadHash(payload);
+    const fetchedAt = '2026-07-07T00:00:00.000Z';
+
+    await writeRawProviderPayload(root, {
+      schemaVersion: 'miraichi.provider.raw.v1',
+      provider: 'sportmonks',
+      endpointKey: 'fixtures.enrichedById',
+      urlPath: '/fixtures/100',
+      query: {},
+      fetchedAt,
+      payloadHash,
+      rateLimit: {},
+      payload
+    });
+
+    await appendProviderManifestEntry(root, 'sportmonks', {
+      provider: 'sportmonks',
+      endpointKey: 'fixtures.enrichedById',
+      urlPath: '/fixtures/100',
+      query: {},
+      status: 'captured',
+      page: 1,
+      hasMore: false,
+      fetchedAt,
+      payloadHash
     });
 
     const coverage = await readSportmonksFixtureFieldCoverage(root, 100);
