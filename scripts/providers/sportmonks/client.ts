@@ -15,7 +15,7 @@ export interface SportmonksHttpResponse {
 
 export type SportmonksFetchImplementation = (
   url: string,
-  init?: { method: 'GET'; headers: Record<string, string> }
+  init?: { method: 'GET'; headers: Record<string, string>; signal?: AbortSignal }
 ) => Promise<SportmonksHttpResponse>;
 
 export type SportmonksClientFailureStatus =
@@ -49,6 +49,7 @@ export interface CreateSportmonksClientOptions {
   maxRetries?: number;
   fetchImpl?: SportmonksFetchImplementation;
   wait?: (ms: number) => Promise<void>;
+  requestTimeoutMs?: number;
 }
 
 const DEFAULT_MAX_RETRIES = 2;
@@ -61,6 +62,7 @@ export function createSportmonksClient(options: CreateSportmonksClientOptions): 
   const fetchImpl = options.fetchImpl ?? defaultFetch;
   const wait = options.wait ?? defaultWait;
   const minRequestSpacingMs = toMinRequestSpacingMs(options.maxRequestsPerMinute);
+  const requestTimeoutMs = options.requestTimeoutMs ?? 15000;
   let nextRequestAt = 0;
 
   return {
@@ -73,10 +75,14 @@ export function createSportmonksClient(options: CreateSportmonksClientOptions): 
         }, () => nextRequestAt);
 
         let response: SportmonksHttpResponse;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
+
         try {
           response = await fetchImpl(url, {
             method: 'GET',
-            headers: { accept: 'application/json' }
+            headers: { accept: 'application/json' },
+            signal: controller.signal
           });
         } catch (error) {
           if (attempt < maxRetries) {
@@ -90,6 +96,8 @@ export function createSportmonksClient(options: CreateSportmonksClientOptions): 
             message: sanitizeErrorMessage(error),
             rateLimit: {}
           };
+        } finally {
+          clearTimeout(timeoutId);
         }
 
         const body = await readJsonOrText(response);
@@ -255,9 +263,9 @@ async function defaultWait(ms: number): Promise<void> {
 
 async function defaultFetch(
   url: string,
-  init?: { method: 'GET'; headers: Record<string, string> }
+  init?: { method: 'GET'; headers: Record<string, string>; signal?: AbortSignal }
 ): Promise<SportmonksHttpResponse> {
-  return fetch(url, init);
+  return fetch(url, init as RequestInit);
 }
 
 async function readJsonOrText(response: SportmonksHttpResponse): Promise<unknown> {

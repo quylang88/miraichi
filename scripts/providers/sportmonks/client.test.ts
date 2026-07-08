@@ -186,6 +186,36 @@ describe('sportmonks http client', () => {
     });
   });
 
+  it('aborts the request and retries/fails when requestTimeoutMs is exceeded', async () => {
+    const wait = vi.fn(async () => undefined);
+    const fetchImpl = vi.fn(async (url: string, init?: any) => {
+      // Simulate a hung connection by waiting indefinitely (or a long time)
+      await new Promise((resolve, reject) => {
+        if (init?.signal) {
+          init.signal.addEventListener('abort', () => {
+            reject(new DOMException('The user aborted a request.', 'AbortError'));
+          });
+        }
+      });
+      return jsonResponse(200, { data: [] });
+    });
+
+    const client = createSportmonksClient({
+      apiBaseUrl: 'https://api.sportmonks.com/v3/football',
+      apiToken: 'secret-token',
+      fetchImpl,
+      wait,
+      requestTimeoutMs: 20, // 20ms timeout for testing
+      maxRetries: 1 // Only 1 retry to speed up test
+    });
+
+    const result = await client.get('/fixtures');
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe('failed');
+    expect(fetchImpl).toHaveBeenCalledTimes(2); // Initial try + 1 retry
+  });
+
   it('parses Sportmonks rate-limit snapshots from response bodies and headers', () => {
     expect(parseSportmonksRateLimit({
       body: {
