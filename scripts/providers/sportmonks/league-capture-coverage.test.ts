@@ -144,6 +144,25 @@ describe('resolveSportmonksRequestProgress', () => {
     expect(progress.resumed).toBe(false);
   });
 
+  it('skips requests when manifest entry has status unavailable', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-coverage-'));
+    await appendProviderManifestEntry(root, 'sportmonks', {
+      provider: 'sportmonks',
+      endpointKey: 'odds.prematchByFixtureId',
+      urlPath: '/odds/pre-match/fixtures/100',
+      query: {},
+      status: 'unavailable',
+      page: 1,
+      hasMore: false,
+      errorCode: '403',
+      errorMessage: 'Subscription restriction'
+    });
+
+    const req = makeRequest('odds.prematchByFixtureId', '/odds/pre-match/fixtures/100', {}, false, { fixtureId: 100 });
+    const progress = await resolveSportmonksRequestProgress(root, req);
+    expect(progress.action).toBe('skip');
+  });
+
   it('resumes a paginated request from the stored cursor', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-coverage-'));
     const payload = { data: [{ id: 1 }], pagination: { has_more: true, next_cursor: 'cursor-abc' } };

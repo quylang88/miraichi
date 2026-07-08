@@ -145,6 +145,15 @@ async function resolveProgressFromEntries(
   }
 
   for (const entry of newestFirst(matchingEntries)) {
+    if (entry.status === 'unavailable') {
+      return {
+        action: 'skip',
+        page: entry.page ?? 1,
+        query: stripPaginationKeys(entry.query ?? {}),
+        resumed: false
+      };
+    }
+
     if (entry.status === 'captured' && entry.hasMore === false) {
       const envelope = await readValidRawEnvelope(captureRoot, entry);
       if (envelope !== undefined) {
