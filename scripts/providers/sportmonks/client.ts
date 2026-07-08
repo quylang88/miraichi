@@ -50,6 +50,7 @@ export interface CreateSportmonksClientOptions {
   fetchImpl?: SportmonksFetchImplementation;
   wait?: (ms: number) => Promise<void>;
   requestTimeoutMs?: number;
+  log?: (message: string) => void;
 }
 
 const DEFAULT_MAX_RETRIES = 2;
@@ -62,7 +63,8 @@ export function createSportmonksClient(options: CreateSportmonksClientOptions): 
   const fetchImpl = options.fetchImpl ?? defaultFetch;
   const wait = options.wait ?? defaultWait;
   const minRequestSpacingMs = toMinRequestSpacingMs(options.maxRequestsPerMinute);
-  const requestTimeoutMs = options.requestTimeoutMs ?? 15000;
+  const requestTimeoutMs = options.requestTimeoutMs ?? 8000;
+  const log = options.log;
   let nextRequestAt = 0;
 
   return {
@@ -85,15 +87,19 @@ export function createSportmonksClient(options: CreateSportmonksClientOptions): 
             signal: controller.signal
           });
         } catch (error) {
+          const isTimeout = error instanceof DOMException && error.name === 'AbortError';
+          const errMsg = isTimeout ? `Request timeout after ${requestTimeoutMs}ms` : sanitizeErrorMessage(error);
           if (attempt < maxRetries) {
+            log?.(`[client] ${errMsg} (attempt ${attempt + 1}/${maxRetries + 1}), retrying...`);
             await wait(backoffMs(attempt));
             continue;
           }
+          log?.(`[client] ${errMsg} (attempt ${attempt + 1}/${maxRetries + 1}), failed.`);
           return {
             ok: false,
             status: 'failed',
             statusCode: 0,
-            message: sanitizeErrorMessage(error),
+            message: errMsg,
             rateLimit: {}
           };
         } finally {

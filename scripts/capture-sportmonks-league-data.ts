@@ -99,7 +99,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
   const client = createSportmonksClient({
     apiBaseUrl: config.apiBaseUrl,
     apiToken: config.apiToken,
-    maxRequestsPerMinute: config.maxRequestsPerMinute
+    maxRequestsPerMinute: config.maxRequestsPerMinute,
+    log: (message) => console.log(message)
   });
 
   const result = await runSportmonksLeagueScopedCapture({

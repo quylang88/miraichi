@@ -86,7 +86,7 @@ describe('resolveSportmonksRequestProgress', () => {
       provider: 'sportmonks',
       endpointKey: 'fixtures.enrichedById',
       urlPath: '/fixtures/100',
-      query: {},
+      query: { include: 'scores;participants;xGFixture;odds;predictions;prematchNews;postmatchNews' },
       status: 'captured',
       page: 1,
       hasMore: false,
@@ -109,7 +109,7 @@ describe('resolveSportmonksRequestProgress', () => {
       provider: 'sportmonks',
       endpointKey: 'fixtures.enrichedById',
       urlPath: '/fixtures/100',
-      query: {},
+      query: { include: 'scores;participants;xGFixture;odds;predictions;prematchNews;postmatchNews' },
       status: 'captured',
       page: 1,
       hasMore: false,
@@ -176,18 +176,17 @@ describe('resolveSportmonksRequestProgress', () => {
     expect(progress.resumed).toBe(false);
   });
 
-  it('rejects skip for enriched fixtures that do not contain required trial includes in raw envelope', async () => {
+  it('rejects skip for enriched fixtures that do not contain required trial includes in manifest query', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-coverage-'));
     const req = makeRequest('fixtures.enrichedById', '/fixtures/100', {}, false, { fixtureId: 100 });
     
-    // 1. Write payload with ONLY data (missing all includes)
-    const payload1 = { data: { id: 100 } };
-    const { fetchedAt: fat1, payloadHash: ph1 } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', payload1);
+    // 1. Manifest entry with incomplete/missing includes
+    const { fetchedAt: fat1, payloadHash: ph1 } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', { data: { id: 100 } });
     await appendProviderManifestEntry(root, 'sportmonks', {
       provider: 'sportmonks',
       endpointKey: 'fixtures.enrichedById',
       urlPath: '/fixtures/100',
-      query: {},
+      query: { include: 'scores;participants' }, // Missing xGFixture, predictions, odds, news
       status: 'captured',
       page: 1,
       hasMore: false,
@@ -196,14 +195,13 @@ describe('resolveSportmonksRequestProgress', () => {
     });
     expect((await resolveSportmonksRequestProgress(root, req)).action).toBe('capture'); // Should NOT skip
 
-    // 2. Write payload missing predictions
-    const payload2 = { data: { id: 100, xGFixture: [], odds: [], prematchNews: [], postmatchNews: [] } };
-    const { fetchedAt: fat2, payloadHash: ph2 } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', payload2);
+    // 2. Manifest entry missing predictions and news
+    const { fetchedAt: fat2, payloadHash: ph2 } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', { data: { id: 100 } });
     await appendProviderManifestEntry(root, 'sportmonks', {
       provider: 'sportmonks',
       endpointKey: 'fixtures.enrichedById',
       urlPath: '/fixtures/100',
-      query: {},
+      query: { include: 'scores;participants;xGFixture;odds' }, // Missing predictions, prematchNews, postmatchNews
       status: 'captured',
       page: 1,
       hasMore: false,
@@ -212,23 +210,13 @@ describe('resolveSportmonksRequestProgress', () => {
     });
     expect((await resolveSportmonksRequestProgress(root, req)).action).toBe('capture'); // Should NOT skip
 
-    // 3. Write payload with all required includes (has xGFixture, predictions, odds, prematchNews, postmatchNews)
-    const payload3 = {
-      data: {
-        id: 100,
-        xGFixture: [],
-        predictions: [],
-        odds: [],
-        prematchNews: [],
-        postmatchNews: []
-      }
-    };
-    const { fetchedAt: fat3, payloadHash: ph3 } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', payload3);
+    // 3. Manifest entry with all required includes (even if raw payload contains no keys due to no data)
+    const { fetchedAt: fat3, payloadHash: ph3 } = await writeRaw(root, 'fixtures.enrichedById', '/fixtures/100', { data: { id: 100 } });
     await appendProviderManifestEntry(root, 'sportmonks', {
       provider: 'sportmonks',
       endpointKey: 'fixtures.enrichedById',
       urlPath: '/fixtures/100',
-      query: {},
+      query: { include: 'scores;participants;xGFixture;odds;predictions;prematchNews;postmatchNews' },
       status: 'captured',
       page: 1,
       hasMore: false,

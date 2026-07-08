@@ -149,19 +149,23 @@ async function resolveProgressFromEntries(
     if (entry.status === 'captured' && entry.hasMore === false) {
       const envelope = await readValidRawEnvelope(captureRoot, entry);
       if (envelope !== undefined) {
-        // Special validation for enriched fixtures: ensure it has all required includes (camelCase)
+        // Special validation for enriched fixtures: ensure it was captured with all required includes
         if (request.endpointKey === 'fixtures.enrichedById') {
-          const payload = envelope.payload;
-          if (
-            !isRecord(payload) ||
-            !isRecord(payload.data) ||
-            !('xGFixture' in payload.data) ||
-            !('predictions' in payload.data) ||
-            !('odds' in payload.data) ||
-            !('prematchNews' in payload.data) ||
-            !('postmatchNews' in payload.data)
-          ) {
-            // If the payload does not contain all required includes, it is outdated; we do NOT skip.
+          const includeQuery = entry.query?.include;
+          if (typeof includeQuery === 'string') {
+            const includes = includeQuery.split(';');
+            if (
+              !includes.includes('xGFixture') ||
+              !includes.includes('predictions') ||
+              !includes.includes('odds') ||
+              !includes.includes('prematchNews') ||
+              !includes.includes('postmatchNews')
+            ) {
+              // Outdated query includes, must recapture
+              continue;
+            }
+          } else {
+            // No include parameter in manifest entry, must recapture
             continue;
           }
         }
