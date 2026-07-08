@@ -83,7 +83,10 @@ describe('runSportmonksLeagueScopedCapture', () => {
         participants: [{ id: 1, meta: { location: 'home' } }],
         scores: [],
         odds: [],
-        xGFixture: []
+        predictions: [],
+        xGFixture: [],
+        prematchNews: [],
+        postmatchNews: []
       }
     };
     const enrichedHash = createPayloadHash(enrichedPayload);
@@ -148,7 +151,9 @@ describe('runSportmonksLeagueScopedCapture', () => {
           id: fixtureId,
           odds: [{ id: 1 }],
           predictions: [{ id: 2 }],
-          xGFixture: [{ id: 3 }]
+          xGFixture: [{ id: 3 }],
+          prematchNews: [],
+          postmatchNews: []
         }
       };
       const payloadHash = createPayloadHash(enrichedPayload);

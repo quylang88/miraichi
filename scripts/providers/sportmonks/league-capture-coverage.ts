@@ -149,15 +149,19 @@ async function resolveProgressFromEntries(
     if (entry.status === 'captured' && entry.hasMore === false) {
       const envelope = await readValidRawEnvelope(captureRoot, entry);
       if (envelope !== undefined) {
-        // Special validation for enriched fixtures: ensure it has the xGFixture include (camelCase)
+        // Special validation for enriched fixtures: ensure it has all required includes (camelCase)
         if (request.endpointKey === 'fixtures.enrichedById') {
           const payload = envelope.payload;
           if (
             !isRecord(payload) ||
             !isRecord(payload.data) ||
-            !('xGFixture' in payload.data)
+            !('xGFixture' in payload.data) ||
+            !('predictions' in payload.data) ||
+            !('odds' in payload.data) ||
+            !('prematchNews' in payload.data) ||
+            !('postmatchNews' in payload.data)
           ) {
-            // If the payload does not contain xGFixture, it is outdated; we do NOT skip.
+            // If the payload does not contain all required includes, it is outdated; we do NOT skip.
             continue;
           }
         }
