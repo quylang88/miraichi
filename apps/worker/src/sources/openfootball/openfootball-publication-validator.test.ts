@@ -99,4 +99,29 @@ describe('OpenFootball publication candidate validation', () => {
     const growth = input({ priorMatches: [priorMatch('prior-one', first)] });
     expect(validateOpenFootballPublicationCandidate(growth)).toEqual({ ok: true });
   });
+
+  it('applies the minimum match count to each source entry even when sources share a partition', () => {
+    const samePartitionSecond = { ...second, competitionId: first.competitionId, season: first.season, minimumExpectedMatches: 2 };
+    const firstMatch = canonicalMatch('shared-one', first);
+    const secondMatch = canonicalMatch('shared-two', samePartitionSecond);
+    const result = validateOpenFootballPublicationCandidate({
+      sources: [first, samePartitionSecond],
+      candidate: {
+        matches: [firstMatch, secondMatch],
+        teams: [
+          team(firstMatch.homeTeamId), team(firstMatch.awayTeamId),
+          team(secondMatch.homeTeamId), team(secondMatch.awayTeamId)
+        ],
+        competitions: [],
+        links: [link(firstMatch, first), link(secondMatch, samePartitionSecond)],
+        provenance: []
+      },
+      priorMatches: []
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.stringContaining('second-source has 1 matches, below minimum 2')])
+    });
+  });
 });

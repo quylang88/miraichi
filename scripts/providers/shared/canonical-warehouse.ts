@@ -1,5 +1,5 @@
-import { mkdir, appendFile, access, rename, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, appendFile, access, lstat, realpath, rename, rm, writeFile } from 'node:fs/promises';
+import { join, relative, resolve } from 'node:path';
 import type {
   CanonicalCompetition,
   CanonicalMatch,
@@ -26,7 +26,7 @@ export interface CanonicalWarehouseSnapshot {
   provenance: FieldProvenance[];
 }
 
-const SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u;
+const SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/u;
 
 interface WarehouseFile<T> {
   fileName: string;
@@ -63,12 +63,13 @@ export async function writeCanonicalWarehouseRun(
   snapshot: CanonicalWarehouseSnapshot
 ): Promise<string> {
   assertSafeRunId(runId);
-  const versionsRoot = join(dataRoot, 'warehouse', 'versions');
-  const target = join(versionsRoot, runId);
+  const versionsRoot = resolve(dataRoot, 'warehouse', 'versions');
   await mkdir(versionsRoot, { recursive: true });
+  const verifiedVersionsRoot = await realpath(versionsRoot);
+  const target = resolveContainedPath(verifiedVersionsRoot, runId);
   await assertRunDoesNotExist(target, runId);
 
-  const staging = join(versionsRoot, `.tmp-${runId}-${process.pid}-${Date.now()}`);
+  const staging = resolveContainedPath(verifiedVersionsRoot, `.tmp-${runId}-${process.pid}-${Date.now()}`);
   await mkdir(staging);
   try {
     const files: WarehouseFile<unknown>[] = [
@@ -93,7 +94,7 @@ export async function writeCanonicalWarehouseRun(
     }));
     await assertRunDoesNotExist(target, runId);
     await rename(staging, target);
-    return target;
+    return join(dataRoot, 'warehouse', 'versions', runId);
   } catch (error) {
     await rm(staging, { recursive: true, force: true });
     throw error;
@@ -103,13 +104,26 @@ export async function writeCanonicalWarehouseRun(
 /** Resolves only an immutable run directory beneath the configured data root. */
 export async function resolveCanonicalWarehouseRun(dataRoot: string, runId: string): Promise<string> {
   assertSafeRunId(runId);
-  const target = join(dataRoot, 'warehouse', 'versions', runId);
+  const versionsRoot = resolve(dataRoot, 'warehouse', 'versions');
+  let verifiedVersionsRoot: string;
   try {
-    await access(target);
+    verifiedVersionsRoot = await realpath(versionsRoot);
   } catch {
     throw new Error(`Canonical warehouse run does not exist: ${runId}`);
   }
-  return target;
+  const target = resolveContainedPath(verifiedVersionsRoot, runId);
+  let metadata: Awaited<ReturnType<typeof lstat>>;
+  try {
+    metadata = await lstat(target);
+  } catch {
+    throw new Error(`Canonical warehouse run does not exist: ${runId}`);
+  }
+  if (!metadata.isDirectory() || metadata.isSymbolicLink()) {
+    throw new Error(`Canonical warehouse run must be a non-symlink directory: ${runId}`);
+  }
+  const verifiedTarget = await realpath(target);
+  assertContainedPath(verifiedVersionsRoot, verifiedTarget);
+  return join(dataRoot, 'warehouse', 'versions', runId);
 }
 
 function assertSafeRunId(runId: string): void {
@@ -125,4 +139,17 @@ async function assertRunDoesNotExist(target: string, runId: string): Promise<voi
     return;
   }
   throw new Error(`Canonical warehouse run already exists: ${runId}`);
+}
+
+function resolveContainedPath(root: string, ...segments: string[]): string {
+  const candidate = resolve(root, ...segments);
+  assertContainedPath(root, candidate);
+  return candidate;
+}
+
+function assertContainedPath(root: string, candidate: string): void {
+  const relativePath = relative(root, candidate);
+  if (relativePath === '' || relativePath === '..' || relativePath.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`) || relativePath.includes(':')) {
+    throw new Error('Canonical warehouse run path escaped warehouse versions');
+  }
 }

@@ -1,5 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { createHash } from 'node:crypto';
 import type {
   CanonicalCompetition,
   CanonicalMatch,
@@ -103,18 +104,22 @@ export interface WarehouseServingMatches {
 const STORE_SCHEMA_VERSION = 'miraichi.serving.match-store.v1';
 const PARTITION_SCHEMA_VERSION = 'miraichi.serving.matches.partition.v1';
 const INDEX_SCHEMA_VERSION = 'miraichi.serving.match-index.v1';
+const SAFE_SERVING_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/u;
 
 export async function buildServingMatchStore(
   options: BuildServingMatchStoreOptions
 ): Promise<BuildServingMatchStoreResult> {
+  assertSafeServingVersion(options.version);
   const scope = options.scope ?? 'configured-competitions';
   const matches = normalizeAndValidateMatches(options.matches);
-  const versionDir = path.join(options.servingRoot, 'versions', options.version);
-  const scopedRoot = path.join(versionDir, `scope=${scope}`);
-  const byDateRoot = path.join(scopedRoot, 'by-date');
-  const byCompetitionRoot = path.join(scopedRoot, 'by-competition');
+  const servingRoot = path.resolve(options.servingRoot);
+  const versionsRoot = resolveContainedPath(servingRoot, 'versions');
+  const versionDir = resolveContainedPath(versionsRoot, options.version);
+  const scopedRoot = resolveContainedPath(versionDir, `scope=${safePartitionSegment(scope)}`);
+  const byDateRoot = resolveContainedPath(scopedRoot, 'by-date');
+  const byCompetitionRoot = resolveContainedPath(scopedRoot, 'by-competition');
   const partitionsByDate = groupMatches(matches, (match) => match.kickoffUtc.slice(0, 10));
-  const partitionsByCompetition = groupMatches(matches, (match) => `${match.competition.id}/${match.competition.season}`);
+  const partitionsByCompetition = groupMatches(matches, (match) => JSON.stringify([match.competition.id, match.competition.season]));
   const byDatePaths: string[] = [];
   const byCompetitionPaths: string[] = [];
   const index: ServingMatchIndex = {
@@ -126,16 +131,16 @@ export async function buildServingMatchStore(
 
   let versionCreated = false;
   try {
-    await fs.mkdir(path.join(options.servingRoot, 'versions'), { recursive: true });
+    await fs.mkdir(versionsRoot, { recursive: true });
     await fs.mkdir(versionDir);
     versionCreated = true;
     await fs.mkdir(byDateRoot, { recursive: true });
     await fs.mkdir(byCompetitionRoot, { recursive: true });
 
     for (const [date, partitionMatches] of [...partitionsByDate.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-      const partitionPath = `scope=${scope}/by-date/${date}.json`;
+      const partitionPath = `scope=${safePartitionSegment(scope)}/by-date/${safePartitionSegment(date)}.json`;
       byDatePaths.push(partitionPath);
-      await writeJson(path.join(versionDir, partitionPath), {
+      await writeJson(resolveContainedPath(versionDir, partitionPath), {
         schemaVersion: PARTITION_SCHEMA_VERSION,
         version: options.version,
         scope,
@@ -146,17 +151,14 @@ export async function buildServingMatchStore(
     }
 
     for (const [key, partitionMatches] of [...partitionsByCompetition.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-      const [competitionId, season] = key.split('/');
-      if (!competitionId || !season) {
-        throw new Error(`Invalid competition partition key: ${key}`);
-      }
-      const partitionPath = `scope=${scope}/by-competition/${competitionId}/${season}.json`;
+      const [competitionId, season] = JSON.parse(key) as [string, string];
+      const partitionPath = `scope=${safePartitionSegment(scope)}/by-competition/${safePartitionSegment(competitionId)}/${safePartitionSegment(season)}.json`;
       byCompetitionPaths.push(partitionPath);
-      await writeJson(path.join(versionDir, partitionPath), {
+      await writeJson(resolveContainedPath(versionDir, partitionPath), {
         schemaVersion: PARTITION_SCHEMA_VERSION,
         version: options.version,
         scope,
-        partition: { type: 'competition', key },
+        partition: { type: 'competition', key: `${competitionId}/${season}` },
         generatedAt: options.generatedAt,
         matches: sortMatchesForStorage(partitionMatches)
       } satisfies ServingMatchPartition);
@@ -168,11 +170,11 @@ export async function buildServingMatchStore(
         date: match.kickoffUtc.slice(0, 10),
         competitionId: match.competition.id,
         season: match.competition.season,
-        partitionPath: `scope=${scope}/by-date/${match.kickoffUtc.slice(0, 10)}.json`
+        partitionPath: `scope=${safePartitionSegment(scope)}/by-date/${safePartitionSegment(match.kickoffUtc.slice(0, 10))}.json`
       };
     }
 
-    await writeJson(path.join(versionDir, 'indexes', 'match-id.json'), index);
+    await writeJson(resolveContainedPath(versionDir, 'indexes', 'match-id.json'), index);
 
     const manifest: ServingMatchStoreManifest = {
       schemaVersion: STORE_SCHEMA_VERSION,
@@ -195,10 +197,10 @@ export async function buildServingMatchStore(
       warnings: options.warnings ?? [],
       ...(options.warehouseRunId === undefined ? {} : { warehouseRunId: options.warehouseRunId })
     };
-    await replaceManifestAtomically(options.servingRoot, options.version, manifest);
+    await replaceManifestAtomically(servingRoot, options.version, manifest);
   } catch (error) {
     if (versionCreated) {
-      await fs.rm(versionDir, { recursive: true, force: true });
+      await removeVerifiedNewVersion(versionsRoot, versionDir);
     }
     throw error;
   }
@@ -212,12 +214,13 @@ export async function buildServingMatchStore(
 
 export async function readServingMatchStoreSnapshot(servingRoot: string): Promise<LocalMatchSnapshot> {
   const manifest = await readManifest(servingRoot);
-  const versionDir = path.join(servingRoot, 'versions', manifest.currentVersion);
+  assertSafeServingVersion(manifest.currentVersion);
+  const versionDir = resolveContainedPath(resolveContainedPath(path.resolve(servingRoot), 'versions'), manifest.currentVersion);
   const byId = new Map<string, LocalMatch>();
 
   for (const scope of manifest.scopes) {
     for (const partitionPath of scope.partitions.byDate) {
-      const partition = await readPartition(path.join(versionDir, partitionPath));
+      const partition = await readPartition(resolveContainedPath(versionDir, partitionPath));
       for (let i = 0; i < partition.matches.length; i++) {
         const match = partition.matches[i];
         const validation = validateLocalMatch(match);
@@ -247,10 +250,10 @@ export async function buildServingMatchesFromWarehouse(
 ): Promise<WarehouseServingMatches> {
   const importedAt = options.importedAt ?? new Date().toISOString();
   const [matches, teams, competitions, links] = await Promise.all([
-    readJsonl<CanonicalMatch>(path.join(options.warehouseRoot, 'canonical-matches.jsonl')),
-    readJsonl<CanonicalTeam>(path.join(options.warehouseRoot, 'canonical-teams.jsonl')),
-    readJsonl<CanonicalCompetition>(path.join(options.warehouseRoot, 'canonical-competitions.jsonl')),
-    readJsonl<ProviderLink>(path.join(options.warehouseRoot, 'match-provider-links.jsonl'))
+    readJsonl<CanonicalMatch>(resolveContainedPath(path.resolve(options.warehouseRoot), 'canonical-matches.jsonl')),
+    readJsonl<CanonicalTeam>(resolveContainedPath(path.resolve(options.warehouseRoot), 'canonical-teams.jsonl')),
+    readJsonl<CanonicalCompetition>(resolveContainedPath(path.resolve(options.warehouseRoot), 'canonical-competitions.jsonl')),
+    readJsonl<ProviderLink>(resolveContainedPath(path.resolve(options.warehouseRoot), 'match-provider-links.jsonl'))
   ]);
   const teamById = new Map(teams.map((team) => [team.teamId, team]));
   const competitionById = new Map(competitions.map((competition) => [competition.competitionId, competition]));
@@ -317,11 +320,11 @@ export async function buildServingMatchesFromWarehouse(
 async function readManifest(servingRoot: string): Promise<ServingMatchStoreManifest> {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(await fs.readFile(path.join(servingRoot, 'manifest.json'), 'utf8'));
+    parsed = JSON.parse(await fs.readFile(resolveContainedPath(path.resolve(servingRoot), 'manifest.json'), 'utf8'));
   } catch (error) {
     const err = error as { code?: string; message?: string };
     if (err.code === 'ENOENT') {
-      throw servingError('serving_match_store_missing', 503, `Serving match store manifest not found at ${path.join(servingRoot, 'manifest.json')}`);
+      throw servingError('serving_match_store_missing', 503, `Serving match store manifest not found at ${resolveContainedPath(path.resolve(servingRoot), 'manifest.json')}`);
     }
     throw servingError('serving_match_store_invalid', 500, `Malformed serving match store manifest: ${err.message ?? String(error)}`);
   }
@@ -455,8 +458,8 @@ async function replaceManifestAtomically(
   manifest: ServingMatchStoreManifest
 ): Promise<void> {
   await fs.mkdir(servingRoot, { recursive: true });
-  const manifestPath = path.join(servingRoot, 'manifest.json');
-  const temporaryPath = path.join(servingRoot, `manifest.json.tmp-${version}`);
+  const manifestPath = resolveContainedPath(servingRoot, 'manifest.json');
+  const temporaryPath = resolveContainedPath(servingRoot, `manifest.json.tmp-${version}`);
   const handle = await fs.open(temporaryPath, 'w');
   try {
     await handle.writeFile(`${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
@@ -470,6 +473,37 @@ async function replaceManifestAtomically(
     await fs.rm(temporaryPath, { force: true });
     throw error;
   }
+}
+
+function assertSafeServingVersion(version: string): void {
+  if (!SAFE_SERVING_SEGMENT.test(version)) {
+    throw new Error('Serving match store version must be a safe serving version');
+  }
+}
+
+function safePartitionSegment(value: string): string {
+  if (SAFE_SERVING_SEGMENT.test(value)) {
+    return value;
+  }
+  return `id-${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function resolveContainedPath(root: string, ...segments: string[]): string {
+  const candidate = path.resolve(root, ...segments);
+  const relativePath = path.relative(root, candidate);
+  if (relativePath === '' || relativePath === '..' || relativePath.startsWith(`..${path.sep}`) || path.isAbsolute(relativePath)) {
+    throw new Error('Serving match store path escaped its allowed root');
+  }
+  return candidate;
+}
+
+async function removeVerifiedNewVersion(versionsRoot: string, versionDir: string): Promise<void> {
+  const verifiedVersionDir = resolveContainedPath(versionsRoot, versionDir);
+  const metadata = await fs.lstat(verifiedVersionDir);
+  if (!metadata.isDirectory() || metadata.isSymbolicLink()) {
+    throw new Error('Refusing to clean an unverified serving version path');
+  }
+  await fs.rm(verifiedVersionDir, { recursive: true, force: true });
 }
 
 async function readJsonl<T>(filePath: string): Promise<T[]> {

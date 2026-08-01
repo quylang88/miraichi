@@ -41,14 +41,15 @@ export function validateOpenFootballPublicationCandidate(
   for (const source of enabledSources) {
     const key = partitionKey(source.competitionId, source.season);
     const candidateMatches = input.candidate.matches.filter((match) => partitionKey(match.competitionId, match.season) === key);
-    if (candidateMatches.length < source.minimumExpectedMatches) {
-      errors.push(`source ${source.entryId} has ${candidateMatches.length} matches, below minimum ${source.minimumExpectedMatches}`);
-    }
     const sourcePrefix = `${source.entryId}:`;
     const sourceMatchIds = new Set(input.candidate.links
       .filter((link) => link.entityType === 'match' && link.provider === 'openfootball' && link.providerEntityId.startsWith(sourcePrefix))
       .map((link) => link.entityId));
-    if (!candidateMatches.some((match) => sourceMatchIds.has(match.matchId))) {
+    const sourceCandidateMatches = candidateMatches.filter((match) => sourceMatchIds.has(match.matchId));
+    if (sourceCandidateMatches.length < source.minimumExpectedMatches) {
+      errors.push(`source ${source.entryId} has ${sourceCandidateMatches.length} matches, below minimum ${source.minimumExpectedMatches}`);
+    }
+    if (sourceCandidateMatches.length === 0) {
       errors.push(`candidate is missing enabled source ${source.entryId}`);
     }
 

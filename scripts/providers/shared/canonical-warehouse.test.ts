@@ -89,9 +89,26 @@ describe('immutable canonical warehouse runs', () => {
 
   it('rejects unsafe and missing run identifiers without traversing warehouse versions', async () => {
     const root = await fs.mkdtemp(join(os.tmpdir(), 'miraichi-warehouse-'));
+    await expect(resolveCanonicalWarehouseRun(root, '.')).rejects.toThrow('safe run ID');
+    await expect(resolveCanonicalWarehouseRun(root, '..')).rejects.toThrow('safe run ID');
     await expect(resolveCanonicalWarehouseRun(root, '../run-001')).rejects.toThrow('safe run ID');
     await expect(resolveCanonicalWarehouseRun(root, 'run/001')).rejects.toThrow('safe run ID');
+    await expect(resolveCanonicalWarehouseRun(root, 'run..001')).rejects.toThrow('safe run ID');
     await expect(resolveCanonicalWarehouseRun(root, 'missing-run')).rejects.toThrow('does not exist');
     await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it('rejects file and symlink run paths instead of resolving outside warehouse versions', async () => {
+    const root = await fs.mkdtemp(join(os.tmpdir(), 'miraichi-warehouse-'));
+    const versionsRoot = join(root, 'warehouse', 'versions');
+    const outside = await fs.mkdtemp(join(os.tmpdir(), 'miraichi-warehouse-outside-'));
+    await fs.mkdir(versionsRoot, { recursive: true });
+    await fs.writeFile(join(versionsRoot, 'run-file'), 'not a directory', 'utf8');
+    await fs.symlink(outside, join(versionsRoot, 'run-link'), 'junction');
+
+    await expect(resolveCanonicalWarehouseRun(root, 'run-file')).rejects.toThrow('directory');
+    await expect(resolveCanonicalWarehouseRun(root, 'run-link')).rejects.toThrow('directory');
+    await fs.rm(root, { recursive: true, force: true });
+    await fs.rm(outside, { recursive: true, force: true });
   });
 });

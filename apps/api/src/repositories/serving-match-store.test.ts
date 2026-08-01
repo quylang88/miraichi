@@ -189,6 +189,42 @@ describe('serving match store', () => {
     await fs.rm(root, { recursive: true, force: true });
   });
 
+  it('rejects unsafe versions before creating any serving-store path', async () => {
+    const root = await tempServingRoot();
+
+    await expect(buildServingMatchStore({
+      servingRoot: root,
+      version: '../outside',
+      snapshotId: 'serving-outside',
+      generatedAt: importedAt,
+      importedAt,
+      sources: [{ sourceId: 'manual-snapshot', importedAt }],
+      matches: [match()]
+    })).rejects.toThrow('safe serving version');
+
+    await expect(fs.access(path.join(root, 'versions'))).rejects.toMatchObject({ code: 'ENOENT' });
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it('derives contained partition paths when competition and season strings contain traversal', async () => {
+    const root = await tempServingRoot();
+    const traversalMatch = match({
+      competition: { id: '../../outside', name: 'Traversal', type: 'national-team', season: '../season' }
+    });
+
+    await buildServingMatchStore({
+      servingRoot: root, version: 'v-safe', snapshotId: 'serving-safe', generatedAt: importedAt, importedAt,
+      sources: [{ sourceId: 'manual-snapshot', importedAt }], matches: [traversalMatch]
+    });
+
+    const manifest = JSON.parse(await fs.readFile(path.join(root, 'manifest.json'), 'utf8'));
+    const partitionPath = manifest.scopes[0].partitions.byCompetition[0] as string;
+    expect(partitionPath).not.toContain('..');
+    expect(partitionPath).not.toContain('outside');
+    await expect(fs.access(path.join(root, 'outside'))).rejects.toMatchObject({ code: 'ENOENT' });
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
   it('keeps the previous manifest active when a new version cannot be staged', async () => {
     const root = await tempServingRoot();
     await buildServingMatchStore({
@@ -225,9 +261,8 @@ describe('serving match store', () => {
       servingRoot: root, version: 'v1', snapshotId: 'serving-v1', generatedAt: importedAt, importedAt,
       sources: [{ sourceId: 'manual-snapshot', importedAt }], matches: [match()]
     });
-    const invalidPathMatch = match({
-      competition: { id: 'invalid\u0000competition', name: 'Invalid', type: 'national-team', season: '2026' }
-    });
+    const invalidPathMatch = match() as LocalMatch & { cyclic?: unknown };
+    invalidPathMatch.cyclic = invalidPathMatch;
 
     await expect(buildServingMatchStore({
       servingRoot: root, version: 'v2', snapshotId: 'serving-v2', generatedAt: importedAt, importedAt,
