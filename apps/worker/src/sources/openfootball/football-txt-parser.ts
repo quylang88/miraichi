@@ -60,6 +60,7 @@ const MONTHS: Record<string, number> = {
   december: 12,
   dec: 12
 };
+const SCORE_TOKEN = /^-?\d+--?\d+$/;
 
 function headerYear(header: string): number | null {
   const years = header.match(/\b\d{4}\b/g) ?? [];
@@ -107,7 +108,7 @@ function parseScore(value: string): Score | null {
 }
 
 function matchContent(content: string): boolean {
-  return /(?:^|\s)-?\d+-\d+(?:\s|$)/.test(content) || /\s(?:v|-)\s/.test(content);
+  return /(?:^|\s)-?\d+--?\d+(?:\s|$)/.test(content) || /\s(?:v|-)\s/.test(content);
 }
 
 function offsetMinutes(sign: string, hours: string, minutes: string | undefined): number | null {
@@ -293,7 +294,7 @@ export function parseFootballTxt(text: string): FootballTxtParseResult {
     }
 
     const tokens = matchText.split(/\s+/);
-    const scoreIndexes = tokens.flatMap((token, tokenIndex) => /^-?\d+-\d+$/.test(token) ? [tokenIndex] : []);
+    const scoreIndexes = tokens.flatMap((token, tokenIndex) => SCORE_TOKEN.test(token) ? [tokenIndex] : []);
     let sourceHomeName: string;
     let sourceAwayName: string;
     let fullTimeScore: Score | null = null;

@@ -78,6 +78,15 @@ describe('parseFootballTxt', () => {
     ]);
   });
 
+  it.each(['1--2', '-1--2'])('classifies an away-negative score %s as impossible without creating a match', (score) => {
+    const result = parseFootballTxt(`= Cup 2026\n▪ Round 1\n  Sat Aug 22\n    12:30  Team Alpha ${score} Team Beta\n`);
+
+    expect(result.matches).toEqual([]);
+    expect(result.issues).toEqual([
+      expect.objectContaining({ code: 'impossible_score', fatal: true })
+    ]);
+  });
+
   it('withholds a row without a time instead of carrying time across date blocks', () => {
     const result = parseFootballTxt(
       '= Cup 2026\n▪ Round 1\n  Fri Aug 21\n    20:00  Team Alpha v Team Beta\n  Sat Aug 22\n    Team Gamma v Team Delta\n'
