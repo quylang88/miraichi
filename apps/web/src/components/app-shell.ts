@@ -131,7 +131,7 @@ function renderSnapshotStatus(feed: Exclude<MatchFeedViewState, { status: 'loadi
       : feed.snapshot.freshness === 'stale'
         ? 'Stale'
         : 'Unavailable';
-  const generatedAt = feed.snapshot?.generatedAt;
+  const generatedAt = feed.snapshot?.freshness === 'missing' ? undefined : feed.snapshot?.generatedAt;
   return `
     <div class="match-data-status">
       <span>Data status: ${label}</span>

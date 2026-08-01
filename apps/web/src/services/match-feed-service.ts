@@ -62,6 +62,16 @@ export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
     const matches = payload.matches as LocalMatch[];
     const snapshot = payload.snapshot as LocalDataSnapshotStatus;
 
+    if (snapshot.freshness === 'missing') {
+      return {
+        status: 'unavailable',
+        date,
+        reason: snapshot.warnings[0] ?? 'Match snapshot is unavailable.',
+        warnings: [...new Set([...warnings, ...snapshot.warnings])],
+        snapshot
+      };
+    }
+
     if (matches.length === 0) {
       return { status: 'empty', date, snapshot, warnings };
     }

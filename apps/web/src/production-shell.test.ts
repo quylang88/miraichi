@@ -411,6 +411,30 @@ describe('production shell match snapshot rendering', () => {
     expect(unavailableHtml).toContain('Data update required');
     expect(unavailableHtml).toContain('Data status: Unavailable');
     expect(unavailableHtml).toContain('Serving match store is missing. Build it from canonical warehouse before using match workflows.');
+
+    const missingSnapshotHtml = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: {
+        status: 'unavailable',
+        date: '2026-06-29',
+        reason: 'Match snapshot is unavailable.',
+        warnings: ['cloud_match_snapshot_missing'],
+        snapshot: {
+          snapshotId: 'cloud-missing',
+          generatedAt: '2026-08-02T00:00:00.000Z',
+          importedAt: '2026-08-02T00:00:00.000Z',
+          matchCount: 0,
+          competitions: [],
+          sources: [],
+          freshness: 'missing',
+          warnings: ['Cloud match snapshot is unavailable.']
+        }
+      }
+    });
+    expect(missingSnapshotHtml).toContain('Data status: Unavailable');
+    expect(missingSnapshotHtml).not.toContain('No matches found');
+    expect(missingSnapshotHtml).not.toContain('Snapshot generated:');
   });
 
   it('renders serving store matches and removes visible hardcoded live feed labels', () => {

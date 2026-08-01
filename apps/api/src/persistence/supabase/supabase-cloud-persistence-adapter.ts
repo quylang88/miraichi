@@ -6,6 +6,7 @@ import type {
 } from '@miraichi/shared/src/contracts/index.js';
 import type { CloudPersistenceAdapter } from '../cloud-persistence-adapter.js';
 import type { PostgresQueryClient } from './postgres-query-client.js';
+import { classifyMatchSnapshotFreshness } from '../../match-snapshot-freshness.js';
 
 type Row = Record<string, unknown>;
 export interface SupabaseCloudPersistenceOptions { client: PostgresQueryClient; ownerProfileId: string; now?: () => string }
@@ -55,7 +56,8 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
     const snapshot = await client.query<Row>('select snapshot_id, generated_at, imported_at, sources from miraichi_app.match_snapshot where owner_profile_id = $1 order by imported_at desc limit 1', [ownerProfileId]);
     if (!snapshot.rows[0]) return { snapshotId: 'cloud-missing', generatedAt: now(), importedAt: now(), matchCount: 0, competitions: [], sources: [], freshness: 'missing', warnings: ['Cloud match snapshot is unavailable.'] };
     const counts = await client.query<Row>('select competition_id as id, competition_name as name, array_agg(distinct season) as seasons, count(*)::int as match_count from miraichi_app.match_record where owner_profile_id = $1 and snapshot_id = $2 group by competition_id, competition_name', [ownerProfileId, snapshot.rows[0].snapshot_id]);
-    return { snapshotId: text(snapshot.rows[0].snapshot_id), generatedAt: dateText(snapshot.rows[0].generated_at), importedAt: dateText(snapshot.rows[0].imported_at), matchCount: counts.rows.reduce((sum, row) => sum + number(row.match_count), 0), competitions: counts.rows.map((row) => ({ id: text(row.id), name: text(row.name), seasons: Array.isArray(row.seasons) ? row.seasons.map(String) : [], matchCount: number(row.match_count) })), sources: Array.isArray(snapshot.rows[0].sources) ? snapshot.rows[0].sources as LocalDataSnapshotStatus['sources'] : [], freshness: 'fresh', warnings: [] };
+    const generatedAt = dateText(snapshot.rows[0].generated_at);
+    return { snapshotId: text(snapshot.rows[0].snapshot_id), generatedAt, importedAt: dateText(snapshot.rows[0].imported_at), matchCount: counts.rows.reduce((sum, row) => sum + number(row.match_count), 0), competitions: counts.rows.map((row) => ({ id: text(row.id), name: text(row.name), seasons: Array.isArray(row.seasons) ? row.seasons.map(String) : [], matchCount: number(row.match_count) })), sources: Array.isArray(snapshot.rows[0].sources) ? snapshot.rows[0].sources as LocalDataSnapshotStatus['sources'] : [], freshness: classifyMatchSnapshotFreshness(generatedAt, now()), warnings: [] };
   };
   return {
     getStatus: async () => { try { await client.query('select 1 as ok'); return { provider: 'supabase-postgres', mode: 'supabase', state: 'ready', checkedAt: now() }; } catch { return { provider: 'supabase-postgres', mode: 'supabase', state: 'unavailable', checkedAt: now(), message: 'Cloud database is unavailable.' }; } },

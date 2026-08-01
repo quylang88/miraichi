@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { createMemoryCloudPersistenceAdapter } from './memory-cloud-persistence-adapter.js';
+import type { CloudMatchSnapshot } from '@miraichi/shared/src/contracts/index.js';
 
 const fixedNow = () => '2026-07-02T00:00:00.000Z';
+const snapshot: CloudMatchSnapshot = {
+  snapshotId: 'snapshot-001',
+  generatedAt: '2026-07-01T00:00:00.000Z',
+  importedAt: '2026-07-01T00:01:00.000Z',
+  sources: [],
+  matches: []
+};
 
 describe('memory cloud persistence adapter', () => {
   it('saves, lists, clones, and deletes drafts', async () => {
@@ -52,5 +60,15 @@ describe('memory cloud persistence adapter', () => {
     expect(await adapter.listBankrollAccounts('owner-primary')).toMatchObject([
       { accountId: 'a', currentBalancePoints: 150 }, { accountId: 'b', currentBalancePoints: 200 }
     ]);
+  });
+
+  it('keeps cloud snapshot status fresh through exactly twelve hours and stale after', async () => {
+    const atBoundary = createMemoryCloudPersistenceAdapter({ now: () => '2026-07-01T12:00:00.000Z' });
+    const afterBoundary = createMemoryCloudPersistenceAdapter({ now: () => '2026-07-01T12:00:00.001Z' });
+    await atBoundary.upsertMatchSnapshot('owner-primary', snapshot);
+    await afterBoundary.upsertMatchSnapshot('owner-primary', snapshot);
+
+    expect((await atBoundary.getCloudMatchSnapshotStatus('owner-primary')).freshness).toBe('fresh');
+    expect((await afterBoundary.getCloudMatchSnapshotStatus('owner-primary')).freshness).toBe('stale');
   });
 });

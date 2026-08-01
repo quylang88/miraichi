@@ -10,8 +10,9 @@ import {
   readServingMatchStoreSnapshot,
   type LocalMatchSnapshot
 } from './serving-match-store.js';
+import { classifyMatchSnapshotFreshness } from '../match-snapshot-freshness.js';
 
-export const MATCH_SNAPSHOT_STALE_AFTER_MS = 12 * 60 * 60 * 1000;
+export { MATCH_SNAPSHOT_STALE_AFTER_MS } from '../match-snapshot-freshness.js';
 
 function compareMatches(a: LocalMatch, b: LocalMatch): number {
   const aCompleted = a.status === 'completed';
@@ -124,8 +125,6 @@ export class ServingMatchStoreRepository implements MatchSnapshotRepository {
       }))
       .sort((a, b) => a.id.localeCompare(b.id));
 
-    const nowTime = this.nowFn().getTime();
-    const generatedTime = new Date(snapshot.generatedAt).getTime();
     return {
       snapshotId: snapshot.snapshotId,
       generatedAt: snapshot.generatedAt,
@@ -133,7 +132,7 @@ export class ServingMatchStoreRepository implements MatchSnapshotRepository {
       matchCount: snapshot.matches.length,
       competitions,
       sources: snapshot.sources,
-      freshness: nowTime - generatedTime <= MATCH_SNAPSHOT_STALE_AFTER_MS ? 'fresh' : 'stale',
+      freshness: classifyMatchSnapshotFreshness(snapshot.generatedAt, this.nowFn()),
       warnings: []
     };
   }

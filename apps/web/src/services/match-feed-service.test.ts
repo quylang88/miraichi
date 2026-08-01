@@ -64,6 +64,28 @@ describe('web match feed service', () => {
     }
   });
 
+  it('returns unavailable before empty when an HTTP 200 snapshot is missing', async () => {
+    const missingSnapshot: LocalDataSnapshotStatus = {
+      ...validSnapshot,
+      generatedAt: '2026-08-02T00:00:00.000Z',
+      importedAt: '2026-08-02T00:00:00.000Z',
+      matchCount: 0,
+      freshness: 'missing',
+      warnings: ['Cloud match snapshot is unavailable.']
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      matches: [],
+      snapshot: missingSnapshot
+    }), { status: 200 })));
+
+    const result = await getMatchFeed('2026-06-11');
+
+    expect(result.status).toBe('unavailable');
+    if (result.status === 'unavailable') {
+      expect(result.snapshot?.freshness).toBe('missing');
+    }
+  });
+
   it('returns unavailable state and maps serving_match_store_missing to actionable copy', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
       error: {

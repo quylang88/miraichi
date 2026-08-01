@@ -20,6 +20,13 @@ class FakeClient implements PostgresQueryClient {
   }
 }
 
+function enqueueSnapshotStatusRows(client: FakeClient): void {
+  client.enqueueRows(
+    [{ snapshot_id: 'snapshot-001', generated_at: '2026-07-01T00:00:00.000Z', imported_at: '2026-07-01T00:01:00.000Z', sources: [] }],
+    []
+  );
+}
+
 describe('supabase cloud persistence adapter', () => {
   it('uses parameterized owner-scoped bet queries', async () => {
     const client = new FakeClient();
@@ -102,5 +109,25 @@ describe('supabase cloud persistence adapter', () => {
     const result = await adapter.listCloudMatches('owner-primary', {});
 
     expect(result.matches[0]?.competition.type).toBe('club');
+  });
+
+  it('keeps cloud snapshot status fresh through exactly twelve hours and stale after', async () => {
+    const boundaryClient = new FakeClient();
+    enqueueSnapshotStatusRows(boundaryClient);
+    const boundaryAdapter = createSupabaseCloudPersistenceAdapter({
+      client: boundaryClient,
+      ownerProfileId: 'owner-primary',
+      now: () => '2026-07-01T12:00:00.000Z'
+    });
+    const afterClient = new FakeClient();
+    enqueueSnapshotStatusRows(afterClient);
+    const afterAdapter = createSupabaseCloudPersistenceAdapter({
+      client: afterClient,
+      ownerProfileId: 'owner-primary',
+      now: () => '2026-07-01T12:00:00.001Z'
+    });
+
+    expect((await boundaryAdapter.getCloudMatchSnapshotStatus('owner-primary')).freshness).toBe('fresh');
+    expect((await afterAdapter.getCloudMatchSnapshotStatus('owner-primary')).freshness).toBe('stale');
   });
 });

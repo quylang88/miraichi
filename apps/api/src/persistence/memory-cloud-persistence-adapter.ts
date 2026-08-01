@@ -5,6 +5,7 @@ import type {
   LocalMatchSnapshotQuery, UpdateBankrollAccountInput
 } from '@miraichi/shared/src/contracts/index.js';
 import type { CloudPersistenceAdapter } from './cloud-persistence-adapter.js';
+import { classifyMatchSnapshotFreshness } from '../match-snapshot-freshness.js';
 
 export interface MemoryCloudPersistenceOptions { now?: () => string }
 const clone = <T>(value: T): T => structuredClone(value);
@@ -34,7 +35,7 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
       snapshotId: snapshot.snapshotId, generatedAt: snapshot.generatedAt, importedAt: snapshot.importedAt,
       matchCount: snapshot.matches.length,
       competitions: [...competitions.values()].map((item) => ({ ...item, seasons: [...item.seasons] })),
-      sources: clone(snapshot.sources), freshness: 'fresh', warnings: []
+      sources: clone(snapshot.sources), freshness: classifyMatchSnapshotFreshness(snapshot.generatedAt, now()), warnings: []
     };
   };
   const latestSnapshot = (owner: string) => snapshots.get(owner);
