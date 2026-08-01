@@ -2,7 +2,7 @@ import { ValidationResult, type LocalCompetitionType } from './local-match-contr
 export type { ValidationResult };
 
 export type ProviderId =
-  | 'football-data-org'
+  | 'openfootball'
   | 'manual-snapshot';
 
 export type CanonicalMatchStatus =
@@ -21,19 +21,49 @@ export interface RawProviderPayloadEnvelope {
   fetchedAt: string;
   payloadHash: string;
   rateLimit: { requestedEntity?: string; remaining?: number; resetsInSeconds?: number };
+  source?: OpenFootballRawSourceMetadata;
+  response?: RawProviderResponseMetadata;
   payload: unknown;
 }
 
+export interface OpenFootballRawSourceMetadata {
+  allowlistEntryId: string;
+  repository: string;
+  ref: string;
+  filePath: string;
+}
+
+export interface RawProviderResponseMetadata {
+  etag?: string;
+  lastModified?: string;
+  contentType: string;
+  byteCount: number;
+}
+
+export type ProviderCaptureStatus =
+  | 'pending'
+  | 'captured'
+  | 'not_modified'
+  | 'invalid'
+  | 'published'
+  | 'skipped'
+  | 'unavailable'
+  | 'failed';
+
 export interface ProviderCaptureManifestEntry {
+  runId?: string;
+  allowlistEntryId?: string;
   provider: ProviderId;
   endpointKey: string;
   urlPath: string;
   query: Record<string, string>;
-  status: 'pending' | 'captured' | 'skipped' | 'forbidden' | 'unavailable' | 'failed';
+  status: ProviderCaptureStatus;
+  fetchedAt?: string;
+  httpStatus?: number;
+  attemptCount?: number;
   page?: number;
   hasMore?: boolean;
   payloadHash?: string;
-  fetchedAt?: string;
   recordCount?: number;
   errorCode?: string;
   errorMessage?: string;
@@ -49,6 +79,7 @@ export interface CanonicalMatch {
   awayTeamId: string;
   scoreHome: number | null;
   scoreAway: number | null;
+  venue?: string;
   venueId?: string;
   round?: string;
   stage?: string;
@@ -138,8 +169,19 @@ function isObject(val: unknown): val is Record<string, unknown> {
 }
 
 const VALID_PROVIDER_IDS: ProviderId[] = [
-  'football-data-org',
+  'openfootball',
   'manual-snapshot'
+];
+
+const VALID_CAPTURE_STATUSES: ProviderCaptureStatus[] = [
+  'pending',
+  'captured',
+  'not_modified',
+  'invalid',
+  'published',
+  'skipped',
+  'unavailable',
+  'failed'
 ];
 
 const VALID_CANONICAL_STATUSES: CanonicalMatchStatus[] = [
@@ -197,12 +239,121 @@ export function validateRawProviderPayloadEnvelope(input: unknown): ValidationRe
     errors.push('Field "payload" is required');
   }
 
+  if (input.provider === 'openfootball') {
+    validateOpenFootballRawEnvelope(input, errors);
+  }
+
   // Forbidden canonical top-level fields
   if ('providerFixtureId' in input) {
     errors.push('Forbidden field "providerFixtureId" is present');
   }
   if ('sourceProviderId' in input) {
     errors.push('Forbidden field "sourceProviderId" is present');
+  }
+
+  return errors.length === 0 ? { ok: true } : { ok: false, errors };
+}
+
+function validateOpenFootballRawEnvelope(input: Record<string, unknown>, errors: string[]): void {
+  if (!isObject(input.source)) {
+    errors.push('Field "source" must be OpenFootball source metadata');
+  } else {
+    for (const field of ['allowlistEntryId', 'repository', 'ref', 'filePath'] as const) {
+      if (typeof input.source[field] !== 'string' || input.source[field].trim() === '') {
+        errors.push(`Field "source.${field}" must be a non-empty string`);
+      }
+    }
+  }
+
+  if (!isObject(input.response)) {
+    errors.push('Field "response" must be raw response metadata');
+  } else {
+    if (typeof input.response.contentType !== 'string' || input.response.contentType.trim() === '') {
+      errors.push('Field "response.contentType" must be a non-empty string');
+    }
+    if (!Number.isInteger(input.response.byteCount) || (input.response.byteCount as number) < 0) {
+      errors.push('Field "response.byteCount" must be a non-negative integer');
+    }
+    for (const field of ['etag', 'lastModified'] as const) {
+      if (input.response[field] !== undefined && (typeof input.response[field] !== 'string' || input.response[field].trim() === '')) {
+        errors.push(`Field "response.${field}" must be a non-empty string if provided`);
+      }
+    }
+  }
+
+  if (!isObject(input.query) || Object.keys(input.query).length !== 0) {
+    errors.push('Field "query" must be empty for openfootball');
+  }
+  if (typeof input.payload !== 'string') {
+    errors.push('Field "payload" must be an exact source text string for openfootball');
+  }
+}
+
+export function validateProviderCaptureManifestEntry(input: unknown): ValidationResult {
+  const errors: string[] = [];
+
+  if (!isObject(input)) {
+    return { ok: false, errors: ['Input is not an object'] };
+  }
+
+  if (!VALID_PROVIDER_IDS.includes(input.provider as ProviderId)) {
+    errors.push(`Field "provider" must be one of: ${VALID_PROVIDER_IDS.join(', ')}`);
+  }
+  if (typeof input.endpointKey !== 'string' || input.endpointKey.trim() === '') {
+    errors.push('Field "endpointKey" must be a non-empty string');
+  }
+  if (typeof input.urlPath !== 'string' || input.urlPath.trim() === '') {
+    errors.push('Field "urlPath" must be a non-empty string');
+  }
+  if (!isObject(input.query)) {
+    errors.push('Field "query" must be an object');
+  }
+  if (!VALID_CAPTURE_STATUSES.includes(input.status as ProviderCaptureStatus)) {
+    errors.push(`Field "status" must be one of: ${VALID_CAPTURE_STATUSES.join(', ')}`);
+  }
+  if (input.runId !== undefined && (typeof input.runId !== 'string' || input.runId.trim() === '')) {
+    errors.push('Field "runId" must be a non-empty string if provided');
+  }
+  if (input.allowlistEntryId !== undefined && (typeof input.allowlistEntryId !== 'string' || input.allowlistEntryId.trim() === '')) {
+    errors.push('Field "allowlistEntryId" must be a non-empty string if provided');
+  }
+  if (input.fetchedAt !== undefined && !isValidIsoDateTime(input.fetchedAt)) {
+    errors.push('Field "fetchedAt" must be a valid ISO datetime string if provided');
+  }
+  if (input.httpStatus !== undefined && (!Number.isInteger(input.httpStatus) || (input.httpStatus as number) < 100 || (input.httpStatus as number) > 599)) {
+    errors.push('Field "httpStatus" must be an integer from 100 through 599 if provided');
+  }
+  if (input.attemptCount !== undefined && (!Number.isInteger(input.attemptCount) || (input.attemptCount as number) < 1)) {
+    errors.push('Field "attemptCount" must be an integer of at least 1 if provided');
+  }
+  if (input.page !== undefined && (!Number.isInteger(input.page) || (input.page as number) < 1)) {
+    errors.push('Field "page" must be an integer of at least 1 if provided');
+  }
+  if (input.hasMore !== undefined && typeof input.hasMore !== 'boolean') {
+    errors.push('Field "hasMore" must be a boolean if provided');
+  }
+  if (input.payloadHash !== undefined && (typeof input.payloadHash !== 'string' || input.payloadHash.length !== 64)) {
+    errors.push('Field "payloadHash" must be a 64-character hex string if provided');
+  }
+  if (input.recordCount !== undefined && (!Number.isInteger(input.recordCount) || (input.recordCount as number) < 0)) {
+    errors.push('Field "recordCount" must be a non-negative integer if provided');
+  }
+  for (const field of ['errorCode', 'errorMessage'] as const) {
+    if (input[field] !== undefined && (typeof input[field] !== 'string' || input[field].trim() === '')) {
+      errors.push(`Field "${field}" must be a non-empty string if provided`);
+    }
+  }
+
+  if (input.provider === 'openfootball') {
+    if (typeof input.runId !== 'string' || input.runId.trim() === '') {
+      errors.push('Field "runId" is required for openfootball');
+    }
+    if (typeof input.allowlistEntryId !== 'string' || input.allowlistEntryId.trim() === '') {
+      errors.push('Field "allowlistEntryId" is required for openfootball');
+    }
+    if (!isValidIsoDateTime(input.fetchedAt)) {
+      errors.push('Field "fetchedAt" is required for openfootball');
+    }
   }
 
   return errors.length === 0 ? { ok: true } : { ok: false, errors };
@@ -252,6 +403,10 @@ export function validateCanonicalMatch(input: unknown): ValidationResult {
   const scoreAway = input.scoreAway;
   if (scoreAway !== null && (typeof scoreAway !== 'number' || !Number.isInteger(scoreAway) || scoreAway < 0)) {
     errors.push('Field "scoreAway" must be a non-negative integer or null');
+  }
+
+  if (input.venue !== undefined && typeof input.venue !== 'string') {
+    errors.push('Field "venue" must be a string if provided');
   }
 
   if (!isValidIsoDateTime(input.updatedAt)) {

@@ -22,6 +22,7 @@ const RULES = [
     // Allowed files for this specific rule (tests and validators checking agnosticism checks)
     allowList: [
       'packages/config/src/competition-registry.mock.ts',
+      'packages/config/src/openfootball-source-registry.ts',
       'scripts/phase2-verify.ts',
       'apps/api/src/services/cloud-match-snapshot-sync.test.ts',
       'packages/shared/src/contracts/provider-ingestion-contracts.test.ts'

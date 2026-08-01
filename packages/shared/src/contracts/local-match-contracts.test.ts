@@ -166,6 +166,20 @@ describe('Local Match Contracts Validation', () => {
     expect(validateLocalMatch(clubMatch)).toEqual({ ok: true });
   });
 
+  it('rejects stale source identifiers outside OpenFootball and manual snapshots', () => {
+    const result = validateLocalMatch({
+      ...validScheduledMatch,
+      sourceRefs: [{
+        ...validScheduledMatch.sourceRefs[0]!,
+        sourceId: 'football-data-org'
+      }]
+    });
+    expect(result.ok).toBe(false);
+    expect(result.ok ? [] : result.errors).toEqual(expect.arrayContaining([
+      expect.stringContaining('sourceRefs[0].sourceId')
+    ]));
+  });
+
   it('rejects completed match with null score values', () => {
     const invalidMatch = {
       ...validCompletedMatch,

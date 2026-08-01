@@ -60,6 +60,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@miraichi/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@miraichi/shared':
         specifier: workspace:*
         version: link:../../packages/shared
