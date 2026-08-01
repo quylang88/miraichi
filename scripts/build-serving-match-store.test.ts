@@ -42,7 +42,7 @@ describe('build-serving-match-store script', () => {
       {
         entityType: 'match',
         entityId: 'match-world-cup-2026-mexico-south-africa',
-        provider: 'sportmonks',
+        provider: 'manual-snapshot',
         providerEntityType: 'fixture',
         providerEntityId: '12345',
         confidence: 0.98,
@@ -70,7 +70,7 @@ describe('build-serving-match-store script', () => {
     const snapshot = await readServingMatchStoreSnapshot(path.join(dataRoot, 'serving'));
     expect(snapshot.snapshotId).toBe('serving-v-test');
     expect(snapshot.sources).toEqual([
-      { sourceId: 'sportmonks', sourceMatchId: '12345', importedAt: observedAt }
+      { sourceId: 'manual-snapshot', sourceMatchId: '12345', importedAt: observedAt }
     ]);
     expect(snapshot.matches[0]).toMatchObject({
       id: 'match-world-cup-2026-mexico-south-africa',

@@ -29,7 +29,7 @@ describe('provider-neutral provenance', () => {
       entityType: 'match',
       entityId: 'match-20260702-japan-vietnam',
       fieldPath: 'scoreHome',
-      provider: 'sportmonks',
+      provider: 'manual-snapshot',
       providerEntityId: '123456',
       value: 2,
       observedAt: '2026-07-02T00:00:00.000Z',
@@ -38,7 +38,7 @@ describe('provider-neutral provenance', () => {
       entityType: 'match',
       entityId: 'match-20260702-japan-vietnam',
       fieldPath: 'scoreHome',
-      provider: 'sportmonks',
+      provider: 'manual-snapshot',
       providerEntityId: '123456',
       valueHash: expect.stringMatching(/^[a-f0-9]{64}$/)
     });

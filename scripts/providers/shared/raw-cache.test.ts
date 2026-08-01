@@ -15,7 +15,7 @@ describe('provider-neutral raw cache and warehouse', () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
     const path = await writeRawProviderPayload(root, {
       schemaVersion: 'miraichi.provider.raw.v1',
-      provider: 'sportmonks',
+      provider: 'manual-snapshot',
       endpointKey: 'fixtures.all',
       urlPath: '/v3/football/fixtures',
       query: { page: '1' },
@@ -25,14 +25,14 @@ describe('provider-neutral raw cache and warehouse', () => {
       payload: { data: [{ id: 1 }] }
     });
 
-    expect(path).toContain(join('providers', 'sportmonks', 'raw', 'fixtures.all'));
-    expect(JSON.parse(await readFile(path, 'utf8')).provider).toBe('sportmonks');
+    expect(path).toContain(join('providers', 'manual-snapshot', 'raw', 'fixtures.all'));
+    expect(JSON.parse(await readFile(path, 'utf8')).provider).toBe('manual-snapshot');
   });
 
   it('appends provider manifests and canonical warehouse jsonl records', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
-    await appendProviderManifestEntry(root, 'sportmonks', {
-      provider: 'sportmonks',
+    await appendProviderManifestEntry(root, 'manual-snapshot', {
+      provider: 'manual-snapshot',
       endpointKey: 'fixtures.all',
       urlPath: '/v3/football/fixtures',
       query: { page: '1' },
@@ -54,7 +54,7 @@ describe('provider-neutral raw cache and warehouse', () => {
       updatedAt: '2026-07-02T00:00:00.000Z'
     });
 
-    expect(await readFile(join(root, 'providers', 'sportmonks', 'manifests', 'capture-manifest.jsonl'), 'utf8')).toContain('"status":"captured"');
+    expect(await readFile(join(root, 'providers', 'manual-snapshot', 'manifests', 'capture-manifest.jsonl'), 'utf8')).toContain('"status":"captured"');
     expect(await readFile(join(root, 'warehouse', 'canonical-matches.jsonl'), 'utf8')).toContain('"matchId":"match-1"');
   });
 });

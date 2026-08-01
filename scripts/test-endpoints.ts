@@ -241,7 +241,7 @@ async function prepareIntegrationServingStore(): Promise<string> {
     homeTeam: { id: 'team-japan', name: 'Japan' },
     awayTeam: { id: 'team-vietnam', name: 'Vietnam' },
     score: { home: null, away: null },
-    sourceRefs: [{ sourceId: 'sportmonks', sourceMatchId: 'e2e-fixture', importedAt }],
+    sourceRefs: [{ sourceId: 'manual-snapshot', sourceMatchId: 'e2e-fixture', importedAt }],
     updatedAt: importedAt
   };
 
@@ -251,9 +251,9 @@ async function prepareIntegrationServingStore(): Promise<string> {
     snapshotId: 'serving-e2e',
     generatedAt: importedAt,
     importedAt,
-    sources: [{ sourceId: 'sportmonks', importedAt }],
+    sources: [{ sourceId: 'manual-snapshot', importedAt }],
     matches: [match],
-    scope: 'national-team'
+    scope: 'configured-competitions'
   });
 
   return servingRoot;

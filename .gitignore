@@ -77,19 +77,6 @@ desktop.ini
 *.sln
 *.sw?
 
-# Machine Learning / AI models
-*.bin
-*.pkl
-*.h5
-*.onnx
-*.pt
-*.pth
-*.ckpt
-models/
-checkpoint-*/
-cache/
-.huggingface/
-
 # Provider capture data — local raw payloads and manifests are gitignored;
 # .gitkeep sentinels are explicitly unignored to preserve directory structure.
 # Warehouse JSONL files are NOT globally ignored; promotion is an explicit decision.
@@ -99,4 +86,3 @@ apps/api/data/providers/*/reports/**
 !apps/api/data/providers/*/raw/.gitkeep
 !apps/api/data/providers/*/manifests/.gitkeep
 !apps/api/data/providers/*/reports/.gitkeep
-

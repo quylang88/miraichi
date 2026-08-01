@@ -11,7 +11,7 @@ import type {
 } from '@miraichi/shared';
 import { validateLocalMatch } from '@miraichi/shared';
 
-export type ServingMatchScope = 'national-team' | 'club';
+export type ServingMatchScope = 'configured-competitions';
 
 export interface LocalMatchSnapshot {
   snapshotId: string;
@@ -105,7 +105,7 @@ const INDEX_SCHEMA_VERSION = 'miraichi.serving.match-index.v1';
 export async function buildServingMatchStore(
   options: BuildServingMatchStoreOptions
 ): Promise<BuildServingMatchStoreResult> {
-  const scope = options.scope ?? 'national-team';
+  const scope = options.scope ?? 'configured-competitions';
   const matches = normalizeAndValidateMatches(options.matches);
   const versionDir = path.join(options.servingRoot, 'versions', options.version);
   const scopedRoot = path.join(versionDir, `scope=${scope}`);

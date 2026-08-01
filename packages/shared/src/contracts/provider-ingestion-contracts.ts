@@ -1,8 +1,7 @@
-import { ValidationResult } from './local-match-contracts.js';
+import { ValidationResult, type LocalCompetitionType } from './local-match-contracts.js';
 export type { ValidationResult };
 
 export type ProviderId =
-  | 'sportmonks'
   | 'football-data-org'
   | 'manual-snapshot';
 
@@ -67,7 +66,7 @@ export interface CanonicalTeam {
 export interface CanonicalCompetition {
   competitionId: string;
   name: string;
-  type: 'national-team';
+  type: LocalCompetitionType;
   updatedAt: string;
 }
 
@@ -139,7 +138,6 @@ function isObject(val: unknown): val is Record<string, unknown> {
 }
 
 const VALID_PROVIDER_IDS: ProviderId[] = [
-  'sportmonks',
   'football-data-org',
   'manual-snapshot'
 ];
@@ -200,9 +198,6 @@ export function validateRawProviderPayloadEnvelope(input: unknown): ValidationRe
   }
 
   // Forbidden canonical top-level fields
-  if ('sportmonksFixtureId' in input) {
-    errors.push('Forbidden field "sportmonksFixtureId" is present');
-  }
   if ('providerFixtureId' in input) {
     errors.push('Forbidden field "providerFixtureId" is present');
   }
@@ -221,9 +216,6 @@ export function validateCanonicalMatch(input: unknown): ValidationResult {
   }
 
   // Forbidden fields
-  if ('sportmonksFixtureId' in input) {
-    errors.push('Forbidden field "sportmonksFixtureId" is present');
-  }
   if ('providerFixtureId' in input) {
     errors.push('Forbidden field "providerFixtureId" is present');
   }

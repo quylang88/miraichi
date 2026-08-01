@@ -155,17 +155,15 @@ describe('Local Match Contracts Validation', () => {
     expect(result.ok ? [] : result.errors).toContain('Field "status" cannot be "in_play" in Phase 9');
   });
 
-  it('rejects non-national-team competition types', () => {
-    const invalidMatch = {
+  it('accepts club competitions', () => {
+    const clubMatch = {
       ...validScheduledMatch,
       competition: {
         ...validScheduledMatch.competition,
-        type: 'club' as unknown as 'national-team'
+        type: 'club' as const
       }
     };
-    const result = validateLocalMatch(invalidMatch);
-    expect(result.ok).toBe(false);
-    expect(result.ok ? [] : result.errors).toContain('competition.type must be "national-team"');
+    expect(validateLocalMatch(clubMatch)).toEqual({ ok: true });
   });
 
   it('rejects completed match with null score values', () => {

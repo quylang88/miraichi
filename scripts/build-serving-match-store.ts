@@ -37,7 +37,7 @@ export async function runBuildServingMatchStoreFromWarehouse(
     importedAt: generatedAt,
     sources: servingMatches.sources,
     matches: servingMatches.matches,
-    scope: 'national-team'
+    scope: 'configured-competitions'
   });
   (options.log ?? console.log)(`Built serving match store ${result.version}: ${result.matchCount} matches -> ${servingRoot}`);
   return result;

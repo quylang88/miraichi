@@ -3,8 +3,9 @@ export type LocalDataSourceId =
   | 'sofascore-local'
   | 'football-data-org'
   | 'international-results'
-  | 'manual-snapshot'
-  | 'sportmonks';
+  | 'manual-snapshot';
+
+export type LocalCompetitionType = 'national-team' | 'club';
 
 export type LocalMatchStatus =
   | 'scheduled'
@@ -28,7 +29,7 @@ export interface LocalMatchSourceRef {
 export interface LocalCompetitionRef {
   id: string;
   name: string;
-  type: 'national-team';
+  type: LocalCompetitionType;
   season: string;
 }
 
@@ -115,9 +116,10 @@ const VALID_DATA_SOURCES: LocalDataSourceId[] = [
   'sofascore-local',
   'football-data-org',
   'international-results',
-  'manual-snapshot',
-  'sportmonks'
+  'manual-snapshot'
 ];
+
+const VALID_COMPETITION_TYPES: LocalCompetitionType[] = ['national-team', 'club'];
 
 const VALID_MATCH_STATUSES: LocalMatchStatus[] = [
   'scheduled',
@@ -158,8 +160,8 @@ export function validateLocalMatch(input: unknown): ValidationResult {
     if (typeof comp.name !== 'string' || comp.name.trim() === '') {
       errors.push('competition.name must be a non-empty string');
     }
-    if (comp.type !== 'national-team') {
-      errors.push('competition.type must be "national-team"');
+    if (!VALID_COMPETITION_TYPES.includes(comp.type as LocalCompetitionType)) {
+      errors.push(`competition.type must be one of: ${VALID_COMPETITION_TYPES.join(', ')}`);
     }
     if (typeof comp.season !== 'string' || comp.season.trim() === '') {
       errors.push('competition.season must be a non-empty string');

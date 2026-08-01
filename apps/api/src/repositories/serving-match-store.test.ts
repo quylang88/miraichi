@@ -50,7 +50,7 @@ describe('serving match store', () => {
       score: { home: 2, away: 1 },
       updatedAt: '2026-07-05T01:00:00.000Z',
       sourceRefs: [
-        { sourceId: 'sportmonks', sourceMatchId: 'sm-99', importedAt: '2026-07-05T01:00:00.000Z' }
+        { sourceId: 'manual-snapshot', sourceMatchId: 'manual-99', importedAt: '2026-07-05T01:00:00.000Z' }
       ]
     });
     const second = match({
@@ -75,11 +75,10 @@ describe('serving match store', () => {
       generatedAt: importedAt,
       importedAt,
       sources: [
-        { sourceId: 'sportmonks', importedAt },
         { sourceId: 'manual-snapshot', importedAt }
       ],
       matches: [older, newer, second],
-      scope: 'national-team'
+      scope: 'configured-competitions'
     });
 
     expect(result).toEqual({
@@ -91,28 +90,28 @@ describe('serving match store', () => {
     const manifest = JSON.parse(await fs.readFile(path.join(root, 'manifest.json'), 'utf8'));
     expect(manifest.schemaVersion).toBe('miraichi.serving.match-store.v1');
     expect(manifest.currentVersion).toBe('2026-07-05T00-00-00Z');
-    expect(manifest.scopes[0].scope).toBe('national-team');
+    expect(manifest.scopes[0].scope).toBe('configured-competitions');
     expect(manifest.scopes[0].matchCount).toBe(2);
     expect(manifest.scopes[0].partitions.byDate).toEqual([
-      'scope=national-team/by-date/2024-07-14.json',
-      'scope=national-team/by-date/2026-06-11.json'
+      'scope=configured-competitions/by-date/2024-07-14.json',
+      'scope=configured-competitions/by-date/2026-06-11.json'
     ]);
 
     const datePartition = JSON.parse(await fs.readFile(
-      path.join(root, 'versions', '2026-07-05T00-00-00Z', 'scope=national-team', 'by-date', '2026-06-11.json'),
+      path.join(root, 'versions', '2026-07-05T00-00-00Z', 'scope=configured-competitions', 'by-date', '2026-06-11.json'),
       'utf8'
     ));
     expect(datePartition.schemaVersion).toBe('miraichi.serving.matches.partition.v1');
     expect(datePartition.matches).toHaveLength(1);
     expect(datePartition.matches[0].id).toBe('match-1');
     expect(datePartition.matches[0].score).toEqual({ home: 2, away: 1 });
-    expect(datePartition.matches[0].sourceRefs.map((ref: { sourceId: string }) => ref.sourceId).sort()).toEqual([
+    expect(datePartition.matches[0].sourceRefs.map((ref: { sourceId: string }) => ref.sourceId)).toEqual([
       'manual-snapshot',
-      'sportmonks'
+      'manual-snapshot'
     ]);
 
     const competitionPartition = JSON.parse(await fs.readFile(
-      path.join(root, 'versions', '2026-07-05T00-00-00Z', 'scope=national-team', 'by-competition', 'world-cup-2026', '2026.json'),
+      path.join(root, 'versions', '2026-07-05T00-00-00Z', 'scope=configured-competitions', 'by-competition', 'world-cup-2026', '2026.json'),
       'utf8'
     ));
     expect(competitionPartition.partition).toEqual({
@@ -125,11 +124,11 @@ describe('serving match store', () => {
       'utf8'
     ));
     expect(index.entries['match-1']).toMatchObject({
-      scope: 'national-team',
+      scope: 'configured-competitions',
       date: '2026-06-11',
       competitionId: 'world-cup-2026',
       season: '2026',
-      partitionPath: 'scope=national-team/by-date/2026-06-11.json'
+      partitionPath: 'scope=configured-competitions/by-date/2026-06-11.json'
     });
 
     await fs.rm(root, { recursive: true, force: true });
@@ -143,9 +142,9 @@ describe('serving match store', () => {
       snapshotId: 'serving-v1',
       generatedAt: importedAt,
       importedAt,
-      sources: [{ sourceId: 'sportmonks', importedAt }],
+      sources: [{ sourceId: 'manual-snapshot', importedAt }],
       matches: [match()],
-      scope: 'national-team'
+      scope: 'configured-competitions'
     });
 
     const snapshot = await readServingMatchStoreSnapshot(root);
@@ -184,7 +183,7 @@ describe('serving match store', () => {
       importedAt,
       sources: [],
       matches: [invalid],
-      scope: 'national-team'
+      scope: 'configured-competitions'
     })).rejects.toThrow('Invalid serving match at index 0');
 
     await fs.rm(root, { recursive: true, force: true });

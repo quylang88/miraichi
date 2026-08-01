@@ -15,9 +15,8 @@ export type WarehouseCollection =
  * Append a canonical record to the provider-neutral warehouse at:
  *   <root>/warehouse/<collection>.jsonl
  *
- * Each line is a compact JSON object. The warehouse is provider-neutral:
- * Sportmonks-specific code may write to it, but the warehouse survives
- * Sportmonks deletion.
+ * Each line is a compact JSON object. Provider-specific adapters may write to
+ * it; the warehouse survives adapter replacement.
  */
 export async function appendCanonicalWarehouseRecord(
   root: string,

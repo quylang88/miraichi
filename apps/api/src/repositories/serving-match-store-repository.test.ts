@@ -21,7 +21,7 @@ const scheduledMatch: LocalMatch = {
   homeTeam: { id: 'team-mexico', name: 'Mexico' },
   awayTeam: { id: 'team-south-africa', name: 'South Africa' },
   score: { home: null, away: null },
-  sourceRefs: [{ sourceId: 'sportmonks', sourceMatchId: 'sm-1', importedAt }],
+  sourceRefs: [{ sourceId: 'manual-snapshot', sourceMatchId: 'manual-1', importedAt }],
   updatedAt: importedAt
 };
 
@@ -38,7 +38,7 @@ const completedMatch: LocalMatch = {
   homeTeam: { id: 'team-spain', name: 'Spain' },
   awayTeam: { id: 'team-england', name: 'England' },
   score: { home: 2, away: 1 },
-  sourceRefs: [{ sourceId: 'sportmonks', sourceMatchId: 'sm-2', importedAt }],
+  sourceRefs: [{ sourceId: 'manual-snapshot', sourceMatchId: 'manual-2', importedAt }],
   updatedAt: importedAt
 };
 
@@ -50,9 +50,9 @@ async function createStore(matches: LocalMatch[]): Promise<string> {
     snapshotId: 'serving-v1',
     generatedAt: importedAt,
     importedAt,
-    sources: [{ sourceId: 'sportmonks', importedAt }],
+    sources: [{ sourceId: 'manual-snapshot', importedAt }],
     matches,
-    scope: 'national-team'
+    scope: 'configured-competitions'
   });
   return root;
 }
@@ -126,9 +126,9 @@ describe('ServingMatchStoreRepository', () => {
       snapshotId: 'serving-v1',
       generatedAt: '2026-07-01T00:00:00.000Z',
       importedAt: '2026-07-01T00:00:00.000Z',
-      sources: [{ sourceId: 'sportmonks', importedAt: '2026-07-01T00:00:00.000Z' }],
+      sources: [{ sourceId: 'manual-snapshot', importedAt: '2026-07-01T00:00:00.000Z' }],
       matches: [scheduledMatch],
-      scope: 'national-team'
+      scope: 'configured-competitions'
     });
     const repo = new ServingMatchStoreRepository({
       servingRoot: root,
