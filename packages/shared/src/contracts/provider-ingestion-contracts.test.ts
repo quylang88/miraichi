@@ -8,6 +8,42 @@ import {
 } from './provider-ingestion-contracts.js';
 import { validateLocalMatch } from './local-match-contracts.js';
 
+const OPENFOOTBALL_BINDING_POLICY = {
+  resolveSourceBinding(provider: string, allowlistEntryId: string) {
+    if (provider !== 'openfootball') {
+      return undefined;
+    }
+
+    if (allowlistEntryId === 'openfootball-england-premier-league-2026-27') {
+      return {
+        allowlistEntryId,
+        endpointKey: 'openfootball-england-premier-league-2026-27',
+        urlPath: '/openfootball/england/master/2026-27/1-premierleague.txt',
+        source: {
+          repository: 'england',
+          ref: 'master',
+          filePath: '2026-27/1-premierleague.txt'
+        }
+      };
+    }
+
+    if (allowlistEntryId === 'policy-owned-openfootball-source') {
+      return {
+        allowlistEntryId,
+        endpointKey: 'policy-owned-openfootball-source',
+        urlPath: '/openfootball/policy-owner/master/season/source.txt',
+        source: {
+          repository: 'policy-owner',
+          ref: 'master',
+          filePath: 'season/source.txt'
+        }
+      };
+    }
+
+    return undefined;
+  }
+};
+
 describe('provider-neutral ingestion contracts', () => {
   it('accepts raw provider envelopes without making the provider canonical', () => {
     expect(validateRawProviderPayloadEnvelope({
@@ -20,7 +56,57 @@ describe('provider-neutral ingestion contracts', () => {
       payloadHash: 'a'.repeat(64),
       rateLimit: { requestedEntity: 'Fixture', remaining: 1999, resetsInSeconds: 3600 },
       payload: { data: [{ id: 1 }] }
-    })).toEqual({ ok: true });
+    }, OPENFOOTBALL_BINDING_POLICY)).toEqual({ ok: true });
+  });
+
+  it('binds OpenFootball validation through an injected provider policy', () => {
+    expect(validateRawProviderPayloadEnvelope({
+      schemaVersion: 'miraichi.provider.raw.v1',
+      provider: 'openfootball',
+      endpointKey: 'policy-owned-openfootball-source',
+      urlPath: '/openfootball/policy-owner/master/season/source.txt',
+      query: {},
+      fetchedAt: '2026-07-02T00:00:00.000Z',
+      payloadHash: 'a'.repeat(64),
+      rateLimit: {},
+      source: {
+        allowlistEntryId: 'policy-owned-openfootball-source',
+        repository: 'policy-owner',
+        ref: 'master',
+        filePath: 'season/source.txt'
+      },
+      response: { contentType: 'text/plain; charset=utf-8', byteCount: 6 },
+      payload: 'source'
+    }, OPENFOOTBALL_BINDING_POLICY)).toEqual({ ok: true });
+
+    expect(validateProviderCaptureManifestEntry({
+      runId: 'run-20260702-policy',
+      allowlistEntryId: 'policy-owned-openfootball-source',
+      provider: 'openfootball',
+      endpointKey: 'policy-owned-openfootball-source',
+      urlPath: '/openfootball/policy-owner/master/season/source.txt',
+      query: {},
+      status: 'captured',
+      fetchedAt: '2026-07-02T00:00:00.000Z'
+    }, OPENFOOTBALL_BINDING_POLICY)).toEqual({ ok: true });
+  });
+
+  it('rejects OpenFootball validation without an injected binding policy', () => {
+    const result = validateProviderCaptureManifestEntry({
+      runId: 'run-20260702-0001',
+      allowlistEntryId: 'openfootball-england-premier-league-2026-27',
+      provider: 'openfootball',
+      endpointKey: 'openfootball-england-premier-league-2026-27',
+      urlPath: '/openfootball/england/master/2026-27/1-premierleague.txt',
+      query: {},
+      status: 'captured',
+      fetchedAt: '2026-07-02T00:00:00.000Z'
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? [] : result.errors).toEqual(expect.arrayContaining([
+      expect.stringContaining('binding policy')
+    ]));
   });
 
   it('accepts OpenFootball raw text envelopes with source and response evidence', () => {
@@ -44,7 +130,7 @@ describe('provider-neutral ingestion contracts', () => {
         byteCount: 33
       },
       payload: '= English Premier League 2026/27\n'
-    })).toEqual({ ok: true });
+    }, OPENFOOTBALL_BINDING_POLICY)).toEqual({ ok: true });
   });
 
   it('rejects OpenFootball envelopes without exact text metadata', () => {
@@ -60,7 +146,7 @@ describe('provider-neutral ingestion contracts', () => {
       source: { allowlistEntryId: '', repository: 'england', ref: 'master', filePath: '2026-27/1-premierleague.txt' },
       response: { contentType: '', byteCount: -1 },
       payload: { text: 'not exact source text' }
-    });
+    }, OPENFOOTBALL_BINDING_POLICY);
 
     expect(result.ok).toBe(false);
     expect(result.ok ? [] : result.errors).toEqual(expect.arrayContaining([
@@ -90,7 +176,7 @@ describe('provider-neutral ingestion contracts', () => {
       },
       response: { contentType: 'text/plain; charset=utf-8', byteCount: 33 },
       payload: '= English Premier League 2026/27\n'
-    });
+    }, OPENFOOTBALL_BINDING_POLICY);
 
     expect(result.ok).toBe(false);
     expect(result.ok ? [] : result.errors).toEqual(expect.arrayContaining([
@@ -114,7 +200,7 @@ describe('provider-neutral ingestion contracts', () => {
       attemptCount: 1,
       payloadHash: 'a'.repeat(64),
       recordCount: 380
-    })).toEqual({ ok: true });
+    }, OPENFOOTBALL_BINDING_POLICY)).toEqual({ ok: true });
   });
 
   it('rejects incomplete OpenFootball capture manifests while retaining manual snapshots', () => {
@@ -124,7 +210,7 @@ describe('provider-neutral ingestion contracts', () => {
       urlPath: '/openfootball/england/master/2026-27/1-premierleague.txt',
       query: {},
       status: 'captured'
-    });
+    }, OPENFOOTBALL_BINDING_POLICY);
     expect(invalid.ok).toBe(false);
     expect(invalid.ok ? [] : invalid.errors).toEqual(expect.arrayContaining([
       expect.stringContaining('runId'),
@@ -151,7 +237,7 @@ describe('provider-neutral ingestion contracts', () => {
       query: {},
       status: 'captured',
       fetchedAt: '2026-07-02T00:00:00.000Z'
-    });
+    }, OPENFOOTBALL_BINDING_POLICY);
 
     expect(result.ok).toBe(false);
     expect(result.ok ? [] : result.errors).toEqual(expect.arrayContaining([

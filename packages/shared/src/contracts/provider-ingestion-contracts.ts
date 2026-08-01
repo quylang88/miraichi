@@ -1,7 +1,3 @@
-import {
-  buildOpenFootballRawUrl,
-  OPENFOOTBALL_SOURCE_REGISTRY
-} from '@miraichi/config';
 import { ValidationResult, type LocalCompetitionType } from './local-match-contracts.js';
 export type { ValidationResult };
 
@@ -42,6 +38,17 @@ export interface RawProviderResponseMetadata {
   lastModified?: string;
   contentType: string;
   byteCount: number;
+}
+
+export interface ProviderSourceBinding {
+  allowlistEntryId: string;
+  endpointKey: string;
+  urlPath: string;
+  source: Readonly<Record<string, string>>;
+}
+
+export interface ProviderSourceBindingPolicy {
+  resolveSourceBinding(provider: ProviderId, allowlistEntryId: string): ProviderSourceBinding | undefined;
 }
 
 export type ProviderCaptureStatus =
@@ -200,7 +207,10 @@ const VALID_ENTITY_TYPES = ['match', 'team', 'competition', 'event', 'stat'] as 
 
 // ─── Validators ───────────────────────────────────────────────────────────────
 
-export function validateRawProviderPayloadEnvelope(input: unknown): ValidationResult {
+export function validateRawProviderPayloadEnvelope(
+  input: unknown,
+  bindingPolicy?: ProviderSourceBindingPolicy
+): ValidationResult {
   const errors: string[] = [];
 
   if (!isObject(input)) {
@@ -244,7 +254,7 @@ export function validateRawProviderPayloadEnvelope(input: unknown): ValidationRe
   }
 
   if (input.provider === 'openfootball') {
-    validateOpenFootballRawEnvelope(input, errors);
+    validateOpenFootballRawEnvelope(input, errors, bindingPolicy);
   }
 
   // Forbidden canonical top-level fields
@@ -258,7 +268,11 @@ export function validateRawProviderPayloadEnvelope(input: unknown): ValidationRe
   return errors.length === 0 ? { ok: true } : { ok: false, errors };
 }
 
-function validateOpenFootballRawEnvelope(input: Record<string, unknown>, errors: string[]): void {
+function validateOpenFootballRawEnvelope(
+  input: Record<string, unknown>,
+  errors: string[],
+  bindingPolicy: ProviderSourceBindingPolicy | undefined
+): void {
   if (!isObject(input.source)) {
     errors.push('Field "source" must be OpenFootball source metadata');
   } else {
@@ -295,45 +309,54 @@ function validateOpenFootballRawEnvelope(input: Record<string, unknown>, errors:
   validateOpenFootballRegistryBinding(
     input,
     isObject(input.source) ? input.source : undefined,
-    errors
+    errors,
+    bindingPolicy
   );
 }
 
 function validateOpenFootballRegistryBinding(
   input: Record<string, unknown>,
   source: Record<string, unknown> | undefined,
-  errors: string[]
+  errors: string[],
+  bindingPolicy: ProviderSourceBindingPolicy | undefined
 ): void {
   const allowlistEntryId = source?.allowlistEntryId ?? input.allowlistEntryId;
   if (typeof allowlistEntryId !== 'string' || allowlistEntryId.trim() === '') {
     return;
   }
 
-  const entry = OPENFOOTBALL_SOURCE_REGISTRY.find((candidate) => candidate.entryId === allowlistEntryId);
-  if (!entry) {
-    errors.push('Field "allowlistEntryId" must reference a tracked OpenFootball source entry');
+  if (!bindingPolicy) {
+    errors.push('OpenFootball source binding policy is required');
+    return;
+  }
+
+  const binding = bindingPolicy.resolveSourceBinding('openfootball', allowlistEntryId);
+  if (!binding || binding.allowlistEntryId !== allowlistEntryId) {
+    errors.push('Field "allowlistEntryId" must reference a source binding supplied by the provider policy');
     return;
   }
 
   if (source) {
     for (const field of ['repository', 'ref', 'filePath'] as const) {
-      if (source[field] !== entry[field]) {
-        errors.push(`Field "source.${field}" must match its tracked OpenFootball allowlist entry`);
+      if (source[field] !== binding.source[field]) {
+        errors.push(`Field "source.${field}" must match its provider source binding`);
       }
     }
   }
 
-  if (input.endpointKey !== entry.entryId) {
-    errors.push('Field "endpointKey" must match its tracked OpenFootball allowlist entry');
+  if (input.endpointKey !== binding.endpointKey) {
+    errors.push('Field "endpointKey" must match its provider source binding');
   }
 
-  const expectedUrlPath = new URL(buildOpenFootballRawUrl(entry)).pathname;
-  if (input.urlPath !== expectedUrlPath) {
-    errors.push('Field "urlPath" must match its tracked OpenFootball allowlist entry');
+  if (input.urlPath !== binding.urlPath) {
+    errors.push('Field "urlPath" must match its provider source binding');
   }
 }
 
-export function validateProviderCaptureManifestEntry(input: unknown): ValidationResult {
+export function validateProviderCaptureManifestEntry(
+  input: unknown,
+  bindingPolicy?: ProviderSourceBindingPolicy
+): ValidationResult {
   const errors: string[] = [];
 
   if (!isObject(input)) {
@@ -401,7 +424,7 @@ export function validateProviderCaptureManifestEntry(input: unknown): Validation
     if (!isObject(input.query) || Object.keys(input.query).length !== 0) {
       errors.push('Field "query" must be empty for openfootball');
     }
-    validateOpenFootballRegistryBinding(input, undefined, errors);
+    validateOpenFootballRegistryBinding(input, undefined, errors, bindingPolicy);
   }
 
   return errors.length === 0 ? { ok: true } : { ok: false, errors };
