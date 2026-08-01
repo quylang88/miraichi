@@ -1,4 +1,5 @@
 import {
+  OPENFOOTBALL_SOURCE_REGISTRY,
   buildOpenFootballRawUrl,
   type OpenFootballCompetitionSource
 } from '@miraichi/config';
@@ -8,6 +9,25 @@ const MAX_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [500, 1_500] as const;
 const MAX_RETRY_AFTER_MS = 60_000;
 const USER_AGENT = 'Miraichi-OpenFootball-Worker/1.0';
+const SOURCE_FIELDS = [
+  'entryId',
+  'sourceId',
+  'origin',
+  'competitionId',
+  'competitionName',
+  'expectedCompetitionHeader',
+  'competitionType',
+  'repository',
+  'ref',
+  'filePath',
+  'season',
+  'sourceTimezone',
+  'refreshIntervalMinutes',
+  'maxPayloadBytes',
+  'minimumExpectedMatches',
+  'maximumMissingRatio',
+  'enabled'
+] as const satisfies readonly (keyof OpenFootballCompetitionSource)[];
 
 export type OpenFootballFetchResult =
   | {
@@ -88,6 +108,12 @@ function error(
 
 function getUrlPath(url: string): string {
   return new URL(url).pathname;
+}
+
+function isTrackedSource(source: OpenFootballCompetitionSource): boolean {
+  return OPENFOOTBALL_SOURCE_REGISTRY.filter((entry) =>
+    SOURCE_FIELDS.every((field) => entry[field] === source[field])
+  ).length === 1;
 }
 
 function isPlainText(contentType: string | null): contentType is string {
@@ -202,6 +228,10 @@ export async function fetchOpenFootballSource(
   input: OpenFootballFetchInput,
   dependencies: OpenFootballClientDependencies
 ): Promise<OpenFootballFetchResult> {
+  if (!isTrackedSource(input.source)) {
+    throw error('source_unavailable', 'OpenFootball source is not an exact tracked allowlist entry', 0);
+  }
+
   const url = buildOpenFootballRawUrl(input.source);
   const urlPath = getUrlPath(url);
 
@@ -266,7 +296,19 @@ export async function fetchOpenFootballSource(
       throw error('payload_too_large', 'OpenFootball response exceeds the configured payload limit', attempt, response.status);
     }
 
-    const bytes = await readBoundedBody(response, input.source.maxPayloadBytes, attempt);
+    let bytes: Uint8Array;
+    try {
+      bytes = await readBoundedBody(response, input.source.maxPayloadBytes, attempt);
+    } catch (cause) {
+      if (cause instanceof OpenFootballFetchError) {
+        throw cause;
+      }
+      if (attempt === MAX_ATTEMPTS) {
+        throw error('network_failed', 'OpenFootball response body could not be read', attempt);
+      }
+      await dependencies.sleep(RETRY_DELAYS_MS[attempt - 1]!);
+      continue;
+    }
     const text = decodeUtf8(bytes, attempt);
     return {
       status: 'changed',

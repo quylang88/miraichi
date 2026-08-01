@@ -44,6 +44,25 @@ async function expectFetchError(
 }
 
 describe('fetchOpenFootballSource', () => {
+  it.each([
+    ['a changed file path', { ...source, filePath: '2026-27/2-premierleague.txt' }],
+    ['an untracked entry ID', { ...source, entryId: 'openfootball-untracked-entry' }]
+  ] as const)('rejects %s before making a request', async (_case, untrackedSource) => {
+    let fetchCalls = 0;
+    const fetchFn: typeof fetch = async () => {
+      fetchCalls += 1;
+      return response(sourceText, { headers: { 'content-type': 'text/plain' } });
+    };
+
+    await expectFetchError(
+      fetchOpenFootballSource({ source: untrackedSource }, dependencies(fetchFn)),
+      'source_unavailable',
+      0
+    );
+
+    expect(fetchCalls).toBe(0);
+  });
+
   it('captures allowlisted plain UTF-8 text with conditional request metadata', async () => {
     let request: Request | undefined;
     const result = await fetchOpenFootballSource(
@@ -113,6 +132,34 @@ describe('fetchOpenFootballSource', () => {
     expect(sleeps).toEqual([500, 1_500]);
   });
 
+  it('retries a streamed body read failure at most three times with bounded backoff', async () => {
+    let attempts = 0;
+    const sleeps: number[] = [];
+    const fetchFn: typeof fetch = async () => {
+      attempts += 1;
+      let pulls = 0;
+      return response(new ReadableStream<Uint8Array>({
+        pull(controller) {
+          pulls += 1;
+          if (pulls === 1) {
+            controller.enqueue(new TextEncoder().encode('= English Premier League 2026/27\n'));
+            return;
+          }
+          controller.error(new TypeError('connection reset while reading response body'));
+        }
+      }), { headers: { 'content-type': 'text/plain' } });
+    };
+
+    await expectFetchError(
+      fetchOpenFootballSource({ source }, dependencies(fetchFn, sleeps)),
+      'network_failed',
+      3
+    );
+
+    expect(attempts).toBe(3);
+    expect(sleeps).toEqual([500, 1_500]);
+  });
+
   it('retries server errors at most three times with bounded backoff', async () => {
     let attempts = 0;
     const sleeps: number[] = [];
@@ -163,19 +210,18 @@ describe('fetchOpenFootballSource', () => {
   it.each([
     ['404', () => response(null, { status: 404 }), 'source_unavailable'],
     ['HTML content', () => response('<html />', { headers: { 'content-type': 'text/html' } }), 'invalid_content_type'],
-    ['oversized Content-Length', () => response(null, { headers: { 'content-type': 'text/plain', 'content-length': '11' } }), 'payload_too_large'],
-    ['oversized body', () => response('01234567890', { headers: { 'content-type': 'text/plain' } }), 'payload_too_large'],
+    ['oversized Content-Length', () => response(null, { headers: { 'content-type': 'text/plain', 'content-length': String(source.maxPayloadBytes + 1) } }), 'payload_too_large'],
+    ['oversized body', () => response('0'.repeat(source.maxPayloadBytes + 1), { headers: { 'content-type': 'text/plain' } }), 'payload_too_large'],
     ['invalid UTF-8', () => response(new Uint8Array([0xc3, 0x28]), { headers: { 'content-type': 'text/plain' } }), 'invalid_utf8'],
     ['redirect outside allowlist', () => response(sourceText, { headers: { 'content-type': 'text/plain' }, url: 'https://example.com/source.txt' }), 'redirect_outside_allowlist']
   ] as const)('throws %s after one attempt', async (_case, makeResponse, code) => {
     let attempts = 0;
-    const constrainedSource = _case.includes('oversized') ? { ...source, maxPayloadBytes: 10 } : source;
     const fetchFn: typeof fetch = async () => {
       attempts += 1;
       return makeResponse();
     };
 
-    await expectFetchError(fetchOpenFootballSource({ source: constrainedSource }, dependencies(fetchFn)), code, 1);
+    await expectFetchError(fetchOpenFootballSource({ source }, dependencies(fetchFn)), code, 1);
     expect(attempts).toBe(1);
   });
 });
