@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   validateOpenFootballSourceRegistry,
@@ -104,11 +104,45 @@ const PROVIDER = 'openfootball' as const;
 export async function runOpenFootballIngestionJob(options: OpenFootballIngestionJobOptions): Promise<OpenFootballIngestionRunResult> {
   const dependencies = resolveDependencies(options);
   const runId = createRunId(options.now());
-  const registryErrors = validateOpenFootballSourceRegistry(options.sources);
   const enabledSources = options.sources.filter((source) => source.enabled);
+  try {
+    return await runIngestion(options, dependencies, runId, enabledSources);
+  } catch (error) {
+    const code = error instanceof OpenFootballIngestionJobError ? error.code : 'job_failed';
+    return failureResult(
+      options.dataRoot,
+      runId,
+      persistableSources(enabledSources),
+      options.now,
+      dependencies,
+      0,
+      0,
+      code,
+      messageFor(error)
+    );
+  }
+}
+
+async function runIngestion(
+  options: OpenFootballIngestionJobOptions,
+  dependencies: OpenFootballIngestionDependencies,
+  runId: string,
+  enabledSources: readonly OpenFootballCompetitionSource[]
+): Promise<OpenFootballIngestionRunResult> {
+  const registryErrors = validateOpenFootballSourceRegistry(options.sources);
 
   if (registryErrors.length > 0) {
-    return failed(runId, 0, 0, registryErrors.map(() => 'invalid_registry'));
+    return failureResult(
+      options.dataRoot,
+      runId,
+      persistableSources(enabledSources),
+      options.now,
+      dependencies,
+      0,
+      0,
+      'invalid_registry',
+      registryErrors.join('; ')
+    );
   }
 
   const dueSources = await Promise.all(enabledSources.map(async (source): Promise<DueSource> => {
@@ -129,13 +163,27 @@ export async function runOpenFootballIngestionJob(options: OpenFootballIngestion
 
   const dueEntryIds = new Set(dueSources.filter((entry) => entry.due).map((entry) => entry.source.entryId));
   const fetchedAt = options.now().toISOString();
-  await Promise.all(dueSources.filter((entry) => entry.due).map(({ source }) => appendManifest(
-    options.dataRoot,
-    source,
-    runId,
-    dependencies,
-    { status: 'pending', fetchedAt }
-  )));
+  try {
+    await Promise.all(dueSources.filter((entry) => entry.due).map(({ source }) => appendManifest(
+      options.dataRoot,
+      source,
+      runId,
+      dependencies,
+      { status: 'pending', fetchedAt }
+    )));
+  } catch (error) {
+    return failureResult(
+      options.dataRoot,
+      runId,
+      persistableSources(dueSources.filter((entry) => entry.due).map((entry) => entry.source)),
+      options.now,
+      dependencies,
+      0,
+      0,
+      'manifest_append_failed',
+      messageFor(error)
+    );
+  }
 
   let changedSourceCount = 0;
   let notModifiedSourceCount = 0;
@@ -144,7 +192,7 @@ export async function runOpenFootballIngestionJob(options: OpenFootballIngestion
 
   for (const { source, due } of dueSources) {
     if (!due) {
-      const cached = await dependencies.readLatestRawPayload(options.dataRoot, PROVIDER, source.entryId);
+      const cached = await latestRawPayload(options.dataRoot, source, dependencies);
       if (cached === null || typeof cached.payload !== 'string') {
         failures.push({
           source,
@@ -164,7 +212,7 @@ export async function runOpenFootballIngestionJob(options: OpenFootballIngestion
       continue;
     }
 
-    const priorRaw = await dependencies.readLatestRawPayload(options.dataRoot, PROVIDER, source.entryId);
+    const priorRaw = await latestRawPayload(options.dataRoot, source, dependencies);
     try {
       const conditional = conditionalValidators(priorRaw);
       const fetchInput = conditional === undefined ? { source } : { source, conditional };
@@ -216,8 +264,8 @@ export async function runOpenFootballIngestionJob(options: OpenFootballIngestion
   }
 
   if (failures.length > 0) {
-    await appendFailures(options.dataRoot, runId, failures, dependencies);
-    await appendAbortedSources(options.dataRoot, runId, enabledSources, failures, dueEntryIds, options.now, dependencies);
+    await appendFailuresBestEffort(options.dataRoot, runId, failures, dependencies);
+    await appendAbortedSourcesBestEffort(options.dataRoot, runId, enabledSources, failures, dueEntryIds, options.now, dependencies);
     return failed(runId, changedSourceCount, notModifiedSourceCount, failures.map((failure) => failure.code));
   }
 
@@ -237,7 +285,7 @@ export async function runOpenFootballIngestionJob(options: OpenFootballIngestion
     priorMatches = (await dependencies.readServingSnapshot(join(options.dataRoot, 'serving'))).matches;
   } catch (error) {
     if (!isMissingServingStore(error)) {
-      await appendFailures(options.dataRoot, runId, enabledSources.map((source) => ({
+      await appendFailuresBestEffort(options.dataRoot, runId, enabledSources.map((source) => ({
         source,
         fetchedAt: options.now().toISOString(),
         status: 'failed' as const,
@@ -249,7 +297,22 @@ export async function runOpenFootballIngestionJob(options: OpenFootballIngestion
     priorMatches = [];
   }
 
-  const validation = dependencies.validatePublication({ sources: enabledSources, candidate, priorMatches });
+  let validation: ReturnType<OpenFootballIngestionDependencies['validatePublication']>;
+  try {
+    validation = dependencies.validatePublication({ sources: enabledSources, candidate, priorMatches });
+  } catch (error) {
+    return failureResult(
+      options.dataRoot,
+      runId,
+      enabledSources,
+      options.now,
+      dependencies,
+      changedSourceCount,
+      notModifiedSourceCount,
+      'publication_validation_error',
+      messageFor(error)
+    );
+  }
   if (!validation.ok) {
     const failuresForValidation = enabledSources.map((source) => ({
       source,
@@ -258,15 +321,18 @@ export async function runOpenFootballIngestionJob(options: OpenFootballIngestion
       code: 'publication_validation_failed',
       message: validation.errors.join('; ')
     }));
-    await appendFailures(options.dataRoot, runId, failuresForValidation, dependencies);
+    await appendFailuresBestEffort(options.dataRoot, runId, failuresForValidation, dependencies);
     return failed(runId, changedSourceCount, notModifiedSourceCount, ['publication_validation_failed']);
   }
 
+  const servingRoot = join(options.dataRoot, 'serving');
+  const servingCheckpoint = await captureServingManifest(servingRoot);
+  let servingPointerReplaced = false;
   try {
     const warehouseRoot = await dependencies.writeWarehouseRun(options.dataRoot, runId, candidate);
     const serving = await dependencies.buildServingMatches({ warehouseRoot, importedAt: options.now().toISOString() });
     const servingResult = await dependencies.buildServingStore({
-      servingRoot: join(options.dataRoot, 'serving'),
+      servingRoot,
       version: runId,
       snapshotId: runId,
       generatedAt: options.now().toISOString(),
@@ -275,6 +341,7 @@ export async function runOpenFootballIngestionJob(options: OpenFootballIngestion
       matches: serving.matches,
       warehouseRunId: runId
     });
+    servingPointerReplaced = true;
     await Promise.all(enabledSources.map((source) => appendManifest(
       options.dataRoot,
       source,
@@ -284,6 +351,23 @@ export async function runOpenFootballIngestionJob(options: OpenFootballIngestion
     )));
     return published(runId, changedSourceCount, notModifiedSourceCount, servingResult);
   } catch (error) {
+    if (servingPointerReplaced) {
+      try {
+        await restoreServingManifest(servingRoot, runId, servingCheckpoint);
+      } catch (rollbackError) {
+        return failureResult(
+          options.dataRoot,
+          runId,
+          enabledSources,
+          options.now,
+          dependencies,
+          changedSourceCount,
+          notModifiedSourceCount,
+          'serving_rollback_failed',
+          messageFor(rollbackError)
+        );
+      }
+    }
     const publicationFailure = enabledSources.map((source) => ({
       source,
       fetchedAt: options.now().toISOString(),
@@ -291,7 +375,7 @@ export async function runOpenFootballIngestionJob(options: OpenFootballIngestion
       code: 'publication_failed',
       message: messageFor(error)
     }));
-    await appendFailures(options.dataRoot, runId, publicationFailure, dependencies);
+    await appendFailuresBestEffort(options.dataRoot, runId, publicationFailure, dependencies);
     return failed(runId, changedSourceCount, notModifiedSourceCount, ['publication_failed']);
   }
 }
@@ -326,30 +410,65 @@ async function latestPublishedOrNotModifiedAt(
   source: OpenFootballCompetitionSource,
   dependencies: OpenFootballIngestionDependencies
 ): Promise<string | undefined> {
-  await dependencies.readLatestManifest(dataRoot, PROVIDER, source.entryId);
+  let injectedLatest: ProviderCaptureManifestEntry | null;
+  try {
+    injectedLatest = await dependencies.readLatestManifest(dataRoot, PROVIDER, source.entryId);
+  } catch (error) {
+    throw new OpenFootballIngestionJobError('evidence_lookup_failed', messageFor(error));
+  }
+  if (injectedLatest?.status === 'published' || injectedLatest?.status === 'not_modified') {
+    return timestampFromManifest(injectedLatest);
+  }
   const manifestPath = join(dataRoot, 'providers', PROVIDER, 'manifests', 'capture-manifest.jsonl');
   let text: string;
   try {
     text = await readFile(manifestPath, 'utf8');
   } catch (error) {
     if (isMissingFile(error)) return undefined;
-    throw error;
+    throw new OpenFootballIngestionJobError('evidence_lookup_failed', messageFor(error));
   }
-  let latest: string | undefined;
+  let latest: { timestamp: string; milliseconds: number } | undefined;
   for (const line of text.split(/\r?\n/u)) {
     if (line.trim() === '') continue;
-    const entry = JSON.parse(line) as ProviderCaptureManifestEntry;
+    let entry: ProviderCaptureManifestEntry;
+    try {
+      entry = JSON.parse(line) as ProviderCaptureManifestEntry;
+    } catch (error) {
+      throw new OpenFootballIngestionJobError('evidence_lookup_failed', messageFor(error));
+    }
     if (
       entry.provider === PROVIDER &&
       entry.endpointKey === source.entryId &&
       (entry.status === 'published' || entry.status === 'not_modified') &&
-      entry.fetchedAt !== undefined &&
-      (latest === undefined || entry.fetchedAt > latest)
+      entry.fetchedAt !== undefined
     ) {
-      latest = entry.fetchedAt;
+      const timestamp = timestampFromManifest(entry);
+      const milliseconds = Date.parse(timestamp);
+      if (latest === undefined || milliseconds > latest.milliseconds) {
+        latest = { timestamp, milliseconds };
+      }
     }
   }
-  return latest;
+  return latest?.timestamp;
+}
+
+function timestampFromManifest(entry: ProviderCaptureManifestEntry): string {
+  if (entry.fetchedAt === undefined || Number.isNaN(Date.parse(entry.fetchedAt))) {
+    throw new OpenFootballIngestionJobError('evidence_lookup_failed', 'OpenFootball manifest has no valid fetchedAt timestamp');
+  }
+  return entry.fetchedAt;
+}
+
+async function latestRawPayload(
+  dataRoot: string,
+  source: OpenFootballCompetitionSource,
+  dependencies: OpenFootballIngestionDependencies
+): Promise<Awaited<ReturnType<typeof readLatestRawProviderPayload>>> {
+  try {
+    return await dependencies.readLatestRawPayload(dataRoot, PROVIDER, source.entryId);
+  } catch (error) {
+    throw new OpenFootballIngestionJobError('evidence_lookup_failed', messageFor(error));
+  }
 }
 
 function conditionalValidators(
@@ -459,15 +578,19 @@ async function appendManifest(
   dependencies: OpenFootballIngestionDependencies,
   detail: Pick<ProviderCaptureManifestEntry, 'status' | 'fetchedAt' | 'payloadHash' | 'recordCount' | 'errorCode' | 'errorMessage' | 'httpStatus' | 'attemptCount'>
 ): Promise<void> {
-  await dependencies.appendManifest(dataRoot, PROVIDER, {
-    runId,
-    allowlistEntryId: source.entryId,
-    provider: PROVIDER,
-    endpointKey: source.entryId,
-    urlPath: `/openfootball/${source.repository}/${source.ref}/${source.filePath}`,
-    query: {},
-    ...detail
-  });
+  try {
+    await dependencies.appendManifest(dataRoot, PROVIDER, {
+      runId,
+      allowlistEntryId: source.entryId,
+      provider: PROVIDER,
+      endpointKey: source.entryId,
+      urlPath: `/openfootball/${source.repository}/${source.ref}/${source.filePath}`,
+      query: {},
+      ...detail
+    });
+  } catch (error) {
+    throw new OpenFootballIngestionJobError('manifest_append_failed', messageFor(error));
+  }
 }
 
 async function appendFailures(
@@ -484,6 +607,19 @@ async function appendFailures(
     ...(failure.httpStatus === undefined ? {} : { httpStatus: failure.httpStatus }),
     ...(failure.attemptCount === undefined ? {} : { attemptCount: failure.attemptCount })
   })));
+}
+
+async function appendFailuresBestEffort(
+  dataRoot: string,
+  runId: string,
+  failures: readonly SourceFailure[],
+  dependencies: OpenFootballIngestionDependencies
+): Promise<void> {
+  try {
+    await appendFailures(dataRoot, runId, failures, dependencies);
+  } catch {
+    // A failed evidence store cannot be repaired by retrying the same failed append.
+  }
 }
 
 async function appendAbortedSources(
@@ -506,7 +642,94 @@ async function appendAbortedSources(
     })));
 }
 
+async function appendAbortedSourcesBestEffort(
+  dataRoot: string,
+  runId: string,
+  enabledSources: readonly OpenFootballCompetitionSource[],
+  failures: readonly SourceFailure[],
+  dueEntryIds: ReadonlySet<string>,
+  now: () => Date,
+  dependencies: OpenFootballIngestionDependencies
+): Promise<void> {
+  try {
+    await appendAbortedSources(dataRoot, runId, enabledSources, failures, dueEntryIds, now, dependencies);
+  } catch {
+    // The typed failure result remains truthful when evidence storage itself is unavailable.
+  }
+}
+
+async function failureResult(
+  dataRoot: string,
+  runId: string,
+  sources: readonly OpenFootballCompetitionSource[],
+  now: () => Date,
+  dependencies: OpenFootballIngestionDependencies,
+  changedSourceCount: number,
+  notModifiedSourceCount: number,
+  code: string,
+  message: string
+): Promise<OpenFootballIngestionRunResult> {
+  await appendFailuresBestEffort(dataRoot, runId, sources.map((source) => ({
+    source,
+    fetchedAt: now().toISOString(),
+    status: 'failed' as const,
+    code,
+    message
+  })), dependencies);
+  return failed(runId, changedSourceCount, notModifiedSourceCount, [code]);
+}
+
+function persistableSources(sources: readonly OpenFootballCompetitionSource[]): OpenFootballCompetitionSource[] {
+  return sources.filter((source) => (
+    source.sourceId === PROVIDER &&
+    source.entryId.trim() !== '' &&
+    source.repository !== undefined &&
+    source.ref === 'master' &&
+    source.filePath.trim() !== ''
+  ));
+}
+
+type ServingManifestCheckpoint = { previous: string | null };
+
+async function captureServingManifest(servingRoot: string): Promise<ServingManifestCheckpoint> {
+  try {
+    return { previous: await readFile(join(servingRoot, 'manifest.json'), 'utf8') };
+  } catch (error) {
+    if (isMissingFile(error)) return { previous: null };
+    throw new OpenFootballIngestionJobError('serving_manifest_checkpoint_failed', messageFor(error));
+  }
+}
+
+async function restoreServingManifest(
+  servingRoot: string,
+  runId: string,
+  checkpoint: ServingManifestCheckpoint
+): Promise<void> {
+  const manifestPath = join(servingRoot, 'manifest.json');
+  const temporaryPath = join(servingRoot, `manifest.json.rollback-${runId}`);
+  if (checkpoint.previous !== null) {
+    await writeFile(temporaryPath, checkpoint.previous, 'utf8');
+    await rename(temporaryPath, manifestPath);
+    return;
+  }
+  try {
+    await rename(manifestPath, temporaryPath);
+  } finally {
+    await rm(temporaryPath, { force: true });
+  }
+}
+
+class OpenFootballIngestionJobError extends Error {
+  constructor(readonly code: string, message: string) {
+    super(message);
+    this.name = 'OpenFootballIngestionJobError';
+  }
+}
+
 function fetchFailure(source: OpenFootballCompetitionSource, fetchedAt: string, error: unknown): SourceFailure {
+  if (error instanceof OpenFootballIngestionJobError) {
+    return { source, fetchedAt, status: 'failed', code: error.code, message: error.message };
+  }
   if (error instanceof OpenFootballFetchError) {
     return {
       source,

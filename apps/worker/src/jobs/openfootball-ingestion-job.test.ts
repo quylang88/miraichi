@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -93,6 +93,19 @@ async function optionsFor(
 async function manifestEntries(dataRoot: string): Promise<Array<{ status: string; runId?: string; errorCode?: string }>> {
   const text = await readFile(join(dataRoot, 'providers', 'openfootball', 'manifests', 'capture-manifest.jsonl'), 'utf8');
   return text.trim().split(/\r?\n/).map((line) => JSON.parse(line) as { status: string; runId?: string; errorCode?: string });
+}
+
+function notModifiedManifest(source: OpenFootballCompetitionSource, fetchedAt: string) {
+  return {
+    runId: `prior-${source.entryId}-${fetchedAt}`,
+    allowlistEntryId: source.entryId,
+    provider: 'openfootball' as const,
+    endpointKey: source.entryId,
+    urlPath: new URL(buildOpenFootballRawUrl(source)).pathname,
+    query: {},
+    status: 'not_modified' as const,
+    fetchedAt
+  };
 }
 
 describe('runOpenFootballIngestionJob', () => {
@@ -264,5 +277,126 @@ describe('runOpenFootballIngestionJob', () => {
     expect((await manifestEntries(options.dataRoot)).some((entry) => entry.status === 'invalid' && entry.runId === failed.runId)).toBe(true);
     await expect(readLatestRawProviderPayload(options.dataRoot, 'openfootball', options.sources[0]!.entryId))
       .resolves.toMatchObject({ payload: '= malformed\n' });
+  });
+
+  it('rolls back the serving pointer when published manifest evidence cannot be appended', async () => {
+    let current = new Date('2026-08-01T00:00:00.000Z');
+    let rejectPublishedEvidence = false;
+    const options = await optionsFor(async ({ source }) => changed(source, sourceText(source), current.toISOString()), () => current, {
+      async appendManifest(root, provider, entry) {
+        if (rejectPublishedEvidence && entry.status === 'published') {
+          throw new Error('published manifest unavailable');
+        }
+        await appendProviderManifestEntry(root, provider, entry);
+      }
+    });
+
+    const first = await runOpenFootballIngestionJob(options);
+    const manifestBefore = await readFile(join(options.dataRoot, 'serving', 'manifest.json'), 'utf8');
+    current = new Date('2026-08-01T06:01:00.000Z');
+    rejectPublishedEvidence = true;
+    const second = await runOpenFootballIngestionJob(options);
+
+    expect(first.status).toBe('published');
+    expect(second).toMatchObject({ status: 'failed', errorCodes: ['publication_failed'] });
+    expect(await readFile(join(options.dataRoot, 'serving', 'manifest.json'), 'utf8')).toBe(manifestBefore);
+    expect((await manifestEntries(options.dataRoot)).some((entry) => entry.status === 'failed' && entry.runId === second.runId)).toBe(true);
+  });
+
+  it('returns typed failed evidence instead of leaking a corrupt raw-cache exception', async () => {
+    let current = new Date('2026-08-01T00:00:00.000Z');
+    const options = await optionsFor(async ({ source }) => changed(source, sourceText(source), current.toISOString()), () => current);
+    await runOpenFootballIngestionJob(options);
+    const rawRoot = join(options.dataRoot, 'providers', 'openfootball', 'raw', options.sources[0]!.entryId, '2026-08-01');
+    const rawFile = (await readdir(rawRoot)).find((name) => name.endsWith('.json'))!;
+    await writeFile(join(rawRoot, rawFile), '{ corrupt raw evidence }\n', 'utf8');
+    current = new Date('2026-08-01T06:01:00.000Z');
+
+    const result = await runOpenFootballIngestionJob(options);
+
+    expect(result).toMatchObject({ status: 'failed', errorCodes: ['evidence_lookup_failed'] });
+    expect((await manifestEntries(options.dataRoot)).some((entry) => entry.status === 'failed' && entry.errorCode === 'evidence_lookup_failed')).toBe(true);
+  });
+
+  it('returns typed failed evidence when the publication validator throws', async () => {
+    const now = () => new Date('2026-08-01T00:00:00.000Z');
+    const options = await optionsFor(async ({ source }) => changed(source, sourceText(source), now().toISOString()), now, {
+      validatePublication() {
+        throw new Error('validator exploded');
+      }
+    });
+
+    const result = await runOpenFootballIngestionJob(options);
+
+    expect(result).toMatchObject({ status: 'failed', errorCodes: ['publication_validation_error'] });
+    expect((await manifestEntries(options.dataRoot)).some((entry) => entry.status === 'failed' && entry.errorCode === 'publication_validation_error')).toBe(true);
+  });
+
+  it('records a registry failure against entries whose allowlist identity is still usable', async () => {
+    const now = () => new Date('2026-08-01T00:00:00.000Z');
+    const dataRoot = await mkdtemp(join(tmpdir(), 'miraichi-openfootball-job-'));
+    const source = { ...sources()[0]!, sourceTimezone: 'Not/A-Timezone' };
+
+    const result = await runOpenFootballIngestionJob({
+      dataRoot,
+      sources: [source],
+      now,
+      dependencies: { fetchSource: async ({ source: fetchSource }) => changed(fetchSource, englandFixture, now().toISOString()) }
+    });
+
+    expect(result).toMatchObject({ status: 'failed', errorCodes: ['invalid_registry'] });
+    expect((await manifestEntries(dataRoot)).some((entry) => entry.status === 'failed' && entry.errorCode === 'invalid_registry')).toBe(true);
+  });
+
+  it('uses the injected latest-manifest reader as the due boundary', async () => {
+    const now = () => new Date('2026-08-01T01:00:00.000Z');
+    let fetchCalls = 0;
+    const options = await optionsFor(async ({ source }) => {
+      fetchCalls += 1;
+      return changed(source, sourceText(source), now().toISOString());
+    }, now, {
+      async readLatestManifest(_root, _provider, endpointKey) {
+        const source = sources().find((entry) => entry.entryId === endpointKey)!;
+        return notModifiedManifest(source, '2026-08-01T00:30:00+02:00');
+      }
+    });
+
+    const result = await runOpenFootballIngestionJob(options);
+
+    expect(result.status).toBe('skipped');
+    expect(fetchCalls).toBe(0);
+  });
+
+  it('selects the chronologically latest ISO-offset manifest timestamp when determining due work', async () => {
+    const now = () => new Date('2026-08-01T05:30:00.000Z');
+    let fetchCalls = 0;
+    const options = await optionsFor(async ({ source }) => {
+      fetchCalls += 1;
+      return changed(source, sourceText(source), now().toISOString());
+    }, now);
+    for (const source of options.sources) {
+      await appendProviderManifestEntry(options.dataRoot, 'openfootball', notModifiedManifest(source, '2026-08-01T01:00:00+02:00'));
+      await appendProviderManifestEntry(options.dataRoot, 'openfootball', notModifiedManifest(source, '2026-08-01T00:30:00Z'));
+    }
+
+    const result = await runOpenFootballIngestionJob(options);
+
+    expect(result.status).toBe('skipped');
+    expect(fetchCalls).toBe(0);
+  });
+
+  it('returns a failed result when appending pending evidence fails', async () => {
+    const now = () => new Date('2026-08-01T00:00:00.000Z');
+    const options = await optionsFor(async ({ source }) => changed(source, sourceText(source), now().toISOString()), now, {
+      async appendManifest(_root, _provider, entry) {
+        if (entry.status === 'pending') throw new Error('manifest offline');
+        await appendProviderManifestEntry(_root, _provider, entry);
+      }
+    });
+
+    await expect(runOpenFootballIngestionJob(options)).resolves.toMatchObject({
+      status: 'failed',
+      errorCodes: ['manifest_append_failed']
+    });
   });
 });
