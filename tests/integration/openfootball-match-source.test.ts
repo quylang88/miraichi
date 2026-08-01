@@ -97,6 +97,11 @@ describe('OpenFootball match source raw-to-serving integration', () => {
       expect(snapshot.matches.every((match) => match.status !== ('in_play' as never))).toBe(true);
       expect(snapshot.matches.every((match) => !('odds' in match))).toBe(true);
       expect(snapshot.matches.every((match) => match.sourceRefs[0]?.sourceId === 'openfootball')).toBe(true);
+      expect(snapshot.matches).toContainEqual(expect.objectContaining({
+        competition: expect.objectContaining({ id: nationalSource.competitionId }),
+        homeTeam: expect.objectContaining({ name: 'Mexico' }),
+        venue: 'Mexico City'
+      }));
 
       const [archivedClub, archivedNational] = await Promise.all([
         readLatestRawProviderPayload(dataRoot, 'openfootball', clubSource.entryId),

@@ -59,6 +59,33 @@ describe('provider-neutral ingestion contracts', () => {
     }, OPENFOOTBALL_BINDING_POLICY)).toEqual({ ok: true });
   });
 
+  it('rejects payload and provenance hashes unless they are lowercase SHA-256 hex', () => {
+    const invalidRaw = validateRawProviderPayloadEnvelope({
+      schemaVersion: 'miraichi.provider.raw.v1',
+      provider: 'manual-snapshot',
+      endpointKey: 'fixtures.all',
+      urlPath: '/v3/football/fixtures',
+      query: {},
+      fetchedAt: '2026-07-02T00:00:00.000Z',
+      payloadHash: '../outside'.padEnd(64, 'a'),
+      rateLimit: {},
+      payload: {}
+    });
+    const invalidManifest = validateProviderCaptureManifestEntry({
+      provider: 'manual-snapshot', endpointKey: 'fixtures.all', urlPath: '/fixtures', query: {},
+      status: 'captured', payloadHash: 'A'.repeat(64)
+    });
+    const invalidProvenance = validateFieldProvenance({
+      entityType: 'match', entityId: 'match-1', fieldPath: 'status', provider: 'manual-snapshot',
+      providerEntityId: 'fixture-1', observedAt: '2026-07-02T00:00:00.000Z', confidence: 1,
+      valueHash: 'g'.repeat(64)
+    });
+
+    expect(invalidRaw).toMatchObject({ ok: false, errors: expect.arrayContaining([expect.stringContaining('payloadHash')]) });
+    expect(invalidManifest).toMatchObject({ ok: false, errors: expect.arrayContaining([expect.stringContaining('payloadHash')]) });
+    expect(invalidProvenance).toMatchObject({ ok: false, errors: expect.arrayContaining([expect.stringContaining('valueHash')]) });
+  });
+
   it('binds OpenFootball validation through an injected provider policy', () => {
     expect(validateRawProviderPayloadEnvelope({
       schemaVersion: 'miraichi.provider.raw.v1',

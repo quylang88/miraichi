@@ -29,7 +29,7 @@ const englandFixture = `= English Premier League 2026/27
            Nottingham Forest FC    v Leeds United FC
 `;
 
-const worldCupFixture = `= World Cup 2026
+const worldCupFixture = `= World Cup 2026      # in Canada, USA, and Mexico
 # Source: openfootball/worldcup master 2026--canada-usa-mexico/cup.txt
 
 Group A | Mexico  South Africa  South Korea  Czech Republic
@@ -277,6 +277,35 @@ describe('runOpenFootballIngestionJob', () => {
     expect((await manifestEntries(options.dataRoot)).some((entry) => entry.status === 'invalid' && entry.runId === failed.runId)).toBe(true);
     await expect(readLatestRawProviderPayload(options.dataRoot, 'openfootball', options.sources[0]!.entryId))
       .resolves.toMatchObject({ payload: '= malformed\n' });
+  });
+
+  it('rejects duplicate canonical match IDs at publication and preserves the last-good serving manifest', async () => {
+    let current = new Date('2026-08-01T00:00:00.000Z');
+    let duplicateCanonicalMatch = false;
+    const options = await optionsFor(async ({ source }) => (
+      changed(source, sourceText(source), current.toISOString())
+    ), () => current, {
+      parseText(text) {
+        const parsed = parseFootballTxt(text);
+        if (duplicateCanonicalMatch && text.includes('English Premier League')) {
+          parsed.matches.push({ ...parsed.matches[0]!, lineNumber: 999 });
+        }
+        return parsed;
+      }
+    });
+
+    const first = await runOpenFootballIngestionJob(options);
+    expect(first.status).toBe('published');
+    const manifestBefore = await readFile(join(options.dataRoot, 'serving', 'manifest.json'), 'utf8');
+    const snapshotBefore = await readServingMatchStoreSnapshot(join(options.dataRoot, 'serving'));
+
+    duplicateCanonicalMatch = true;
+    current = new Date('2026-08-01T06:01:00.000Z');
+    const failed = await runOpenFootballIngestionJob(options);
+
+    expect(failed).toMatchObject({ status: 'failed', errorCodes: ['publication_validation_failed'] });
+    expect(await readFile(join(options.dataRoot, 'serving', 'manifest.json'), 'utf8')).toBe(manifestBefore);
+    await expect(readServingMatchStoreSnapshot(join(options.dataRoot, 'serving'))).resolves.toEqual(snapshotBefore);
   });
 
   it('invalidates partial published evidence, restores the prior pointer, and retries every source', async () => {

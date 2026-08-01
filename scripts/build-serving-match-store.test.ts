@@ -29,6 +29,7 @@ describe('build-serving-match-store script', () => {
         awayTeamId: 'team-south-africa',
         scoreHome: null,
         scoreAway: null,
+        venue: 'Mexico City',
         updatedAt: observedAt
       }
     ]);
@@ -82,7 +83,8 @@ describe('build-serving-match-store script', () => {
         season: '2026'
       },
       homeTeam: { id: 'team-mexico', name: 'Mexico' },
-      awayTeam: { id: 'team-south-africa', name: 'South Africa' }
+      awayTeam: { id: 'team-south-africa', name: 'South Africa' },
+      venue: 'Mexico City'
     });
 
     await fs.rm(dataRoot, { recursive: true, force: true });

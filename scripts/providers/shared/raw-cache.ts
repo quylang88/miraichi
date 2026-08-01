@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Dirent } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { OPENFOOTBALL_SOURCE_REGISTRY } from '../../../packages/config/src/openfootball-source-registry.js';
 import {
   validateRawProviderPayloadEnvelope,
@@ -60,9 +60,12 @@ export async function writeRawProviderPayload(
   assertValidRawProviderPayload(envelope);
 
   const datePart = envelope.fetchedAt.slice(0, 10); // YYYY-MM-DD
-  const dir = join(root, 'providers', envelope.provider, 'raw', envelope.endpointKey, datePart);
-  await mkdir(dir, { recursive: true });
-  const filePath = join(dir, `${envelope.payloadHash}.json`);
+  const providerRawRoot = resolve(root, 'providers', envelope.provider, 'raw');
+  const evidenceDirectory = resolve(providerRawRoot, envelope.endpointKey, datePart);
+  assertContainedPath(providerRawRoot, evidenceDirectory, 'Raw payload evidence directory escaped its provider raw root');
+  const filePath = resolve(evidenceDirectory, `${envelope.payloadHash}.json`);
+  assertContainedPath(evidenceDirectory, filePath, 'Raw payload output escaped its exact evidence directory');
+  await mkdir(evidenceDirectory, { recursive: true });
   await writeFile(filePath, `${JSON.stringify(envelope, null, 2)}\n`, 'utf8');
   return filePath;
 }
@@ -157,6 +160,13 @@ function providerRawPayloadInvalid(message: string): Error & { code: 'provider_r
   return Object.assign(new Error(`provider_raw_payload_invalid: ${message}`), {
     code: 'provider_raw_payload_invalid' as const
   });
+}
+
+function assertContainedPath(root: string, candidate: string, message: string): void {
+  const relativePath = relative(root, candidate);
+  if (relativePath === '' || relativePath === '..' || relativePath.startsWith(`..${sep}`) || isAbsolute(relativePath)) {
+    throw providerRawPayloadInvalid(message);
+  }
 }
 
 function isMissingPathError(error: unknown): error is NodeJS.ErrnoException {

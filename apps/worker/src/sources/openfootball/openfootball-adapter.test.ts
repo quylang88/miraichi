@@ -1,6 +1,7 @@
+import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { OPENFOOTBALL_SOURCE_REGISTRY } from '@miraichi/config';
-import type { ParsedOpenFootballMatch } from './football-txt-parser.js';
+import { parseFootballTxt, type ParsedOpenFootballMatch } from './football-txt-parser.js';
 import { adaptOpenFootballMatches } from './openfootball-adapter.js';
 
 const source = OPENFOOTBALL_SOURCE_REGISTRY[0]!;
@@ -111,6 +112,16 @@ describe('OpenFootball adapter', () => {
     expect(batch.issues).toEqual([expect.objectContaining({
       code: 'competition_header_mismatch', lineNumber: 8
     })]);
+  });
+
+  it('adapts the live World Cup header after its trailing inline comment is normalized', async () => {
+    const worldCupSource = OPENFOOTBALL_SOURCE_REGISTRY.find((entry) => entry.competitionType === 'national-team')!;
+    const parsed = parseFootballTxt(await readFile(new URL('./fixtures/world-cup-level1.txt', import.meta.url), 'utf8'));
+    const batch = adaptOpenFootballMatches({ source: worldCupSource, parsedMatches: parsed.matches, observedAt });
+
+    expect(worldCupSource.expectedCompetitionHeader).toBe('World Cup 2026');
+    expect(batch.issues).toEqual([]);
+    expect(batch.matches).toHaveLength(2);
   });
 
   it('assigns the same canonical id to duplicate source match tuples for the publication gate to reject', () => {

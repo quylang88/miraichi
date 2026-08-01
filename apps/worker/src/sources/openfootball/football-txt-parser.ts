@@ -189,7 +189,13 @@ export function parseFootballTxt(text: string): FootballTxtParseResult {
       if (competitionHeader !== null) {
         addIssue({ code: 'unrecognized_line', lineNumber, line, fatal: true });
       } else {
-        competitionHeader = header[1]!.trim();
+        const normalizedHeader = header[1]!.replace(/(?:^|\s+)#.*$/u, '').trim();
+        if (normalizedHeader === '') {
+          addHeaderIssue(lineNumber, line);
+          previousWasCompleted = false;
+          continue;
+        }
+        competitionHeader = normalizedHeader;
         competitionYear = headerYear(competitionHeader);
         if (competitionYear === null) {
           addHeaderIssue(lineNumber, line);

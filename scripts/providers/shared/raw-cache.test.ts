@@ -102,6 +102,18 @@ describe('provider-neutral raw cache and warehouse', () => {
     await expect(access(join(root, 'providers'))).rejects.toThrow();
   });
 
+  it('rejects a 64-character traversal payload hash before any filesystem I/O', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
+    const traversalHash = '../outside'.padEnd(64, 'a');
+
+    await expect(writeRawProviderPayload(root, createOpenFootballEnvelope(
+      '2026-07-02T12:00:00.000Z',
+      '= text\n',
+      traversalHash
+    ))).rejects.toThrow('payloadHash');
+    await expect(access(join(root, 'providers'))).rejects.toThrow();
+  });
+
   it('appends provider manifests and canonical warehouse jsonl records', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
     await appendProviderManifestEntry(root, 'manual-snapshot', {

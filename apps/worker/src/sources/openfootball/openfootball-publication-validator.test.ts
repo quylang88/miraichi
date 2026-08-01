@@ -100,6 +100,27 @@ describe('OpenFootball publication candidate validation', () => {
     expect(validateOpenFootballPublicationCandidate(growth)).toEqual({ ok: true });
   });
 
+  it('keeps the configured 5% deletion threshold inclusive', () => {
+    const candidateForCount = (count: number): OpenFootballPublicationValidationInput['candidate'] => {
+      const matches = Array.from({ length: count }, (_, index) => canonicalMatch(`candidate-${index}`, first));
+      return {
+        matches,
+        teams: matches.flatMap((match) => [team(match.homeTeamId), team(match.awayTeamId)]),
+        competitions: [],
+        links: matches.map((match) => link(match, first)),
+        provenance: []
+      };
+    };
+    const priorMatches = Array.from({ length: 20 }, (_, index) => priorMatch(`prior-${index}`, first));
+
+    expect(validateOpenFootballPublicationCandidate({
+      sources: [first], candidate: candidateForCount(19), priorMatches
+    })).toEqual({ ok: true });
+    expect(validateOpenFootballPublicationCandidate({
+      sources: [first], candidate: candidateForCount(18), priorMatches
+    })).toMatchObject({ ok: false, errors: expect.arrayContaining([expect.stringContaining('lost')]) });
+  });
+
   it('applies the minimum match count to each source entry even when sources share a partition', () => {
     const samePartitionSecond = { ...second, competitionId: first.competitionId, season: first.season, minimumExpectedMatches: 2 };
     const firstMatch = canonicalMatch('shared-one', first);

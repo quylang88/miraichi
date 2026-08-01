@@ -34,6 +34,7 @@ describe('parseFootballTxt', () => {
     const result = parseFootballTxt(await fixture('world-cup-level1.txt'));
 
     expect(result.issues).toEqual([]);
+    expect(result.competitionHeader).toBe('World Cup 2026');
     expect(result.matches).toHaveLength(2);
     expect(result.matches[0]).toMatchObject({
       localDate: '2026-06-11',
@@ -43,6 +44,16 @@ describe('parseFootballTxt', () => {
       venue: 'Mexico City'
     });
     expect(result.matches[1]).toMatchObject({ venue: 'Guadalajara (Zapopan)' });
+  });
+
+  it('fails closed when an inline competition-header comment leaves no header', () => {
+    const result = parseFootballTxt('= # comment only\n▪ Round 1\n  Thu June 11 2026\n    12:30  Team Alpha v Team Beta\n');
+
+    expect(result.competitionHeader).toBeNull();
+    expect(result.matches).toEqual([]);
+    expect(result.issues).toEqual([
+      expect.objectContaining({ code: 'missing_competition_header', fatal: true })
+    ]);
   });
 
   it.each([

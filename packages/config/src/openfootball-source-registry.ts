@@ -188,7 +188,7 @@ export function validateOpenFootballSourceRegistry(entries: readonly unknown[]):
     if (!Number.isInteger(entry.minimumExpectedMatches) || (entry.minimumExpectedMatches as number) < 1) {
       errors.push(`entries[${index}].minimumExpectedMatches must be an integer of at least 1`);
     }
-    if (typeof entry.maximumMissingRatio !== 'number' || entry.maximumMissingRatio < 0 || entry.maximumMissingRatio > 0.05) {
+    if (typeof entry.maximumMissingRatio !== 'number' || !Number.isFinite(entry.maximumMissingRatio) || entry.maximumMissingRatio < 0 || entry.maximumMissingRatio > 0.05) {
       errors.push(`entries[${index}].maximumMissingRatio must be between 0 and 0.05`);
     }
     if (typeof entry.enabled !== 'boolean') {

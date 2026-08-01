@@ -302,6 +302,7 @@ export async function buildServingMatchesFromWarehouse(
         home: match.scoreHome,
         away: match.scoreAway
       },
+      ...(match.venue === undefined ? {} : { venue: match.venue }),
       ...(match.round === undefined ? {} : { round: match.round }),
       ...(match.stage === undefined ? {} : { stage: match.stage }),
       ...(match.neutralVenue === undefined ? {} : { neutralVenue: match.neutralVenue }),

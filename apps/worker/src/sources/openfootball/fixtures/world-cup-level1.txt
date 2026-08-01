@@ -1,4 +1,4 @@
-= World Cup 2026
+= World Cup 2026      # in Canada, USA, and Mexico
 # Source: openfootball/worldcup master 2026--canada-usa-mexico/cup.txt
 
 Group A | Mexico  South Africa  South Korea  Czech Republic

@@ -170,6 +170,7 @@ export interface SourceConflict {
 // ─── Validation helpers ───────────────────────────────────────────────────────
 
 const ISO_DATETIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+const SHA256_HEX_REGEX = /^[a-f0-9]{64}$/;
 
 function isValidIsoDateTime(val: unknown): boolean {
   return typeof val === 'string' && ISO_DATETIME_REGEX.test(val);
@@ -241,7 +242,7 @@ export function validateRawProviderPayloadEnvelope(
     errors.push('Field "fetchedAt" must be a valid ISO datetime string');
   }
 
-  if (typeof input.payloadHash !== 'string' || input.payloadHash.length !== 64) {
+  if (typeof input.payloadHash !== 'string' || !SHA256_HEX_REGEX.test(input.payloadHash)) {
     errors.push('Field "payloadHash" must be a 64-character hex string');
   }
 
@@ -399,7 +400,7 @@ export function validateProviderCaptureManifestEntry(
   if (input.hasMore !== undefined && typeof input.hasMore !== 'boolean') {
     errors.push('Field "hasMore" must be a boolean if provided');
   }
-  if (input.payloadHash !== undefined && (typeof input.payloadHash !== 'string' || input.payloadHash.length !== 64)) {
+  if (input.payloadHash !== undefined && (typeof input.payloadHash !== 'string' || !SHA256_HEX_REGEX.test(input.payloadHash))) {
     errors.push('Field "payloadHash" must be a 64-character hex string if provided');
   }
   if (input.recordCount !== undefined && (!Number.isInteger(input.recordCount) || (input.recordCount as number) < 0)) {
@@ -550,7 +551,7 @@ export function validateFieldProvenance(input: unknown): ValidationResult {
   if (typeof input.confidence !== 'number' || input.confidence < 0 || input.confidence > 1) {
     errors.push('Field "confidence" must be a number between 0 and 1');
   }
-  if (typeof input.valueHash !== 'string' || input.valueHash.length !== 64) {
+  if (typeof input.valueHash !== 'string' || !SHA256_HEX_REGEX.test(input.valueHash)) {
     errors.push('Field "valueHash" must be a 64-character hex string');
   }
 

@@ -34,6 +34,7 @@ describe('OpenFootball source registry', () => {
     ['minimum match counts below one', (entry: typeof OPENFOOTBALL_SOURCE_REGISTRY[number]) => [{ ...entry, minimumExpectedMatches: 0 }], 'minimumExpectedMatches'],
     ['missing ratios outside the reviewed bound', (entry: typeof OPENFOOTBALL_SOURCE_REGISTRY[number]) => [{ ...entry, maximumMissingRatio: 0.051 }], 'maximumMissingRatio'],
     ['negative missing ratios', (entry: typeof OPENFOOTBALL_SOURCE_REGISTRY[number]) => [{ ...entry, maximumMissingRatio: -0.01 }], 'maximumMissingRatio'],
+    ['non-finite missing ratios', (entry: typeof OPENFOOTBALL_SOURCE_REGISTRY[number]) => [{ ...entry, maximumMissingRatio: Number.NaN }], 'maximumMissingRatio'],
     ['non-HTTPS origins', (entry: typeof OPENFOOTBALL_SOURCE_REGISTRY[number]) => [{ ...entry, origin: 'http://raw.githubusercontent.com' }], 'HTTPS']
   ])('rejects %s', (_label, createEntries, message) => {
     expect(validateOpenFootballSourceRegistry(createEntries(OPENFOOTBALL_SOURCE_REGISTRY[0]!))).toEqual(

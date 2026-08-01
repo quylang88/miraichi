@@ -614,20 +614,20 @@ function parseAndAdapt(
 }
 
 function mergeBatches(batches: readonly SourceBatch[]): CanonicalWarehouseSnapshot {
-  const matches = new Map<string, CanonicalWarehouseSnapshot['matches'][number]>();
+  const matches: CanonicalWarehouseSnapshot['matches'] = [];
   const teams = new Map<string, CanonicalWarehouseSnapshot['teams'][number]>();
   const competitions = new Map<string, CanonicalWarehouseSnapshot['competitions'][number]>();
   const links = new Map<string, CanonicalWarehouseSnapshot['links'][number]>();
   const provenance = new Map<string, CanonicalWarehouseSnapshot['provenance'][number]>();
   for (const { batch } of batches) {
-    for (const match of batch.matches) matches.set(match.matchId, match);
+    matches.push(...batch.matches);
     for (const team of batch.teams) teams.set(team.teamId, team);
     for (const competition of batch.competitions) competitions.set(competition.competitionId, competition);
     for (const link of batch.links) links.set([link.entityType, link.entityId, link.provider, link.providerEntityType, link.providerEntityId].join('|'), link);
     for (const record of batch.provenance) provenance.set([record.entityType, record.entityId, record.fieldPath, record.provider, record.providerEntityId].join('|'), record);
   }
   return {
-    matches: [...matches.values()],
+    matches,
     teams: [...teams.values()],
     competitions: [...competitions.values()],
     links: [...links.values()],
