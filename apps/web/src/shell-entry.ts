@@ -19,7 +19,6 @@ const settingsService = createSettingsService();
 let currentScreenName = 'today';
 let matchDetailReturnScreen: ProductionNavigationTabId = 'today';
 let currentSearchQuery = '';
-let isLiveFilterActive = false;
 
 const activeFilters = {
   groupby: 'league',
@@ -77,7 +76,6 @@ function render(activeTabId: string): void {
     timezone: settingsService.getSettings().timezone,
     filters: activeFilters,
     searchQuery: currentSearchQuery,
-    isLiveFilterActive,
     isFilterPanelOpen,
     betRecordsState,
     bankrollState
@@ -89,11 +87,6 @@ function render(activeTabId: string): void {
   if (searchInput) {
     searchInput.value = currentSearchQuery;
   }
-  const liveFilterBtn = appRoot.querySelector('#live-filter-btn') as HTMLElement | null;
-  if (liveFilterBtn && isLiveFilterActive) {
-    liveFilterBtn.classList.add('active');
-  }
-
   // Restore focus state
   if (activeElementId) {
     const elementToFocus = document.getElementById(activeElementId);
@@ -434,14 +427,6 @@ appRoot.addEventListener('click', (event) => {
         input.click();
       }
     }
-    return;
-  }
-
-  // Handle LIVE Filter Button Click
-  const liveFilterTarget = eventTarget.closest<HTMLElement>('#live-filter-btn');
-  if (liveFilterTarget) {
-    isLiveFilterActive = !isLiveFilterActive;
-    render(currentScreenName);
     return;
   }
 

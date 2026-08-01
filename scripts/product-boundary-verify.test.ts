@@ -43,4 +43,22 @@ describe('product boundary verifier', () => {
   it('accepts the four-tab non-AI product boundary', async () => {
     expect(await auditProductBoundary(await createFixture())).toEqual([]);
   });
+
+  it('reports OpenFootball runtime URLs anywhere under the web source tree', async () => {
+    const root = await createFixture();
+    await writeFile(
+      join(root, 'apps/web/src/config/match-source.ts'),
+      [
+        "export const rawSource = 'https://raw.githubusercontent.com/example/data/main/fixtures.json';",
+        "export const repositorySource = 'https://github.com/openfootball/football.json';",
+        "export const runtimeSource = 'https://openfootball.example/fixtures.json';"
+      ].join('\n')
+    );
+
+    expect(await auditProductBoundary(root)).toEqual(expect.arrayContaining([
+      expect.stringContaining('raw.githubusercontent.com'),
+      expect.stringContaining('github.com/openfootball'),
+      expect.stringContaining('openfootball.example')
+    ]));
+  });
 });

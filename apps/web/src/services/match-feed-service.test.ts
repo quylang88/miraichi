@@ -80,6 +80,23 @@ describe('web match feed service', () => {
     }
   });
 
+  it('does not invent live-feed copy for an unsupported status response', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        code: 'unsupported_match_status',
+        message: 'Canonical match status is unsupported.'
+      }
+    }), { status: 422 })));
+
+    const result = await getMatchFeed('2026-06-11');
+
+    expect(result.status).toBe('unavailable');
+    if (result.status === 'unavailable') {
+      expect(result.reason).toBe('Canonical match status is unsupported.');
+      expect(result.reason).not.toContain('live match');
+    }
+  });
+
   it('fails normalization when response contains sourceProviderId or providerFixtureId', async () => {
     const invalidMatch = {
       ...validMatch,

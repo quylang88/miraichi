@@ -8,7 +8,6 @@ import { t, type TranslateFunction } from '../services/i18n-service.js';
 import { renderBottomNavigation } from './bottom-navigation.js';
 import { escapeHtml } from './html.js';
 import type { AppMatch, MatchFeedViewState } from '../services/match-feed-service.js';
-import { NATIONAL_COMPETITION_KEYWORDS } from '../../../../packages/config/src/competition-registry.mock.js';
 import type { BetRecordsViewState } from '../services/bet-record-service.js';
 import type { BankrollViewState } from '../services/bankroll-service.js';
 
@@ -124,8 +123,26 @@ function matchMeta(match: AppMatch, timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Min
   return `${match.competition.name}${round} · ${score} · ${match.status}`;
 }
 
+function renderSnapshotStatus(feed: Exclude<MatchFeedViewState, { status: 'loading' }>): string {
+  const label = feed.status === 'unavailable'
+    ? 'Unavailable'
+    : feed.snapshot.freshness === 'fresh'
+      ? 'Ready'
+      : feed.snapshot.freshness === 'stale'
+        ? 'Stale'
+        : 'Unavailable';
+  const generatedAt = feed.snapshot?.generatedAt;
+  return `
+    <div class="match-data-status">
+      <span>Data status: ${label}</span>
+      ${generatedAt ? `<span>Snapshot generated: ${escapeHtml(generatedAt)}</span>` : ''}
+    </div>
+  `;
+}
+
 function renderFeedUnavailable(feed: Extract<MatchFeedViewState, { status: 'unavailable' }>): string {
   return `
+    ${renderSnapshotStatus(feed)}
     <section class="note-card warning" data-match-feed-state="unavailable">
       <div class="note-eyebrow">Data update required</div>
       <div class="note-title">Serving match store is unavailable.</div>
@@ -139,17 +156,18 @@ function renderFeedLoading(feed: Extract<MatchFeedViewState, { status: 'loading'
     <section class="note-card" data-match-feed-state="loading">
       <div class="note-eyebrow">Serving match store</div>
       <div class="note-title">Loading match store</div>
-      <p class="note-copy">Loading national-team matches for ${escapeHtml(feed.date)}.</p>
+      <p class="note-copy">Loading matches for ${escapeHtml(feed.date)}.</p>
     </section>
   `;
 }
 
 function renderFeedEmpty(feed: Extract<MatchFeedViewState, { status: 'empty' }>): string {
   return `
+    ${renderSnapshotStatus(feed)}
     <section class="note-card" data-match-feed-state="empty">
       <div class="note-eyebrow">Serving match store</div>
       <div class="note-title">No matches found for ${escapeHtml(feed.date)}.</div>
-      <p class="note-copy">No national-team matches are recorded for this date in the serving match store.</p>
+      <p class="note-copy">No matches are recorded for this date in the serving match store.</p>
     </section>
   `;
 }
@@ -157,7 +175,7 @@ function renderFeedEmpty(feed: Extract<MatchFeedViewState, { status: 'empty' }>)
 function renderSnapshotMatchCard(match: AppMatch, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   const title = matchTitle(match);
   const meta = matchMeta(match, timezone);
-  const statusClass = (match.status as string) === 'in_play' ? 'blue' : match.status === 'completed' ? '' : 'amber';
+  const statusClass = match.status === 'completed' ? '' : 'amber';
   return `
     <article class="match-card" data-match-card data-match-id="${escapeHtml(match.id)}">
       <div class="match-main clickable" data-open-match
@@ -207,14 +225,14 @@ function renderMatchFeedCards(feed: MatchFeedViewState, timezone?: 'local' | 'UT
   if (feed.status === 'loading') return renderFeedLoading(feed);
   if (feed.status === 'unavailable') return renderFeedUnavailable(feed);
   if (feed.status === 'empty') return renderFeedEmpty(feed);
-  return feed.matches.map(m => renderSnapshotMatchCard(m, timezone)).join('');
+  return `${renderSnapshotStatus(feed)}${feed.matches.map(m => renderSnapshotMatchCard(m, timezone)).join('')}`;
 }
 
 function renderMatchFeedRows(feed: MatchFeedViewState, timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   if (feed.status === 'loading') return renderFeedLoading(feed);
   if (feed.status === 'unavailable') return renderFeedUnavailable(feed);
   if (feed.status === 'empty') return renderFeedEmpty(feed);
-  return feed.matches.map(m => renderSnapshotMatchRow(m, timezone)).join('');
+  return `${renderSnapshotStatus(feed)}${feed.matches.map(m => renderSnapshotMatchRow(m, timezone)).join('')}`;
 }
 
 function renderSummaryRow({
@@ -328,11 +346,6 @@ function renderTodayPanel(
   `;
 }
 
-function isNationalMatch(competitionName: string): boolean {
-  const comp = competitionName.toLowerCase();
-  return NATIONAL_COMPETITION_KEYWORDS.some(keyword => comp.includes(keyword));
-}
-
 function isWomenMatch(match: AppMatch): boolean {
   const comp = match.competition.name.toLowerCase();
   const home = match.homeTeam.name.toLowerCase();
@@ -361,7 +374,6 @@ function renderMatchesPanel(
     selectedLeagues: new Set<string>()
   },
   searchQuery = '',
-  isLiveFilterActive = false,
   isFilterPanelOpen = false
 ): string {
   const ribbonDates = getRibbonDates(matchFeed.date);
@@ -379,11 +391,7 @@ function renderMatchesPanel(
 
   let filteredMatches = matchFeed.status === 'ready' ? matchFeed.matches : [];
 
-  if (isLiveFilterActive) {
-    filteredMatches = filteredMatches.filter(m => (m.status as string) === 'in_play');
-  }
-
-  // 2. Search query (case-insensitive substring on team names)
+  // 1. Search query (case-insensitive substring on team names)
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase();
     filteredMatches = filteredMatches.filter(m =>
@@ -392,21 +400,21 @@ function renderMatchesPanel(
     );
   }
 
-  // 3. Competition Type
+  // 2. Competition Type
   if (filters.type === 'national') {
-    filteredMatches = filteredMatches.filter(m => isNationalMatch(m.competition.name));
+    filteredMatches = filteredMatches.filter(m => m.competition.type === 'national-team');
   } else if (filters.type === 'club') {
-    filteredMatches = filteredMatches.filter(m => !isNationalMatch(m.competition.name));
+    filteredMatches = filteredMatches.filter(m => m.competition.type === 'club');
   }
 
-  // 4. Gender
+  // 3. Gender
   if (filters.gender === 'women') {
     filteredMatches = filteredMatches.filter(m => isWomenMatch(m));
   } else if (filters.gender === 'men') {
     filteredMatches = filteredMatches.filter(m => !isWomenMatch(m));
   }
 
-  // 5. Selected leagues
+  // 4. Selected leagues
   if (filters.selectedLeagues && filters.selectedLeagues.size > 0) {
     filteredMatches = filteredMatches.filter(m => filters.selectedLeagues.has(m.competition.name));
   }
@@ -562,37 +570,7 @@ function renderMatchesPanel(
       }
 
       #screen-matches .search-row {
-        grid-template-columns: 1fr auto auto;
-      }
-
-      #live-filter-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 var(--spacing-md);
-        height: 42px;
-        border-radius: var(--radius-control);
-        background: var(--surface-color-secondary);
-        border: 1px solid var(--border-color-strong);
-        color: var(--text-color-muted);
-        font-weight: bold;
-        font-size: 0.8rem;
-        letter-spacing: 1px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      #live-filter-btn:hover {
-        background: var(--surface-color-tertiary);
-        color: var(--text-color-primary);
-      }
-
-      #live-filter-btn.active {
-        background: var(--accent-color-danger-soft);
-        border-color: var(--accent-color-danger);
-        color: var(--accent-color-danger);
-        box-shadow: 0 0 8px rgba(255, 69, 58, 0.2);
+        grid-template-columns: 1fr auto;
       }
 
       .filter-panel {
@@ -711,7 +689,6 @@ function renderMatchesPanel(
 
       <div class="search-row">
         <input class="search-input" id="match-search" type="search" placeholder="Search generic teams" aria-label="Search generic teams">
-        <button id="live-filter-btn" type="button">LIVE</button>
         <button class="filter-button" id="filter-panel-toggle-btn" type="button" aria-label="Open match filters">${icons.filter}</button>
       </div>
 
@@ -774,6 +751,7 @@ function renderMatchesPanel(
         </div>
       </div>
 
+      ${matchFeed.status === 'ready' ? renderSnapshotStatus(matchFeed) : ''}
       ${matchesHtml}
 
       <div class="empty-state" id="matches-empty" style="display: ${matchFeed.status === 'ready' && filteredMatches.length === 0 ? 'block' : 'none'};">No serving match store matches match the current filters.</div>
@@ -1102,17 +1080,16 @@ const panelRenderers: Record<
       selectedLeagues: Set<string>;
     },
     searchQuery?: string,
-    isLiveFilterActive?: boolean,
     isFilterPanelOpen?: boolean,
     betRecordsState?: BetRecordsViewState,
     bankrollState?: BankrollViewState
   ) => string
 > = Object.freeze({
   today: renderTodayPanel,
-  matches: (activeTabId, translate, matchFeed, timezone, filters, searchQuery, isLiveFilterActive, isFilterPanelOpen) =>
-    renderMatchesPanel(activeTabId, translate, matchFeed, timezone, filters, searchQuery, isLiveFilterActive, isFilterPanelOpen),
-  bets: (activeTabId, translate, _matchFeed, _timezone, _filters, _searchQuery, _isLiveFilterActive, _isFilterPanelOpen, betRecordsState) => renderBetsPanel(activeTabId, translate, betRecordsState ?? defaultBetRecordsState),
-  bankroll: (activeTabId, translate, _matchFeed, _timezone, _filters, _searchQuery, _isLiveFilterActive, _isFilterPanelOpen, _betRecordsState, bankrollState) => renderBankrollPanel(activeTabId, translate, bankrollState ?? defaultBankrollState)
+  matches: (activeTabId, translate, matchFeed, timezone, filters, searchQuery, isFilterPanelOpen) =>
+    renderMatchesPanel(activeTabId, translate, matchFeed, timezone, filters, searchQuery, isFilterPanelOpen),
+  bets: (activeTabId, translate, _matchFeed, _timezone, _filters, _searchQuery, _isFilterPanelOpen, betRecordsState) => renderBetsPanel(activeTabId, translate, betRecordsState ?? defaultBetRecordsState),
+  bankroll: (activeTabId, translate, _matchFeed, _timezone, _filters, _searchQuery, _isFilterPanelOpen, _betRecordsState, bankrollState) => renderBankrollPanel(activeTabId, translate, bankrollState ?? defaultBankrollState)
 });
 
 export function renderAppShell({
@@ -1127,7 +1104,6 @@ export function renderAppShell({
     selectedLeagues: new Set<string>()
   },
   searchQuery = '',
-  isLiveFilterActive = false,
   isFilterPanelOpen = false,
   betRecordsState = defaultBetRecordsState,
   bankrollState = defaultBankrollState
@@ -1143,7 +1119,6 @@ export function renderAppShell({
     selectedLeagues: Set<string>;
   };
   readonly searchQuery?: string;
-  readonly isLiveFilterActive?: boolean;
   readonly isFilterPanelOpen?: boolean;
   readonly betRecordsState?: BetRecordsViewState;
   readonly bankrollState?: BankrollViewState;
@@ -1158,7 +1133,6 @@ export function renderAppShell({
       timezone,
       filters,
       searchQuery,
-      isLiveFilterActive,
       isFilterPanelOpen,
       betRecordsState,
       bankrollState

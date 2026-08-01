@@ -41,8 +41,6 @@ export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
         message = 'Serving match store is missing. Build it from canonical warehouse before using match workflows.';
       } else if (code === 'serving_match_store_invalid') {
         message = 'Serving match store is invalid. Rebuild it from canonical warehouse after fixing canonical data.';
-      } else if (code === 'unsupported_match_status') {
-        message = 'This app does not support live match status in Phase 9.';
       }
 
       return {

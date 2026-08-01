@@ -5,10 +5,14 @@ import { createSupabaseCloudPersistenceAdapter } from './supabase-cloud-persiste
 
 class FakeClient implements PostgresQueryClient {
   readonly calls: Array<{ text: string; values: readonly unknown[] }> = [];
+  readonly queuedRows: Array<Record<string, unknown>[]> = [];
   transactions = 0;
+  enqueueRows(...rows: Array<Record<string, unknown>[]>): void {
+    this.queuedRows.push(...rows);
+  }
   async query<T extends Record<string, unknown>>(text: string, values: readonly unknown[] = []) {
     this.calls.push({ text, values });
-    return { rows: [] as T[], rowCount: 1 };
+    return { rows: (this.queuedRows.shift() ?? []) as T[], rowCount: 1 };
   }
   async transaction<T>(operation: (client: PostgresQueryClient) => Promise<T>): Promise<T> {
     this.transactions += 1;
@@ -61,7 +65,7 @@ describe('supabase cloud persistence adapter', () => {
       sources: [{ sourceId: 'manual-snapshot', importedAt: '2026-07-02T00:00:00.000Z' }],
       matches: [{
         id: 'match-001',
-        competition: { id: 'fixture-cup', name: 'Fixture Cup', type: 'national-team', season: '2026' },
+        competition: { id: 'fixture-cup', name: 'Fixture Cup', type: 'club', season: '2026' },
         kickoffUtc: '2026-06-11T19:00:00.000Z',
         status: 'scheduled',
         homeTeam: { id: 'team-a', name: 'Team A' },
@@ -77,6 +81,26 @@ describe('supabase cloud persistence adapter', () => {
     const snapshotCall = client.calls.find((call) => call.text.includes('miraichi_app.match_snapshot'));
     const matchCall = client.calls.find((call) => call.text.includes('miraichi_app.match_record'));
     expect(snapshotCall?.values[4]).toBe(JSON.stringify(snapshot.sources));
-    expect(matchCall?.values[20]).toBe(JSON.stringify(snapshot.matches[0]!.sourceRefs));
+    expect(matchCall?.text).toContain('$6');
+    expect(matchCall?.values[5]).toBe('club');
+    expect(matchCall?.values[21]).toBe(JSON.stringify(snapshot.matches[0]!.sourceRefs));
+  });
+
+  it('reads the canonical club competition type from persisted match rows', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    client.enqueueRows(
+      [{
+        id: 'match-001', competition_id: 'fixture-cup', competition_name: 'Fixture Cup', competition_type: 'club', season: '2026',
+        kickoff_utc: '2026-06-11T19:00:00.000Z', status: 'scheduled', home_team_id: 'team-a', home_team_name: 'Team A',
+        away_team_id: 'team-b', away_team_name: 'Team B', home_score: null, away_score: null, source_refs: [], updated_at: '2026-07-02T00:00:00.000Z'
+      }],
+      [{ snapshot_id: 'snapshot-001', generated_at: '2026-07-02T00:00:00.000Z', imported_at: '2026-07-02T00:01:00.000Z', sources: [] }],
+      [{ id: 'fixture-cup', name: 'Fixture Cup', seasons: ['2026'], match_count: 1 }]
+    );
+
+    const result = await adapter.listCloudMatches('owner-primary', {});
+
+    expect(result.matches[0]?.competition.type).toBe('club');
   });
 });

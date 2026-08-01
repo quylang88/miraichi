@@ -11,7 +11,6 @@ import { renderBottomNavigation } from './components/bottom-navigation.js';
 import { createSettingsService } from './services/settings-service.js';
 import { resolveLocale, t } from './services/i18n-service.js';
 import { getTodayDateTileParts } from './components/app-shell.js';
-import type { LocalMatchStatus } from '@miraichi/shared';
 
 
 function createMemoryStorage(initial: Record<string, string> = {}): Storage {
@@ -229,7 +228,7 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('data-icon="stadium"');
   });
 
-  it('renders the Date Navigator and LIVE filter button on the matches panel', () => {
+  it('renders the Date Navigator without a match-feed LIVE filter', () => {
     const html = renderAppShell({
       activeTabId: 'matches',
       translate: t,
@@ -268,9 +267,8 @@ describe('production PWA shell rendering', () => {
     // The center date should be active
     expect(html).toContain('class="date-chip active" type="button" data-date="2026-06-30"');
 
-    // LIVE filter button should be rendered
-    expect(html).toContain('id="live-filter-btn"');
-    expect(html).toContain('LIVE</button>');
+    expect(html).not.toContain('id="live-filter-btn"');
+    expect(html).not.toContain('>LIVE</button>');
   });
 });
 
@@ -391,7 +389,7 @@ describe('production shell settings and i18n boundaries', () => {
   });
 });
 
-describe('production shell live match feed rendering', () => {
+describe('production shell match snapshot rendering', () => {
   it('renders loading and unavailable states for serving match feed', () => {
     const loadingHtml = renderAppShell({
       activeTabId: 'today',
@@ -411,6 +409,7 @@ describe('production shell live match feed rendering', () => {
       }
     });
     expect(unavailableHtml).toContain('Data update required');
+    expect(unavailableHtml).toContain('Data status: Unavailable');
     expect(unavailableHtml).toContain('Serving match store is missing. Build it from canonical warehouse before using match workflows.');
   });
 
@@ -457,6 +456,8 @@ describe('production shell live match feed rendering', () => {
     expect(html).toContain('Japan vs Vietnam');
     expect(html).toContain('FIFA World Cup');
     expect(html).toContain('Local match ID match-1');
+    expect(html).toContain('Data status: Ready');
+    expect(html).toContain('Snapshot generated: 2026-07-01T00:00:00.000Z');
     expect(html).not.toContain('provider fixture context');
     expect(html).not.toContain('No provider matches');
 
@@ -472,6 +473,27 @@ describe('production shell live match feed rendering', () => {
     expect(todayPanelHtml).not.toContain('Team Gamma vs Team Delta');
     expect(matchesPanelHtml).not.toContain('Team Alpha vs Team Beta');
     expect(matchesPanelHtml).not.toContain('Team Gamma vs Team Delta');
+
+    const staleHtml = renderAppShell({
+      activeTabId: 'matches',
+      matchFeed: {
+        status: 'empty',
+        date: '2026-06-29',
+        warnings: [],
+        snapshot: {
+          snapshotId: 'stale-snapshot',
+          generatedAt: '2026-06-28T00:00:00.000Z',
+          importedAt: '2026-06-28T00:01:00.000Z',
+          matchCount: 0,
+          competitions: [],
+          sources: [],
+          freshness: 'stale',
+          warnings: []
+        }
+      }
+    });
+    expect(staleHtml).toContain('Data status: Stale');
+    expect(staleHtml).toContain('Snapshot generated: 2026-06-28T00:00:00.000Z');
   });
 });
 
@@ -523,12 +545,12 @@ describe('production shell match filters panel', () => {
         id: 'm2',
         competition: {
           id: 'c2',
-          name: 'English Premier League',
-          type: 'national-team' as const,
+          name: 'FIFA World Cup Club',
+          type: 'club' as const,
           season: '2026'
         },
         kickoffUtc: '2026-06-30T16:00:00.000Z',
-        status: 'in_play' as unknown as LocalMatchStatus,
+        status: 'scheduled' as const,
         homeTeam: { id: 't3', name: 'Arsenal' },
         awayTeam: { id: 't4', name: 'Chelsea' },
         score: { home: 1, away: 0 },
@@ -578,7 +600,7 @@ describe('production shell match filters panel', () => {
     
     // Check dynamic league checklist population
     expect(html).toContain('value="FIFA World Cup"');
-    expect(html).toContain('value="English Premier League"');
+    expect(html).toContain('value="FIFA World Cup Club"');
     expect(html).toContain('value="Women Friendly"');
   });
 
@@ -587,20 +609,6 @@ describe('production shell match filters panel', () => {
     const end = html.indexOf('</section>', start);
     return html.slice(start, end);
   };
-
-  it('filters matches by LIVE state', () => {
-    const html = renderAppShell({
-      activeTabId: 'matches',
-      translate: t,
-      matchFeed: testMatchFeed,
-      isLiveFilterActive: true
-    });
-    const panel = getMatchesPanelHtml(html);
-
-    expect(panel).toContain('Arsenal vs Chelsea');
-    expect(panel).not.toContain('Japan vs Vietnam');
-    expect(panel).not.toContain('USA Women vs Germany');
-  });
 
   it('filters matches by search query', () => {
     const html = renderAppShell({
@@ -631,7 +639,7 @@ describe('production shell match filters panel', () => {
     const panelNational = getMatchesPanelHtml(htmlNational);
     expect(panelNational).toContain('Japan vs Vietnam'); // FIFA World Cup is national
     expect(panelNational).toContain('USA Women vs Germany'); // Women Friendly is national
-    expect(panelNational).not.toContain('Arsenal vs Chelsea'); // English Premier League is club
+    expect(panelNational).not.toContain('Arsenal vs Chelsea'); // canonical type is club
 
     const htmlClub = renderAppShell({
       activeTabId: 'matches',
@@ -693,7 +701,7 @@ describe('production shell match filters panel', () => {
         groupby: 'league',
         type: 'all',
         gender: 'all',
-        selectedLeagues: new Set<string>(['English Premier League', 'FIFA World Cup'])
+        selectedLeagues: new Set<string>(['FIFA World Cup Club', 'FIFA World Cup'])
       }
     });
     const panelLeagues = getMatchesPanelHtml(htmlLeagues);
@@ -735,7 +743,7 @@ describe('production shell match filters panel', () => {
     });
     // When grouped by league, there are league group headers:
     expect(htmlLeague).toContain('<div class="group-label">FIFA World Cup</div>');
-    expect(htmlLeague).toContain('<div class="group-label">English Premier League</div>');
+    expect(htmlLeague).toContain('<div class="group-label">FIFA World Cup Club</div>');
     expect(htmlLeague).toContain('<div class="group-label">Women Friendly</div>');
   });
 

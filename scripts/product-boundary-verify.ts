@@ -1,4 +1,4 @@
-import { access, readFile } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,6 +11,11 @@ export const FORBIDDEN_PRODUCT_PATHS = [
 const FORBIDDEN_SCRIPT = /(^dev:local-ai$|^phase4:|^phase8:|sportmonks)/i;
 const FORBIDDEN_API_ROUTE = /\/api\/v1\/(predictions|chat|mock\/predict|mock\/explain)/g;
 const EXPECTED_NAVIGATION_TABS = ['today', 'matches', 'bets', 'bankroll'] as const;
+const FORBIDDEN_WEB_RUNTIME_URLS = [
+  /https?:\/\/raw\.githubusercontent\.com\/[^\s"'`]+/gi,
+  /https?:\/\/github\.com\/openfootball(?:\/[^\s"'`]*)?/gi,
+  /https?:\/\/[^\s"'`]*openfootball[^\s"'`]*/gi
+] as const;
 
 async function exists(filePath: string): Promise<boolean> {
   try {
@@ -34,6 +39,15 @@ function readNavigationTabIds(source: string): string[] | null {
   const assignment = source.match(/PRODUCTION_NAVIGATION_TAB_IDS\s*=\s*Object\.freeze\(\s*\[([\s\S]*?)\]\s*as const\s*\)/);
   if (!assignment?.[1]) return null;
   return [...assignment[1].matchAll(/['"]([^'"]+)['"]/g)].map((match) => match[1]!);
+}
+
+async function listFiles(rootDir: string): Promise<string[]> {
+  const entries = await readdir(rootDir, { withFileTypes: true });
+  const files = await Promise.all(entries.map(async (entry) => {
+    const entryPath = path.join(rootDir, entry.name);
+    return entry.isDirectory() ? listFiles(entryPath) : [entryPath];
+  }));
+  return files.flat();
 }
 
 export async function auditProductBoundary(rootDir: string): Promise<string[]> {
@@ -72,6 +86,17 @@ export async function auditProductBoundary(rootDir: string): Promise<string[]> {
     navigationTabIds.some((tabId, index) => tabId !== EXPECTED_NAVIGATION_TABS[index])
   ) {
     errors.push(`Navigation tabs must be exactly: ${EXPECTED_NAVIGATION_TABS.join(', ')}`);
+  }
+
+  const webSourceRoot = path.join(rootDir, 'apps/web/src');
+  if (await exists(webSourceRoot)) {
+    for (const filePath of await listFiles(webSourceRoot)) {
+      const source = await readFile(filePath, 'utf8');
+      const urls = new Set(FORBIDDEN_WEB_RUNTIME_URLS.flatMap((pattern) => [...source.matchAll(pattern)].map((match) => match[0]!)));
+      for (const url of urls) {
+        errors.push(`Forbidden web runtime source URL in ${path.relative(rootDir, filePath).replaceAll('\\', '/')}: ${url}`);
+      }
+    }
   }
 
   return errors;

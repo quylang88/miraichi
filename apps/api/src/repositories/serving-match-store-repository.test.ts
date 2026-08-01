@@ -118,7 +118,7 @@ describe('ServingMatchStoreRepository', () => {
     await fs.rm(root, { recursive: true, force: true });
   });
 
-  it('marks the serving store stale when generatedAt is older than seven days', async () => {
+  it('keeps the serving store fresh through exactly twelve hours and marks it stale after', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'miraichi-serving-stale-'));
     await buildServingMatchStore({
       servingRoot: root,
@@ -130,14 +130,17 @@ describe('ServingMatchStoreRepository', () => {
       matches: [scheduledMatch],
       scope: 'configured-competitions'
     });
-    const repo = new ServingMatchStoreRepository({
+    const statusAtTwelveHours = await new ServingMatchStoreRepository({
       servingRoot: root,
-      now: () => new Date('2026-07-10T00:00:00.000Z')
-    });
+      now: () => new Date('2026-07-01T12:00:00.000Z')
+    }).getStatus();
+    const statusAfterTwelveHours = await new ServingMatchStoreRepository({
+      servingRoot: root,
+      now: () => new Date('2026-07-01T12:00:00.001Z')
+    }).getStatus();
 
-    const status = await repo.getStatus();
-
-    expect(status.freshness).toBe('stale');
+    expect(statusAtTwelveHours.freshness).toBe('fresh');
+    expect(statusAfterTwelveHours.freshness).toBe('stale');
 
     await fs.rm(root, { recursive: true, force: true });
   });
