@@ -98,7 +98,7 @@ if (fs.existsSync(webServerPath)) {
   failed = true;
 }
 
-// 2a. Verify production shell is TypeScript-first and uses the accepted five-tab backbone
+// 2a. Verify production shell is TypeScript-first and uses the accepted four-tab backbone
 const productionShellFiles = [
   'apps/web/src/shell-entry.ts',
   'apps/web/src/config/navigation-tabs.ts',
@@ -165,8 +165,7 @@ if (fs.existsSync(navigationConfigPath)) {
     "'today'",
     "'matches'",
     "'bets'",
-    "'bankroll'",
-    "'miraichi'"
+    "'bankroll'"
   ];
 
   for (const marker of requiredTabs) {
@@ -199,7 +198,6 @@ if (fs.existsSync(appShellPath)) {
   const requiredShellMarkers = [
     'data-production-shell="phase-5-9"',
     'data-production-baseline="black-apple-ledger"',
-    'data-settings-entry="miraichi-tab"',
     'data-add-bet-boundary="planned"',
     'class="main-scroll"',
     'id="screen-today"',

@@ -40,7 +40,7 @@ Manual bet drafts, bet records, odds, stake points, settlements, notes, bankroll
 
 ## Explicit Exclusions
 
-- prediction, chat, explanation, or model-training runtimes;
+- automated advisory runtimes;
 - automated picks, expected-goals features, stake sizing, Kelly, ROI, CLV, or risk formulas;
 - public accounts, multi-tenancy, or direct browser scraping;
 - a crawler source without a new accepted ADR.

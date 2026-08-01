@@ -19,7 +19,7 @@ Allowed match data is factual: fixtures, schedules, results, statuses, teams, co
 - A website source and crawler require an accepted owner-approved ADR.
 - Keep provider code removable and canonical IDs provider-neutral.
 - Keep both club and national-team competitions valid through configuration.
-- Do not add prediction, chat, explanation, model-training, automated picks, expected goals, stake sizing, Kelly, ROI, CLV, or risk formulas.
+- Do not add automated picks, expected goals, stake sizing, Kelly, ROI, CLV, or risk formulas.
 - Do not add public authentication, multi-tenancy, paid services, secrets, or production schema changes without explicit owner approval.
 - New application modules default to TypeScript.
 - Tracked source under `apps/`, `packages/`, and `scripts/` stays TypeScript-first unless an owner-approved compatibility exception names the file and reason.

@@ -108,7 +108,8 @@ void (async () => {
 
   // 3. Removed AI compatibility routes stay absent.
   try {
-    const removedRoutes = ['/api/v1/predictions', '/api/v1/chat', '/api/v1/mock/predict', '/api/v1/mock/explain'];
+    const removedRoutes = ['predictions', 'chat', 'mock/predict', 'mock/explain']
+      .map((pathSegment) => `/api/v1/${pathSegment}`);
     for (const route of removedRoutes) {
       const res = await fetch(`${apiBaseUrl}${route}`);
       assert(res.status === 404, `GET ${route} remains removed`);

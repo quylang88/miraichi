@@ -47,7 +47,7 @@
 - Produces: CLI output `[Product Boundary] PASSED` or one error per violation.
 - Consumes: filesystem tree plus root `package.json`, API entry source, and navigation source.
 
-- [ ] **Step 1: Write the failing verifier unit tests**
+- [x] **Step 1: Write the failing verifier unit tests**
 
 Create a temporary fixture with forbidden paths and scripts, then a clean fixture:
 
@@ -86,7 +86,7 @@ describe('product boundary verifier', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test and observe failure**
+- [x] **Step 2: Run the test and observe failure**
 
 Run:
 
@@ -96,7 +96,7 @@ pnpm exec vitest run scripts/product-boundary-verify.test.ts
 
 Expected: FAIL because `./product-boundary-verify.js` does not exist.
 
-- [ ] **Step 3: Implement the verifier**
+- [x] **Step 3: Implement the verifier**
 
 Implement these exact boundaries:
 
@@ -118,7 +118,7 @@ export async function auditProductBoundary(rootDir: string): Promise<string[]> {
 
 The CLI must call `auditProductBoundary(process.cwd())`, print every error, and set exit code `1`; otherwise print `[Product Boundary] PASSED`.
 
-- [ ] **Step 4: Run focused verification**
+- [x] **Step 4: Run focused verification**
 
 Run:
 
@@ -129,7 +129,7 @@ pnpm exec tsx scripts/product-boundary-verify.ts
 
 Expected: unit tests PASS; CLI FAILS against the current repository and lists the existing AI/Sportmonks boundary violations.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```text
 git add scripts/product-boundary-verify.ts scripts/product-boundary-verify.test.ts
@@ -163,7 +163,7 @@ git commit -m "test: define non-ai product boundary"
 - Produces: `ServingMatchScope = 'configured-competitions'`.
 - Preserves: `LocalDataSourceId`, `ProviderId`, `LocalMatch`, `CanonicalCompetition`, and serving-store public functions.
 
-- [ ] **Step 1: Change tests to the new boundary**
+- [x] **Step 1: Change tests to the new boundary**
 
 Add a valid club match case and replace all Sportmonks fixtures with `manual-snapshot`:
 
@@ -183,7 +183,7 @@ expect(snapshot.sources[0].sourceId).toBe('manual-snapshot');
 
 Update cloud-sync tests so club matches are accepted and only invalid statuses/contracts are rejected.
 
-- [ ] **Step 2: Run tests and observe failure**
+- [x] **Step 2: Run tests and observe failure**
 
 Run:
 
@@ -193,7 +193,7 @@ pnpm exec vitest run packages/shared/src/contracts/local-match-contracts.test.ts
 
 Expected: FAIL because club matches are rejected and Sportmonks is still hardcoded.
 
-- [ ] **Step 3: Implement factual, configurable competition contracts**
+- [x] **Step 3: Implement factual, configurable competition contracts**
 
 Use these exact shapes:
 
@@ -212,7 +212,7 @@ export type ServingMatchScope = 'configured-competitions';
 
 Remove `'sportmonks'` from `LocalDataSourceId`, `ProviderId`, and validation arrays. Change `CanonicalCompetition.type` to `LocalCompetitionType`. Remove validation that rejects `club`. Change serving-store and build-script defaults from `national-team` to `configured-competitions`. Remove the cloud-sync club rejection. Replace the Sportmonks-specific comment in `canonical-warehouse.ts` with `Provider-specific adapters may write to it; the warehouse survives adapter replacement.`
 
-- [ ] **Step 4: Run focused tests and typecheck**
+- [x] **Step 4: Run focused tests and typecheck**
 
 Run the Step 2 command, then:
 
@@ -222,7 +222,7 @@ pnpm run typecheck
 
 Expected: all focused tests and typecheck PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```text
 git add packages/shared/src/contracts apps/api/src/repositories apps/api/src/services scripts/build-serving-match-store.ts scripts/build-serving-match-store.test.ts scripts/providers/shared
@@ -262,7 +262,7 @@ git commit -m "refactor: generalize factual match data boundary"
 - Removes four API routes and all compatibility fallbacks.
 - Preserves retained API endpoints and manual bet/bankroll contracts.
 
-- [ ] **Step 1: Update tests first**
+- [x] **Step 1: Update tests first**
 
 Change navigation expectations to:
 
@@ -281,7 +281,7 @@ type _SourceBoundary = Assert<Extends<BetRecordSource, 'manual'>>;
 
 Change endpoint integration so the four removed routes expect `404` and remove all local-AI process startup and health checks.
 
-- [ ] **Step 2: Run focused tests and observe failure**
+- [x] **Step 2: Run focused tests and observe failure**
 
 Run:
 
@@ -291,7 +291,7 @@ pnpm exec vitest run apps/web/src/production-shell.test.ts packages/shared/src/c
 
 Expected: FAIL because the fifth tab and assistant panel still render.
 
-- [ ] **Step 3: Remove runtime surfaces**
+- [x] **Step 3: Remove runtime surfaces**
 
 Set the navigation IDs to:
 
@@ -305,7 +305,7 @@ Delete `renderMiraichiPanel`, `renderAssistantRow`, its renderer-map entry, tran
 
 Update `scripts/test-endpoints.ts` to spawn only the API, use `manual-snapshot`, use scope `configured-competitions`, and assert the removed route status codes are `404`.
 
-- [ ] **Step 4: Run focused tests and typecheck**
+- [x] **Step 4: Run focused tests and typecheck**
 
 Run:
 
@@ -317,7 +317,7 @@ pnpm run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```text
 git add apps/api/src apps/web/src packages/shared/src scripts/check-files.ts scripts/test-endpoints.ts scripts/phase2-verify.ts scripts/phase9-cloud-persistence-verify.ts
@@ -351,7 +351,7 @@ git commit -m "refactor: remove AI runtime surfaces"
 - Preserves `scripts/providers/shared/*` and generic data-build commands.
 - Removes every Sportmonks command and environment variable.
 
-- [ ] **Step 1: Confirm generic tests no longer use Sportmonks**
+- [x] **Step 1: Confirm generic tests no longer use Sportmonks**
 
 Run:
 
@@ -361,7 +361,7 @@ rg -n -i "sportmonks" scripts/providers/shared packages/shared/src/contracts app
 
 Expected before implementation: matches remain only where Task 2 did not fully remove them; replace those fixtures with `manual-snapshot` before deletion.
 
-- [ ] **Step 2: Remove code and package/environment wiring**
+- [x] **Step 2: Remove code and package/environment wiring**
 
 Delete the listed TypeScript files/directories. Remove all root package script keys containing `sportmonks`. Remove `SPORTMONKS_*` entries from `.env.example`. Remove provider-specific generated-data scaffolding and rewrite the serving README command examples to the generic commands:
 
@@ -370,11 +370,11 @@ pnpm run data:build:serving:matches
 pnpm run data:validate:serving:matches
 ```
 
-- [ ] **Step 3: Delete raw and derived data safely**
+- [x] **Step 3: Delete raw and derived data safely**
 
 Resolve and verify each absolute target is inside `C:\CODE\miraichi\apps\api\data` before recursive deletion. Delete untracked `raw`, `manifests`, and `reports`. Delete generated warehouse/serving artifacts carrying Sportmonks provenance; retain `.gitkeep` and the generic README only.
 
-- [ ] **Step 4: Run focused verification**
+- [x] **Step 4: Run focused verification**
 
 Run:
 
@@ -386,7 +386,7 @@ rg -n -i "sportmonks" package.json .env.example apps/api/src apps/web/src packag
 
 Expected: tests/typecheck PASS; final `rg` has no result.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```text
 git add -A scripts apps/api/data package.json .env.example .gitignore packages/shared/src
@@ -414,11 +414,11 @@ git commit -m "refactor: remove Sportmonks integration and data"
 - Changes `test:integration` to `pnpm run phase3:verify && pnpm run test:e2e && pnpm run pwa:verify`.
 - Changes `verify:local` to include `pnpm run verify:product-boundary`.
 
-- [ ] **Step 1: Update lifecycle tests first**
+- [x] **Step 1: Update lifecycle tests first**
 
 Remove `apps/local-ai/docs/ai-architecture.md` from `REQUIRED_DOC_INDEX_REFERENCES` expectations. Add a root-script expectation for `verify:product-boundary`.
 
-- [ ] **Step 2: Run lifecycle tests and observe failure**
+- [x] **Step 2: Run lifecycle tests and observe failure**
 
 Run:
 
@@ -428,7 +428,7 @@ pnpm exec vitest run scripts/verify-lifecycle.test.ts
 
 Expected: FAIL because package scripts and lifecycle requirements still describe local AI.
 
-- [ ] **Step 3: Delete local AI and update automation**
+- [x] **Step 3: Delete local AI and update automation**
 
 Delete `apps/local-ai/`, including its untracked `.venv`, caches, raw/processed data, and reports. Delete Phase 4/8 scripts. Remove `dev:local-ai`, `phase4:*`, and `phase8:*` package commands. Add:
 
@@ -438,7 +438,7 @@ Delete `apps/local-ai/`, including its untracked `.venv`, caches, raw/processed 
 
 Wire it into `verify:local`. Remove local-AI integration from `test:integration`. Remove local-AI allowlists from `scripts/audit-rules.ts`. Update `scripts/verify-lifecycle.ts` and docs index requirements. Run `pnpm install --lockfile-only` to remove the `apps/local-ai` importer.
 
-- [ ] **Step 4: Run focused verification**
+- [x] **Step 4: Run focused verification**
 
 Run:
 
@@ -450,7 +450,7 @@ pnpm run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```text
 git add -A apps/local-ai scripts package.json pnpm-lock.yaml docs/README.md
@@ -489,7 +489,7 @@ git commit -m "refactor: remove local AI application and phase gates"
 - Produces current phase source of truth: Product Reset completed, Website Source Selection next.
 - Removes active AI agent ownership and national-team-first rules.
 
-- [ ] **Step 1: Write ADR-0044 and root source-of-truth documents**
+- [x] **Step 1: Write ADR-0044 and root source-of-truth documents**
 
 ADR-0044 must contain:
 
@@ -501,15 +501,15 @@ Consequences: four primary tabs; no prediction/chat/model runtime; future websit
 
 `PROJECT_PLAN.md` must have no Phase 10. Its next unchecked item is `phase:plan Website Source Selection And Crawler Boundary`.
 
-- [ ] **Step 2: Rewrite lifecycle skills and agent catalog**
+- [x] **Step 2: Rewrite lifecycle skills and agent catalog**
 
 Remove local-AI integration commands/examples, model-training rules, World-Cup-first rules, national-team-first rules, and the AI/Data agent. Retain competition-agnostic design, TypeScript-first implementation, TDD, verification, staging, owner approval, and no betting-formula guardrails.
 
-- [ ] **Step 3: Delete AI-only documentation**
+- [x] **Step 3: Delete AI-only documentation**
 
 Delete the exact directories and files above. Historical content remains recoverable from Git history. Update `docs/README.md` and `docs/decisions/README.md` so no deleted path is indexed.
 
-- [ ] **Step 4: Run documentation and lifecycle checks**
+- [x] **Step 4: Run documentation and lifecycle checks**
 
 Run:
 
@@ -521,7 +521,7 @@ git diff --check
 
 Expected: lifecycle PASS; `rg` matches only the accepted removal design/ADR when those files are included separately, not active source-of-truth files.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```text
 git add -A PROJECT_PLAN.md README.md ARCHITECTURE.md ROADMAP.md WORKFLOW.md CHANGELOG.md AGENTS.md .agent docs
@@ -540,7 +540,7 @@ git commit -m "docs: reset Miraichi as a non-ai product"
 - Consumes all prior tasks.
 - Produces local and integration evidence for the completed large feature boundary.
 
-- [ ] **Step 1: Run repository scans**
+- [x] **Step 1: Run repository scans**
 
 Run:
 
@@ -551,7 +551,7 @@ rg -n -i "sportmonks|apps/local-ai|/api/v1/predictions|/api/v1/chat|/api/v1/mock
 
 Expected: boundary PASS and no forbidden runtime result.
 
-- [ ] **Step 2: Run local verification**
+- [x] **Step 2: Run local verification**
 
 Run:
 
@@ -561,7 +561,7 @@ pnpm run verify:local
 
 Expected: lifecycle, unit tests, syntax lint, typecheck, guardrail audit, type-safety audit, and product-boundary audit all PASS.
 
-- [ ] **Step 3: Run integration verification**
+- [x] **Step 3: Run integration verification**
 
 Run:
 
@@ -571,7 +571,7 @@ pnpm run test:integration
 
 Expected: ingestion, retained API endpoint boundary, owner persistence, and PWA verification PASS without spawning local AI.
 
-- [ ] **Step 4: Run final Git checks**
+- [x] **Step 4: Run final Git checks**
 
 Run:
 
@@ -583,7 +583,7 @@ git log -8 --oneline
 
 Expected: no whitespace errors; only intentional plan-checklist/closeout edits remain before the final commit.
 
-- [ ] **Step 5: Commit closeout adjustments**
+- [x] **Step 5: Commit closeout adjustments**
 
 ```text
 git add -A
