@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Status**: Owner approved; written-spec review pending
+- **Status**: Owner approved; written-spec review complete
 - **Date**: 2026-08-01
 - **Lifecycle command**: `phase:plan Website Source Selection And Crawler Boundary`
 - **Owner decision**: A+ — use OpenFootball for non-live match data and keep live-bet context manual.
@@ -135,11 +135,13 @@ The parser must support:
 
 - competition header;
 - round or matchday outline;
-- date headers with inherited year;
+- date headers with an explicit year or a year inherited from the competition header/date block;
 - explicit and inherited kickoff time within a date block;
-- home and away team names separated by `v` or `-`;
+- scheduled match lines using a whitespace-delimited `v` or `-` between teams;
+- completed match lines using an explicit full-time score, with optional half-time score, between the home and away team names;
 - full-time and half-time scores when present;
 - optional venue text introduced by `@`;
+- recognized indented scoring-detail continuation blocks that are deliberately ignored by the first source slice;
 - blank lines and `#` comments.
 
 The parser must fail closed on ambiguous date order, missing competition mapping, impossible scores, unsupported encoding, an unrecognized match line, or a source timezone that is absent from the registry. It must never invent noon, midnight, UTC, a match status, or a team identity to make a record pass.

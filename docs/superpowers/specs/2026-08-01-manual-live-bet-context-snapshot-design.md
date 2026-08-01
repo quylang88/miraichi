@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Status**: Owner approved; written-spec review pending
+- **Status**: Owner approved; written-spec review complete
 - **Date**: 2026-08-01
 - **Related lifecycle command**: `phase:plan Website Source Selection And Crawler Boundary`
 - **Owner decision**: A+ — external match data is non-live; the owner records the exact live context manually.

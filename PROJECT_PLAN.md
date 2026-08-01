@@ -4,7 +4,8 @@
 
 - **Status**: Active
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
-- **Active phase**: Website Source Selection And Crawler Boundary — A+ approved; written-spec review pending.
+- **Completed phase**: `phase:plan Website Source Selection And Crawler Boundary` — A+ and both written specs approved.
+- **Active phase**: `phase:implementation-plan OpenFootball Match Source` — TDD plan written; owner execution choice pending.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -29,18 +30,19 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Compare GitHub community sources, access boundaries, coverage, freshness, and maintenance risk.
 - [x] Owner selected A+: OpenFootball non-live match data plus manual live-bet context snapshots.
 - [x] Record the source decision in ADR-0045 and split the two implementation tracks into separate specs.
-- [ ] Owner reviews the committed written specs and closes `phase:plan Website Source Selection And Crawler Boundary`.
+- [x] Owner reviewed the committed written specs and closed `phase:plan Website Source Selection And Crawler Boundary`.
+- [x] Write the TDD implementation plan for the OpenFootball match source.
+- [ ] Owner selects Subagent-Driven or Inline Execution for the OpenFootball code slices.
 
 OpenFootball is the only selected external match source family. It provides periodic fixture/result data, not live data or odds. Live score, minute, period, line, odds, and corner context at bet placement are owner-entered and immutable.
 
 ## Later Phases
 
-1. `phase:implementation-plan OpenFootball Match Source` for allowlist, fetch, raw cache, Football.TXT parsing, normalization, and atomic serving publication.
-2. TDD code slices for the OpenFootball source plan.
-3. `phase:implementation-plan Manual Live Bet Context Snapshot` for shared contracts, drafts, API, persistence, backup, and UI.
-4. TDD code slices for the manual live-bet context plan.
-5. Integration verification for worker/API/web and owner-record flows.
-6. Staging deployment and smoke evidence.
-7. Final owner feedback and production promotion only after all release gates pass.
+1. TDD code slices for `docs/superpowers/plans/2026-08-01-openfootball-match-source.md`.
+2. `phase:implementation-plan Manual Live Bet Context Snapshot` for shared contracts, drafts, API, persistence, backup, and UI.
+3. TDD code slices for the manual live-bet context plan.
+4. Integration verification for worker/API/web and owner-record flows.
+5. Staging deployment and smoke evidence.
+6. Final owner feedback and production promotion only after all release gates pass.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
