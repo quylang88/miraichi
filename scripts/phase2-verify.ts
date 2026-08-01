@@ -36,14 +36,6 @@ try {
   assert((err instanceof Error ? err.message : String(err)).includes('Invalid configuration key'), 'validateConfig successfully rejects invalid key "invalidField"');
 }
 
-// 2. Chatbot Refusal Checks (ADR-0007 Rule Compliance)
-console.log('\n--- 2. Testing Chatbot Sports Refusal Bounds ---');
-const checkSportsQuery = (msg: string) => /predict|win|team|score|match|odds|play|ratio|history|average|stats/i.test(msg);
-
-assert(checkSportsQuery('Why does the model predict Team A win?') === true, 'Approved sports queries match query pattern');
-assert(checkSportsQuery('What is the recipe for cheese pizza?') === false, 'Non-sports queries are marked as out-of-scope (pizza)');
-assert(checkSportsQuery('What is the weather in Paris?') === false, 'Non-sports queries are marked as out-of-scope (weather)');
-
 if (failed) {
   console.error('\n[Phase 2 Verify] Scope enforcement checks FAILED.');
   process.exit(1);

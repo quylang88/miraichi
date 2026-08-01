@@ -71,7 +71,7 @@ type _ManualLineEntryAlwaysAllowedShape = Assert<
 
 type _HkOnlyOdds = Assert<Extends<OddsFormat, 'HK'>>;
 
-type _SourceBoundary = Assert<Extends<BetRecordSource, 'manual' | 'ai_recommendation'>>;
+type _SourceBoundary = Assert<Extends<BetRecordSource, 'manual'>>;
 
 type _OddsValueAllowsNullableNormalizedFutureField = Assert<
   Extends<OddsValueFields['normalizedOddsValue'], number | null | undefined>

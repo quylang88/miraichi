@@ -4,16 +4,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { handleHealth } from './routes/health.js';
 import { handleMatches } from './routes/matches.js';
-import { handlePredictions } from './routes/predictions.mock.js';
-import { handleExplanations } from './routes/explanations.mock.js';
 import { handleBets } from './routes/bets.js';
 import { handleBetDrafts } from './routes/bet-drafts.js';
 import { handleCloudPersistenceStatus } from './routes/cloud-persistence-status.js';
 import { handleBankroll } from './routes/bankroll.js';
 import { handleBackups } from './routes/backups.js';
 import { handleIngestionStatus } from './routes/ingestion-status.mock.js';
-import { handleMockPredict } from './routes/mock-prediction.js';
-import { handleMockExplain } from './routes/mock-explanation.js';
 import { handleMatchDetail } from './routes/match-detail.js';
 import { handleDataSnapshotStatus } from './routes/data-snapshot-status.js';
 import { readCloudPersistenceConfig } from './config/cloud-persistence-config.js';
@@ -95,10 +91,6 @@ const server = http.createServer((req, res) => {
     void handleDataSnapshotStatus(req, res, { repository: matchRepository });
   } else if (pathname === '/api/v1/matches') {
     void handleMatches(req, res, { repository: matchRepository });
-  } else if (pathname === '/api/v1/predictions') {
-    handlePredictions(req, res);
-  } else if (pathname === '/api/v1/chat') {
-    handleExplanations(req, res);
   } else if (pathname === '/api/v1/bets') {
     void handleBets(req, res, cloudDependencies);
   } else if (pathname === '/api/v1/bet-drafts') {
@@ -111,10 +103,6 @@ const server = http.createServer((req, res) => {
     void handleBackups(req, res, cloudDependencies);
   } else if (pathname === '/api/v1/ingestion/status') {
     handleIngestionStatus(req, res);
-  } else if (pathname === '/api/v1/mock/predict') {
-    handleMockPredict(req, res);
-  } else if (pathname === '/api/v1/mock/explain') {
-    handleMockExplain(req, res);
   } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: `Not Found: ${pathname}` }));

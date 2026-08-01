@@ -59,7 +59,8 @@ describe('verify-lifecycle helpers', () => {
     expect(findMissingRootScripts(packageJson, REQUIRED_ROOT_SCRIPTS)).toEqual([
       'test:unit:coverage',
       'test:integration',
-      'verify:release'
+      'verify:release',
+      'verify:product-boundary'
     ]);
   });
 
@@ -124,7 +125,8 @@ describe('verify-lifecycle helpers', () => {
         'test:unit:coverage',
         'test:integration',
         'verify:local',
-        'verify:release'
+        'verify:release',
+        'verify:product-boundary'
       ]);
       expect(result.placeholderScripts).toHaveLength(1);
       expect(result.missingLifecycleReferences).toContain('WORKFLOW.md');

@@ -6,19 +6,14 @@ import path from 'path';
 import { buildServingMatchStore } from '../apps/api/src/repositories/serving-match-store.js';
 import type { LocalMatch } from '../packages/shared/src/contracts/index.js';
 
-console.log('[Test-Endpoints] Starting API Gateway and Local AI servers...');
+console.log('[Test-Endpoints] Starting API server...');
 
-// Spawn background processes for apps/api and apps/local-ai
 const tsxCli = path.resolve('node_modules/tsx/dist/cli.mjs');
 const integrationServingRoot = await prepareIntegrationServingStore();
 const apiPort = await findOpenPort(3001);
-const localAiPort = await findOpenPort(3002);
 const apiBaseUrl = `http://localhost:${apiPort}`;
-const localAiBaseUrl = `http://localhost:${localAiPort}`;
-const apiSpawnOptions = { stdio: 'inherit' as const, env: { ...process.env, APP_ENV: 'test', CLOUD_PERSISTENCE_MODE: 'memory', API_URL: apiBaseUrl, LOCAL_AI_URL: localAiBaseUrl, PORT: String(apiPort), LOCAL_MATCH_SERVING_ROOT: integrationServingRoot } };
-const aiSpawnOptions = { stdio: 'inherit' as const, env: { ...process.env, APP_ENV: 'test', CLOUD_PERSISTENCE_MODE: 'memory', API_URL: apiBaseUrl, LOCAL_AI_URL: localAiBaseUrl, PORT: String(localAiPort), LOCAL_MATCH_SERVING_ROOT: integrationServingRoot } };
+const apiSpawnOptions = { stdio: 'inherit' as const, env: { ...process.env, APP_ENV: 'test', CLOUD_PERSISTENCE_MODE: 'memory', API_URL: apiBaseUrl, PORT: String(apiPort), LOCAL_MATCH_SERVING_ROOT: integrationServingRoot } };
 const apiProcess = spawn(process.execPath, [tsxCli, 'apps/api/src/index.ts'], apiSpawnOptions);
-const aiProcess = spawn(process.execPath, [tsxCli, 'apps/local-ai/src/index.ts'], aiSpawnOptions);
 
 function cleanupAndExit(exitCode: number) {
   console.log('[Test-Endpoints] Shutting down background processes...');
@@ -29,12 +24,6 @@ function cleanupAndExit(exitCode: number) {
     console.error('Failed to kill API Gateway:', e);
   }
   
-  try {
-    aiProcess.kill();
-  } catch (e) {
-    console.error('Failed to kill Local AI:', e);
-  }
-
   void fs.rm(integrationServingRoot, { recursive: true, force: true });
   
   // Delay exit slightly to let libuv clean up handles on Windows
@@ -62,7 +51,6 @@ void (async () => {
 
   try {
     await waitForEndpoint(`${apiBaseUrl}/api/v1/health`);
-    await waitForEndpoint(`${localAiBaseUrl}/ai/v1/health`);
   } catch (err) {
     assert(false, `Servers did not become ready: ${err instanceof Error ? err.message : String(err)}`);
     cleanupAndExit(1);
@@ -118,43 +106,15 @@ void (async () => {
     assert(false, `GET /api/v1/data-snapshot/status request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // 3. GET /api/v1/predictions?matchId=match_2026_001 (Proxies to local-ai statistics processor)
+  // 3. Removed AI compatibility routes stay absent.
   try {
-    const res = await fetch(`${apiBaseUrl}/api/v1/predictions?matchId=match_2026_001`);
-    const data = await res.json();
-    assert(res.ok && data.matchId === 'match_2026_001', 'GET /api/v1/predictions returns prediction object');
-    assert(data.predictionOutcome === 'home_win', 'Prediction outcome is correct');
-    assert(data.status === 'completed' && data.prediction_available === true, 'Output contains ADR-0006 enriched properties');
+    const removedRoutes = ['/api/v1/predictions', '/api/v1/chat', '/api/v1/mock/predict', '/api/v1/mock/explain'];
+    for (const route of removedRoutes) {
+      const res = await fetch(`${apiBaseUrl}${route}`);
+      assert(res.status === 404, `GET ${route} remains removed`);
+    }
   } catch (err) {
-    assert(false, `GET /api/v1/predictions request failed: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // 4. POST /api/v1/chat (Approved sports query explanation)
-  try {
-    const res = await fetch(`${apiBaseUrl}/api/v1/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ predictionId: 'pred_2026_9999', message: 'Explain team statistics ratios' })
-    });
-    const data = await res.json();
-    assert(res.ok && data.predictionId === 'pred_2026_9999', 'POST /api/v1/chat accepts sports-related questions');
-    assert(data.trace.refusalCheck.passed === true, 'Refusal check passes for approved query');
-  } catch (err) {
-    assert(false, `POST /api/v1/chat sports query failed: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // 5. POST /api/v1/chat (Out-of-scope query safety refusal check)
-  try {
-    const res = await fetch(`${apiBaseUrl}/api/v1/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ predictionId: 'pred_2026_9999', message: 'What is the recipe for lasagna?' })
-    });
-    const data = await res.json();
-    assert(res.ok && data.trace.refusalCheck.passed === false, 'Out-of-scope query fails refusal check (ADR-0007 compliance)');
-    assert(data.reply.includes('football prediction'), 'Out-of-scope reply returns safety refusal disclaimer');
-  } catch (err) {
-    assert(false, `POST /api/v1/chat out-of-scope query failed: ${err instanceof Error ? err.message : String(err)}`);
+    assert(false, `Removed route boundary check failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // 6. Phase 9 owner-only cloud persistence in memory integration mode
@@ -188,32 +148,6 @@ void (async () => {
     assert(draftDelete.status === 204, 'DELETE /api/v1/bet-drafts removes the integration draft');
   } catch (err) {
     assert(false, `Phase 9 cloud persistence integration failed: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // 7. POST /ai/v1/predict (Local AI stats calculator stub)
-  try {
-    const res = await fetch(`${localAiBaseUrl}/ai/v1/predict`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ matchId: 'match_2026_001' })
-    });
-    const data = await res.json();
-    assert(res.ok && data.status === 'completed', 'POST /ai/v1/predict returns statistics payload status completed');
-  } catch (err) {
-    assert(false, `POST /ai/v1/predict request failed: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // 8. POST /ai/v1/explain (Local AI chatbot stats processor)
-  try {
-    const res = await fetch(`${localAiBaseUrl}/ai/v1/explain`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ predictionId: 'pred_2026_9999', message: 'Why Team A?' })
-    });
-    const data = await res.json();
-    assert(res.ok && data.trace.refusalCheck.passed === true, 'POST /ai/v1/explain parses approved chatbot queries');
-  } catch (err) {
-    assert(false, `POST /ai/v1/explain request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   if (failed) {

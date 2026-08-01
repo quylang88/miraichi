@@ -21,7 +21,6 @@ const icons = Object.freeze({
   down: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 10 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   filter: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
-  spark: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v4M12 17v4M4.2 6.2l2.8 2.8M17 17l2.8 2.8M3 12h4M17 12h4M4.2 17.8 7 15M17 7l2.8-2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   time: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8"/></svg>',
   up: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 14 6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 });
@@ -181,7 +180,7 @@ function renderSnapshotMatchCard(match: AppMatch, timezone?: 'local' | 'UTC' | '
         <div class="ledger-row">
           <div>
             <div class="ledger-title">Snapshot match</div>
-            <div class="ledger-meta">Local match ID ${escapeHtml(match.id)}. No odds or prediction loaded.</div>
+            <div class="ledger-meta">Local match ID ${escapeHtml(match.id)}. No odds loaded.</div>
           </div>
           <span class="ledger-state">${escapeHtml(match.status)}</span>
         </div>
@@ -948,44 +947,6 @@ function renderPointsRow(label: string, value: string, state: string): string {
   `;
 }
 
-function renderMiraichiPanel(activeTabId: ProductionNavigationTabId, translate: TranslateFunction): string {
-  return `
-    <section class="${getScreenClass('miraichi', activeTabId)}" id="screen-miraichi" data-shell-tab-panel="miraichi" aria-labelledby="miraichi-title">
-      ${renderScreenHeader({
-        label: translate('miraichi.eyebrow', 'Assistant surface'),
-        title: translate('miraichi.title', 'Miraichi'),
-        titleId: 'miraichi-title'
-      })}
-
-      <div class="stack">
-        ${renderAssistantRow('Context check', 'Static note: generic match data is incomplete. No recommendation is produced.')}
-        ${renderAssistantRow('Draft review queue', 'One manual row can be reviewed by the user. No ranking, confidence, or stake advice.')}
-        <article class="note-card" data-settings-entry="miraichi-tab">
-          <div class="note-eyebrow">Role</div>
-          <div class="note-title">Miraichi explains context; it does not decide bets.</div>
-          <p class="note-copy">This keeps the assistant UX aligned with the existing AI and betting guardrails while still showing a useful app surface.</p>
-        </article>
-        <button type="button" class="secondary-button add-inline" data-settings-entry="miraichi-tab">Settings</button>
-        <div class="settings-summary" data-settings-summary>
-          ${escapeHtml(translate('settings.summary', 'Language and appearance settings are shell-only until later phases.'))}
-        </div>
-      </div>
-    </section>
-  `;
-}
-
-function renderAssistantRow(title: string, meta: string): string {
-  return `
-    <article class="assistant-row">
-      <div class="row-icon" aria-hidden="true">${icons.spark}</div>
-      <div>
-        <div class="row-title">${escapeHtml(title)}</div>
-        <div class="row-meta">${escapeHtml(meta)}</div>
-      </div>
-    </article>
-  `;
-}
-
 function renderSheets(): string {
   return `
     <div class="sheet-backdrop" data-close-sheet></div>
@@ -1151,8 +1112,7 @@ const panelRenderers: Record<
   matches: (activeTabId, translate, matchFeed, timezone, filters, searchQuery, isLiveFilterActive, isFilterPanelOpen) =>
     renderMatchesPanel(activeTabId, translate, matchFeed, timezone, filters, searchQuery, isLiveFilterActive, isFilterPanelOpen),
   bets: (activeTabId, translate, _matchFeed, _timezone, _filters, _searchQuery, _isLiveFilterActive, _isFilterPanelOpen, betRecordsState) => renderBetsPanel(activeTabId, translate, betRecordsState ?? defaultBetRecordsState),
-  bankroll: (activeTabId, translate, _matchFeed, _timezone, _filters, _searchQuery, _isLiveFilterActive, _isFilterPanelOpen, _betRecordsState, bankrollState) => renderBankrollPanel(activeTabId, translate, bankrollState ?? defaultBankrollState),
-  miraichi: (activeTabId, translate) => renderMiraichiPanel(activeTabId, translate)
+  bankroll: (activeTabId, translate, _matchFeed, _timezone, _filters, _searchQuery, _isLiveFilterActive, _isFilterPanelOpen, _betRecordsState, bankrollState) => renderBankrollPanel(activeTabId, translate, bankrollState ?? defaultBankrollState)
 });
 
 export function renderAppShell({

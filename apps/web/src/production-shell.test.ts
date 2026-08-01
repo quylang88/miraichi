@@ -36,16 +36,15 @@ function createMemoryStorage(initial: Record<string, string> = {}): Storage {
 }
 
 describe('production PWA shell configuration', () => {
-  it('uses the accepted five-tab domain navigation backbone only', () => {
+  it('uses the accepted four-tab domain navigation backbone only', () => {
     expect(PRODUCTION_NAVIGATION_TAB_IDS).toEqual([
       'today',
       'matches',
       'bets',
-      'bankroll',
-      'miraichi'
+      'bankroll'
     ]);
     expect(navigationTabs.map((tab) => tab.id)).toEqual(PRODUCTION_NAVIGATION_TAB_IDS);
-    expect(navigationTabs).toHaveLength(5);
+    expect(navigationTabs).toHaveLength(4);
     expect(navigationTabs.map((tab) => tab.id)).not.toContain('settings');
     expect(navigationTabs.map((tab) => tab.id)).not.toContain('add');
   });
@@ -93,8 +92,8 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('data-shell-tab-panel="matches"');
     expect(html).toContain('data-shell-tab-panel="bets"');
     expect(html).toContain('data-shell-tab-panel="bankroll"');
-    expect(html).toContain('data-shell-tab-panel="miraichi"');
-    expect(html).toContain('data-settings-entry="miraichi-tab"');
+    expect(html).not.toContain('data-shell-tab-panel="miraichi"');
+    expect(html).not.toContain('data-settings-entry="miraichi-tab"');
     expect(html).not.toContain('data-primary-tab="settings"');
     expect(html).not.toContain('data-primary-tab="add"');
   });

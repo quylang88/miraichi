@@ -21,7 +21,6 @@ Central index for cross-cutting Miraichi documentation. Do not move module-speci
 ## Application Docs
 - API architecture: `apps/api/docs/api-architecture.md`
 - Web frontend architecture: `apps/web/docs/frontend-architecture.md`
-- Local AI architecture: `apps/local-ai/docs/ai-architecture.md`
 - Worker architecture: `apps/worker/docs/worker-architecture.md`
 
 ## Package Docs
