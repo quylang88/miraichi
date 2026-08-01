@@ -90,9 +90,9 @@ async function optionsFor(
   };
 }
 
-async function manifestEntries(dataRoot: string): Promise<Array<{ status: string; runId?: string; errorCode?: string }>> {
+async function manifestEntries(dataRoot: string): Promise<Array<{ status: string; runId?: string; errorCode?: string; endpointKey?: string }>> {
   const text = await readFile(join(dataRoot, 'providers', 'openfootball', 'manifests', 'capture-manifest.jsonl'), 'utf8');
-  return text.trim().split(/\r?\n/).map((line) => JSON.parse(line) as { status: string; runId?: string; errorCode?: string });
+  return text.trim().split(/\r?\n/).map((line) => JSON.parse(line) as { status: string; runId?: string; errorCode?: string; endpointKey?: string });
 }
 
 function notModifiedManifest(source: OpenFootballCompetitionSource, fetchedAt: string) {
@@ -279,28 +279,99 @@ describe('runOpenFootballIngestionJob', () => {
       .resolves.toMatchObject({ payload: '= malformed\n' });
   });
 
-  it('rolls back the serving pointer when published manifest evidence cannot be appended', async () => {
+  it('invalidates partial published evidence, restores the prior pointer, and retries every source', async () => {
     let current = new Date('2026-08-01T00:00:00.000Z');
     let rejectPublishedEvidence = false;
+    let fetchCalls = 0;
     const options = await optionsFor(async ({ source }) => changed(source, sourceText(source), current.toISOString()), () => current, {
       async appendManifest(root, provider, entry) {
-        if (rejectPublishedEvidence && entry.status === 'published') {
+        if (rejectPublishedEvidence && entry.status === 'published' && entry.endpointKey === sources()[1]!.entryId) {
           throw new Error('published manifest unavailable');
         }
         await appendProviderManifestEntry(root, provider, entry);
       }
     });
+    options.dependencies!.fetchSource = async ({ source }) => {
+      fetchCalls += 1;
+      return changed(source, sourceText(source), current.toISOString());
+    };
 
     const first = await runOpenFootballIngestionJob(options);
     const manifestBefore = await readFile(join(options.dataRoot, 'serving', 'manifest.json'), 'utf8');
     current = new Date('2026-08-01T06:01:00.000Z');
     rejectPublishedEvidence = true;
     const second = await runOpenFootballIngestionJob(options);
+    const manifestAfterSecond = await readFile(join(options.dataRoot, 'serving', 'manifest.json'), 'utf8');
+    const secondEntries = (await manifestEntries(options.dataRoot)).filter((entry) => entry.runId === second.runId);
+    current = new Date('2026-08-01T06:02:00.000Z');
+    rejectPublishedEvidence = false;
+    fetchCalls = 0;
+    const third = await runOpenFootballIngestionJob(options);
 
     expect(first.status).toBe('published');
     expect(second).toMatchObject({ status: 'failed', errorCodes: ['publication_failed'] });
+    expect(manifestAfterSecond).toBe(manifestBefore);
+    expect(secondEntries.filter((entry) => entry.status === 'failed').map((entry) => entry.endpointKey)).toEqual(
+      options.sources.map((source) => source.entryId)
+    );
+    expect(third.status).toBe('published');
+    expect(fetchCalls).toBe(2);
+  });
+
+  it('removes a newly-created serving pointer after partial publication and retries every source', async () => {
+    let current = new Date('2026-08-01T00:00:00.000Z');
+    let rejectPublishedEvidence = true;
+    let fetchCalls = 0;
+    const options = await optionsFor(async ({ source }) => {
+      fetchCalls += 1;
+      return changed(source, sourceText(source), current.toISOString());
+    }, () => current, {
+      async appendManifest(root, provider, entry) {
+        if (rejectPublishedEvidence && entry.status === 'published' && entry.endpointKey === sources()[1]!.entryId) {
+          throw new Error('published manifest unavailable');
+        }
+        await appendProviderManifestEntry(root, provider, entry);
+      }
+    });
+
+    const failed = await runOpenFootballIngestionJob(options);
+    await expect(readFile(join(options.dataRoot, 'serving', 'manifest.json'), 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
+    current = new Date('2026-08-01T00:01:00.000Z');
+    rejectPublishedEvidence = false;
+    fetchCalls = 0;
+    const retried = await runOpenFootballIngestionJob(options);
+
+    expect(failed).toMatchObject({ status: 'failed', errorCodes: ['publication_failed'] });
+    expect(retried.status).toBe('published');
+    expect(fetchCalls).toBe(2);
+  });
+
+  it('falls back to a verified rollback when the injected rollback operation fails', async () => {
+    let current = new Date('2026-08-01T00:00:00.000Z');
+    let rejectPublishedEvidence = false;
+    let rollbackCalls = 0;
+    const options = await optionsFor(async ({ source }) => changed(source, sourceText(source), current.toISOString()), () => current, {
+      async appendManifest(root, provider, entry) {
+        if (rejectPublishedEvidence && entry.status === 'published' && entry.endpointKey === sources()[1]!.entryId) {
+          throw new Error('published manifest unavailable');
+        }
+        await appendProviderManifestEntry(root, provider, entry);
+      },
+      async restoreServingManifest() {
+        rollbackCalls += 1;
+        throw new Error('injected rollback failed');
+      }
+    });
+
+    await runOpenFootballIngestionJob(options);
+    const manifestBefore = await readFile(join(options.dataRoot, 'serving', 'manifest.json'), 'utf8');
+    current = new Date('2026-08-01T06:01:00.000Z');
+    rejectPublishedEvidence = true;
+    const failed = await runOpenFootballIngestionJob(options);
+
+    expect(failed).toMatchObject({ status: 'failed', errorCodes: ['publication_failed'] });
+    expect(rollbackCalls).toBe(1);
     expect(await readFile(join(options.dataRoot, 'serving', 'manifest.json'), 'utf8')).toBe(manifestBefore);
-    expect((await manifestEntries(options.dataRoot)).some((entry) => entry.status === 'failed' && entry.runId === second.runId)).toBe(true);
   });
 
   it('returns typed failed evidence instead of leaking a corrupt raw-cache exception', async () => {
@@ -346,6 +417,40 @@ describe('runOpenFootballIngestionJob', () => {
 
     expect(result).toMatchObject({ status: 'failed', errorCodes: ['invalid_registry'] });
     expect((await manifestEntries(dataRoot)).some((entry) => entry.status === 'failed' && entry.errorCode === 'invalid_registry')).toBe(true);
+  });
+
+  it('does not leak malformed runtime source entries and records invalid registry evidence for usable identities', async () => {
+    const now = () => new Date('2026-08-01T00:00:00.000Z');
+    const dataRoot = await mkdtemp(join(tmpdir(), 'miraichi-openfootball-job-'));
+    const identifiable = { ...sources()[0]! } as Record<string, unknown>;
+    delete identifiable.sourceTimezone;
+
+    const result = await runOpenFootballIngestionJob({
+      dataRoot,
+      sources: [null, {}, identifiable] as unknown as readonly OpenFootballCompetitionSource[],
+      now
+    });
+
+    expect(result).toMatchObject({ status: 'failed', errorCodes: ['invalid_registry'] });
+    expect((await manifestEntries(dataRoot)).filter((entry) => entry.errorCode === 'invalid_registry')).toEqual([
+      expect.objectContaining({ endpointKey: sources()[0]!.entryId, status: 'failed' })
+    ]);
+  });
+
+  it('classifies raw evidence write failures separately from fetch failures', async () => {
+    const now = () => new Date('2026-08-01T00:00:00.000Z');
+    const options = await optionsFor(async ({ source }) => changed(source, sourceText(source), now().toISOString()), now, {
+      async writeRawPayload() {
+        throw new Error('raw evidence disk unavailable');
+      }
+    });
+
+    const result = await runOpenFootballIngestionJob(options);
+
+    expect(result).toMatchObject({ status: 'failed', errorCodes: ['raw_evidence_write_failed'] });
+    expect((await manifestEntries(options.dataRoot)).some((entry) => (
+      entry.status === 'failed' && entry.errorCode === 'raw_evidence_write_failed'
+    ))).toBe(true);
   });
 
   it('uses the injected latest-manifest reader as the due boundary', async () => {
