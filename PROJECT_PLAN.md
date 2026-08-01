@@ -5,7 +5,7 @@
 - **Status**: Active
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Completed phase**: `phase:plan Website Source Selection And Crawler Boundary` — A+ and both written specs approved.
-- **Active phase**: `phase:implementation-plan OpenFootball Match Source` — TDD plan written; owner execution choice pending.
+- **Active phase**: `phase:code-slice OpenFootball Match Source` — Subagent-Driven execution selected; TDD code slices in progress.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -32,7 +32,7 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Record the source decision in ADR-0045 and split the two implementation tracks into separate specs.
 - [x] Owner reviewed the committed written specs and closed `phase:plan Website Source Selection And Crawler Boundary`.
 - [x] Write the TDD implementation plan for the OpenFootball match source.
-- [ ] Owner selects Subagent-Driven or Inline Execution for the OpenFootball code slices.
+- [x] Owner selected Subagent-Driven Execution for the OpenFootball code slices.
 
 OpenFootball is the only selected external match source family. It provides periodic fixture/result data, not live data or odds. Live score, minute, period, line, odds, and corner context at bet placement are owner-entered and immutable.
 
