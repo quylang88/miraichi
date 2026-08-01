@@ -40,6 +40,38 @@ function providerEntityId(source: OpenFootballCompetitionSource, match: ParsedOp
   return `${source.entryId}:${digest}`;
 }
 
+function dedupeBy<T>(items: readonly T[], keyFor: (item: T) => string): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = keyFor(item);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function providerLinkIdentity(link: ProviderLink): string {
+  return [
+    link.entityType,
+    link.entityId,
+    link.provider,
+    link.providerEntityType,
+    link.providerEntityId
+  ].join('|');
+}
+
+function provenanceIdentity(record: FieldProvenance): string {
+  return [
+    record.entityType,
+    record.entityId,
+    record.fieldPath,
+    record.provider,
+    record.providerEntityId
+  ].join('|');
+}
+
 function provenanceFor(
   matchId: string,
   providerMatchId: string,
@@ -160,8 +192,8 @@ export function adaptOpenFootballMatches(input: OpenFootballAdapterInput): OpenF
       type: input.source.competitionType,
       updatedAt: input.observedAt
     }],
-    links,
-    provenance,
+    links: dedupeBy(links, providerLinkIdentity),
+    provenance: dedupeBy(provenance, provenanceIdentity),
     issues
   };
 }

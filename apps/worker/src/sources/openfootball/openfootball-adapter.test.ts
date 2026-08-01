@@ -122,5 +122,17 @@ describe('OpenFootball adapter', () => {
 
     expect(batch.matches).toHaveLength(2);
     expect(batch.matches[0]!.matchId).toBe(batch.matches[1]!.matchId);
+    expect(batch.links).toHaveLength(1);
+    const provenanceKeys = batch.provenance.map((record) => [
+      record.entityType,
+      record.entityId,
+      record.fieldPath,
+      record.provider,
+      record.providerEntityId,
+      record.observedAt,
+      record.confidence,
+      record.valueHash
+    ].join('|'));
+    expect(new Set(provenanceKeys).size).toBe(provenanceKeys.length);
   });
 });
