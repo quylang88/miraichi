@@ -472,6 +472,82 @@ describe('runOpenFootballIngestionJob', () => {
     expect(fetchCalls).toBe(0);
   });
 
+  it('keeps an injected manifest history authoritative over newer disk evidence', async () => {
+    const now = () => new Date('2026-08-01T07:00:00.000Z');
+    let fetchCalls = 0;
+    const options = await optionsFor(async ({ source }) => {
+      fetchCalls += 1;
+      return changed(source, sourceText(source), now().toISOString());
+    }, now, {
+      async readManifestHistory() {
+        return sources().map((source) => notModifiedManifest(source, '2026-08-01T00:00:00.000Z'));
+      }
+    });
+    for (const source of options.sources) {
+      await appendProviderManifestEntry(options.dataRoot, 'openfootball', notModifiedManifest(source, '2026-08-01T06:30:00.000Z'));
+    }
+
+    const result = await runOpenFootballIngestionJob(options);
+
+    expect(result.status).toBe('published');
+    expect(fetchCalls).toBe(2);
+  });
+
+  it('keeps the legacy injected latest-manifest reader authoritative over newer disk evidence', async () => {
+    const now = () => new Date('2026-08-01T07:00:00.000Z');
+    let fetchCalls = 0;
+    const options = await optionsFor(async ({ source }) => {
+      fetchCalls += 1;
+      return changed(source, sourceText(source), now().toISOString());
+    }, now, {
+      async readLatestManifest(_root, _provider, endpointKey) {
+        const source = sources().find((entry) => entry.entryId === endpointKey)!;
+        return notModifiedManifest(source, '2026-08-01T00:00:00.000Z');
+      }
+    });
+    for (const source of options.sources) {
+      await appendProviderManifestEntry(options.dataRoot, 'openfootball', notModifiedManifest(source, '2026-08-01T06:30:00.000Z'));
+    }
+
+    const result = await runOpenFootballIngestionJob(options);
+
+    expect(result.status).toBe('published');
+    expect(fetchCalls).toBe(2);
+  });
+
+  it('invalidates a partial publication using terminal failure from the same injected history', async () => {
+    const now = () => new Date('2026-08-01T06:02:00.000Z');
+    let fetchCalls = 0;
+    const sourceEntries = sources();
+    const failedRunId = 'injected-partial-publication';
+    const options = await optionsFor(async ({ source }) => {
+      fetchCalls += 1;
+      return changed(source, sourceText(source), now().toISOString());
+    }, now, {
+      async readManifestHistory() {
+        return [
+          ...sourceEntries.map((source) => notModifiedManifest(source, '2026-08-01T00:00:00.000Z')),
+          { ...notModifiedManifest(sourceEntries[0]!, '2026-08-01T06:01:00.000Z'), runId: failedRunId, status: 'published' as const },
+          {
+            ...notModifiedManifest(sourceEntries[1]!, '2026-08-01T06:01:00.000Z'),
+            runId: failedRunId,
+            status: 'failed' as const,
+            errorCode: 'publication_failed',
+            errorMessage: 'source evidence append failed'
+          }
+        ];
+      }
+    });
+    for (const source of options.sources) {
+      await appendProviderManifestEntry(options.dataRoot, 'openfootball', notModifiedManifest(source, '2026-08-01T06:01:00.000Z'));
+    }
+
+    const result = await runOpenFootballIngestionJob(options);
+
+    expect(result.status).toBe('published');
+    expect(fetchCalls).toBe(2);
+  });
+
   it('selects the chronologically latest ISO-offset manifest timestamp when determining due work', async () => {
     const now = () => new Date('2026-08-01T05:30:00.000Z');
     let fetchCalls = 0;

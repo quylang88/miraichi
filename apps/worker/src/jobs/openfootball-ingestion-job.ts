@@ -74,6 +74,11 @@ export interface OpenFootballIngestionDependencies {
   buildServingStore: typeof buildServingMatchStore;
   readServingSnapshot: typeof readServingMatchStoreSnapshot;
   readLatestManifest: typeof readLatestProviderManifestEntry;
+  readManifestHistory: (
+    dataRoot: string,
+    provider: 'openfootball',
+    endpointKeys: readonly string[]
+  ) => Promise<readonly ProviderCaptureManifestEntry[]>;
   restoreServingManifest: (
     servingRoot: string,
     runId: string,
@@ -160,11 +165,12 @@ async function runIngestion(
     );
   }
 
-  const dueSources = await Promise.all(enabledSources.map(async (source): Promise<DueSource> => {
-    const latest = await latestPublishedOrNotModifiedAt(options.dataRoot, source, dependencies);
+  const manifestHistory = await manifestHistoryForRun(options.dataRoot, enabledSources, dependencies);
+  const dueSources = enabledSources.map((source): DueSource => {
+    const latest = latestValidManifestTimestamp(manifestHistory, source);
     const due = latest === undefined || options.now().getTime() - Date.parse(latest) >= source.refreshIntervalMinutes * 60_000;
     return latest === undefined ? { source, due } : { source, due, latestPublishedOrNotModifiedAt: latest };
-  }));
+  });
 
   if (dueSources.every((entry) => !entry.due)) {
     return {
@@ -392,6 +398,20 @@ async function runIngestion(
 }
 
 function resolveDependencies(options: OpenFootballIngestionJobOptions): OpenFootballIngestionDependencies {
+  const injectedHistory = options.dependencies?.readManifestHistory;
+  const injectedLatest = options.dependencies?.readLatestManifest;
+  // Precedence is deliberate: explicit history, then the legacy latest-reader adapter,
+  // then production disk history. A run never merges evidence from these sources.
+  const readManifestHistory = injectedHistory ?? (
+    injectedLatest === undefined
+      ? readProductionManifestHistory
+      : async (dataRoot: string, provider: 'openfootball', endpointKeys: readonly string[]) => {
+          const entries = await Promise.all(endpointKeys.map((endpointKey) => (
+            injectedLatest(dataRoot, provider, endpointKey)
+          )));
+          return entries.filter((entry): entry is ProviderCaptureManifestEntry => entry !== null);
+        }
+  );
   return {
     fetchSource: fetchOpenFootballSource,
     parseText: parseFootballTxt,
@@ -409,7 +429,8 @@ function resolveDependencies(options: OpenFootballIngestionJobOptions): OpenFoot
       fetchFn: globalThis.fetch,
       sleep: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
     },
-    ...options.dependencies
+    ...options.dependencies,
+    readManifestHistory
   };
 }
 
@@ -417,40 +438,56 @@ function createRunId(now: Date): string {
   return `openfootball-${now.toISOString().replace(/[^0-9]/gu, '')}-${randomUUID().replaceAll('-', '').slice(0, 12)}`;
 }
 
-async function latestPublishedOrNotModifiedAt(
+async function manifestHistoryForRun(
   dataRoot: string,
-  source: OpenFootballCompetitionSource,
+  sources: readonly OpenFootballCompetitionSource[],
   dependencies: OpenFootballIngestionDependencies
-): Promise<string | undefined> {
-  let injectedLatest: ProviderCaptureManifestEntry | null;
+): Promise<readonly ProviderCaptureManifestEntry[]> {
+  let entries: readonly ProviderCaptureManifestEntry[];
   try {
-    injectedLatest = await dependencies.readLatestManifest(dataRoot, PROVIDER, source.entryId);
+    entries = await dependencies.readManifestHistory(dataRoot, PROVIDER, sources.map((source) => source.entryId));
   } catch (error) {
     throw new OpenFootballIngestionJobError('evidence_lookup_failed', messageFor(error));
   }
-  const entries: ProviderCaptureManifestEntry[] = injectedLatest === null ? [] : [injectedLatest];
+  if (!Array.isArray(entries) || entries.some((entry) => !isRecord(entry))) {
+    throw new OpenFootballIngestionJobError('evidence_lookup_failed', 'OpenFootball manifest history must be an array of objects');
+  }
+  return entries;
+}
+
+async function readProductionManifestHistory(
+  dataRoot: string,
+  provider: 'openfootball',
+  endpointKeys: readonly string[]
+): Promise<readonly ProviderCaptureManifestEntry[]> {
+  const firstEndpointKey = endpointKeys[0];
+  if (firstEndpointKey !== undefined) {
+    // The production reader validates every line before the history is parsed below.
+    await readLatestProviderManifestEntry(dataRoot, provider, firstEndpointKey);
+  }
   const manifestPath = join(dataRoot, 'providers', PROVIDER, 'manifests', 'capture-manifest.jsonl');
   let text: string;
   try {
     text = await readFile(manifestPath, 'utf8');
   } catch (error) {
-    if (isMissingFile(error)) return latestValidManifestTimestamp(entries, source);
-    throw new OpenFootballIngestionJobError('evidence_lookup_failed', messageFor(error));
+    if (isMissingFile(error)) return [];
+    throw error;
   }
+  const entries: ProviderCaptureManifestEntry[] = [];
   for (const line of text.split(/\r?\n/u)) {
     if (line.trim() === '') continue;
     let entry: unknown;
     try {
       entry = JSON.parse(line);
-    } catch (error) {
-      throw new OpenFootballIngestionJobError('evidence_lookup_failed', messageFor(error));
+    } catch {
+      throw new Error('OpenFootball manifest evidence is not valid JSON');
     }
     if (!isRecord(entry)) {
-      throw new OpenFootballIngestionJobError('evidence_lookup_failed', 'OpenFootball manifest entry is not an object');
+      throw new Error('OpenFootball manifest entry is not an object');
     }
     entries.push(entry as unknown as ProviderCaptureManifestEntry);
   }
-  return latestValidManifestTimestamp(entries, source);
+  return entries;
 }
 
 function latestValidManifestTimestamp(
