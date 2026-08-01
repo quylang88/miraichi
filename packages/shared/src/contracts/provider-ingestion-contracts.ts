@@ -1,3 +1,7 @@
+import {
+  buildOpenFootballRawUrl,
+  OPENFOOTBALL_SOURCE_REGISTRY
+} from '@miraichi/config';
 import { ValidationResult, type LocalCompetitionType } from './local-match-contracts.js';
 export type { ValidationResult };
 
@@ -287,6 +291,46 @@ function validateOpenFootballRawEnvelope(input: Record<string, unknown>, errors:
   if (typeof input.payload !== 'string') {
     errors.push('Field "payload" must be an exact source text string for openfootball');
   }
+
+  validateOpenFootballRegistryBinding(
+    input,
+    isObject(input.source) ? input.source : undefined,
+    errors
+  );
+}
+
+function validateOpenFootballRegistryBinding(
+  input: Record<string, unknown>,
+  source: Record<string, unknown> | undefined,
+  errors: string[]
+): void {
+  const allowlistEntryId = source?.allowlistEntryId ?? input.allowlistEntryId;
+  if (typeof allowlistEntryId !== 'string' || allowlistEntryId.trim() === '') {
+    return;
+  }
+
+  const entry = OPENFOOTBALL_SOURCE_REGISTRY.find((candidate) => candidate.entryId === allowlistEntryId);
+  if (!entry) {
+    errors.push('Field "allowlistEntryId" must reference a tracked OpenFootball source entry');
+    return;
+  }
+
+  if (source) {
+    for (const field of ['repository', 'ref', 'filePath'] as const) {
+      if (source[field] !== entry[field]) {
+        errors.push(`Field "source.${field}" must match its tracked OpenFootball allowlist entry`);
+      }
+    }
+  }
+
+  if (input.endpointKey !== entry.entryId) {
+    errors.push('Field "endpointKey" must match its tracked OpenFootball allowlist entry');
+  }
+
+  const expectedUrlPath = new URL(buildOpenFootballRawUrl(entry)).pathname;
+  if (input.urlPath !== expectedUrlPath) {
+    errors.push('Field "urlPath" must match its tracked OpenFootball allowlist entry');
+  }
 }
 
 export function validateProviderCaptureManifestEntry(input: unknown): ValidationResult {
@@ -354,6 +398,10 @@ export function validateProviderCaptureManifestEntry(input: unknown): Validation
     if (!isValidIsoDateTime(input.fetchedAt)) {
       errors.push('Field "fetchedAt" is required for openfootball');
     }
+    if (!isObject(input.query) || Object.keys(input.query).length !== 0) {
+      errors.push('Field "query" must be empty for openfootball');
+    }
+    validateOpenFootballRegistryBinding(input, undefined, errors);
   }
 
   return errors.length === 0 ? { ok: true } : { ok: false, errors };

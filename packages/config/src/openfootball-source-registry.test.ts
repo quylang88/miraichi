@@ -46,4 +46,29 @@ describe('OpenFootball source registry', () => {
       OPENFOOTBALL_SOURCE_REGISTRY.map((entry) => ({ ...entry, enabled: false }))
     )).toEqual(expect.arrayContaining([expect.stringContaining('enabled')]));
   });
+
+  it.each([
+    '%2e%2e/README.txt',
+    '%2E%2E/README.txt',
+    '2026-27/%2f..%2fREADME.txt',
+    '2026-27/%5c..%5cREADME.txt',
+    '2026-27/1-premierleague%2etxt'
+  ])('rejects URL-escaped path input %s before URL normalization', (filePath) => {
+    const unsafeEntry = { ...OPENFOOTBALL_SOURCE_REGISTRY[0]!, filePath };
+
+    expect(validateOpenFootballSourceRegistry([unsafeEntry])).toEqual(expect.arrayContaining([
+      expect.stringContaining('percent-encoded')
+    ]));
+    expect(() => buildOpenFootballRawUrl(unsafeEntry)).toThrow('Invalid OpenFootball source entry');
+  });
+
+  it('constructs only the exact approved raw URL pathname', () => {
+    const entry = OPENFOOTBALL_SOURCE_REGISTRY[0]!;
+    const url = new URL(buildOpenFootballRawUrl(entry));
+
+    expect(url.origin).toBe('https://raw.githubusercontent.com');
+    expect(url.pathname).toBe('/openfootball/england/master/2026-27/1-premierleague.txt');
+    expect(url.search).toBe('');
+    expect(url.hash).toBe('');
+  });
 });

@@ -103,11 +103,14 @@ function validateFilePath(filePath: unknown, index: number, errors: string[]): v
   if (filePath.includes('\\')) {
     errors.push(`entries[${index}].filePath must not contain backslashes`);
   }
+  if (filePath.includes('%')) {
+    errors.push(`entries[${index}].filePath must not contain percent-encoded URL escapes`);
+  }
   if (filePath.startsWith('/')) {
     errors.push(`entries[${index}].filePath must not have a leading slash`);
   }
-  if (filePath.split('/').includes('..')) {
-    errors.push(`entries[${index}].filePath must not contain path traversal segments`);
+  if (filePath.split('/').some((segment) => segment === '.' || segment === '..')) {
+    errors.push(`entries[${index}].filePath must not contain dot or path traversal segments`);
   }
   if (filePath.includes('?') || filePath.includes('#')) {
     errors.push(`entries[${index}].filePath must not contain query or hash characters`);
@@ -208,8 +211,19 @@ export function buildOpenFootballRawUrl(entry: OpenFootballCompetitionSource): s
     throw new Error(`Invalid OpenFootball source entry: ${errors.join('; ')}`);
   }
 
-  return new URL(
-    `/openfootball/${entry.repository}/${entry.ref}/${entry.filePath}`,
-    entry.origin
-  ).toString();
+  const expectedPathname = `/openfootball/${entry.repository}/${entry.ref}/${entry.filePath}`;
+  const expectedPrefix = `/openfootball/${entry.repository}/${entry.ref}/`;
+  const url = new URL(expectedPathname, entry.origin);
+
+  if (
+    url.origin !== entry.origin ||
+    !url.pathname.startsWith(expectedPrefix) ||
+    url.pathname !== expectedPathname ||
+    url.search !== '' ||
+    url.hash !== ''
+  ) {
+    throw new Error('OpenFootball raw URL escaped its approved origin or pathname');
+  }
+
+  return url.toString();
 }

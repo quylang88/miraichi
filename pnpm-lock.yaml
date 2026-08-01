@@ -71,7 +71,11 @@ importers:
 
   packages/config: {}
 
-  packages/shared: {}
+  packages/shared:
+    dependencies:
+      '@miraichi/config':
+        specifier: workspace:*
+        version: link:../config
 
   packages/ui: {}
 

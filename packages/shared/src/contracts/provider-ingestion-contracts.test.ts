@@ -72,6 +72,34 @@ describe('provider-neutral ingestion contracts', () => {
     ]));
   });
 
+  it('rejects an OpenFootball envelope whose source, endpoint, or URL path does not bind to its allowlist entry', () => {
+    const result = validateRawProviderPayloadEnvelope({
+      schemaVersion: 'miraichi.provider.raw.v1',
+      provider: 'openfootball',
+      endpointKey: 'openfootball-world-cup-2026-group-stage',
+      urlPath: '/openfootball/worldcup/master/2026--canada-usa-mexico/cup.txt',
+      query: {},
+      fetchedAt: '2026-07-02T00:00:00.000Z',
+      payloadHash: 'a'.repeat(64),
+      rateLimit: {},
+      source: {
+        allowlistEntryId: 'openfootball-england-premier-league-2026-27',
+        repository: 'worldcup',
+        ref: 'master',
+        filePath: '2026--canada-usa-mexico/cup.txt'
+      },
+      response: { contentType: 'text/plain; charset=utf-8', byteCount: 33 },
+      payload: '= English Premier League 2026/27\n'
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? [] : result.errors).toEqual(expect.arrayContaining([
+      expect.stringContaining('source.repository'),
+      expect.stringContaining('endpointKey'),
+      expect.stringContaining('urlPath')
+    ]));
+  });
+
   it('accepts OpenFootball capture manifests only with immutable run evidence', () => {
     expect(validateProviderCaptureManifestEntry({
       runId: 'run-20260702-0001',
@@ -111,6 +139,25 @@ describe('provider-neutral ingestion contracts', () => {
       query: {},
       status: 'captured'
     })).toEqual({ ok: true });
+  });
+
+  it('rejects an OpenFootball manifest whose tracked entry does not match its endpoint and URL path', () => {
+    const result = validateProviderCaptureManifestEntry({
+      runId: 'run-20260702-0001',
+      allowlistEntryId: 'openfootball-england-premier-league-2026-27',
+      provider: 'openfootball',
+      endpointKey: 'openfootball-world-cup-2026-group-stage',
+      urlPath: '/openfootball/worldcup/master/2026--canada-usa-mexico/cup.txt',
+      query: {},
+      status: 'captured',
+      fetchedAt: '2026-07-02T00:00:00.000Z'
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? [] : result.errors).toEqual(expect.arrayContaining([
+      expect.stringContaining('endpointKey'),
+      expect.stringContaining('urlPath')
+    ]));
   });
 
   it('accepts canonical matches with provider-neutral ids', () => {
