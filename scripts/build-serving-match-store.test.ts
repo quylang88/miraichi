@@ -4,6 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { readServingMatchStoreSnapshot } from '../apps/api/src/repositories/serving-match-store.js';
 import { runBuildServingMatchStoreFromWarehouse } from './build-serving-match-store.js';
+import { writeCanonicalWarehouseRun } from './providers/shared/canonical-warehouse.js';
 
 async function appendJsonl(filePath: string, rows: unknown[]): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -84,6 +85,36 @@ describe('build-serving-match-store script', () => {
       awayTeam: { id: 'team-south-africa', name: 'South Africa' }
     });
 
+    await fs.rm(dataRoot, { recursive: true, force: true });
+  });
+
+  it('builds from an explicit immutable warehouse run and traces it in the serving manifest', async () => {
+    const dataRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'miraichi-serving-cli-run-'));
+    const observedAt = '2026-08-01T00:00:00.000Z';
+    await writeCanonicalWarehouseRun(dataRoot, 'run-001', {
+      matches: [{
+        matchId: 'match-run-001', competitionId: 'competition-world-cup', season: '2026',
+        kickoffUtc: '2026-06-11T19:00:00.000Z', status: 'scheduled', homeTeamId: 'team-mexico', awayTeamId: 'team-south-africa',
+        scoreHome: null, scoreAway: null, updatedAt: observedAt
+      }],
+      teams: [
+        { teamId: 'team-mexico', name: 'Mexico', updatedAt: observedAt },
+        { teamId: 'team-south-africa', name: 'South Africa', updatedAt: observedAt }
+      ],
+      competitions: [{ competitionId: 'competition-world-cup', name: 'FIFA World Cup', type: 'national-team', updatedAt: observedAt }],
+      links: [{
+        entityType: 'match', entityId: 'match-run-001', provider: 'openfootball', providerEntityType: 'match',
+        providerEntityId: 'entry:match-run-001', confidence: 1, linkedBy: 'test', linkedAt: observedAt
+      }],
+      provenance: []
+    });
+
+    await runBuildServingMatchStoreFromWarehouse({
+      dataRoot, warehouseRunId: 'run-001', version: 'v-run', now: () => new Date(observedAt), log: () => undefined
+    });
+
+    const manifest = JSON.parse(await fs.readFile(path.join(dataRoot, 'serving', 'manifest.json'), 'utf8'));
+    expect(manifest.warehouseRunId).toBe('run-001');
     await fs.rm(dataRoot, { recursive: true, force: true });
   });
 });

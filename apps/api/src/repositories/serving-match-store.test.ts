@@ -188,4 +188,72 @@ describe('serving match store', () => {
 
     await fs.rm(root, { recursive: true, force: true });
   });
+
+  it('keeps the previous manifest active when a new version cannot be staged', async () => {
+    const root = await tempServingRoot();
+    await buildServingMatchStore({
+      servingRoot: root,
+      version: 'v1',
+      snapshotId: 'serving-v1',
+      generatedAt: importedAt,
+      importedAt,
+      sources: [{ sourceId: 'manual-snapshot', importedAt }],
+      matches: [match()]
+    });
+    await fs.mkdir(path.join(root, 'versions', 'v2'), { recursive: true });
+    await fs.writeFile(path.join(root, 'versions', 'v2', 'scope=configured-competitions'), 'block staging', 'utf8');
+
+    await expect(buildServingMatchStore({
+      servingRoot: root,
+      version: 'v2',
+      snapshotId: 'serving-v2',
+      generatedAt: '2026-08-01T00:00:00.000Z',
+      importedAt: '2026-08-01T00:00:00.000Z',
+      sources: [{ sourceId: 'openfootball', importedAt: '2026-08-01T00:00:00.000Z' }],
+      matches: [match()]
+    })).rejects.toThrow();
+
+    const manifest = JSON.parse(await fs.readFile(path.join(root, 'manifest.json'), 'utf8'));
+    expect(manifest.currentVersion).toBe('v1');
+    await expect(fs.access(path.join(root, 'versions', 'v2', 'scope=configured-competitions'))).resolves.toBeUndefined();
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it('removes only a newly staged version when a pre-manifest write fails', async () => {
+    const root = await tempServingRoot();
+    await buildServingMatchStore({
+      servingRoot: root, version: 'v1', snapshotId: 'serving-v1', generatedAt: importedAt, importedAt,
+      sources: [{ sourceId: 'manual-snapshot', importedAt }], matches: [match()]
+    });
+    const invalidPathMatch = match({
+      competition: { id: 'invalid\u0000competition', name: 'Invalid', type: 'national-team', season: '2026' }
+    });
+
+    await expect(buildServingMatchStore({
+      servingRoot: root, version: 'v2', snapshotId: 'serving-v2', generatedAt: importedAt, importedAt,
+      sources: [{ sourceId: 'manual-snapshot', importedAt }], matches: [invalidPathMatch]
+    })).rejects.toThrow();
+
+    expect(JSON.parse(await fs.readFile(path.join(root, 'manifest.json'), 'utf8')).currentVersion).toBe('v1');
+    await expect(fs.access(path.join(root, 'versions', 'v2'))).rejects.toMatchObject({ code: 'ENOENT' });
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it('records an optional immutable warehouse run ID in the serving manifest', async () => {
+    const root = await tempServingRoot();
+    await buildServingMatchStore({
+      servingRoot: root,
+      version: 'v-run',
+      snapshotId: 'serving-v-run',
+      generatedAt: importedAt,
+      importedAt,
+      sources: [{ sourceId: 'openfootball', importedAt }],
+      matches: [match({ sourceRefs: [{ sourceId: 'openfootball', importedAt }] })],
+      warehouseRunId: 'run-001'
+    });
+
+    const manifest = JSON.parse(await fs.readFile(path.join(root, 'manifest.json'), 'utf8'));
+    expect(manifest.warehouseRunId).toBe('run-001');
+    await fs.rm(root, { recursive: true, force: true });
+  });
 });

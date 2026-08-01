@@ -43,6 +43,7 @@ export interface ServingMatchStoreManifest {
     }>;
   }>;
   warnings: string[];
+  warehouseRunId?: string;
 }
 
 export interface ServingMatchPartition {
@@ -80,6 +81,7 @@ export interface BuildServingMatchStoreOptions {
   matches: LocalMatch[];
   scope?: ServingMatchScope;
   warnings?: string[];
+  warehouseRunId?: string;
 }
 
 export interface BuildServingMatchStoreResult {
@@ -122,72 +124,84 @@ export async function buildServingMatchStore(
     entries: {}
   };
 
-  await fs.mkdir(byDateRoot, { recursive: true });
-  await fs.mkdir(byCompetitionRoot, { recursive: true });
+  let versionCreated = false;
+  try {
+    await fs.mkdir(path.join(options.servingRoot, 'versions'), { recursive: true });
+    await fs.mkdir(versionDir);
+    versionCreated = true;
+    await fs.mkdir(byDateRoot, { recursive: true });
+    await fs.mkdir(byCompetitionRoot, { recursive: true });
 
-  for (const [date, partitionMatches] of [...partitionsByDate.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-    const partitionPath = `scope=${scope}/by-date/${date}.json`;
-    byDatePaths.push(partitionPath);
-    await writeJson(path.join(versionDir, partitionPath), {
-      schemaVersion: PARTITION_SCHEMA_VERSION,
-      version: options.version,
-      scope,
-      partition: { type: 'date', key: date },
-      generatedAt: options.generatedAt,
-      matches: sortMatchesForStorage(partitionMatches)
-    } satisfies ServingMatchPartition);
-  }
-
-  for (const [key, partitionMatches] of [...partitionsByCompetition.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-    const [competitionId, season] = key.split('/');
-    if (!competitionId || !season) {
-      throw new Error(`Invalid competition partition key: ${key}`);
-    }
-    const partitionPath = `scope=${scope}/by-competition/${competitionId}/${season}.json`;
-    byCompetitionPaths.push(partitionPath);
-    await writeJson(path.join(versionDir, partitionPath), {
-      schemaVersion: PARTITION_SCHEMA_VERSION,
-      version: options.version,
-      scope,
-      partition: { type: 'competition', key },
-      generatedAt: options.generatedAt,
-      matches: sortMatchesForStorage(partitionMatches)
-    } satisfies ServingMatchPartition);
-  }
-
-  for (const match of matches) {
-    index.entries[match.id] = {
-      scope,
-      date: match.kickoffUtc.slice(0, 10),
-      competitionId: match.competition.id,
-      season: match.competition.season,
-      partitionPath: `scope=${scope}/by-date/${match.kickoffUtc.slice(0, 10)}.json`
-    };
-  }
-
-  await writeJson(path.join(versionDir, 'indexes', 'match-id.json'), index);
-
-  const manifest: ServingMatchStoreManifest = {
-    schemaVersion: STORE_SCHEMA_VERSION,
-    currentVersion: options.version,
-    snapshotId: options.snapshotId,
-    generatedAt: options.generatedAt,
-    importedAt: options.importedAt,
-    sources: dedupeSourceRefs(options.sources),
-    scopes: [
-      {
+    for (const [date, partitionMatches] of [...partitionsByDate.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      const partitionPath = `scope=${scope}/by-date/${date}.json`;
+      byDatePaths.push(partitionPath);
+      await writeJson(path.join(versionDir, partitionPath), {
+        schemaVersion: PARTITION_SCHEMA_VERSION,
+        version: options.version,
         scope,
-        matchCount: matches.length,
-        partitions: {
-          byDate: byDatePaths,
-          byCompetition: byCompetitionPaths
-        },
-        competitions: summarizeCompetitions(matches)
+        partition: { type: 'date', key: date },
+        generatedAt: options.generatedAt,
+        matches: sortMatchesForStorage(partitionMatches)
+      } satisfies ServingMatchPartition);
+    }
+
+    for (const [key, partitionMatches] of [...partitionsByCompetition.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      const [competitionId, season] = key.split('/');
+      if (!competitionId || !season) {
+        throw new Error(`Invalid competition partition key: ${key}`);
       }
-    ],
-    warnings: options.warnings ?? []
-  };
-  await writeJson(path.join(options.servingRoot, 'manifest.json'), manifest);
+      const partitionPath = `scope=${scope}/by-competition/${competitionId}/${season}.json`;
+      byCompetitionPaths.push(partitionPath);
+      await writeJson(path.join(versionDir, partitionPath), {
+        schemaVersion: PARTITION_SCHEMA_VERSION,
+        version: options.version,
+        scope,
+        partition: { type: 'competition', key },
+        generatedAt: options.generatedAt,
+        matches: sortMatchesForStorage(partitionMatches)
+      } satisfies ServingMatchPartition);
+    }
+
+    for (const match of matches) {
+      index.entries[match.id] = {
+        scope,
+        date: match.kickoffUtc.slice(0, 10),
+        competitionId: match.competition.id,
+        season: match.competition.season,
+        partitionPath: `scope=${scope}/by-date/${match.kickoffUtc.slice(0, 10)}.json`
+      };
+    }
+
+    await writeJson(path.join(versionDir, 'indexes', 'match-id.json'), index);
+
+    const manifest: ServingMatchStoreManifest = {
+      schemaVersion: STORE_SCHEMA_VERSION,
+      currentVersion: options.version,
+      snapshotId: options.snapshotId,
+      generatedAt: options.generatedAt,
+      importedAt: options.importedAt,
+      sources: dedupeSourceRefs(options.sources),
+      scopes: [
+        {
+          scope,
+          matchCount: matches.length,
+          partitions: {
+            byDate: byDatePaths,
+            byCompetition: byCompetitionPaths
+          },
+          competitions: summarizeCompetitions(matches)
+        }
+      ],
+      warnings: options.warnings ?? [],
+      ...(options.warehouseRunId === undefined ? {} : { warehouseRunId: options.warehouseRunId })
+    };
+    await replaceManifestAtomically(options.servingRoot, options.version, manifest);
+  } catch (error) {
+    if (versionCreated) {
+      await fs.rm(versionDir, { recursive: true, force: true });
+    }
+    throw error;
+  }
 
   return {
     version: options.version,
@@ -433,6 +447,29 @@ function sortMatchesForStorage(matches: LocalMatch[]): LocalMatch[] {
 async function writeJson(filePath: string, value: unknown): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+async function replaceManifestAtomically(
+  servingRoot: string,
+  version: string,
+  manifest: ServingMatchStoreManifest
+): Promise<void> {
+  await fs.mkdir(servingRoot, { recursive: true });
+  const manifestPath = path.join(servingRoot, 'manifest.json');
+  const temporaryPath = path.join(servingRoot, `manifest.json.tmp-${version}`);
+  const handle = await fs.open(temporaryPath, 'w');
+  try {
+    await handle.writeFile(`${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+  try {
+    await fs.rename(temporaryPath, manifestPath);
+  } catch (error) {
+    await fs.rm(temporaryPath, { force: true });
+    throw error;
+  }
 }
 
 async function readJsonl<T>(filePath: string): Promise<T[]> {

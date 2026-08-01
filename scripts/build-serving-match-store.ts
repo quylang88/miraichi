@@ -6,10 +6,12 @@ import {
   readServingMatchStoreSnapshot,
   type BuildServingMatchStoreResult
 } from '../apps/api/src/repositories/serving-match-store.js';
+import { resolveCanonicalWarehouseRun } from './providers/shared/canonical-warehouse.js';
 
 export interface BuildServingMatchStoreCommandOptions {
   dataRoot?: string;
   warehouseRoot?: string;
+  warehouseRunId?: string;
   servingRoot?: string;
   version?: string;
   now?: () => Date;
@@ -22,7 +24,12 @@ export async function runBuildServingMatchStoreFromWarehouse(
   const now = options.now ?? (() => new Date());
   const generatedAt = now().toISOString();
   const dataRoot = options.dataRoot ?? path.resolve(findWorkspaceRoot(), 'apps/api/data');
-  const warehouseRoot = options.warehouseRoot ?? path.join(dataRoot, 'warehouse');
+  if (options.warehouseRunId !== undefined && options.warehouseRoot !== undefined) {
+    throw new Error('Specify either warehouseRunId or warehouseRoot, not both');
+  }
+  const warehouseRoot = options.warehouseRunId === undefined
+    ? options.warehouseRoot ?? path.join(dataRoot, 'warehouse')
+    : await resolveCanonicalWarehouseRun(dataRoot, options.warehouseRunId);
   const servingRoot = options.servingRoot ?? path.join(dataRoot, 'serving');
   const version = options.version ?? generatedAt.replace(/[:.]/g, '-');
   const servingMatches = await buildServingMatchesFromWarehouse({
@@ -37,7 +44,8 @@ export async function runBuildServingMatchStoreFromWarehouse(
     importedAt: generatedAt,
     sources: servingMatches.sources,
     matches: servingMatches.matches,
-    scope: 'configured-competitions'
+    scope: 'configured-competitions',
+    ...(options.warehouseRunId === undefined ? {} : { warehouseRunId: options.warehouseRunId })
   });
   (options.log ?? console.log)(`Built serving match store ${result.version}: ${result.matchCount} matches -> ${servingRoot}`);
   return result;
@@ -75,6 +83,7 @@ function readArgValue(args: string[], key: string): string | undefined {
 async function main(args = process.argv.slice(2)): Promise<void> {
   const dataRoot = readArgValue(args, '--data-root');
   const warehouseRoot = readArgValue(args, '--warehouse-root');
+  const warehouseRunId = readArgValue(args, '--warehouse-run');
   const servingRoot = readArgValue(args, '--serving-root');
   const version = readArgValue(args, '--version');
   const validateOnly = args.includes('--validate-only');
@@ -90,6 +99,7 @@ async function main(args = process.argv.slice(2)): Promise<void> {
   const buildOptions: BuildServingMatchStoreCommandOptions = {};
   if (dataRoot !== undefined) buildOptions.dataRoot = dataRoot;
   if (warehouseRoot !== undefined) buildOptions.warehouseRoot = warehouseRoot;
+  if (warehouseRunId !== undefined) buildOptions.warehouseRunId = warehouseRunId;
   if (servingRoot !== undefined) buildOptions.servingRoot = servingRoot;
   if (version !== undefined) buildOptions.version = version;
   await runBuildServingMatchStoreFromWarehouse(buildOptions);
