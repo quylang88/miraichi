@@ -181,7 +181,11 @@ async function readBoundedBody(response: Response, maxPayloadBytes: number, atte
       }
       totalBytes += value.byteLength;
       if (totalBytes > maxPayloadBytes) {
-        await reader.cancel();
+        try {
+          await reader.cancel();
+        } catch {
+          // The payload limit decision is final even if stream cleanup fails.
+        }
         throw error('payload_too_large', 'OpenFootball response body exceeds the configured payload limit', attemptCount);
       }
       chunks.push(value);

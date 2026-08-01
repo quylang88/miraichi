@@ -160,6 +160,29 @@ describe('fetchOpenFootballSource', () => {
     expect(sleeps).toEqual([500, 1_500]);
   });
 
+  it('keeps an oversized streamed body as a one-attempt payload error when cancellation fails', async () => {
+    let attempts = 0;
+    const fetchFn: typeof fetch = async () => {
+      attempts += 1;
+      return response(new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array(source.maxPayloadBytes + 1));
+        },
+        cancel() {
+          return Promise.reject(new TypeError('stream cancellation failed'));
+        }
+      }), { headers: { 'content-type': 'text/plain' } });
+    };
+
+    await expectFetchError(
+      fetchOpenFootballSource({ source }, dependencies(fetchFn)),
+      'payload_too_large',
+      1
+    );
+
+    expect(attempts).toBe(1);
+  });
+
   it('retries server errors at most three times with bounded backoff', async () => {
     let attempts = 0;
     const sleeps: number[] = [];
