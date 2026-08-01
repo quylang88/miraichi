@@ -47,7 +47,7 @@
 - `apps/api/src/repositories/serving-match-store.ts`: atomic final manifest write and factual venue projection.
 - `apps/api/src/repositories/serving-match-store-repository.ts`: 12-hour stale semantics for a six-hour source.
 - `apps/web/src/components/app-shell.ts`: ready/stale/unavailable snapshot copy with no OpenFootball `LIVE` control.
-- `scripts/openfootball-match-source.integration.test.ts`: local-fixture raw-to-serving proof for both competition types and last-good preservation.
+- `tests/integration/openfootball-match-source.test.ts`: local-fixture raw-to-serving proof for both competition types and last-good preservation.
 
 ---
 
@@ -1204,7 +1204,7 @@ Expected: focused tests, product boundary, and typecheck PASS, then commit succe
 ### Task 10: Prove Club And National-Team Raw-To-Serving Integration
 
 **Files:**
-- Create: `scripts/openfootball-match-source.integration.test.ts`
+- Create: `tests/integration/openfootball-match-source.test.ts`
 - Modify: `package.json`
 - Modify: `apps/api/data/serving/README.md`
 - Modify: `docs/superpowers/specs/2026-08-01-openfootball-match-source-design.md`
@@ -1238,7 +1238,7 @@ After the first valid run, advance time by 361 minutes and return malformed text
 Run:
 
 ```text
-pnpm exec vitest run scripts/openfootball-match-source.integration.test.ts
+pnpm exec vitest run tests/integration/openfootball-match-source.test.ts
 ```
 
 Expected: FAIL until every production seam is wired consistently.
@@ -1249,7 +1249,7 @@ Add:
 
 ```json
 {
-  "openfootball:integration": "vitest run scripts/openfootball-match-source.integration.test.ts",
+  "openfootball:integration": "vitest run tests/integration/openfootball-match-source.test.ts",
   "test:integration": "pnpm run phase3:verify && pnpm run openfootball:integration && pnpm run test:e2e && pnpm run pwa:verify"
 }
 ```
@@ -1275,7 +1275,7 @@ Expected: all commands PASS and no whitespace errors are reported.
 Set the source spec implementation status to complete only after Step 4 passes. Update `PROJECT_PLAN.md` so the next phase is `phase:implementation-plan Manual Live Bet Context Snapshot`; do not mark staging or production approved.
 
 ```text
-git add package.json apps/api/data/serving/README.md scripts/openfootball-match-source.integration.test.ts docs/superpowers/specs/2026-08-01-openfootball-match-source-design.md PROJECT_PLAN.md
+git add package.json apps/api/data/serving/README.md tests/integration/openfootball-match-source.test.ts docs/superpowers/specs/2026-08-01-openfootball-match-source-design.md PROJECT_PLAN.md
 git commit -m "test: verify OpenFootball match source"
 ```
 
