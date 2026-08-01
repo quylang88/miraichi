@@ -2,10 +2,12 @@
 
 ## Status
 
-- **Status**: Owner approved; written-spec review complete
+- **Status**: Implementation complete; local and integration verification passed
 - **Date**: 2026-08-01
-- **Lifecycle command**: `phase:plan Website Source Selection And Crawler Boundary`
+- **Lifecycle command**: `phase:code-slice OpenFootball Match Source`
 - **Owner decision**: A+ — use OpenFootball for non-live match data and keep live-bet context manual.
+- **Verification evidence**: `pnpm run openfootball:verify`, `pnpm run openfootball:integration`, `pnpm run verify:local`, and `pnpm run test:integration` passed on 2026-08-02.
+- **Promotion state**: staging, owner feedback, and production promotion have not started and are not approved by this local evidence.
 
 ## Straight Conclusion
 

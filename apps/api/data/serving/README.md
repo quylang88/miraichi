@@ -6,12 +6,18 @@ This directory is the app API serving projection for match data.
 
 The serving store is a materialized API projection, not raw source evidence.
 
-The required flow is:
+The OpenFootball flow is:
 
-1. An approved crawler archives raw payloads under `apps/api/data/providers/<provider>/raw/`.
-2. Provider adapters write canonical warehouse JSONL under `apps/api/data/warehouse/`.
-3. `pnpm run data:build:serving:matches` materializes API serving partitions under this directory.
-4. API routes read this serving store through `ServingMatchStoreRepository`.
+1. The tracked club and national-team allowlist defines the only permitted repository/ref/file targets.
+2. The worker performs due-gated conditional capture; it cannot bypass the six-hour minimum interval.
+3. Every changed UTF-8 response is archived exactly under `<data-root>/providers/openfootball/raw/` before parsing.
+4. The strict Football.TXT parser and OpenFootball adapter produce provider-neutral canonical records.
+5. The complete validated candidate is written as an immutable run-scoped warehouse under `<data-root>/warehouse/runs/<run-id>/`.
+6. Version files are materialized under this directory and `manifest.json` is replaced last, making the serving version atomic.
+
+Any enabled-source fetch, parse, mapping, count, or publication failure retains its raw and manifest evidence without changing the last valid serving version.
+
+OpenFootball is a periodic fixture/result source, not a live feed, and supplies no odds. Owner-entered live-bet context snapshots are a separate feature and are not part of this pipeline.
 
 ## Layout
 
@@ -33,6 +39,8 @@ The configured competition allowlist may include both club and national-team com
 pnpm run data:build:serving:matches
 pnpm run data:validate:serving:matches
 pnpm run data:sync:serving:cloud
+pnpm run openfootball:verify
+pnpm run openfootball:integration
 ```
 
 Do not recreate `apps/api/data/local-match-snapshots/`, `national-team-matches.json`, or `national-team-matches.seed.json`. That single-file path has been removed.

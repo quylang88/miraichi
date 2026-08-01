@@ -9,7 +9,7 @@ const MAX_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [500, 1_500] as const;
 const MAX_RETRY_AFTER_MS = 60_000;
 const USER_AGENT = 'Miraichi-OpenFootball-Worker/1.0';
-const SOURCE_FIELDS = [
+const ALLOWLIST_IDENTITY_FIELDS = [
   'entryId',
   'sourceId',
   'origin',
@@ -24,7 +24,6 @@ const SOURCE_FIELDS = [
   'sourceTimezone',
   'refreshIntervalMinutes',
   'maxPayloadBytes',
-  'minimumExpectedMatches',
   'maximumMissingRatio',
   'enabled'
 ] as const satisfies readonly (keyof OpenFootballCompetitionSource)[];
@@ -112,7 +111,7 @@ function getUrlPath(url: string): string {
 
 function isTrackedSource(source: OpenFootballCompetitionSource): boolean {
   return OPENFOOTBALL_SOURCE_REGISTRY.filter((entry) =>
-    SOURCE_FIELDS.every((field) => entry[field] === source[field])
+    ALLOWLIST_IDENTITY_FIELDS.every((field) => entry[field] === source[field])
   ).length === 1;
 }
 
