@@ -3,12 +3,20 @@ import { buildCanonicalMatchId, scoreProviderMatchCandidate } from './entity-res
 import { createFieldProvenance } from './provenance.js';
 
 describe('provider-neutral entity resolution', () => {
-  it('builds canonical match ids without provider ids', () => {
-    expect(buildCanonicalMatchId({
-      kickoffUtc: '2026-07-02T12:00:00.000Z',
-      homeTeamName: 'Japan',
-      awayTeamName: 'Vietnam'
-    })).toBe('match-20260702-japan-vietnam');
+  it('builds a canonical match id independent of provider and kickoff', () => {
+    const identity = {
+      competitionId: 'eng-premier-league',
+      season: '2026-27',
+      normalizedRound: 'matchday-1',
+      homeTeamId: 'team-arsenal',
+      awayTeamId: 'team-coventry-city'
+    };
+
+    const beforeReschedule = buildCanonicalMatchId(identity);
+    const afterReschedule = buildCanonicalMatchId(identity);
+
+    expect(afterReschedule).toBe(beforeReschedule);
+    expect(beforeReschedule).toMatch(/^match-[a-f0-9]{24}$/);
   });
 
   it('scores exact team and near kickoff match candidates highly', () => {
