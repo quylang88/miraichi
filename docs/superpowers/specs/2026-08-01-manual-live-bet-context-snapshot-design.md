@@ -197,4 +197,3 @@ The feature is acceptable only when the owner can record, review, persist, resto
 - market family and H1/H2/full-match scope;
 - selection, line, HK odds, and stake;
 - immutable correction history.
-

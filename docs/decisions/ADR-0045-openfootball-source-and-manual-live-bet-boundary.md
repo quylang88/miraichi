@@ -43,4 +43,3 @@ Accept option 3, named A+.
 
 - `docs/superpowers/specs/2026-08-01-openfootball-match-source-design.md`
 - `docs/superpowers/specs/2026-08-01-manual-live-bet-context-snapshot-design.md`
-
