@@ -1,158 +1,59 @@
 ---
 name: miraichi-delivery-lifecycle
-description: Use when planning, coding, testing, staging, releasing, or maintaining Miraichi work, especially phase commands, feature execution, bug fixes, deployment gates, owner review, or production promotion.
+description: Use when planning, coding, testing, staging, releasing, or maintaining Miraichi work, especially phase commands, source integration, owner review, or production promotion.
 ---
 
 # Miraichi Delivery Lifecycle
 
 ## Core Rule
 
-Treat Miraichi like a real production project:
+Use this sequence:
 
-`plan -> implementation plan -> code slice with TDD -> full integration -> staging -> quality-up ui-ux-improve when owner requests it -> phase closeout -> next phase`
+`plan -> implementation plan -> TDD code slice -> integration -> staging -> owner feedback -> production -> maintenance`
 
-Formal owner feedback and production promotion are final-release gates, not mandatory after every intermediate phase. Intermediate phases must still produce evidence and a next-phase recommendation.
-
-No phase may skip its exit gate. A fast shortcut that removes evidence is a broken workflow.
+`PROJECT_PLAN.md` is authoritative for the active phase. No phase skips its exit gate.
 
 ## Required First Steps
 
-1. Read this skill.
-2. Read `miraichi-project-guardrails`.
-3. Check the active phase in `PROJECT_PLAN.md`; if another root doc disagrees, treat `PROJECT_PLAN.md` as the current source and flag the mismatch.
-4. Decide the requested lifecycle phase from the user prompt. If no phase is explicit, choose the earliest safe phase.
-5. When closing, reviewing, or handing off a phase, read `miraichi-phase-transition-recommendation` before giving the final next-phase recommendation.
+1. Read this skill and `miraichi-project-guardrails`.
+2. Inspect the active phase in `PROJECT_PLAN.md`.
+3. Use the earliest safe phase for the requested work.
+4. Use `miraichi-phase-transition-recommendation` at closeout.
 
-## Phase Commands
+## Phase Gates
 
-| Command | Allowed work | Exit gate |
+| Command | Work | Exit gate |
 | --- | --- | --- |
-| `phase:plan <feature>` | Product/architecture analysis, spec, ADR/doc updates only | Owner-approved spec or explicit next-step approval |
-| `phase:implementation-plan <approved spec>` | Task breakdown into small TDD code slices | Every slice has exact files, failing unit test, implementation step, and verification command |
-| `phase:code-slice <task>` | One small implementation slice | Failing unit test observed, minimal code written, unit test passes, relevant local checks pass; do not run integration or endpoint E2E unless this slice closes a large feature boundary |
-| `phase:integration-test` | Full local and cross-boundary verification after a large feature boundary is complete | `pnpm run verify:local` and `pnpm run test:integration` pass |
-| `phase:staging` | Staging deployment and staging smoke checks | `pnpm run verify:staging` passes, which includes `verify:release` and a fresh static artifact build; staging target is configured; otherwise fail fast |
-| `phase:quality-up ui-ux-improve <scope>` | Owner-requested UI/UX polish, visible copy cleanup, redundant control removal, and small interaction fixes after staging feedback | Targeted tests pass, `pnpm run verify:staging` passes, staging is redeployed, and staging smoke evidence is refreshed |
-| `phase:owner-feedback` | Final-release owner review, or an explicit owner-requested review checkpoint | Owner gives explicit approval or requested changes become new lifecycle work |
-| `phase:production` | Final-release production promotion | All planned phases for the release are complete, staging smoke passed, owner approval is explicit, rollback path is known |
-| `phase:maintenance <change>` | Bugfixes and extensions after release | Same lifecycle as normal work; no hotfix bypass |
+| `phase:plan` | Product research, source comparison, spec, ADR | Owner-approved boundary |
+| `phase:implementation-plan` | Exact TDD slices | Each slice names files, failing test, implementation, verification |
+| `phase:code-slice` | One behavior slice | Red test observed, minimal implementation, focused checks pass |
+| `phase:integration-test` | Cross-module verification at a large feature boundary | `pnpm run verify:local` and `pnpm run test:integration` pass |
+| `phase:staging` | Build, deploy, smoke | `pnpm run verify:staging`, deployment, and fresh smoke evidence |
+| `phase:owner-feedback` | Final release review or explicit checkpoint | Explicit owner decision |
+| `phase:production` | Production promotion | Release complete, staging green, rollback known, owner approval explicit |
+| `phase:maintenance` | Post-release changes | Normal lifecycle still applies |
 
-## Mandatory Gates
+## Code And Test Policy
 
-### Implementation Plan Handoff
+- Use `test-driven-development`; production behavior needs a failing test first.
+- Unit tests are colocated as `*.test.{js,ts}`. New TypeScript tests use `*.test.ts`.
+- Integration suites belong in `tests/integration/`; user-flow suites belong in `tests/e2e/`.
+- New app modules must be TypeScript-first.
+- The gradual TypeScript direction means tightening existing types, not adding tracked JavaScript source.
+- A normal slice stops after focused/local checks. Run endpoint and full integration checks only at a large feature boundary.
 
-After creating or updating a `phase:implementation-plan`, save the detailed plan to the appropriate repository document and return only a concise chat summary: plan path, goal, 3-5 slice names, blocked/forbidden scope, and the recommended next lifecycle command. Do not paste the full plan into chat unless the owner explicitly asks for it.
-
-### Before Coding
-
-- Existing approved spec or implementation plan must exist, unless the user explicitly provides one in the prompt.
-- Code work must use `test-driven-development`.
-- Production code requires a failing unit test first.
-- Business logic, prediction algorithms, betting calculations, schemas, secrets, and hard-coded competitions remain blocked without owner-approved ADRs.
-
-### During Code Slices
-
-- Implement exactly one behavior slice at a time.
-- Write the failing unit test first and run it.
-- Write the smallest implementation that passes.
-- Run the package-specific test or `pnpm run test:unit`.
-- Do not move to integration while any slice is unverified.
-- Normal code slices stop at unit/local verification. Integration and endpoint E2E are milestone gates, not per-slice gates.
-
-### Large Feature Boundary
-
-A large feature boundary is a feature-complete milestone whose behavior crosses modules, routes, app surfaces, or runtime processes. Examples:
-
-- one completed production tab such as `Today`, `Matches`, `Bets`, `Bankroll`, or `Miraichi`;
-- a complete local AI training workflow;
-- a complete LLM capability or prompt-routing workflow;
-- a complete persistence adapter, import/export path, or endpoint-backed workflow.
-
-Only after one of these boundaries is complete should the owner or agent enter `phase:integration-test` and run integration or endpoint E2E.
-
-### Local Verification
-
-Run:
+## Required Commands
 
 ```bash
+pnpm run verify:product-boundary
 pnpm run verify:local
-```
-
-This must include lifecycle verification, real unit tests, syntax linting, typecheck, and guardrail audit. Placeholder scripts such as `node -e "... pass"` are forbidden.
-
-### Integration Verification
-
-Run this only after a large feature boundary is complete, not after every code slice:
-
-Run:
-
-```bash
 pnpm run test:integration
-```
-
-This must run the current phase and boundary checks, including API/local-AI integration and PWA verification.
-
-### Release Verification
-
-Run:
-
-```bash
 pnpm run verify:release
-```
-
-Do not deploy to staging unless it passes.
-
-### Staging Verification
-
-Run:
-
-```bash
 pnpm run verify:staging
 ```
 
-This command must run release verification and then rebuild `apps/web/dist`. Do not run staging smoke checks or Cloudflare Pages deployment from a stale artifact.
-
-## Staging And Production
-
-- If no staging target is configured, stop and report the missing target. Do not pretend a deploy happened.
-- Staging deploys must use `pnpm run deploy:staging` or an equivalent command that runs `pnpm run verify:staging` immediately before `wrangler pages deploy`.
-- Staging must produce a phase closeout pack: changed scope, test evidence, staging URL or explicit missing-target reason, known risks, and the recommended next phase.
-- If the owner requests UI/UX or small functional corrections after staging, run `phase:quality-up ui-ux-improve` before closing the phase or recommending final review.
-- Intermediate phases do not automatically enter `phase:owner-feedback` or `phase:production`.
-- Production requires all planned release phases to be complete and explicit owner approval after final-release review. Local pass or intermediate staging pass alone is not production approval.
-- Maintenance and feature expansion must start again at `phase:plan` or `phase:code-slice`, depending on whether the owner already approved the exact change.
-
-## Final-Release Review Policy
-
-- Do not recommend `phase:owner-feedback` after an intermediate phase unless the owner explicitly asks for a review checkpoint.
-- Do not recommend `phase:production` until the project plan marks all planned release phases complete or explicitly out of scope.
-- Do not recommend `phase:production` while owner-requested `phase:quality-up ui-ux-improve` work is pending.
-- Phase closeout responses must still recommend the next phase and list any owner decisions that would block that next phase.
-- Guardrail-sensitive decisions remain blocked without explicit owner direction even when formal owner review is deferred. This includes business logic, prediction algorithms, betting calculations, real provider selection, cloud sync, auth, production database schemas, paid infrastructure, and secrets.
-
-## Test Policy
-
-- Unit tests must use the real test runner.
-- Unit tests are colocated beside source as `*.test.{js,ts}`.
-- New tests for TypeScript modules must use `*.test.ts`.
-- Integration suites belong in `tests/integration/` unless an existing `scripts/*integration*` verifier is intentionally kept as an orchestrated phase check.
-- E2E browser or user-flow suites belong in `tests/e2e/`.
-- Miraichi uses TypeScript-first adoption with gradual TypeScript hardening as the default after the owner-approved repo-wide JavaScript-to-TypeScript migration. `gradual TypeScript` now means tightening types and reducing boundary `any`, not adding new tracked JavaScript source.
-- New app modules must be TypeScript-first.
-- New app/package/script implementation modules must be TypeScript-first. New tracked implementation source under `apps/`, `packages/`, and `scripts/` must use `.ts` / `*.test.ts` unless the owner explicitly approves a compatibility exception.
-- Browser `.js` URLs and generated static `.js` artifacts may remain when they are compatibility surfaces backed by TypeScript source and covered by verification.
-- A JavaScript migration slice must name the files or file groups being migrated, the tests that prove behavior did not change, and the verification command. Do not rename `.js` files to `.ts` as opportunistic cleanup.
-- New or modified behavior needs meaningful unit coverage, not only integration smoke coverage.
-- Coverage target for new/changed code is 80% as a review gate. Do not fake global repo coverage while legacy files are still untested.
-- Integration tests do not replace unit tests.
-- Integration and endpoint E2E are reserved for large feature boundary completion. A normal current-code change only needs the failing unit test, the passing unit test, and relevant local checks.
+Local verification is not staging evidence. Staging evidence is not production approval.
 
 ## Stop Conditions
 
-Stop and ask or report a blocker when:
-
-- The active phase is unclear and cannot be inferred safely.
-- Required owner approval or guardrail-sensitive owner direction is missing.
-- A staging or production target is missing.
-- A verification command fails.
-- Implementing the request would cross a guardrail boundary.
+Stop and report a blocker when the active phase cannot be inferred, a new source or infrastructure decision lacks owner approval, a required target is missing, verification fails, or the request crosses project guardrails.

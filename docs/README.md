@@ -1,39 +1,32 @@
 # Miraichi Documentation Index
 
-Central index for cross-cutting Miraichi documentation. Do not move module-specific docs here only to make the tree look tidy; keep package and app docs near the code they explain.
+## Current Sources Of Truth
 
-## Cross-Cutting Docs
+- Project plan: `PROJECT_PLAN.md`
+- Architecture: `ARCHITECTURE.md`
+- Roadmap: `ROADMAP.md`
+- Product reset decision: `docs/decisions/ADR-0044-ai-sportmonks-removal-product-reset.md`
 - Architecture map: `docs/architecture/module-map.md`
 - ADR index: `docs/decisions/README.md`
 - Testing workflow: `docs/workflows/testing-workflow.md`
 - Owner gates: `docs/governance/OWNER-DECISION-GATES.md`
-- Document status taxonomy: `docs/governance/DOCUMENT-STATUS-TAXONOMY.md`
-- Docs status hygiene review: `docs/governance/DOCS-STATUS-HYGIENE-REVIEW.md`
-- Phase 5 closeout review: `docs/betting/PHASE-5-CLOSEOUT-REVIEW.md`
-- Phase 6 testing/deployment hardening plan: `ops/PHASE-6-TESTING-DEPLOYMENT-HARDENING-PLAN.md`
-- Phase 6 CI/CD and staging smoke automation implementation plan: `ops/PHASE-6-CI-CD-STAGING-SMOKE-AUTOMATION-IMPLEMENTATION-PLAN.md`
-- Phase 6 staging smoke-check script review: `ops/PHASE-6-STAGING-SMOKE-CHECK-SCRIPT-REVIEW.md`
-- Phase 6 CI check workflow review: `ops/PHASE-6-CI-CHECK-WORKFLOW-REVIEW.md`
-- Phase 6 repo-wide TypeScript migration review: `ops/PHASE-6-REPO-WIDE-TYPESCRIPT-MIGRATION-REVIEW.md`
-- Phase 6 TypeScript strictness hardening implementation plan: `ops/PHASE-6-TYPESCRIPT-STRICTNESS-HARDENING-IMPLEMENTATION-PLAN.md`
-- Phase 6 TypeScript strictness hardening review: `ops/PHASE-6-TYPESCRIPT-STRICTNESS-HARDENING-REVIEW.md`
 
 ## Application Docs
+
 - API architecture: `apps/api/docs/api-architecture.md`
 - Web frontend architecture: `apps/web/docs/frontend-architecture.md`
 - Worker architecture: `apps/worker/docs/worker-architecture.md`
 
 ## Package Docs
+
 - UI design system: `packages/ui/docs/design-system.md`
 - Config environment strategy: `packages/config/docs/environment-strategy.md`
-- Shared contracts and types: `packages/shared/docs/shared-types.md`
-- Agent protocol communication: `packages/agent-protocol/docs/agent-communication.md`
+- Shared contracts: `packages/shared/docs/shared-types.md`
+- Agent communication: `packages/agent-protocol/docs/agent-communication.md`
 
-## Ops Docs
+## Operations
+
 - Staging plan: `ops/deploy/staging-plan.md`
 - CI plan: `ops/ci/github-actions-plan.md`
 
-## Placement Rule
-- Keep ADRs, architecture, workflows, governance, product, and phase reports under `docs/`.
-- Keep module-specific docs under the owning app or package, such as `apps/api/docs` or `packages/ui/docs`.
-- Add links here when a new module doc becomes important enough to discover from the project root.
+Historical documents removed during the product reset remain available through Git history and are not active requirements.

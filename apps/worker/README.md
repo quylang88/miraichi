@@ -1,20 +1,5 @@
-# Background Worker
+# Miraichi Worker
 
-Scheduled cron executions, queue processing, and data sync workers.
+The worker is the server-side ingestion boundary. Its current adapter/job is mock scaffolding used by tests and Phase 3 verification; it is not a live data source.
 
-## Purpose
-Manages task consumption (polling sports APIs, trigger-based predictions updates, email notifications, and bankroll audit summaries).
-
-## Status
-- **Status**: Active
-
-## Scope
-Defines Redis queue connections, cron schedule tables, email engines, and batch processors.
-
-## Guidelines
-- Keep worker tasks lightweight and stateless.
-- Scale worker instances horizontally using standard queue partitions.
-
-## TODO / Next Steps
-- [ ] Initialize Node.js/TypeScript queue consumer skeleton.
-- [ ] Configure Redis client connections template.
+The next source-selection phase must approve a website and crawler contract before live implementation. A future adapter must cache raw evidence, normalize into provider-neutral contracts, respect the configured competition allowlist, and publish through the canonical warehouse and serving-store builder.

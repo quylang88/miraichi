@@ -13,7 +13,7 @@
 Corrupted or stale odds feeds can lead to bad prediction outputs, which compromises system integrity. We must validate ingested feeds and audit the data state that triggered any given prediction.
 
 ## 2. Options Considered
-* **Option A**: Process all incoming feed records as-is and delegate validations to the prediction engine.
+* **Option A**: Process all incoming feed records as-is and delegate validation to downstream consumers.
 * **Option B (Recommended)**: Enforce validation checks at the ingestion parser boundary and stamp metadata (timestamp, provider source) onto all normalized objects.
 * **Option C**: Set up a secondary offline data validation and reconciliation process.
 
@@ -21,7 +21,7 @@ Corrupted or stale odds feeds can lead to bad prediction outputs, which compromi
 Recommend **Option B**. The ingestion parser filters out invalid records (e.g., negative scores, zero odds, matches outside configured competition or season windows) before normalization. Stamped metadata fields (`ingestedAt`, `sourceProviderId`) are appended for audit tracking.
 
 ## 4. Consequences
-* Prevents malformed odds or negative match scores from reaching downstream mock repositories, API consumers, and future local AI input candidates.
+* Prevents malformed odds or negative match scores from reaching downstream repositories and API consumers.
 * Simplifies auditing by keeping a clear trail of ingestion time and origin provider.
 * Increases memory utilization slightly to track metadata.
 

@@ -10,14 +10,13 @@ Specifies hosting services, load balancers, and network structures.
 - **Review Status**: Phase 6 planning active after Phase 5.12 web staging redeploy.
 
 ## Scope
-Infrastructure details for web, api, local-ai, and background workers.
+Infrastructure details for web, API, and approved background workers.
 
 ## Target Architecture
 - **Web App Staging**: Cloudflare Pages project `miraichi-staging`.
 - **Latest Smoke-Checked Staging URL**: `https://e9b19946.miraichi-staging.pages.dev`.
 - **Web App Production**: Deferred until all planned release phases are complete and final owner approval is explicit.
 - **Backend API & Workers**: AWS ECS / GCP Cloud Run / VPS.
-- **Local AI Inference**: Dedicated GPU instance (AWS EC2 / RunPod) or serverless CPU environments.
 
 ## Phase 5.11 Staging Target Decision
 
@@ -34,7 +33,7 @@ Rationale:
 Constraints:
 
 - The staging target covers `apps/web` only.
-- API, local-ai, worker, database, auth, and cloud sync remain out of scope.
+- API, worker, database, auth, and cloud sync remain out of scope unless named by an approved staging plan.
 - The project owner must provide Cloudflare account access and deployment token before deployment can run.
 - Production target selection remains separate and requires explicit final-release owner approval.
 

@@ -9,7 +9,7 @@ This document provides instructions and conceptual designs for delivering apps t
 - **Status**: Draft
 
 ## Scope
-Applies to deployments of `apps/web`, `apps/api`, `apps/local-ai`, and `apps/worker`.
+Applies to deployments of `apps/web`, `apps/api`, and approved `apps/worker` ingestion jobs.
 
 ## Deployment Guidelines
 - All deployment work must follow `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

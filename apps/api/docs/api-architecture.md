@@ -1,20 +1,12 @@
-# API Architecture Plan
+# API Architecture
 
-Backend structure and design patterns for the Miraichi API.
+`apps/api` is a Node.js HTTP mediation layer.
 
-## Purpose
-Establishes system flows, data layers, caching strategies, and integration points for backend modules.
+- Routes validate requests and map responses.
+- Match routes use the `MatchSnapshotRepository` boundary.
+- `ServingMatchStoreRepository` reads versioned local factual data.
+- `CloudMatchSnapshotRepository` reads the owner cloud snapshot.
+- `FallbackMatchSnapshotRepository` falls back only when the local store is missing; malformed local data remains an error.
+- Bet, bankroll, and backup routes use the cloud-persistence adapter and `owner-primary` scope.
 
-## Status
-- **Status**: Active
-
-## Scope
-Directly governs backend codebase layouts, microservice contracts, and dependency injection patterns in apps/api.
-
-## Guidelines
-- Use clean architecture principles; isolate routing schemas from core business logic layers.
-- Do not introduce database dependencies directly into prediction components.
-
-## TODO / Next Steps
-- [ ] Determine server language environment (TypeScript vs Go).
-- [ ] Set up basic ORM schema template structure.
+The browser never connects directly to the database or a third-party source. A future crawler writes through the worker/warehouse/serving pipeline, not through web routes.

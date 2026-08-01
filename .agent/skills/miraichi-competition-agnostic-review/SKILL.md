@@ -1,43 +1,27 @@
 ---
 name: miraichi-competition-agnostic-review
-description: Audits code, naming patterns, database plans, and configurations for competition agnosticism.
-metadata:
-  project: Miraichi
-  owner: quylang88
-  version: "0.1.0"
+description: Use when reviewing Miraichi match contracts, crawler adapters, configuration, routes, storage, or UI behavior for competition coupling.
 ---
 
-# Competition-Agnostic Review Skill
+# Competition-Agnostic Review
 
-## Purpose
-Ensures that the World Cup and other national-team competitions can be the first delivery target without blocking future club competitions or requiring changes to core application code.
+## Core Rule
 
-## When to Use This Skill
-Use this skill during code reviews, schema audits, and pull request checklist validations.
+Competition selection is data, not a branch in core behavior. Both `club` and `national-team` are first-class types.
 
-## Inputs
-- Proposed code changes, directory trees, database design logs.
+## Review Checklist
 
-## Process
-1. Inspect files for competition-specific behavior in core code paths.
-2. Validate that football concept naming matches generic terms.
-3. Confirm that World Cup and national-team competition parameters reside in configuration or data artifacts, not parser/model/route forks.
+- Core names use competition, season, team, match, event, lineup, market, odds, bet, and bankroll.
+- Competition IDs and allowlists live in config or data.
+- Parsers and routes do not contain tournament-specific forks.
+- Provider IDs remain provenance and never become canonical entity IDs.
+- A provider adapter can be removed without changing shared contracts or web routes.
+- Tests include at least one club and one national-team fixture where the behavior applies to both.
 
-## Output Format
-- Agnostic compliance review log.
+## Findings
 
-## Rules
-- World Cup is the first explicit data/training target.
-- National teams and national-team competitions come before club competitions.
-- Treat competition as configurable data.
-- Core concepts must remain generic:
-  competition, season, team, match, player, market, prediction, bet, bankroll, risk rule.
-- World Cup-specific metadata belongs in config/data, not core logic.
-- Flag any parser, route, model, or folder structure that locks Miraichi to one tournament.
-- Do not flag valid registry/config/data entries merely because they name World Cup or national teams.
+Report exact files and behavior. Do not flag a valid configured competition name merely because it is specific; flag only coupling in shared/core behavior.
 
-## What Not to Do
-- Do not accept any core code structure containing hard-coded tournament rules or competition-coupled branches.
+## Definition Of Done
 
-## Definition of Done
-- Audit review passes with World Cup/national-team metadata isolated to config/data and zero tournament-specific core logic patterns found.
+No tournament or competition type controls core application structure, and configured competitions work without source-specific IDs leaking into public contracts.

@@ -10,7 +10,7 @@ Specifies multi-stage build hierarchies and registry release targets.
 - **Review Status**: Phase 6 planning active; Dockerfile work deferred pending owner approval.
 
 ## Scope
-Maps build targets for web, api, local-ai, and background worker images.
+Maps build targets for web, API, and approved background worker images.
 
 ## Strategy Details
 - **Base Images**: Use official Alpine/Debian-slim base images (e.g. `node:alpine`, `python:slim`).

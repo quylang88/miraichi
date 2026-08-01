@@ -24,7 +24,7 @@ Directly plans tests suites layout and runtime checks.
 
 ## Large Feature Boundary Rule
 - A large feature boundary is a feature-complete milestone whose behavior crosses modules, routes, app surfaces, or runtime processes.
-- Examples include one completed production tab (`Today`, `Matches`, `Bets`, `Bankroll`, or `Miraichi`), a complete local AI training workflow, a complete LLM capability, a complete persistence adapter, or a complete endpoint-backed workflow.
+- Examples include one completed production tab (`Today`, `Matches`, `Bets`, or `Bankroll`), a complete crawler adapter, a complete persistence adapter, or a complete endpoint-backed workflow.
 - Before that boundary is complete, run the targeted failing unit test, the passing unit test, and relevant local checks.
 - After that boundary is complete, run `pnpm run test:integration`; endpoint E2E belongs here, not inside every small code slice.
 

@@ -1,38 +1,7 @@
-# Web App (Frontend Client)
+# Miraichi Web
 
-User interface and web experience for Miraichi.
+The web app is an owner-only TypeScript PWA with four primary tabs: `Today`, `Matches`, `Bets`, and `Bankroll`.
 
-## Purpose
-Provides the mobile-first PWA betting journal experience for manual bet entry, daily review, match-grouped history, reports, and safe AI recommendation presentation.
+It calls only `/api/v1/*` endpoints. Match states must distinguish loading, ready, empty, stale, and unavailable conditions. Owner workflows support manual odds, bet drafts/records, point accounts, ledger entries, and backup import/export.
 
-## Status
-- **Status**: Active
-- **Current UX direction**: `docs/decisions/ADR-0031-pwa-betting-journal-ux-boundary.md`; earlier wording that listed `Add`, `Reports`, or `AI` as primary navigation is superseded.
-
-## Scope
-Targets client-side features, styling system integration, page layout structure, and state management. This README summarizes the intended web scaffold direction only; it does not authorize betting formulas, storage drivers, prediction algorithms, or UI implementation by itself.
-
-## V1 Product Shape
-- Navigation: `Today`, `Matches`, `Bets`, `Bankroll`, `Miraichi`.
-- Default experience: `Today`, a list-based dashboard grouped by date.
-- Match history: expandable match groups under date sections.
-- Filters: pills for `Pending`, `Settled`, `Live`, and `Market`.
-- Primary action: `Add Bet` as the fastest manual entry path, not a navigation tab.
-- Theme: dark mode by default.
-
-## Deferred
-- Calendar-first UI is not part of v1.
-- Native app wrappers are deferred; the client remains PWA-first.
-- Bankroll formulas, risk thresholds, ROI/yield/CLV, advanced charts, and AI recommendation ranking/confidence are deferred until later owner-approved decisions.
-
-## Guidelines
-- Follow the architectural guidelines in `apps/web/docs/frontend-architecture.md`.
-- Follow the page boundaries in `apps/web/docs/page-map.md`.
-- Follow the v1 interaction and layout rules in `apps/web/docs/ui-guidelines.md`.
-- Ensure strict responsiveness across standard mobile, tablet, and desktop screen widths.
-- New web client source must be TypeScript-first. Do not add new implementation `.js` modules for components, services, config, or tests unless the file is an explicit legacy/no-build bridge.
-
-## TODO / Next Steps
-- [ ] Keep the no-build TypeScript bridge until a framework or bundler is explicitly approved.
-- [ ] Continue connecting shared design tokens from `packages/ui`.
-- [ ] Scaffold only the approved v1 navigation and deferred boundaries described above.
+Run `pnpm run dev:web` for development or `pnpm run build:web-static` for the static artifact.

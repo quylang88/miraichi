@@ -1,37 +1,44 @@
 # Miraichi
 
-An AI-driven football prediction and betting management application.
+Miraichi is an owner-only web application for factual football match data, manual bet/odds records, and bankroll management.
 
-## Purpose
-Miraichi provides an extensible platform for AI football prediction, betting management, risk limits, bankroll tracking, and collaborative agent workflows.
+## Current Product
 
-## Status
-- **Status**: Active
-- **Current Phase**: Pre-Phase 5.10 - Docs Hygiene Complete, Phase 5.10 Review Pending
-- **Phase Source of Truth**: `PROJECT_PLAN.md`
+- `Today`: daily factual match context.
+- `Matches`: browse configured club and national-team competitions.
+- `Bets`: create and manage manual drafts and bet records.
+- `Bankroll`: manage point accounts, ledger entries, and backups.
 
-## Scope
-This repository houses the entire monorepo system, including frontend, backend API, local AI modules, worker queues, and operational files. 
+The current repository has no selected live website source. Until a new crawler source is approved, match routes read the local serving store and may fall back to the configured cloud snapshot. Missing data must be reported honestly.
 
-> [!IMPORTANT]
-> Miraichi work must follow `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
-> Business logic, production database schemas, prediction algorithms, betting calculations, secrets, and hard-coded competition logic still require explicit owner-approved ADRs and implementation plans before coding.
+## Architecture
 
-## Main Folder Structure
-The repository keeps a clean root structure with exactly 4 main folders:
-- **`apps/`**: Deployable applications (web client, backend API, local AI service, background worker).
-- **`packages/`**: Shared libraries and monorepo packages (shared types, global configs, UI library, agent protocols).
-- **`docs/`**: General documentation, architectural design records (ADRs), betting/bankroll plans, and agent workflow specifications.
-- **`ops/`**: Operational, deployment, docker, CI/CD pipelines, scripts, and monitoring infrastructure.
+```text
+apps/web -> apps/api -> local serving store
+                    -> Supabase snapshot fallback/persistence
 
-## Competition-Agnostic Principle
-The first real data and training path targets World Cup and related national-team competitions. Club competitions are later expansion scope.
-- World Cup and national-team competition metadata may be explicit in registry/config/data artifacts.
-- Do not put World Cup-only assumptions into core parser, route, model, or business logic.
-- Treat football competition metadata as dynamic, configurable registry data.
-- Football domain concepts (competitions, seasons, teams, matches, markets, bets, bankrolls) are modeled abstractly.
+future approved source -> apps/worker crawler -> provider-neutral warehouse -> serving store
+```
 
-## TODO / Next Steps
-- [ ] Review draft Phase 5.10 planning after docs status hygiene cleanup.
-- [ ] Use `phase:plan`, `phase:implementation-plan`, `phase:code-slice`, `phase:integration-test`, `phase:staging`, `phase:owner-feedback`, `phase:production`, or `phase:maintenance` to make the active gate explicit.
-- [ ] Run `pnpm run verify:release` before staging or production promotion.
+`apps/worker` remains an ingestion scaffold. Selecting and implementing a website crawler is the next planning phase, not part of the completed reset.
+
+## Commands
+
+```bash
+pnpm install
+pnpm run dev:web
+pnpm run dev:api
+pnpm run verify:product-boundary
+pnpm run verify:local
+pnpm run test:integration
+```
+
+Generic data projection commands:
+
+```bash
+pnpm run data:build:serving:matches
+pnpm run data:validate:serving:matches
+pnpm run data:sync:serving:cloud
+```
+
+See `PROJECT_PLAN.md` for the active phase and `ARCHITECTURE.md` for boundaries.

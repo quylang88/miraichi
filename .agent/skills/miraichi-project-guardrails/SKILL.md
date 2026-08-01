@@ -1,54 +1,34 @@
 ---
 name: miraichi-project-guardrails
-description: Evaluates requested tasks to prevent agent drift and ensure compliance with project scope rules.
-metadata:
-  project: Miraichi
-  owner: quylang88
-  version: "0.1.0"
+description: Use when evaluating Miraichi scope, implementation plans, data sources, persistence, betting behavior, or changes that may cross owner-approved product boundaries.
 ---
 
-# Project Guardrails Skill
+# Miraichi Project Guardrails
 
-## Purpose
-Protect the Miraichi project scope, prevent agent drift, and maintain architectural boundaries.
+**REQUIRED SUB-SKILL:** Use `miraichi-delivery-lifecycle` before applying these guardrails.
 
-## When to Use This Skill
-Use this skill at the beginning of every task analysis, plan creation, or before writing files to verify that proposed changes do not violate phase boundaries.
+## Product Contract
 
-## Inputs
-- User requests, current project phase, and target files list.
+Miraichi is owner-only and has four primary tabs: `Today`, `Matches`, `Bets`, `Bankroll`.
 
-## Process
-1. Load `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
-2. Inspect the incoming request for out-of-scope targets (e.g. database setup, prediction algorithms, frontend code).
-3. Cross-reference the proposal against the project scope guidelines.
-4. Reject or flag any tasks that attempt to introduce actual business logic.
-
-## Output Format
-- Verification summary or scope check reports.
+Allowed match data is factual: fixtures, schedules, results, statuses, teams, competitions, events, lineups, and odds. Owner data includes manual bets, odds, stake points, settlements, notes, bankroll accounts, ledger entries, and backups.
 
 ## Rules
-- Phase 0 is repo/bootstrap/docs/workflow only.
-- Do not implement business logic.
-- Do not implement prediction algorithms.
-- Do not implement betting calculations.
-- Do not create production database schemas.
-- Do not add secrets.
-- World Cup is the first explicit data/training target for Phase 8.
-- National teams and national-team competitions come before club competitions.
-- Do not bury World Cup-only assumptions inside core parser, route, model, or business logic.
-- World Cup and national-team competition metadata must live in registry/config/data artifacts.
-- Club competitions are expansion scope after the national-team-first path is reviewed.
-- Miraichi must remain competition-agnostic.
+
+- Keep the browser behind the Miraichi API; never expose server/database credentials.
+- A website source and crawler require an accepted owner-approved ADR.
+- Keep provider code removable and canonical IDs provider-neutral.
+- Keep both club and national-team competitions valid through configuration.
+- Do not add prediction, chat, explanation, model-training, automated picks, expected goals, stake sizing, Kelly, ROI, CLV, or risk formulas.
+- Do not add public authentication, multi-tenancy, paid services, secrets, or production schema changes without explicit owner approval.
 - New application modules default to TypeScript.
-- After the owner-approved repo-wide JavaScript-to-TypeScript migration, tracked implementation source under `apps/`, `packages/`, and `scripts/` must stay TypeScript-first. Do not add new tracked `.js` source files there unless an explicit owner-approved compatibility exception names the file and reason.
-- Browser-facing `.js` URLs, generated static `.js` artifacts, third-party configuration formats, and tool-required bridge files may exist only when source ownership remains clear and verification covers the compatibility path.
-- Do not perform opportunistic JavaScript-to-TypeScript migration. Any future migration outside the already migrated repo source must identify exact files or file groups, runtime strategy, behavior-preservation tests, and verification commands.
-- Repository-wide JavaScript-to-TypeScript migration is allowed only when the owner explicitly requests it in the active task. It must preserve browser `.js` URLs where required, update runtime commands before verification, avoid `@ts-nocheck` as a blanket escape hatch, and pass local plus integration verification before being reported complete.
+- Tracked source under `apps/`, `packages/`, and `scripts/` stays TypeScript-first unless an owner-approved compatibility exception names the file and reason.
+- Preserve Git history and unrelated user changes.
 
-## What Not to Do
-- Never accept a task to write business logic, prediction logic, betting formulas, production schemas, secrets, or competition-coupled core logic without an accepted owner-approved lifecycle boundary.
-- Never reintroduce tracked JavaScript implementation source as a shortcut after the repo-wide TypeScript migration.
+## Review Output
 
-## Definition of Done
-- Scope validation check passes with no violations found.
+State the factual boundary, any inference, the concrete violation or risk, and the earliest safe next action.
+
+## Definition Of Done
+
+The proposed work stays inside the current `PROJECT_PLAN.md` phase, has the required owner decision, and passes product-boundary plus relevant lifecycle verification.

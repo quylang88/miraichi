@@ -23,7 +23,7 @@ All core business logic, prediction algorithms, risk boundaries, and bankroll ru
 * Simulating user betting, allocating budget bankrolls, or enforcing responsible-use risk limits (such as daily loss parameters) requires a specific, owner-approved ADR.
 
 ### Rule 4: Data Provider & Storage Selections
-* Selecting the production sports data feed vendor (e.g. Sportmonks, API-Football) or the production database engine (e.g. PostgreSQL, Redis, MongoDB) requires a specific, owner-approved ADR.
+* Selecting a production match-data website or changing the production database engine requires a specific, owner-approved ADR.
 
 ---
 

@@ -17,7 +17,7 @@ To build a stunning, premium aesthetic that wows users at first glance, follow t
 ### 1. Curated Color Palette
 - **Primary Color (Agnostic Gold/Bronze)**: HSL(38, 70%, 55%) - Represents predictive excellence.
 - **Secondary (Deep Sapphire)**: HSL(220, 45%, 12%) - Background canvas base.
-- **Accent (Electric Indigo)**: HSL(255, 85%, 65%) - Selected states, prediction indicators.
+- **Accent (Electric Indigo)**: HSL(255, 85%, 65%) - Selected and active states.
 - **Dark Mode Card Color**: HSL(220, 30%, 18%) with glassmorphic backdrop filters.
 
 ### 2. Glassmorphism & Depth

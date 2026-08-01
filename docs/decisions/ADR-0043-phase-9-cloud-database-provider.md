@@ -226,7 +226,6 @@ This ADR does not approve:
 - odds provider integration;
 - ROI, yield, CLV, Kelly, stake sizing, bankroll risk, or recommendation formulas;
 - prediction runtime tables;
-- `Miraichi AI` training or runtime;
 - production promotion.
 
 ## 9. Required Implementation Plan Constraints
