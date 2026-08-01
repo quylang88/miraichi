@@ -14,6 +14,7 @@
     "dev:api": "pnpm --filter api run dev",
     "dev:worker": "pnpm --filter worker run dev",
     "data:build:serving:matches": "tsx scripts/build-serving-match-store.ts",
+    "data:capture:openfootball": "tsx scripts/capture-openfootball.ts",
     "data:validate:serving:matches": "tsx scripts/build-serving-match-store.ts --validate-only",
     "data:sync:serving:cloud": "tsx scripts/sync-serving-match-store-to-cloud.ts",
     "supabase:local:start": "supabase db start",
@@ -44,6 +45,7 @@
     "phase2:verify": "pnpm run check && pnpm run audit && pnpm run phase2:check-rules && pnpm run test:e2e",
     "phase3:verify": "tsx scripts/phase3-verify.ts",
     "pwa:verify": "tsx scripts/pwa-verify.ts",
+    "openfootball:verify": "vitest run packages/config/src/openfootball-source-registry.test.ts packages/config/src/openfootball-team-aliases.test.ts apps/worker/src/sources/openfootball apps/worker/src/jobs/openfootball-ingestion-job.test.ts scripts/capture-openfootball.test.ts",
     "typecheck": "tsc -p tsconfig.base.json --noEmit"
   },
   "engines": {
