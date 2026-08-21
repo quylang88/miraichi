@@ -5,7 +5,6 @@ import { t } from './services/i18n-service.js';
 import { getMatchFeed, type MatchFeedViewState } from './services/match-feed-service.js';
 import { deleteCloudBetDraft, loadBetRecordsViewState, patchCloudBetRecord, saveCloudBetDraft, updateCloudBetDraft, type BetRecordsViewState } from './services/bet-record-service.js';
 import { createBankrollAccount, createLedgerEntry, loadBankrollViewState, type BankrollViewState } from './services/bankroll-service.js';
-import { exportCloudBackup, importCloudBackup } from './services/backup-service.js';
 
 const root = document.getElementById('app-root');
 
@@ -334,17 +333,6 @@ async function refreshBankroll(selectedAccountId?: string): Promise<void> {
   render(currentScreenName);
 }
 
-async function exportBackup(): Promise<void> {
-  const envelope = await exportCloudBackup();
-  const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `miraichi-backup-${envelope.exportedAt.slice(0, 10)}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 appRoot.addEventListener('click', (event) => {
   const eventTarget = event.target instanceof Element ? event.target : null;
   if (!eventTarget) {
@@ -365,11 +353,6 @@ appRoot.addEventListener('click', (event) => {
     if (!Number.isFinite(amountPoints) || amountPoints === 0) return;
     const note = window.prompt('Optional ledger note') || undefined;
     void createLedgerEntry({ entryId: crypto.randomUUID(), accountId: bankrollState.selectedAccountId, entryType: ledgerAction.dataset.ledgerType as 'deposit' | 'withdrawal' | 'transfer_in' | 'transfer_out' | 'correction', amountPoints, ...(note ? { note } : {}), occurredAt: new Date().toISOString() }).then(() => refreshBankroll(bankrollState.status === 'ready' ? bankrollState.selectedAccountId : undefined));
-    return;
-  }
-
-  if (eventTarget.closest('[data-backup-export]')) {
-    void exportBackup().then(() => setText('backup-feedback', 'Backup exported.')).catch(() => setText('backup-feedback', 'Backup export failed.'));
     return;
   }
 
@@ -549,15 +532,6 @@ appRoot.addEventListener('change', (event) => {
   const target = event.target;
   if (target instanceof HTMLSelectElement && target.matches('[data-bankroll-account-select]')) {
     void refreshBankroll(target.value);
-    return;
-  }
-  if (target instanceof HTMLInputElement && target.matches('[data-backup-import]')) {
-    const file = target.files?.[0];
-    if (!file || !window.confirm('Import this backup? Existing conflicting records will be kept.')) return;
-    void file.text().then((content) => importCloudBackup(JSON.parse(content))).then(async () => {
-      await Promise.all([refreshBetRecords(), refreshBankroll()]);
-      setText('backup-feedback', 'Backup imported.');
-    }).catch(() => setText('backup-feedback', 'Backup import failed or conflicts with existing records.'));
     return;
   }
   if (target instanceof HTMLInputElement && target.name === 'filter-groupby') {

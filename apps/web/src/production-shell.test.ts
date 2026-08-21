@@ -67,15 +67,13 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('data-delete-draft-confirm="d1"');
   });
 
-  it('renders persisted Bankroll and backup controls without formula placeholders', () => {
+  it('renders persisted Bankroll without formula placeholders', () => {
     const html = renderAppShell({ activeTabId: 'bankroll', bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], ledger: [{ entryId: 'e', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'withdrawal', amountPoints: -10, occurredAt: '2026-07-02T00:00:00.000Z', createdAt: '2026-07-02T00:00:00.000Z' }] } });
     expect(html).toContain('90 pts');
     expect(html).toContain('data-ledger-type="deposit"');
     expect(html).toContain('data-ledger-type="withdrawal"');
     expect(html).toContain('data-ledger-type="transfer_out"');
     expect(html).toContain('data-ledger-type="correction"');
-    expect(html).toContain('data-backup-export');
-    expect(html).toContain('data-backup-import');
     expect(html).not.toContain('24,500 pts');
     expect(html).not.toContain('Formula status');
   });
@@ -148,7 +146,6 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('data-open-match');
     expect(html).toContain('data-open-scoped-add');
     expect(html).toContain('data-bet-records-state');
-    expect(html).toContain('data-backup-export');
     expect(html).toContain('class="sheet-backdrop"');
     expect(html).toContain('class="sheet" id="add-sheet"');
     expect(html).toContain('id="match-summary-readonly"');

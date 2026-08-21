@@ -908,18 +908,6 @@ function renderBankrollPanel(activeTabId: ProductionNavigationTabId, translate: 
       })}
 
       <div class="points-grid">${renderBankrollState(state)}</div>
-
-      <section class="note-card" style="margin-top: 24px;">
-        <div class="note-eyebrow">Owner Data Management</div>
-        <div class="note-title">Backup & Restore</div>
-        <p class="note-copy">Export or import an immutable JSON backup of your bet drafts, confirmed bets, bankroll accounts, and ledger history.</p>
-        <div class="action-row">
-          <button type="button" class="secondary-button" data-backup-export>Export backup (.json)</button>
-          <label class="secondary-button" for="backup-import-file">Import backup (.json)</label>
-          <input id="backup-import-file" type="file" accept="application/json" data-backup-import style="display: none;">
-          <span id="backup-feedback" aria-live="polite"></span>
-        </div>
-      </section>
     </section>
   `;
 }
