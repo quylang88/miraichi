@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as path from 'path';
 import type {
   LocalDataSnapshotStatus,
@@ -13,6 +14,17 @@ import {
 import { classifyMatchSnapshotFreshness } from '../match-snapshot-freshness.js';
 
 export { MATCH_SNAPSHOT_STALE_AFTER_MS } from '../match-snapshot-freshness.js';
+
+function findRootDir(startDir: string): string {
+  let dir = startDir;
+  while (dir !== path.dirname(dir)) {
+    if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) {
+      return dir;
+    }
+    dir = path.dirname(dir);
+  }
+  return startDir;
+}
 
 function compareMatches(a: LocalMatch, b: LocalMatch): number {
   const aCompleted = a.status === 'completed';
@@ -37,12 +49,11 @@ export class ServingMatchStoreRepository implements MatchSnapshotRepository {
   private readonly nowFn: () => Date;
 
   constructor(options: { servingRoot?: string; now?: () => Date } = {}) {
-    const rootDir = process.cwd().includes('apps/api')
-      ? path.resolve(process.cwd(), '../..')
-      : process.cwd();
-    this.servingRoot = options.servingRoot ||
-      process.env.LOCAL_MATCH_SERVING_ROOT ||
-      path.resolve(rootDir, 'apps/api/data/serving');
+    const rootDir = findRootDir(process.cwd());
+    const configuredRoot = options.servingRoot || process.env.LOCAL_MATCH_SERVING_ROOT || 'apps/api/data/serving';
+    this.servingRoot = path.isAbsolute(configuredRoot)
+      ? configuredRoot
+      : path.resolve(rootDir, configuredRoot);
     this.nowFn = options.now || (() => new Date());
   }
 
