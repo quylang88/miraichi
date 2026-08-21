@@ -18,6 +18,10 @@ const filesToVerify = [
   'apps/web/src/config/navigation-tabs.ts',
   'apps/web/src/components/app-shell.ts',
   'apps/web/src/components/bottom-navigation.ts',
+  'apps/web/src/components/screens/today-screen.ts',
+  'apps/web/src/components/screens/matches-screen.ts',
+  'apps/web/src/components/screens/bets-screen.ts',
+  'apps/web/src/components/screens/bankroll-screen.ts',
   'apps/web/src/services/settings-service.ts',
   'apps/web/src/services/i18n-service.ts'
 ];
@@ -194,7 +198,14 @@ if (fs.existsSync(navigationConfigPath)) {
 
 const appShellPath = path.join(ROOT_DIR, 'apps/web/src/components/app-shell.ts');
 if (fs.existsSync(appShellPath)) {
-  const content = fs.readFileSync(appShellPath, 'utf8');
+  const rendererPaths = [
+    appShellPath,
+    path.join(ROOT_DIR, 'apps/web/src/components/screens/today-screen.ts'),
+    path.join(ROOT_DIR, 'apps/web/src/components/screens/matches-screen.ts'),
+    path.join(ROOT_DIR, 'apps/web/src/components/screens/bets-screen.ts'),
+    path.join(ROOT_DIR, 'apps/web/src/components/screens/bankroll-screen.ts')
+  ];
+  const content = rendererPaths.filter((file) => fs.existsSync(file)).map((file) => fs.readFileSync(file, 'utf8')).join('\n');
   const requiredShellMarkers = [
     'data-production-shell="phase-5-9"',
     'data-production-baseline="black-apple-ledger"',
@@ -204,8 +215,9 @@ if (fs.existsSync(appShellPath)) {
     'id="screen-match-detail"',
     'data-open-match',
     'data-open-scoped-add',
-    'data-open-edit',
-    'data-review-only',
+    'data-open-settlement',
+    'data-open-settled-detail',
+    'id="settlement-form"',
     'class="sheet-backdrop"',
     'id="match-summary-readonly"'
   ];

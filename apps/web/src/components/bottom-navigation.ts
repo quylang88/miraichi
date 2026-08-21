@@ -38,7 +38,7 @@ export function renderBottomNavigation({
   }).join('');
 
   return `
-    <nav class="bottom-nav" aria-label="Primary navigation">
+    <nav class="bottom-nav" aria-label="${escapeHtml(translate('common.primaryNavigation'))}">
       ${items}
     </nav>
   `;

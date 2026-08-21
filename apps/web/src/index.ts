@@ -70,7 +70,7 @@ const server = http.createServer((req, res) => {
   // Static File Routing for Packages and Web Client Code
   else if (url.startsWith('/apps/web/src/')) {
     filePath = resolveSourcePath(url);
-    contentType = 'application/javascript';
+    contentType = url.endsWith('.json') ? 'application/json' : 'application/javascript';
   } else if (url.startsWith('/packages/ui/src/')) {
     filePath = resolveSourcePath(url);
     if (url.endsWith('.css')) {

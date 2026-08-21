@@ -131,19 +131,20 @@ void (async () => {
     const draftList = await fetch(`${apiBaseUrl}/api/v1/bet-drafts`);
     assert(draftList.ok && (await draftList.json() as unknown[]).length === 1, 'GET /api/v1/bet-drafts lists drafts');
 
-    const bet = { betId: 'e2e-bet', matchGroupId: firstMatchId || 'match-e2e', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, status: 'pending', createdAt: timestamp, updatedAt: timestamp };
+    const accountCreate = await fetch(`${apiBaseUrl}/api/v1/bankroll/accounts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountId: 'e2e-account', label: 'Integration', unit: 'points', openingBalancePoints: 100 }) });
+    assert(accountCreate.status === 201, 'POST /api/v1/bankroll/accounts creates a points account');
+
+    const bet = { betId: 'e2e-bet', bankrollAccountId: 'e2e-account', matchGroupId: firstMatchId || 'match-e2e', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, preBetEmotion: 'calm', preBetMotivation: 'planned_analysis', createdAt: timestamp };
     const betCreate = await fetch(`${apiBaseUrl}/api/v1/bets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bet) });
     assert(betCreate.status === 201, 'POST /api/v1/bets creates a bet record');
     const betPatch = await fetch(`${apiBaseUrl}/api/v1/bets?id=e2e-bet`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: 'integration update' }) });
     assert(betPatch.ok, 'PATCH /api/v1/bets updates an allowed field');
 
-    const accountCreate = await fetch(`${apiBaseUrl}/api/v1/bankroll/accounts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountId: 'e2e-account', label: 'Integration', unit: 'points', openingBalancePoints: 100 }) });
-    assert(accountCreate.status === 201, 'POST /api/v1/bankroll/accounts creates a points account');
     const ledgerCreate = await fetch(`${apiBaseUrl}/api/v1/bankroll/ledger`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entryId: 'e2e-entry', accountId: 'e2e-account', entryType: 'withdrawal', amountPoints: -10, occurredAt: timestamp }) });
     assert(ledgerCreate.status === 201, 'POST /api/v1/bankroll/ledger creates a signed manual entry');
     const backupExport = await fetch(`${apiBaseUrl}/api/v1/backups/export`, { method: 'POST' });
     const backup = await backupExport.json() as { schemaVersion?: string };
-    assert(backupExport.ok && backup.schemaVersion === 'miraichi.cloud-backup.v1', 'POST /api/v1/backups/export returns a cloud backup');
+    assert(backupExport.ok && backup.schemaVersion === 'miraichi.cloud-backup.v2', 'POST /api/v1/backups/export returns a V2 cloud backup');
 
     const draftDelete = await fetch(`${apiBaseUrl}/api/v1/bet-drafts?id=e2e-draft`, { method: 'DELETE' });
     assert(draftDelete.status === 204, 'DELETE /api/v1/bet-drafts removes the integration draft');

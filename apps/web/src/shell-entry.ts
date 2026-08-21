@@ -1,10 +1,26 @@
 import { getSafeNavigationTabId, type ProductionNavigationTabId } from './config/navigation-tabs.js';
 import { renderAppShell } from './components/app-shell.js';
 import { createSettingsService } from './services/settings-service.js';
-import { t } from './services/i18n-service.js';
+import { createTranslator } from './services/i18n-service.js';
 import { getMatchFeed, type MatchFeedViewState } from './services/match-feed-service.js';
-import { deleteCloudBetDraft, loadBetRecordsViewState, patchCloudBetRecord, saveCloudBetDraft, updateCloudBetDraft, type BetRecordsViewState } from './services/bet-record-service.js';
-import { createBankrollAccount, createLedgerEntry, loadBankrollViewState, type BankrollViewState } from './services/bankroll-service.js';
+import { deleteCloudBetDraft, loadBetRecordsViewState, saveCloudBetDraft, type BetRecordsViewState } from './services/bet-record-service.js';
+import { createBankrollAccount, createBankrollTransfer, createLedgerEntry, loadBankrollViewState, type BankrollViewState } from './services/bankroll-service.js';
+import {
+  ApiRequestError,
+  createDisciplineChallenge,
+  createOngoingBet,
+  loadBetReport,
+  loadBetSettlementTimeline,
+  loadDisciplineConfig,
+  settleCloudBet,
+  updateDisciplineConfig,
+  type BetReportPeriod,
+  type BetReportViewState,
+  type DisciplineConfigViewState
+} from './services/core-betting-service.js';
+import { calculateHkSettlementProfitLoss, type BetSettlementEvent, type CreateOngoingBetInput, type DisciplineChallenge, type SettlementType } from '@miraichi/shared';
+import { renderSettlementTimeline, type BetRecordFilter } from './components/screens/bets-screen.js';
+import type { BankrollSecondaryView } from './components/screens/bankroll-screen.js';
 
 const root = document.getElementById('app-root');
 
@@ -27,10 +43,21 @@ const activeFilters = {
 };
 let isFilterPanelOpen = false;
 let currentOpenMatchId = '';
-let editingDraftId = '';
-let editingBetId = '';
+let currentOpenMatchTitle = '';
 let betRecordsState: BetRecordsViewState = { status: 'loading' };
 let bankrollState: BankrollViewState = { status: 'loading' };
+let betRecordFilter: BetRecordFilter = 'ongoing';
+let bankrollView: BankrollSecondaryView = 'overview';
+let disciplineConfigState: DisciplineConfigViewState = { status: 'loading' };
+let bankrollReportState: BetReportViewState = { status: 'loading' };
+let todayReportState: BetReportViewState = { status: 'loading' };
+let reportPeriod: BetReportPeriod = 'week';
+let selectedSettlementBetId = '';
+let selectedSettlementTimeline: readonly BetSettlementEvent[] = [];
+let pendingOngoingInput: CreateOngoingBetInput | null = null;
+let pendingDisciplineChallenge: DisciplineChallenge | null = null;
+let disciplineCountdownTimer: number | null = null;
+let lastFocusedElement: HTMLElement | null = null;
 
 function todayLocalDate(): string {
   const now = new Date();
@@ -68,18 +95,29 @@ function render(activeTabId: string): void {
     selectionEnd = document.activeElement.selectionEnd;
   }
 
+  const settings = settingsService.getSettings();
+  const translate = createTranslator(settings.locale);
+  document.documentElement.lang = settings.locale;
   appRoot.innerHTML = renderAppShell({
     activeTabId: safeActiveTabId,
-    translate: t,
+    translate,
+    locale: settings.locale,
     matchFeed: matchFeedState,
-    timezone: settingsService.getSettings().timezone,
+    timezone: settings.timezone,
     filters: activeFilters,
     searchQuery: currentSearchQuery,
     isFilterPanelOpen,
     betRecordsState,
-    bankrollState
+    bankrollState,
+    betRecordFilter,
+    bankrollView,
+    disciplineConfigState,
+    reportState: bankrollReportState,
+    todayReportState,
+    reportPeriod
   });
-  appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settingsService.getSettings().locale);
+  appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settings.locale);
+  appRoot.querySelector('.app-shell')?.setAttribute('data-density', settings.displayDensity);
 
   // Restore filter values and apply
   const searchInput = appRoot.querySelector('#match-search') as HTMLInputElement | null;
@@ -214,6 +252,7 @@ function setActiveScreen(screenName: string): void {
 }
 
 function setMatchDetailContext(title: string, meta: string): void {
+  currentOpenMatchTitle = title;
   setText('match-detail-title', title);
   setText('match-detail-meta', meta);
   setText('add-sheet-subtitle', `Scoped to ${title}`);
@@ -240,10 +279,13 @@ function openSheet(sheetName: string | null | undefined): void {
     return;
   }
 
+  lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   let found = false;
+  let openedSheet: HTMLElement | null = null;
   appRoot.querySelectorAll<HTMLElement>('.sheet').forEach((sheet) => {
     const open = sheet.id === `${sheetName}-sheet`;
     found = found || open;
+    if (open) openedSheet = sheet;
     sheet.classList.toggle('open', open);
     sheet.setAttribute('aria-hidden', String(!open));
   });
@@ -254,9 +296,17 @@ function openSheet(sheetName: string | null | undefined): void {
 
   appRoot.querySelector<HTMLElement>('.sheet-backdrop')?.classList.add('open');
   appRoot.querySelector<HTMLElement>('.app-shell')?.classList.add('sheet-open');
+  window.setTimeout(() => {
+    const firstFocusable = (openedSheet as HTMLElement | null)?.querySelector<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])');
+    firstFocusable?.focus();
+  }, 0);
 }
 
 function closeSheets(): void {
+  if (disciplineCountdownTimer !== null) {
+    window.clearInterval(disciplineCountdownTimer);
+    disciplineCountdownTimer = null;
+  }
   appRoot.querySelectorAll<HTMLElement>('.sheet').forEach((sheet) => {
     sheet.classList.remove('open');
     sheet.setAttribute('aria-hidden', 'true');
@@ -264,6 +314,8 @@ function closeSheets(): void {
   appRoot.querySelector<HTMLElement>('.sheet-backdrop')?.classList.remove('open');
   appRoot.querySelector<HTMLElement>('.app-shell')?.classList.remove('sheet-open');
   setText('add-feedback', '');
+  lastFocusedElement?.focus();
+  lastFocusedElement = null;
 }
 
 function updateAddFormState(): void {
@@ -333,9 +385,210 @@ async function refreshBankroll(selectedAccountId?: string): Promise<void> {
   render(currentScreenName);
 }
 
+function errorCode(error: unknown): string {
+  return error instanceof ApiRequestError ? error.code : 'request_failed';
+}
+
+function localAnchorDate(): string {
+  return todayLocalDate();
+}
+
+async function refreshReports(): Promise<void> {
+  if (disciplineConfigState.status !== 'ready' || !disciplineConfigState.config) {
+    const state: BetReportViewState = { status: 'unavailable', code: 'discipline_config_required' };
+    bankrollReportState = state;
+    todayReportState = state;
+    render(currentScreenName);
+    return;
+  }
+  bankrollReportState = { status: 'loading' };
+  todayReportState = { status: 'loading' };
+  render(currentScreenName);
+  const accountId = bankrollState.status === 'ready' ? bankrollState.selectedAccountId : undefined;
+  const withAccount = accountId ? { accountId } : {};
+  const [bankrollResult, todayResult] = await Promise.allSettled([
+    loadBetReport({ period: reportPeriod, anchor: localAnchorDate(), ...withAccount }),
+    loadBetReport({ period: 'week', anchor: localAnchorDate(), ...withAccount })
+  ]);
+  bankrollReportState = bankrollResult.status === 'fulfilled'
+    ? { status: 'ready', report: bankrollResult.value }
+    : { status: 'unavailable', code: errorCode(bankrollResult.reason) };
+  todayReportState = todayResult.status === 'fulfilled'
+    ? { status: 'ready', report: todayResult.value }
+    : { status: 'unavailable', code: errorCode(todayResult.reason) };
+  render(currentScreenName);
+}
+
+async function refreshDisciplineConfig(): Promise<void> {
+  disciplineConfigState = { status: 'loading' };
+  render(currentScreenName);
+  try {
+    disciplineConfigState = { status: 'ready', config: await loadDisciplineConfig() };
+  } catch (error) {
+    disciplineConfigState = { status: 'unavailable', code: errorCode(error) };
+  }
+  await refreshReports();
+}
+
+function manualMatchGroupId(homeTeamName: string, awayTeamName: string): string {
+  return `manual:${homeTeamName.trim().toLowerCase()}-${awayTeamName.trim().toLowerCase()}`;
+}
+
+function readOngoingBetInput(form: HTMLFormElement): CreateOngoingBetInput | null {
+  const data = new FormData(form);
+  const homeTeamName = String(data.get('home-team') ?? '').trim();
+  const awayTeamName = String(data.get('away-team') ?? '').trim();
+  const bankrollAccountId = String(data.get('account-field') ?? '').trim();
+  const marketType = String(data.get('market-field') ?? '');
+  const selectionLabel = String(data.get('selection-field') ?? '').trim();
+  const oddsValue = Number(data.get('odds-field'));
+  const stakePoints = Number(data.get('stake-field'));
+  const preBetEmotion = String(data.get('emotion-field') ?? '');
+  const preBetMotivation = String(data.get('motivation-field') ?? '');
+  const preBetNote = String(data.get('note-field') ?? '').trim();
+  if (!homeTeamName || !awayTeamName || !bankrollAccountId || !marketType || !selectionLabel || !Number.isFinite(oddsValue) || oddsValue <= 0 || !Number.isFinite(stakePoints) || stakePoints <= 0 || !preBetEmotion || !preBetMotivation) return null;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(String(data.get('stake-field')))) return null;
+  const timestamp = new Date().toISOString();
+  return {
+    betId: crypto.randomUUID(), bankrollAccountId,
+    matchGroupId: currentOpenMatchId || manualMatchGroupId(homeTeamName, awayTeamName),
+    ...(currentOpenMatchId ? { matchId: currentOpenMatchId } : {}),
+    homeTeamName, awayTeamName,
+    marketType: marketType as CreateOngoingBetInput['marketType'], selectionLabel,
+    oddsFormat: 'HK', oddsValue, stakePoints,
+    preBetEmotion: preBetEmotion as CreateOngoingBetInput['preBetEmotion'],
+    preBetMotivation: preBetMotivation as CreateOngoingBetInput['preBetMotivation'],
+    ...(preBetNote ? { preBetNote } : {}), createdAt: timestamp
+  };
+}
+
+function startDisciplineCountdown(challenge: DisciplineChallenge): void {
+  if (disciplineCountdownTimer !== null) window.clearInterval(disciplineCountdownTimer);
+  const update = () => {
+    const seconds = Math.max(0, Math.ceil((new Date(challenge.availableAt).getTime() - Date.now()) / 1000));
+    const translate = createTranslator(settingsService.getSettings().locale);
+    setText('discipline-countdown', seconds > 0 ? translate('bets.availableIn', { seconds }) : translate('common.confirm'));
+    const acknowledgement = document.getElementById('discipline-acknowledge') as HTMLInputElement | null;
+    const finalize = document.getElementById('discipline-finalize') as HTMLButtonElement | null;
+    if (finalize) finalize.disabled = seconds > 0 || !acknowledgement?.checked;
+    if (seconds === 0 && disciplineCountdownTimer !== null) {
+      window.clearInterval(disciplineCountdownTimer);
+      disciplineCountdownTimer = null;
+    }
+  };
+  update();
+  disciplineCountdownTimer = window.setInterval(update, 250);
+}
+
+function updateSettlementPreview(): void {
+  const record = betRecordsState.status === 'ready' ? [...betRecordsState.pending, ...betRecordsState.settled].find((bet) => bet.betId === selectedSettlementBetId) : undefined;
+  const typeField = document.getElementById('settlement-type') as HTMLSelectElement | null;
+  const manualField = document.getElementById('manual-profit-loss') as HTMLInputElement | null;
+  const manualFields = document.getElementById('manual-adjustment-fields');
+  if (!record || !typeField) return;
+  const settlementType = typeField.value as SettlementType;
+  if (manualFields) manualFields.hidden = settlementType !== 'manual_adjustment';
+  try {
+    const profitLoss = calculateHkSettlementProfitLoss({ stakePoints: record.stakePoints, oddsValue: record.oddsValue, settlementType, ...(settlementType === 'manual_adjustment' ? { profitLossPoints: Number(manualField?.value) } : {}) });
+    setText('settlement-preview', `${profitLoss > 0 ? '+' : ''}${profitLoss} pts`);
+  } catch {
+    setText('settlement-preview', '—');
+  }
+}
+
 appRoot.addEventListener('click', (event) => {
   const eventTarget = event.target instanceof Element ? event.target : null;
   if (!eventTarget) {
+    return;
+  }
+
+  const betFilterTarget = eventTarget.closest<HTMLElement>('[data-bet-filter]');
+  if (betFilterTarget?.dataset.betFilter) {
+    betRecordFilter = betFilterTarget.dataset.betFilter as BetRecordFilter;
+    render(currentScreenName);
+    return;
+  }
+
+  const bankrollViewTarget = eventTarget.closest<HTMLElement>('[data-bankroll-view]');
+  if (bankrollViewTarget?.dataset.bankrollView) {
+    bankrollView = bankrollViewTarget.dataset.bankrollView as BankrollSecondaryView;
+    render(currentScreenName);
+    if (bankrollView === 'analytics' && bankrollReportState.status !== 'ready') void refreshReports();
+    return;
+  }
+
+  const reportPeriodTarget = eventTarget.closest<HTMLElement>('[data-report-period]');
+  if (reportPeriodTarget?.dataset.reportPeriod) {
+    reportPeriod = reportPeriodTarget.dataset.reportPeriod as BetReportPeriod;
+    void refreshReports();
+    return;
+  }
+
+  if (eventTarget.closest('[data-open-manual-add]')) {
+    currentOpenMatchId = '';
+    currentOpenMatchTitle = '';
+    openSheet('add');
+    setText('add-summary-title', createTranslator(settingsService.getSettings().locale)('bets.manualMatch'));
+    return;
+  }
+
+  const openSettlementTarget = eventTarget.closest<HTMLElement>('[data-open-settlement], [data-open-settled-detail]');
+  if (openSettlementTarget) {
+    selectedSettlementBetId = openSettlementTarget.dataset.openSettlement ?? openSettlementTarget.dataset.openSettledDetail ?? '';
+    selectedSettlementTimeline = [];
+    openSheet('settlement');
+    updateSettlementPreview();
+    void loadBetSettlementTimeline(selectedSettlementBetId).then((events) => {
+      selectedSettlementTimeline = events;
+      const timeline = document.getElementById('settlement-timeline');
+      const settings = settingsService.getSettings();
+      const timeZone = disciplineConfigState.status === 'ready' && disciplineConfigState.config
+        ? disciplineConfigState.config.timeZone
+        : Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (timeline) timeline.innerHTML = renderSettlementTimeline(events, createTranslator(settings.locale), settings.locale, timeZone);
+    }).catch(() => undefined);
+    return;
+  }
+
+  if (eventTarget.closest('[data-open-transfer]')) {
+    openSheet('transfer');
+    const target = document.getElementById('transfer-target') as HTMLSelectElement | null;
+    if (target && bankrollState.status === 'ready') {
+      const selectedAccountId = bankrollState.selectedAccountId;
+      const option = [...target.options].find((item) => item.value !== selectedAccountId);
+      if (option) target.value = option.value;
+    }
+    return;
+  }
+
+  if (eventTarget.closest('[data-open-settings]')) {
+    openSheet('settings');
+    const settings = settingsService.getSettings();
+    const locale = document.getElementById('settings-locale') as HTMLSelectElement | null;
+    const density = document.getElementById('settings-density') as HTMLSelectElement | null;
+    if (locale) locale.value = settings.locale;
+    if (density) density.value = settings.displayDensity;
+    return;
+  }
+
+  if (eventTarget.closest('#discipline-finalize')) {
+    const challenge = pendingDisciplineChallenge;
+    const input = pendingOngoingInput;
+    if (!challenge || !input) return;
+    const button = document.getElementById('discipline-finalize') as HTMLButtonElement | null;
+    if (button?.disabled) return;
+    if (button) button.disabled = true;
+    void createOngoingBet({ ...input, disciplineChallengeId: challenge.challengeId }).then(async () => {
+      pendingDisciplineChallenge = null;
+      pendingOngoingInput = null;
+      closeSheets();
+      await Promise.all([refreshBetRecords(), refreshBankroll()]);
+      await refreshReports();
+    }).catch((error) => {
+      const translate = createTranslator(settingsService.getSettings().locale);
+      setText('discipline-feedback', translate(`error.${errorCode(error)}`, translate('error.request_failed')));
+      if (button) button.disabled = false;
+    });
     return;
   }
 
@@ -347,12 +600,9 @@ appRoot.addEventListener('click', (event) => {
 
   const ledgerAction = eventTarget.closest<HTMLElement>('[data-ledger-type]');
   if (ledgerAction?.dataset.ledgerType && bankrollState.status === 'ready') {
-    const rawAmount = window.prompt('Enter a signed points amount. Deposits are positive; withdrawals and transfers are negative.');
-    if (rawAmount === null) return;
-    const amountPoints = Number(rawAmount);
-    if (!Number.isFinite(amountPoints) || amountPoints === 0) return;
-    const note = window.prompt('Optional ledger note') || undefined;
-    void createLedgerEntry({ entryId: crypto.randomUUID(), accountId: bankrollState.selectedAccountId, entryType: ledgerAction.dataset.ledgerType as 'deposit' | 'withdrawal' | 'transfer_in' | 'transfer_out' | 'correction', amountPoints, ...(note ? { note } : {}), occurredAt: new Date().toISOString() }).then(() => refreshBankroll(bankrollState.status === 'ready' ? bankrollState.selectedAccountId : undefined));
+    openSheet('ledger-adjustment');
+    const entryType = document.getElementById('ledger-entry-type') as HTMLSelectElement | null;
+    if (entryType) entryType.value = ledgerAction.dataset.ledgerType;
     return;
   }
 
@@ -453,25 +703,11 @@ appRoot.addEventListener('click', (event) => {
 
   if (eventTarget.closest('[data-open-scoped-add]')) {
     openSheet('add');
-    return;
-  }
-
-  const openEditTarget = eventTarget.closest<HTMLElement>('[data-open-edit]');
-  if (openEditTarget) {
-    editingDraftId = openEditTarget.dataset.draftId || '';
-    editingBetId = openEditTarget.dataset.betId || '';
-    const draft = betRecordsState.status === 'ready' ? betRecordsState.drafts.find((item) => item.draftId === editingDraftId) : undefined;
-    const bet = betRecordsState.status === 'ready' ? betRecordsState.pending.find((item) => item.betId === editingBetId) : undefined;
-    setText('edit-subtitle', draft ? `${draft.marketType} draft` : bet?.selectionLabel || 'Saved record');
-    openSheet('edit');
-    const market = document.getElementById('edit-market-field') as HTMLSelectElement | null;
-    const odds = document.getElementById('edit-odds-field') as HTMLInputElement | null;
-    const stake = document.getElementById('edit-stake-field') as HTMLInputElement | null;
-    const note = document.getElementById('edit-note-field') as HTMLTextAreaElement | null;
-    if (market) market.value = draft?.marketType ?? bet?.marketType ?? '1X2';
-    if (odds) odds.value = String(draft?.oddsValue ?? bet?.oddsValue ?? '');
-    if (stake) stake.value = String(draft?.stakePoints ?? bet?.stakePoints ?? '');
-    if (note) note.value = draft?.notes ?? bet?.notes ?? '';
+    const [home = '', away = ''] = currentOpenMatchTitle.split(' vs ');
+    const homeInput = document.getElementById('home-team') as HTMLInputElement | null;
+    const awayInput = document.getElementById('away-team') as HTMLInputElement | null;
+    if (homeInput) homeInput.value = home;
+    if (awayInput) awayInput.value = away;
     return;
   }
 
@@ -520,6 +756,14 @@ appRoot.addEventListener('input', (event) => {
 
   if (target.closest('#add-form')) {
     updateAddFormState();
+  }
+
+  if (target.id === 'discipline-acknowledge' && pendingDisciplineChallenge) {
+    startDisciplineCountdown(pendingDisciplineChallenge);
+  }
+
+  if (target.id === 'settlement-type' || target.id === 'manual-profit-loss') {
+    updateSettlementPreview();
   }
 
   if (target instanceof HTMLInputElement && target.id === 'match-search') {
@@ -592,45 +836,156 @@ appRoot.addEventListener('submit', (event) => {
     return;
   }
 
-  if (target.id === 'edit-form') {
-    const market = (document.getElementById('edit-market-field') as HTMLSelectElement | null)?.value;
-    const oddsValue = Number((document.getElementById('edit-odds-field') as HTMLInputElement | null)?.value);
-    const stakePoints = Number((document.getElementById('edit-stake-field') as HTMLInputElement | null)?.value);
-    const notes = (document.getElementById('edit-note-field') as HTMLTextAreaElement | null)?.value.trim();
-    if (editingDraftId && betRecordsState.status === 'ready') {
-      const draft = betRecordsState.drafts.find((item) => item.draftId === editingDraftId);
-      if (!draft || !market || !Number.isFinite(oddsValue) || !Number.isFinite(stakePoints)) return;
-      void updateCloudBetDraft({ ...draft, marketType: market as typeof draft.marketType, oddsValue, stakePoints, ...(notes ? { notes } : {}), updatedAt: new Date().toISOString() }).then(() => { closeSheets(); return refreshBetRecords(); });
-    } else if (editingBetId) {
-      void patchCloudBetRecord(editingBetId, { ...(notes ? { notes } : {}) }).then(() => { closeSheets(); return refreshBetRecords(); });
+  if (target.id === 'discipline-form') {
+    const form = new FormData(target);
+    const nullablePoints = (name: string) => {
+      const raw = String(form.get(name) ?? '').trim();
+      return raw === '' ? null : Number(raw);
+    };
+    const input = {
+      dailyStopLossPoints: nullablePoints('dailyStopLossPoints'),
+      weeklyStopLossPoints: nullablePoints('weeklyStopLossPoints'),
+      bigBetThresholdPoints: nullablePoints('bigBetThresholdPoints'),
+      timeZone: String(form.get('timeZone') ?? '').trim()
+    };
+    void updateDisciplineConfig(input).then(async (config) => {
+      disciplineConfigState = { status: 'ready', config };
+      setText('discipline-feedback', createTranslator(settingsService.getSettings().locale)('common.save'));
+      await refreshReports();
+    }).catch((error) => setText('discipline-feedback', createTranslator(settingsService.getSettings().locale)(`error.${errorCode(error)}`, createTranslator(settingsService.getSettings().locale)('error.request_failed'))));
+    return;
+  }
+
+  if (target.id === 'transfer-form' && bankrollState.status === 'ready') {
+    const form = new FormData(target);
+    const toAccountId = String(form.get('toAccountId') ?? '');
+    const amountPoints = Number(form.get('amountPoints'));
+    const note = String(form.get('note') ?? '').trim();
+    if (!toAccountId || toAccountId === bankrollState.selectedAccountId || !Number.isFinite(amountPoints) || amountPoints <= 0) return;
+    void createBankrollTransfer({ transferId: crypto.randomUUID(), fromAccountId: bankrollState.selectedAccountId, toAccountId, amountPoints, ...(note ? { note } : {}), occurredAt: new Date().toISOString() }).then(async () => {
+      closeSheets();
+      await refreshBankroll(bankrollState.status === 'ready' ? bankrollState.selectedAccountId : undefined);
+    });
+    return;
+  }
+
+  if (target.id === 'ledger-adjustment-form' && bankrollState.status === 'ready') {
+    const form = new FormData(target);
+    const entryType = String(form.get('entryType') ?? '') as 'deposit' | 'withdrawal' | 'correction';
+    const rawAmount = Number(form.get('amountPoints'));
+    const note = String(form.get('note') ?? '').trim();
+    const translate = createTranslator(settingsService.getSettings().locale);
+    if (!['deposit', 'withdrawal', 'correction'].includes(entryType) || !Number.isFinite(rawAmount) || rawAmount === 0 || (entryType !== 'correction' && rawAmount < 0)) {
+      setText('ledger-feedback', translate('error.validation_failed'));
+      return;
     }
+    const amountPoints = entryType === 'withdrawal' ? -rawAmount : rawAmount;
+    void createLedgerEntry({ entryId: crypto.randomUUID(), accountId: bankrollState.selectedAccountId, entryType, amountPoints, ...(note ? { note } : {}), occurredAt: new Date().toISOString() }).then(async () => {
+      closeSheets();
+      await refreshBankroll(bankrollState.status === 'ready' ? bankrollState.selectedAccountId : undefined);
+    }).catch(() => setText('ledger-feedback', translate('error.request_failed')));
+    return;
+  }
+
+  if (target.id === 'settings-form') {
+    const form = new FormData(target);
+    settingsService.setSetting('locale', String(form.get('locale') ?? 'en'));
+    settingsService.setSetting('displayDensity', String(form.get('displayDensity') ?? 'standard'));
+    closeSheets();
+    render(currentScreenName);
+    return;
+  }
+
+  if (target.id === 'settlement-form') {
+    const form = new FormData(target);
+    const settlementType = String(form.get('settlementType') ?? '') as SettlementType;
+    const planAdherence = String(form.get('planAdherence') ?? '');
+    const lessonNote = String(form.get('lessonNote') ?? '').trim();
+    const adjustmentReason = String(form.get('adjustmentReason') ?? '').trim();
+    const profitLossPoints = Number(form.get('profitLossPoints'));
+    const record = betRecordsState.status === 'ready' ? [...betRecordsState.pending, ...betRecordsState.settled].find((bet) => bet.betId === selectedSettlementBetId) : undefined;
+    if (!record || !settlementType || !['yes', 'partly', 'no'].includes(planAdherence)) return;
+    const correctionEventId = record.status === 'settled' ? selectedSettlementTimeline.at(-1)?.settlementEventId : undefined;
+    if (record.status === 'settled' && !correctionEventId) {
+      setText('settlement-feedback', createTranslator(settingsService.getSettings().locale)('error.request_failed'));
+      return;
+    }
+    void settleCloudBet(record.betId, {
+      settlementEventId: crypto.randomUUID(), settlementType,
+      planAdherence: planAdherence as 'yes' | 'partly' | 'no',
+      ...(lessonNote ? { lessonNote } : {}),
+      ...(settlementType === 'manual_adjustment' ? { profitLossPoints, adjustmentReason } : {}),
+      effectiveAt: new Date().toISOString(),
+      ...(correctionEventId ? { correctsSettlementEventId: correctionEventId } : {})
+    }).then(async () => {
+      closeSheets();
+      await Promise.all([refreshBetRecords(), refreshBankroll(record.bankrollAccountId ?? undefined)]);
+      await refreshReports();
+    }).catch((error) => setText('settlement-feedback', createTranslator(settingsService.getSettings().locale)(`error.${errorCode(error)}`, createTranslator(settingsService.getSettings().locale)('error.request_failed'))));
     return;
   }
 
   if (target.id !== 'add-form') return;
-  const saveDraftShell = document.getElementById('save-draft-shell') as HTMLButtonElement | null;
-  if (saveDraftShell?.disabled) {
-    return;
-  }
   const form = new FormData(target);
+  const action = ((event as SubmitEvent).submitter as HTMLButtonElement | null)?.value ?? 'draft';
+  const homeTeamName = String(form.get('home-team') ?? '').trim();
+  const awayTeamName = String(form.get('away-team') ?? '').trim();
   const marketType = String(form.get('market-field') || '');
   const oddsValue = Number(form.get('odds-field'));
   const stakePoints = Number(form.get('stake-field'));
   const notes = String(form.get('note-field') || '').trim();
-  if (!currentOpenMatchId || !marketType || !Number.isFinite(oddsValue) || !Number.isFinite(stakePoints)) {
-    setText('add-feedback', 'Select a match and enter valid market, odds, and stake points.');
+  const translate = createTranslator(settingsService.getSettings().locale);
+  if (!homeTeamName || !awayTeamName || !marketType || !Number.isFinite(oddsValue) || !Number.isFinite(stakePoints) || stakePoints <= 0 || !/^\d+(?:\.\d{1,2})?$/.test(String(form.get('stake-field')))) {
+    setText('add-feedback', translate('error.validation_failed'));
     return;
   }
   const timestamp = new Date().toISOString();
-  void saveCloudBetDraft({ draftId: crypto.randomUUID(), matchGroupId: currentOpenMatchId, marketType: marketType as '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom', oddsFormat: 'HK', oddsValue, stakePoints, ...(notes ? { notes } : {}), createdAt: timestamp, updatedAt: timestamp }).then(() => {
-    setText('add-feedback', 'Draft saved.');
-    return loadBetRecordsViewState();
-  }).then((state) => { betRecordsState = state; }).catch(() => setText('add-feedback', 'Draft save failed.'));
+  if (action === 'draft') {
+    void saveCloudBetDraft({ draftId: crypto.randomUUID(), matchGroupId: currentOpenMatchId || manualMatchGroupId(homeTeamName, awayTeamName), marketType: marketType as '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom', oddsFormat: 'HK', oddsValue, stakePoints, ...(notes ? { notes } : {}), createdAt: timestamp, updatedAt: timestamp }).then(async () => {
+      closeSheets();
+      betRecordFilter = 'drafts';
+      await refreshBetRecords();
+    }).catch(() => setText('add-feedback', translate('error.request_failed')));
+    return;
+  }
+  const input = readOngoingBetInput(target);
+  if (!input) {
+    setText('add-feedback', translate('error.validation_failed'));
+    return;
+  }
+  void createDisciplineChallenge(input).then(async (result) => {
+    if (result.required) {
+      pendingOngoingInput = input;
+      pendingDisciplineChallenge = result.challenge;
+      openSheet('discipline-challenge');
+      startDisciplineCountdown(result.challenge);
+      return;
+    }
+    await createOngoingBet(input);
+    closeSheets();
+    betRecordFilter = 'ongoing';
+    await Promise.all([refreshBetRecords(), refreshBankroll(input.bankrollAccountId)]);
+    await refreshReports();
+  }).catch((error) => setText('add-feedback', translate(`error.${errorCode(error)}`, translate('error.request_failed'))));
 });
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     closeSheets();
+    return;
+  }
+  if (event.key === 'Tab') {
+    const openSheetElement = appRoot.querySelector<HTMLElement>('.sheet.open[data-focus-trap]');
+    if (!openSheetElement) return;
+    const focusable = [...openSheetElement.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+    if (focusable.length === 0) return;
+    const first = focusable[0]!;
+    const last = focusable.at(-1)!;
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault(); last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault(); first.focus();
+    }
   }
 });
 
@@ -654,3 +1009,4 @@ render(getInitialTabId());
 void refreshMatchFeed();
 void refreshBetRecords();
 void refreshBankroll();
+void refreshDisciplineConfig();

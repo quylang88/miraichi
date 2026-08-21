@@ -1,0 +1,12 @@
+import { Readable } from 'node:stream';
+import { describe, expect, it } from 'vitest';
+import { createMemoryCloudPersistenceAdapter } from '../persistence/memory-cloud-persistence-adapter.js';
+import { handleDiscipline } from './discipline.js';
+const request=(method:string,url:string,body?:unknown)=>{const value=Readable.from(body===undefined?[]:[JSON.stringify(body)]) as Readable&{method:string;url:string};value.method=method;value.url=url;return value;};
+const response=()=>({statusCode:0,body:'',writeHead(code:number){this.statusCode=code;},end(body?:unknown){this.body=String(body??'');}});
+const bet={betId:'b',matchGroupId:'m',bankrollAccountId:'a',homeTeamName:'Japan',awayTeamName:'Vietnam',marketType:'1X2',selectionLabel:'Japan',oddsFormat:'HK',oddsValue:0.9,stakePoints:50,preBetEmotion:'calm',preBetMotivation:'planned_analysis',createdAt:'2026-08-21T00:00:00.000Z'};
+
+describe('discipline routes',()=>{
+  it('stores owner-controlled config without numeric defaults and increments version',async()=>{const adapter=createMemoryCloudPersistenceAdapter();const deps={adapter,ownerProfileId:'owner-primary',now:()=>new Date('2026-08-21T00:00:00.000Z')};let out=response();await handleDiscipline(request('PUT','/api/v1/discipline-config',{dailyStopLossPoints:null,weeklyStopLossPoints:200,bigBetThresholdPoints:50,timeZone:'Asia/Tokyo'}) as never,out as never,deps);expect(JSON.parse(out.body)).toMatchObject({version:1,dailyStopLossPoints:null,cooldownSeconds:15});out=response();await handleDiscipline(request('PUT','/api/v1/discipline-config',{dailyStopLossPoints:100,weeklyStopLossPoints:null,bigBetThresholdPoints:null,timeZone:'Asia/Tokyo'}) as never,out as never,deps);expect(JSON.parse(out.body).version).toBe(2);});
+  it('creates a bound challenge only when a configured rule is triggered',async()=>{const adapter=createMemoryCloudPersistenceAdapter();await adapter.upsertDisciplineConfig({ownerProfileId:'owner-primary',dailyStopLossPoints:null,weeklyStopLossPoints:null,bigBetThresholdPoints:50,timeZone:'Asia/Tokyo',cooldownSeconds:15,version:1,updatedAt:'2026-08-21T00:00:00.000Z'});const out=response();await handleDiscipline(request('POST','/api/v1/discipline-challenges',bet) as never,out as never,{adapter,ownerProfileId:'owner-primary',now:()=>new Date('2026-08-21T00:00:00.000Z')});expect(out.statusCode).toBe(201);expect(JSON.parse(out.body)).toMatchObject({required:true,challenge:{triggeredRules:['big_bet'],availableAt:'2026-08-21T00:00:15.000Z'}});});
+});

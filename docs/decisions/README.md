@@ -4,6 +4,7 @@
 
 - `ADR-0044-ai-sportmonks-removal-product-reset.md` — Accepted. Defines the owner-only factual match, manual bet/odds, and bankroll product boundary.
 - `ADR-0045-openfootball-source-and-manual-live-bet-boundary.md` — Accepted. Selects OpenFootball for non-live match data and keeps live-bet context owner-entered and immutable.
+- `ADR-0046-core-bet-bankroll-discipline-and-reporting.md` — Accepted. Defines manual settlement, bankroll accounting, discipline warnings, psychology journaling, reports, and EN/VI UI boundaries.
 
 ## Retained Foundation Decisions
 

@@ -9,8 +9,16 @@ import { fileURLToPath } from 'node:url';
 import { renderAppShell } from './components/app-shell.js';
 import { renderBottomNavigation } from './components/bottom-navigation.js';
 import { createSettingsService } from './services/settings-service.js';
-import { resolveLocale, t } from './services/i18n-service.js';
+import {
+  createTranslator,
+  formatDateTime,
+  formatNumber,
+  getCatalogKeys,
+  resolveLocale,
+  t
+} from './services/i18n-service.js';
 import { getTodayDateTileParts } from './components/app-shell.js';
+import { renderSettlementTimeline } from './components/screens/bets-screen.js';
 
 
 function createMemoryStorage(initial: Record<string, string> = {}): Storage {
@@ -35,6 +43,12 @@ function createMemoryStorage(initial: Record<string, string> = {}): Storage {
 }
 
 describe('production PWA shell configuration', () => {
+  it('keeps each primary screen renderer outside the app shell monolith', () => {
+    const appShell = readFileSync(fileURLToPath(new URL('./components/app-shell.ts', import.meta.url)), 'utf8');
+    expect(appShell).not.toContain('function renderMatchesPanel');
+    expect(readFileSync(fileURLToPath(new URL('./components/screens/matches-screen.ts', import.meta.url)), 'utf8')).toContain('export function renderMatchesScreen');
+  });
+
   it('uses the accepted four-tab domain navigation backbone only', () => {
     expect(PRODUCTION_NAVIGATION_TAB_IDS).toEqual([
       'today',
@@ -58,24 +72,104 @@ describe('production PWA shell configuration', () => {
 });
 
 describe('phase 9 cloud persistence workflows', () => {
+  it('localizes settlement timeline values and formats audit timestamps in the configured timezone', () => {
+    const html = renderSettlementTimeline([{ settlementEventId: 's1', ownerProfileId: 'owner-primary', betId: 'b1', bankrollAccountId: 'a', settlementType: 'full_win', planAdherence: 'yes', calculatedProfitLossPoints: 9, ledgerDeltaPoints: 9, effectiveAt: '2026-08-21T12:00:00.000Z', occurredAt: '2026-08-21T12:00:00.000Z' }], createTranslator('vi'), 'vi', 'Asia/Tokyo');
+    expect(html).toContain('Thắng đủ');
+    expect(html).not.toContain('full_win');
+    expect(html).not.toContain('2026-08-21T12:00:00.000Z');
+  });
+
   it('renders honest Bets loading, empty, unavailable, and durable record states', () => {
     expect(renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'loading' } })).toContain('data-bet-records-state="loading"');
     expect(renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'empty' } })).toContain('data-bet-records-state="empty"');
-    expect(renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'unavailable', reason: 'Setup required' } })).toContain('Setup required');
-    const html = renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'ready', drafts: [{ draftId: 'd1', matchGroupId: 'm1', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], pending: [{ betId: 'b1', ownerProfileId: 'owner-primary', matchGroupId: 'm1', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, status: 'pending', createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], settled: [] } });
-    expect(html).toContain('Japan vs Vietnam');
+    const unavailable = renderAppShell({ activeTabId: 'bets', translate: createTranslator('vi'), betRecordsState: { status: 'unavailable', reason: 'Setup required' } });
+    expect(unavailable).toContain('Không khả dụng');
+    expect(unavailable).not.toContain('Setup required');
+    const html = renderAppShell({ activeTabId: 'bets', betRecordFilter: 'drafts', betRecordsState: { status: 'ready', drafts: [{ draftId: 'd1', matchGroupId: 'm1', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], pending: [{ betId: 'b1', ownerProfileId: 'owner-primary', matchGroupId: 'm1', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, status: 'pending', createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], settled: [] } });
     expect(html).toContain('data-delete-draft-confirm="d1"');
+    expect(html).not.toContain('data-bet-id="b1"');
+  });
+
+  it('renders only the selected Bets segment and exposes manual ongoing and settlement workflows', () => {
+    const html = renderAppShell({
+      activeTabId: 'bets',
+      betRecordFilter: 'ongoing',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 10, availableBalance: 90, accounts: [] } },
+      betRecordsState: { status: 'ready', drafts: [{ draftId: 'd1', matchGroupId: 'm1', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], pending: [{ betId: 'b1', ownerProfileId: 'owner-primary', bankrollAccountId: 'a', matchGroupId: 'm1', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, preBetEmotion: 'calm', preBetMotivation: 'planned_analysis', status: 'pending', createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], settled: [] }
+    });
+    expect(html).toContain('data-bet-filter="ongoing"');
+    expect(html).toContain('Japan vs Vietnam');
+    expect(html).toContain('data-open-settlement="b1"');
+    expect(html).not.toContain('data-delete-draft-confirm="d1"');
+    expect(html).toContain('name="home-team"');
+    expect(html).toContain('id="record-ongoing-bet"');
+    expect(html).toContain('id="settlement-form"');
+  });
+
+  it('renders real bankroll summaries, discipline nulls, and report analytics without forbidden metrics', () => {
+    const html = renderAppShell({
+      activeTabId: 'bankroll', bankrollView: 'discipline',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 90, openExposure: 20, availableBalance: 70, accounts: [] } },
+      disciplineConfigState: { status: 'ready', config: { ownerProfileId: 'owner-primary', dailyStopLossPoints: null, weeklyStopLossPoints: null, bigBetThresholdPoints: null, timeZone: 'Asia/Tokyo', cooldownSeconds: 15, version: 1, updatedAt: '2026-08-21T00:00:00.000Z' } }
+    });
+    expect(html).toContain('data-bankroll-view="discipline"');
+    expect(html).toContain('value=""');
+    expect(html).toContain('Discipline rules not configured');
+    expect(html).not.toContain('yield');
+    expect(html).not.toContain('ROI');
+  });
+
+  it('localizes report enum labels, includes outcome counts, and keeps manual settlement fields hidden by default', () => {
+    const html = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      translate: createTranslator('vi'),
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 109, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 109, openExposure: 0, availableBalance: 109, accounts: [] } },
+      reportState: { status: 'ready', report: { period: { kind: 'week', startDate: '2026-08-17', endDate: '2026-08-23', timeZone: 'Asia/Tokyo' }, netProfitLossPoints: 9, totalSettledBets: 1, totalStakePoints: 10, averageStakePoints: 10, winRatePercent: 100, outcomes: { full_win: 1 }, daily: [{ date: '2026-08-21', profitLossPoints: 9 }], market: { '1X2': { count: 1, profitLossPoints: 9 } }, psychology: { emotion: { calm: { count: 1, profitLossPoints: 9 } }, motivation: { planned_analysis: { count: 1, profitLossPoints: 9 } }, planAdherence: { yes: { count: 1, profitLossPoints: 9 } } }, disciplineOverrideCount: 1 } }
+    });
+    const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
+    const bankrollPanel = html.slice(html.indexOf('id="screen-bankroll"'), html.indexOf('id="screen-match-detail"'));
+    expect(html).toContain('Kết quả');
+    expect(html).toContain('Thắng đủ');
+    expect(html).toContain('Phân tích có kế hoạch');
+    expect(bankrollPanel).not.toContain('planned_analysis');
+    expect(css).toMatch(/\.field\[hidden\]\s*\{[^}]*display:\s*none\s*!important/s);
+  });
+
+  it('keeps manual Add Bet available when the match feed is unavailable', () => {
+    const html = renderAppShell({ activeTabId: 'matches', matchFeed: { status: 'unavailable', date: '2026-08-21', reason: 'offline', warnings: [], snapshot: { snapshotId: 's', generatedAt: '2026-08-21T00:00:00.000Z', importedAt: '2026-08-21T00:00:00.000Z', matchCount: 0, competitions: [], sources: [], freshness: 'missing', warnings: [] } } });
+    expect(html).toContain('data-open-manual-add');
+    expect(html).toContain('Manual Add Bet');
+  });
+
+  it('renders the Matches screen and contextual detail shell from the VI catalog', () => {
+    const html = renderAppShell({ activeTabId: 'matches', translate: createTranslator('vi'), isFilterPanelOpen: true, matchFeed: { status: 'empty', date: '2026-08-21', warnings: [], snapshot: { snapshotId: 's', generatedAt: '2026-08-21T00:00:00.000Z', importedAt: '2026-08-21T00:00:00.000Z', matchCount: 0, competitions: [], sources: [], freshness: 'fresh', warnings: [] } } });
+    expect(html).toContain('Sắp xếp &amp; nhóm');
+    expect(html).toContain('Loại giải đấu');
+    expect(html).toContain('Không có trận đấu');
+    expect(html).toContain('Trận đã chọn');
+    expect(html).not.toContain('Search generic teams');
+    expect(html).not.toContain('Selected match');
+    expect(html).toContain('aria-label="Điều hướng chính"');
+    expect(html).toContain('Trên / Dưới');
+    expect(html).not.toContain('Over / Under');
+    expect(html).not.toContain('2026-08-21T00:00:00.000Z');
+    expect(html).toContain('aria-label="Chọn ngày" tabindex="-1"');
   });
 
   it('renders persisted Bankroll without formula placeholders', () => {
-    const html = renderAppShell({ activeTabId: 'bankroll', bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], ledger: [{ entryId: 'e', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'withdrawal', amountPoints: -10, occurredAt: '2026-07-02T00:00:00.000Z', createdAt: '2026-07-02T00:00:00.000Z' }] } });
+    const html = renderAppShell({ activeTabId: 'bankroll', bankrollView: 'ledger', bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], ledger: [{ entryId: 'e', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'withdrawal', amountPoints: -10, occurredAt: '2026-07-02T00:00:00.000Z', createdAt: '2026-07-02T00:00:00.000Z' }], summary: { realizedBalance: 90, openExposure: 0, availableBalance: 90, accounts: [] } } });
     expect(html).toContain('90 pts');
     expect(html).toContain('data-ledger-type="deposit"');
     expect(html).toContain('data-ledger-type="withdrawal"');
-    expect(html).toContain('data-ledger-type="transfer_out"');
+    expect(html).toContain('data-open-transfer');
     expect(html).toContain('data-ledger-type="correction"');
     expect(html).not.toContain('24,500 pts');
     expect(html).not.toContain('Formula status');
+    expect(html).toContain('id="ledger-adjustment-form"');
+    expect(html).not.toContain('2026-07-02T00:00:00.000Z');
+    const shellEntry = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellEntry).not.toContain('window.prompt');
   });
 });
 
@@ -139,9 +233,8 @@ describe('production PWA shell rendering', () => {
     expect(html).not.toContain('class="notice"');
     expect(html).toContain('class="main-scroll"');
     expect(html).toContain('class="screen active" id="screen-today"');
-    expect(html).toContain('class="summary-list"');
-    expect(html).toContain('class="segmented"');
-    expect(html).toContain('class="match-card" data-match-card');
+    expect(html).toContain('class="metric-grid"');
+    expect(html).toContain('data-open-manual-add');
     expect(html).toContain('id="screen-match-detail"');
     expect(html).toContain('data-open-match');
     expect(html).toContain('data-open-scoped-add');
@@ -157,9 +250,9 @@ describe('production PWA shell rendering', () => {
     const html = renderAppShell({ activeTabId: 'today', translate: t });
     const today = getTodayDateTileParts();
 
-    expect(html).toContain(`aria-label="Current date ${today.day} ${today.month}"`);
-    expect(html).toContain(`<span class="date-day">${today.day}</span>`);
-    expect(html).toContain(`<span class="date-month">${today.month}</span>`);
+    expect(html).toContain('Today command center');
+    expect(today.day).toMatch(/^\d{1,2}$/);
+    expect(today.month).toMatch(/^[A-Z]{3}$/);
     expect(html).not.toContain('5.9');
     expect(html).not.toContain('PWA</span>');
   });
@@ -276,18 +369,18 @@ describe('production shell settings and i18n boundaries', () => {
     expect(resolveLocale({ storedLocale: 'en', navigatorLanguages: ['vi-VN'] })).toBe('en');
   });
 
-  it('stores only tiny shell settings and rejects betting history persistence', () => {
+  it('defaults the product to English until the owner explicitly changes locale', () => {
     const storage = createMemoryStorage();
     const settings = createSettingsService({ storage, navigatorLanguages: ['vi-VN'] });
 
     expect(settings.getSettings()).toMatchObject({
-      locale: 'vi',
+      locale: 'en',
       theme: 'dark',
       displayDensity: 'standard'
     });
 
-    settings.setSetting('locale', 'en');
-    expect(settings.getSettings().locale).toBe('en');
+    settings.setSetting('locale', 'vi');
+    expect(settings.getSettings().locale).toBe('vi');
 
     expect(() => settings.setSetting('bettingHistory', [])).toThrow(
       'Unsupported shell setting key: bettingHistory'
@@ -298,9 +391,18 @@ describe('production shell settings and i18n boundaries', () => {
     );
   });
 
-  it('keeps translation lookups as a fallback-first stub', () => {
+  it('keeps EN and VI catalogs in parity and resolves named placeholders', () => {
+    expect(getCatalogKeys('en')).toEqual(getCatalogKeys('vi'));
+    expect(createTranslator('en')('bets.count', { count: 2 })).toBe('2 bets');
+    expect(createTranslator('vi')('bets.count', { count: 2 })).toBe('2 cược');
     expect(t('nav.today', 'Today')).toBe('Today');
-    expect(t('settings.language', 'Language')).toBe('Language');
+    expect(createTranslator('vi')('settings.language')).toBe('Ngôn ngữ');
+  });
+
+  it('formats numbers and dates through locale-aware Intl helpers', () => {
+    expect(formatNumber(1234.5, 'en', { maximumFractionDigits: 1 })).toBe('1,234.5');
+    expect(formatNumber(1234.5, 'vi', { maximumFractionDigits: 1 })).toContain('1.234,5');
+    expect(formatDateTime('2026-08-21T10:00:00.000Z', 'en', 'UTC')).toContain('Aug');
   });
 
   it('supports timezone and display density settings', () => {
@@ -407,7 +509,8 @@ describe('production shell match snapshot rendering', () => {
     });
     expect(unavailableHtml).toContain('Data update required');
     expect(unavailableHtml).toContain('Data status: Unavailable');
-    expect(unavailableHtml).toContain('Serving match store is missing. Build it from canonical warehouse before using match workflows.');
+    expect(unavailableHtml).toContain('Match feed unavailable. Manual bet entry is still available.');
+    expect(unavailableHtml).not.toContain('Build it from canonical warehouse');
 
     const missingSnapshotHtml = renderAppShell({
       activeTabId: 'matches',
@@ -476,9 +579,10 @@ describe('production shell match snapshot rendering', () => {
 
     expect(html).toContain('Japan vs Vietnam');
     expect(html).toContain('FIFA World Cup');
-    expect(html).toContain('Local match ID match-1');
+    expect(html).toContain('data-match-id="match-1"');
     expect(html).toContain('Data status: Ready');
-    expect(html).toContain('Snapshot generated: 2026-07-01T00:00:00.000Z');
+    expect(html).toContain('Snapshot generated: Jul 1, 2026');
+    expect(html).not.toContain('2026-07-01T00:00:00.000Z');
     expect(html).not.toContain('provider fixture context');
     expect(html).not.toContain('No provider matches');
 
@@ -514,7 +618,8 @@ describe('production shell match snapshot rendering', () => {
       }
     });
     expect(staleHtml).toContain('Data status: Stale');
-    expect(staleHtml).toContain('Snapshot generated: 2026-06-28T00:00:00.000Z');
+    expect(staleHtml).toContain('Snapshot generated: Jun 28, 2026');
+    expect(staleHtml).not.toContain('2026-06-28T00:00:00.000Z');
   });
 });
 

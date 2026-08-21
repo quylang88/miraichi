@@ -53,6 +53,16 @@ describe('supabase cloud persistence adapter', () => {
     expect(client.calls.every((call) => call.text.includes('$1'))).toBe(true);
   });
 
+  it('exports the canonical V2 backup collections', async () => {
+    const client = new FakeClient();
+    client.enqueueRows([], [], [], [], [], []);
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    const envelope = await adapter.exportOwnerData('owner-primary', '2026-08-21T00:00:00.000Z');
+    expect(envelope).toMatchObject({ schemaVersion: 'miraichi.cloud-backup.v2', disciplineConfigs: [], settlementEvents: [] });
+    expect(client.calls.some((call) => call.text.includes('discipline_config'))).toBe(true);
+    expect(client.calls.some((call) => call.text.includes('bet_settlement_event'))).toBe(true);
+  });
+
   it('does not leak credentials when connectivity fails', async () => {
     const client: PostgresQueryClient = {
       query: async () => { throw new Error('postgresql://secret@db.example'); },

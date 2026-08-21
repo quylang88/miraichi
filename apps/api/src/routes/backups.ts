@@ -1,16 +1,19 @@
 import { createHash } from 'node:crypto';
-import type { CloudBackupEnvelope } from '@miraichi/shared';
-import { isAddBetDraftReviewReady, validateBankrollLedgerEntry, validateCloudBetRecord } from '@miraichi/shared';
+import type { CloudBackupEnvelope, CloudBackupEnvelopeV2, CloudBetRecord } from '@miraichi/shared';
+import { isAddBetDraftReviewReady, validateBankrollLedgerEntry, validateCloudBetRecord, validateDisciplineConfig, validateSettlementCommand } from '@miraichi/shared';
 import type { IncomingMessage, ServerResponse } from 'http';
 import type { CloudRouteDependencies } from './cloud-route-types.js';
 import { mapCloudError, sendError, sendJson } from './cloud-route-types.js';
 import { readJsonObjectRequest } from './json-body.js';
 
-function canonical(envelope:CloudBackupEnvelope):CloudBackupEnvelope{return{...envelope,drafts:[...envelope.drafts].sort((a,b)=>a.draftId.localeCompare(b.draftId)),bets:[...envelope.bets].sort((a,b)=>a.betId.localeCompare(b.betId)),bankrollAccounts:[...envelope.bankrollAccounts].sort((a,b)=>a.accountId.localeCompare(b.accountId)),bankrollLedgerEntries:[...envelope.bankrollLedgerEntries].sort((a,b)=>a.entryId.localeCompare(b.entryId))};}
+function migrateLegacyBet(bet:CloudBetRecord):CloudBetRecord{return{...bet,...(bet.manualResultPoints!=null&&bet.profitLossPoints==null?{profitLossPoints:bet.manualResultPoints}:{}),...(bet.status==='void'?{status:'settled' as const,settlementType:'void' as const,profitLossPoints:bet.manualResultPoints??0,settledAt:bet.updatedAt}:{})};}
+function canonical(envelope:CloudBackupEnvelope):CloudBackupEnvelope{const common={...envelope,drafts:[...envelope.drafts].sort((a,b)=>a.draftId.localeCompare(b.draftId)),bets:[...envelope.bets].map((bet)=>envelope.schemaVersion==='miraichi.cloud-backup.v1'?migrateLegacyBet(bet):bet).sort((a,b)=>a.betId.localeCompare(b.betId)),bankrollAccounts:[...envelope.bankrollAccounts].sort((a,b)=>a.accountId.localeCompare(b.accountId)),bankrollLedgerEntries:[...envelope.bankrollLedgerEntries].sort((a,b)=>a.entryId.localeCompare(b.entryId))};if(envelope.schemaVersion==='miraichi.cloud-backup.v2')return{...common,schemaVersion:'miraichi.cloud-backup.v2',disciplineConfigs:[...envelope.disciplineConfigs].sort((a,b)=>a.ownerProfileId.localeCompare(b.ownerProfileId)),settlementEvents:[...envelope.settlementEvents].sort((a,b)=>a.settlementEventId.localeCompare(b.settlementEventId))};return{...common,schemaVersion:'miraichi.cloud-backup.v1'};}
 function validEnvelope(value:unknown,owner:string):value is CloudBackupEnvelope{
   if(typeof value!=='object'||value===null||Array.isArray(value))return false;const item=value as Partial<CloudBackupEnvelope>;
-  if(item.schemaVersion!=='miraichi.cloud-backup.v1'||item.ownerProfileId!==owner||typeof item.exportedAt!=='string'||!Array.isArray(item.drafts)||!Array.isArray(item.bets)||!Array.isArray(item.bankrollAccounts)||!Array.isArray(item.bankrollLedgerEntries))return false;
-  return item.drafts.every(isAddBetDraftReviewReady)&&item.bets.every((bet)=>validateCloudBetRecord(bet).ok)&&item.bankrollAccounts.every((account)=>account&&typeof account.accountId==='string'&&account.ownerProfileId===owner&&account.unit==='points'&&typeof account.currentBalancePoints==='number')&&item.bankrollLedgerEntries.every((entry)=>validateBankrollLedgerEntry(entry).ok);
+  if(!['miraichi.cloud-backup.v1','miraichi.cloud-backup.v2'].includes(String(item.schemaVersion))||item.ownerProfileId!==owner||typeof item.exportedAt!=='string'||!Array.isArray(item.drafts)||!Array.isArray(item.bets)||!Array.isArray(item.bankrollAccounts)||!Array.isArray(item.bankrollLedgerEntries))return false;
+  const common=item.drafts.every(isAddBetDraftReviewReady)&&item.bets.every((bet)=>validateCloudBetRecord(bet).ok)&&item.bankrollAccounts.every((account)=>account&&typeof account.accountId==='string'&&account.ownerProfileId===owner&&account.unit==='points'&&typeof account.currentBalancePoints==='number')&&item.bankrollLedgerEntries.every((entry)=>validateBankrollLedgerEntry(entry).ok);
+  if(!common||item.schemaVersion==='miraichi.cloud-backup.v1')return common;
+  const v2=item as Partial<CloudBackupEnvelopeV2>;return Array.isArray(v2.disciplineConfigs)&&v2.disciplineConfigs.every((config)=>validateDisciplineConfig(config).ok)&&Array.isArray(v2.settlementEvents)&&v2.settlementEvents.every((event)=>event.ownerProfileId===owner&&typeof event.betId==='string'&&validateSettlementCommand(event).ok);
 }
 export async function handleBackups(req:IncomingMessage,res:ServerResponse,deps:CloudRouteDependencies):Promise<void>{
   const path=new URL(req.url??'/', 'http://localhost').pathname;
@@ -18,7 +21,7 @@ export async function handleBackups(req:IncomingMessage,res:ServerResponse,deps:
     if(path.endsWith('/log')&&req.method==='GET')return sendJson(res,200,await deps.adapter.listBackupExports(deps.ownerProfileId));
     if(path.endsWith('/export')&&req.method==='POST'){
       const exportedAt=(deps.now??(()=>new Date()))().toISOString();const envelope=canonical(await deps.adapter.exportOwnerData(deps.ownerProfileId,exportedAt));const sha256=createHash('sha256').update(JSON.stringify(envelope),'utf8').digest('hex');
-      await deps.adapter.recordBackupExport({exportId:`export-${sha256.slice(0,16)}`,ownerProfileId:deps.ownerProfileId,schemaVersion:'miraichi.cloud-backup.v1',exportedAt,sha256,recordCounts:{betDrafts:envelope.drafts.length,bets:envelope.bets.length,bankrollAccounts:envelope.bankrollAccounts.length,bankrollLedgerEntries:envelope.bankrollLedgerEntries.length}});
+      await deps.adapter.recordBackupExport({exportId:`export-${sha256.slice(0,16)}`,ownerProfileId:deps.ownerProfileId,schemaVersion:envelope.schemaVersion,exportedAt,sha256,recordCounts:{betDrafts:envelope.drafts.length,bets:envelope.bets.length,bankrollAccounts:envelope.bankrollAccounts.length,bankrollLedgerEntries:envelope.bankrollLedgerEntries.length,...(envelope.schemaVersion==='miraichi.cloud-backup.v2'?{disciplineConfigs:envelope.disciplineConfigs.length,settlementEvents:envelope.settlementEvents.length}:{})}});
       return sendJson(res,200,{...envelope,sha256});
     }
     if(path.endsWith('/import')&&req.method==='POST'){

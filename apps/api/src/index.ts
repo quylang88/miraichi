@@ -9,6 +9,9 @@ import { handleBetDrafts } from './routes/bet-drafts.js';
 import { handleCloudPersistenceStatus } from './routes/cloud-persistence-status.js';
 import { handleBankroll } from './routes/bankroll.js';
 import { handleBackups } from './routes/backups.js';
+import { handleDiscipline } from './routes/discipline.js';
+import { handleBetSettlements } from './routes/bet-settlements.js';
+import { handleBetReports } from './routes/bet-reports.js';
 import { handleIngestionStatus } from './routes/ingestion-status.mock.js';
 import { handleMatchDetail } from './routes/match-detail.js';
 import { handleDataSnapshotStatus } from './routes/data-snapshot-status.js';
@@ -91,13 +94,19 @@ const server = http.createServer((req, res) => {
     void handleDataSnapshotStatus(req, res, { repository: matchRepository });
   } else if (pathname === '/api/v1/matches') {
     void handleMatches(req, res, { repository: matchRepository });
+  } else if (/^\/api\/v1\/bets\/[^/]+\/settlements$/.test(pathname)) {
+    void handleBetSettlements(req, res, cloudDependencies);
   } else if (pathname === '/api/v1/bets') {
     void handleBets(req, res, cloudDependencies);
+  } else if (pathname === '/api/v1/discipline-config' || pathname === '/api/v1/discipline-challenges') {
+    void handleDiscipline(req, res, cloudDependencies);
+  } else if (pathname === '/api/v1/bet-reports') {
+    void handleBetReports(req, res, cloudDependencies);
   } else if (pathname === '/api/v1/bet-drafts') {
     void handleBetDrafts(req, res, cloudDependencies);
   } else if (pathname === '/api/v1/cloud-persistence/status') {
     void handleCloudPersistenceStatus(req, res, cloudDependencies);
-  } else if (pathname === '/api/v1/bankroll/accounts' || pathname === '/api/v1/bankroll/ledger') {
+  } else if (pathname === '/api/v1/bankroll/accounts' || pathname === '/api/v1/bankroll/ledger' || pathname === '/api/v1/bankroll/summary' || pathname === '/api/v1/bankroll/transfers') {
     void handleBankroll(req, res, cloudDependencies);
   } else if (pathname === '/api/v1/backups/export' || pathname === '/api/v1/backups/import' || pathname === '/api/v1/backups/log') {
     void handleBackups(req, res, cloudDependencies);

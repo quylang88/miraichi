@@ -1,5 +1,9 @@
 import type { AddBetDraft } from './add-bet-draft-contracts.js';
 import type { LocalMatch, LocalMatchSourceRef } from './local-match-contracts.js';
+import type {
+  BetSettlementEvent, DisciplineChallenge, DisciplineConfig, DisciplineSnapshot,
+  PlanAdherence, PreBetEmotion, PreBetMotivation, SettlementType
+} from './core-betting-contracts.js';
 
 export type CloudPersistenceMode = 'disabled' | 'memory' | 'supabase';
 export type CloudPersistenceState = 'unconfigured' | 'ready' | 'unavailable';
@@ -21,6 +25,11 @@ export interface CloudBetRecord {
   oddsFormat: 'HK'; oddsValue: number; stakePoints: number;
   status: 'pending' | 'settled' | 'void'; settlementNote?: string;
   manualResultPoints?: number | null; notes?: string; tags?: readonly string[];
+  bankrollAccountId?: string | null;
+  preBetEmotion?: PreBetEmotion; preBetMotivation?: PreBetMotivation; preBetNote?: string;
+  disciplineSnapshot?: DisciplineSnapshot;
+  settlementType?: SettlementType; profitLossPoints?: number | null; settledAt?: string;
+  postBetPlanAdherence?: PlanAdherence; postBetLessonNote?: string;
   createdAt: string; updatedAt: string;
 }
 
@@ -35,11 +44,12 @@ export interface BankrollAccount {
   createdAt: string; updatedAt: string;
 }
 
-export type BankrollLedgerEntryType = 'deposit' | 'withdrawal' | 'transfer_in' | 'transfer_out' | 'correction';
+export type BankrollLedgerEntryType = 'deposit' | 'withdrawal' | 'transfer_in' | 'transfer_out' | 'correction' | 'bet_settlement' | 'bet_settlement_correction';
 
 export interface BankrollLedgerEntry {
   entryId: string; ownerProfileId: string; accountId: string;
   entryType: BankrollLedgerEntryType; amountPoints: number; note?: string;
+  transferId?: string; betId?: string; settlementEventId?: string; effectiveAt?: string;
   occurredAt: string; createdAt: string;
 }
 
@@ -51,19 +61,48 @@ export interface UpdateBankrollAccountInput {
 }
 export interface CreateBankrollLedgerEntryInput {
   entryId: string; ownerProfileId: string; accountId: string; entryType: BankrollLedgerEntryType;
+  amountPoints: number; note?: string; transferId?: string; betId?: string; settlementEventId?: string; effectiveAt?: string; occurredAt: string;
+}
+
+export interface CreateBankrollTransferInput {
+  transferId: string; ownerProfileId: string; fromAccountId: string; toAccountId: string;
   amountPoints: number; note?: string; occurredAt: string;
 }
 
-export interface CloudBackupEnvelope {
+export interface ApplyBetSettlementInput {
+  record: CloudBetRecord;
+  event: BetSettlementEvent;
+  ledgerEntry: CreateBankrollLedgerEntryInput;
+}
+
+export interface ApplyBetSettlementResult {
+  record: CloudBetRecord; event: BetSettlementEvent; ledgerEntry: BankrollLedgerEntry; account: BankrollAccount;
+}
+
+export interface BankrollTransferResult {
+  fromAccount: BankrollAccount; toAccount: BankrollAccount;
+  outEntry: BankrollLedgerEntry; inEntry: BankrollLedgerEntry;
+}
+
+export interface CloudBackupEnvelopeV1 {
   schemaVersion: 'miraichi.cloud-backup.v1'; exportedAt: string; ownerProfileId: string;
   drafts: AddBetDraft[]; bets: CloudBetRecord[]; bankrollAccounts: BankrollAccount[];
   bankrollLedgerEntries: BankrollLedgerEntry[];
 }
 
+export interface CloudBackupEnvelopeV2 {
+  schemaVersion: 'miraichi.cloud-backup.v2'; exportedAt: string; ownerProfileId: string;
+  drafts: AddBetDraft[]; bets: CloudBetRecord[]; bankrollAccounts: BankrollAccount[];
+  bankrollLedgerEntries: BankrollLedgerEntry[]; disciplineConfigs: DisciplineConfig[];
+  settlementEvents: BetSettlementEvent[];
+}
+
+export type CloudBackupEnvelope = CloudBackupEnvelopeV1 | CloudBackupEnvelopeV2;
+
 export interface BackupExportReceipt {
-  exportId: string; ownerProfileId: string; schemaVersion: 'miraichi.cloud-backup.v1';
+  exportId: string; ownerProfileId: string; schemaVersion: 'miraichi.cloud-backup.v1' | 'miraichi.cloud-backup.v2';
   exportedAt: string; sha256: string;
-  recordCounts: { betDrafts: number; bets: number; bankrollAccounts: number; bankrollLedgerEntries: number };
+  recordCounts: { betDrafts: number; bets: number; bankrollAccounts: number; bankrollLedgerEntries: number; disciplineConfigs?: number; settlementEvents?: number };
 }
 
 export const FORBIDDEN_CLOUD_FIELDS = [
@@ -105,12 +144,14 @@ export function validateBankrollLedgerEntry(input: unknown): CloudValidationResu
   if (!isObject(input)) return { ok: false, errors: ['Input is not an object'] };
   const errors = findForbiddenFields(input).map((field) => `Forbidden field: ${field}`);
   ['entryId', 'ownerProfileId', 'accountId'].forEach((key) => { if (!hasText(input[key])) errors.push(`${key} is required`); });
-  if (!['deposit', 'withdrawal', 'transfer_in', 'transfer_out', 'correction'].includes(String(input.entryType))) errors.push('entryType is invalid');
+  if (!['deposit', 'withdrawal', 'transfer_in', 'transfer_out', 'correction', 'bet_settlement', 'bet_settlement_correction'].includes(String(input.entryType))) errors.push('entryType is invalid');
   if (!finite(input.amountPoints) || input.amountPoints === 0) errors.push('amountPoints must be non-zero');
   if (!hasText(input.occurredAt) || !ISO.test(input.occurredAt)) errors.push('occurredAt must be ISO datetime');
   if (!hasText(input.createdAt) || !ISO.test(input.createdAt)) errors.push('createdAt must be ISO datetime');
   return errors.length ? { ok: false, errors } : { ok: true };
 }
+
+export type { BetSettlementEvent, DisciplineChallenge, DisciplineConfig };
 
 export function validateCloudPersistenceStatus(input: unknown): CloudValidationResult {
   if (!isObject(input)) return { ok: false, errors: ['Input is not an object'] };

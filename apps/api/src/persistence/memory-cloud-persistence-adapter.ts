@@ -1,7 +1,7 @@
 import type {
-  AddBetDraft, BackupExportReceipt, BankrollAccount, BankrollLedgerEntry,
-  CloudBackupEnvelope, CloudBetRecord, CloudMatchSnapshot, CreateBankrollAccountInput,
-  CreateBankrollLedgerEntryInput, LocalDataSnapshotStatus, LocalMatch,
+  AddBetDraft, ApplyBetSettlementInput, BackupExportReceipt, BankrollAccount, BankrollLedgerEntry,
+  BankrollTransferResult, BetSettlementEvent, CloudBackupEnvelope, CloudBetRecord, CloudMatchSnapshot, CreateBankrollAccountInput,
+  CreateBankrollLedgerEntryInput, CreateBankrollTransferInput, DisciplineChallenge, DisciplineConfig, LocalDataSnapshotStatus, LocalMatch,
   LocalMatchSnapshotQuery, UpdateBankrollAccountInput
 } from '@miraichi/shared/src/contracts/index.js';
 import type { CloudPersistenceAdapter } from './cloud-persistence-adapter.js';
@@ -16,6 +16,9 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
   const bets = new Map<string, CloudBetRecord>();
   const accounts = new Map<string, BankrollAccount>();
   const ledger = new Map<string, BankrollLedgerEntry>();
+  const disciplineConfigs = new Map<string, DisciplineConfig>();
+  const disciplineChallenges = new Map<string, DisciplineChallenge>();
+  const settlementEvents = new Map<string, BetSettlementEvent>();
   const snapshots = new Map<string, CloudMatchSnapshot>();
   const receipts = new Map<string, BackupExportReceipt>();
   const key = (owner: string, id: string) => `${owner}:${id}`;
@@ -56,6 +59,42 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
       if (!bets.has(id)) throw new Error('Bet record not found');
       bets.set(id, clone(record)); return clone(record);
     },
+    getDisciplineConfig: async (owner) => clone(disciplineConfigs.get(owner) ?? null),
+    upsertDisciplineConfig: async (config) => { disciplineConfigs.set(config.ownerProfileId, clone(config)); return clone(config); },
+    createDisciplineChallenge: async (challenge) => {
+      const id = key(challenge.ownerProfileId, challenge.challengeId);
+      if (disciplineChallenges.has(id)) throw new Error('Duplicate discipline challenge ID');
+      disciplineChallenges.set(id, clone(challenge)); return clone(challenge);
+    },
+    findDisciplineChallenge: async (owner, id) => clone(disciplineChallenges.get(key(owner, id)) ?? null),
+    consumeDisciplineChallenge: async (owner, id, consumedAt) => {
+      const challengeId = key(owner, id); const current = disciplineChallenges.get(challengeId);
+      if (!current || current.consumedAt) return null;
+      const consumed = { ...current, consumedAt }; disciplineChallenges.set(challengeId, consumed); return clone(consumed);
+    },
+    applyBetSettlement: async (input: ApplyBetSettlementInput) => {
+      const eventId = key(input.event.ownerProfileId, input.event.settlementEventId);
+      const existingEvent = settlementEvents.get(eventId);
+      if (existingEvent) {
+        const existingRecord = bets.get(key(input.record.ownerProfileId, input.record.betId));
+        const existingEntry = ledger.get(key(input.ledgerEntry.ownerProfileId, input.ledgerEntry.entryId));
+        const existingAccount = accounts.get(key(input.record.ownerProfileId, input.event.bankrollAccountId));
+        if (!existingRecord || !existingEntry || !existingAccount) throw new Error('Settlement idempotency state is incomplete');
+        return { record: clone(existingRecord), event: clone(existingEvent), ledgerEntry: clone(existingEntry), account: clone(existingAccount) };
+      }
+      const betId = key(input.record.ownerProfileId, input.record.betId);
+      if (!bets.has(betId)) throw new Error('Bet record not found');
+      const accountId = key(input.record.ownerProfileId, input.event.bankrollAccountId); const account = accounts.get(accountId);
+      if (!account) throw new Error('Bankroll account not found');
+      const ledgerId = key(input.ledgerEntry.ownerProfileId, input.ledgerEntry.entryId);
+      if (ledger.has(ledgerId)) throw new Error('Duplicate ledger entry ID');
+      const entry: BankrollLedgerEntry = { ...clone(input.ledgerEntry), createdAt: now() };
+      bets.set(betId, clone(input.record)); settlementEvents.set(eventId, clone(input.event)); ledger.set(ledgerId, entry);
+      const updatedAccount = { ...account, currentBalancePoints: account.currentBalancePoints + input.ledgerEntry.amountPoints, updatedAt: now() };
+      accounts.set(accountId, updatedAccount);
+      return { record: clone(input.record), event: clone(input.event), ledgerEntry: clone(entry), account: clone(updatedAccount) };
+    },
+    listBetSettlementEvents: async (owner, betId) => valuesFor(settlementEvents, owner).filter((event) => !betId || event.betId === betId).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)),
     createBankrollAccount: async (input) => {
       const id = key(input.ownerProfileId, input.accountId);
       if (accounts.has(id)) throw new Error('Duplicate account ID');
@@ -81,6 +120,22 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
       return clone(entry);
     },
     listBankrollLedgerEntries: async (owner, accountId) => valuesFor(ledger, owner).filter((entry) => entry.accountId === accountId).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)),
+    createBankrollTransfer: async (input: CreateBankrollTransferInput): Promise<BankrollTransferResult> => {
+      if (!Number.isFinite(input.amountPoints) || input.amountPoints <= 0 || input.fromAccountId === input.toAccountId) throw new Error('Transfer payload is invalid');
+      const fromId = key(input.ownerProfileId, input.fromAccountId); const toId = key(input.ownerProfileId, input.toAccountId);
+      const from = accounts.get(fromId); const to = accounts.get(toId);
+      if (!from || !to) throw new Error('Bankroll account not found');
+      if (from.archived || to.archived) throw new Error('Bankroll account is archived');
+      const outId = key(input.ownerProfileId, `transfer:${input.transferId}:out`); const inId = key(input.ownerProfileId, `transfer:${input.transferId}:in`);
+      if (ledger.has(outId) || ledger.has(inId)) throw new Error('Duplicate transfer ID');
+      const common = { ownerProfileId: input.ownerProfileId, transferId: input.transferId, occurredAt: input.occurredAt, createdAt: now(), ...(input.note ? { note: input.note } : {}) };
+      const outEntry: BankrollLedgerEntry = { ...common, entryId: `transfer:${input.transferId}:out`, accountId: input.fromAccountId, entryType: 'transfer_out', amountPoints: -input.amountPoints };
+      const inEntry: BankrollLedgerEntry = { ...common, entryId: `transfer:${input.transferId}:in`, accountId: input.toAccountId, entryType: 'transfer_in', amountPoints: input.amountPoints };
+      const fromAccount = { ...from, currentBalancePoints: from.currentBalancePoints - input.amountPoints, updatedAt: now() };
+      const toAccount = { ...to, currentBalancePoints: to.currentBalancePoints + input.amountPoints, updatedAt: now() };
+      ledger.set(outId, outEntry); ledger.set(inId, inEntry); accounts.set(fromId, fromAccount); accounts.set(toId, toAccount);
+      return { fromAccount: clone(fromAccount), toAccount: clone(toAccount), outEntry: clone(outEntry), inEntry: clone(inEntry) };
+    },
     upsertMatchSnapshot: async (owner, snapshot) => { snapshots.set(owner, clone(snapshot)); },
     listCloudMatches: async (owner, query: LocalMatchSnapshotQuery) => {
       const snapshot = latestSnapshot(owner);
@@ -94,8 +149,9 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
     findCloudMatchById: async (owner, matchId) => clone(latestSnapshot(owner)?.matches.find((match) => match.id === matchId) ?? null),
     getCloudMatchSnapshotStatus: async (owner) => latestSnapshot(owner) ? statusFor(latestSnapshot(owner)!) : missingSnapshot(),
     exportOwnerData: async (owner, exportedAt) => ({
-      schemaVersion: 'miraichi.cloud-backup.v1', exportedAt, ownerProfileId: owner,
-      drafts: valuesFor(drafts, owner), bets: valuesFor(bets, owner), bankrollAccounts: valuesFor(accounts, owner), bankrollLedgerEntries: valuesFor(ledger, owner)
+      schemaVersion: 'miraichi.cloud-backup.v2', exportedAt, ownerProfileId: owner,
+      drafts: valuesFor(drafts, owner), bets: valuesFor(bets, owner), bankrollAccounts: valuesFor(accounts, owner), bankrollLedgerEntries: valuesFor(ledger, owner),
+      disciplineConfigs: disciplineConfigs.has(owner) ? [clone(disciplineConfigs.get(owner)!)] : [], settlementEvents: valuesFor(settlementEvents, owner)
     }),
     importOwnerData: async (owner, envelope: CloudBackupEnvelope) => {
       if (envelope.ownerProfileId !== owner) throw new Error('Backup owner mismatch');
@@ -103,6 +159,10 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
       envelope.bets.forEach((item) => bets.set(key(owner, item.betId), clone(item)));
       envelope.bankrollAccounts.forEach((item) => accounts.set(key(owner, item.accountId), clone(item)));
       envelope.bankrollLedgerEntries.forEach((item) => ledger.set(key(owner, item.entryId), clone(item)));
+      if (envelope.schemaVersion === 'miraichi.cloud-backup.v2') {
+        envelope.disciplineConfigs.forEach((item) => disciplineConfigs.set(owner, clone(item)));
+        envelope.settlementEvents.forEach((item) => settlementEvents.set(key(owner, item.settlementEventId), clone(item)));
+      }
     },
     recordBackupExport: async (receipt) => { receipts.set(key(receipt.ownerProfileId, receipt.exportId), clone(receipt)); },
     listBackupExports: async (owner) => valuesFor(receipts, owner).sort((a, b) => b.exportedAt.localeCompare(a.exportedAt))

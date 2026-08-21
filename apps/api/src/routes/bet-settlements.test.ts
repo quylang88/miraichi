@@ -1,0 +1,17 @@
+import { Readable } from 'node:stream';
+import { describe, expect, it } from 'vitest';
+import { createMemoryCloudPersistenceAdapter } from '../persistence/memory-cloud-persistence-adapter.js';
+import { handleBetSettlements } from './bet-settlements.js';
+const req=(body:unknown,method='POST')=>{const value=Readable.from([JSON.stringify(body)]) as Readable&{method:string;url:string};value.method=method;value.url='/api/v1/bets/b/settlements';return value;};
+const res=()=>({statusCode:0,body:'',writeHead(code:number){this.statusCode=code;},end(body?:unknown){this.body=String(body??'');}});
+describe('bet settlement route',()=>{
+  it('settles through the API transaction boundary',async()=>{const adapter=createMemoryCloudPersistenceAdapter({now:()=> '2026-08-21T01:00:00.000Z'});await adapter.createBankrollAccount({accountId:'a',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});await adapter.createBetRecord({betId:'b',ownerProfileId:'owner-primary',matchGroupId:'m',bankrollAccountId:'a',homeTeamName:'A',awayTeamName:'B',marketType:'1X2',selectionLabel:'A',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,status:'pending',preBetEmotion:'calm',preBetMotivation:'planned_analysis',createdAt:'2026-08-21T00:00:00.000Z',updatedAt:'2026-08-21T00:00:00.000Z'});const out=res();await handleBetSettlements(req({settlementEventId:'s',settlementType:'full_win',planAdherence:'yes',effectiveAt:'2026-08-21T01:00:00.000Z'}) as never,out as never,{adapter,ownerProfileId:'owner-primary',now:()=>new Date('2026-08-21T01:00:00.000Z')});expect(out.statusCode).toBe(201);expect(JSON.parse(out.body)).toMatchObject({record:{profitLossPoints:9},account:{currentBalancePoints:109}});});
+  it('returns the append-only settlement timeline for the selected bet', async () => {
+    const adapter=createMemoryCloudPersistenceAdapter();
+    await adapter.createBankrollAccount({accountId:'a',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});
+    await adapter.createBetRecord({betId:'b',ownerProfileId:'owner-primary',matchGroupId:'m',bankrollAccountId:'a',homeTeamName:'A',awayTeamName:'B',marketType:'1X2',selectionLabel:'A',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,status:'pending',createdAt:'2026-08-21T00:00:00.000Z',updatedAt:'2026-08-21T00:00:00.000Z'});
+    await adapter.applyBetSettlement({record:{betId:'b',ownerProfileId:'owner-primary',matchGroupId:'m',bankrollAccountId:'a',homeTeamName:'A',awayTeamName:'B',marketType:'1X2',selectionLabel:'A',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,status:'settled',settlementType:'full_win',profitLossPoints:9,settledAt:'2026-08-21T01:00:00.000Z',postBetPlanAdherence:'yes',createdAt:'2026-08-21T00:00:00.000Z',updatedAt:'2026-08-21T01:00:00.000Z'},event:{settlementEventId:'s',ownerProfileId:'owner-primary',betId:'b',bankrollAccountId:'a',settlementType:'full_win',planAdherence:'yes',effectiveAt:'2026-08-21T01:00:00.000Z',calculatedProfitLossPoints:9,ledgerDeltaPoints:9,occurredAt:'2026-08-21T01:00:00.000Z'},ledgerEntry:{entryId:'e',ownerProfileId:'owner-primary',accountId:'a',entryType:'bet_settlement',amountPoints:9,betId:'b',settlementEventId:'s',effectiveAt:'2026-08-21T01:00:00.000Z',occurredAt:'2026-08-21T01:00:00.000Z'}});
+    const out=res();await handleBetSettlements(req({},'GET') as never,out as never,{adapter,ownerProfileId:'owner-primary'});
+    expect(out.statusCode).toBe(200);expect(JSON.parse(out.body)).toMatchObject([{settlementEventId:'s',betId:'b'}]);
+  });
+});
