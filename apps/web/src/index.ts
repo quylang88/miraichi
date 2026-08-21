@@ -84,6 +84,9 @@ const server = http.createServer((req, res) => {
   } else if (url.startsWith('/packages/config/src/')) {
     filePath = resolveSourcePath(url);
     contentType = 'application/javascript';
+  } else if (url.startsWith('/packages/agent-protocol/src/')) {
+    filePath = resolveSourcePath(url);
+    contentType = 'application/javascript';
   }
 
   if (filePath && fs.existsSync(filePath)) {
@@ -159,6 +162,20 @@ export function getIndexHtml() {
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/icon-180.png">
   <link rel="stylesheet" href="/packages/ui/src/index.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "@miraichi/shared": "/packages/shared/src/index.js",
+        "@miraichi/shared/": "/packages/shared/src/",
+        "@miraichi/ui": "/packages/ui/src/index.js",
+        "@miraichi/ui/": "/packages/ui/src/",
+        "@miraichi/config": "/packages/config/src/index.js",
+        "@miraichi/config/": "/packages/config/src/",
+        "@miraichi/agent-protocol": "/packages/agent-protocol/src/index.js",
+        "@miraichi/agent-protocol/": "/packages/agent-protocol/src/"
+      }
+    }
+  </script>
   <script>
     window.MIRAICHI_ENV = {
       API_URL: "${process.env.API_URL || ''}"

@@ -14,7 +14,8 @@ const SOURCE_ROOTS = [
   'apps/web/src',
   'packages/ui/src',
   'packages/shared/src',
-  'packages/config/src'
+  'packages/config/src',
+  'packages/agent-protocol/src'
 ];
 
 const PUBLIC_DIR = path.join(WEB_DIR, 'public');

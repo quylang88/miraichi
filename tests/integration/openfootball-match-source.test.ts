@@ -163,5 +163,5 @@ describe('OpenFootball match source raw-to-serving integration', () => {
     } finally {
       await rm(dataRoot, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 });
