@@ -3,16 +3,7 @@ import {
   LocalDataSnapshotStatus,
   validateLocalMatchFeedResponse
 } from '@miraichi/shared';
-
-declare global {
-  interface Window {
-    MIRAICHI_ENV?: {
-      API_URL?: string;
-    };
-  }
-}
-
-const API_BASE_URL = (typeof window !== 'undefined' && window.MIRAICHI_ENV?.API_URL) || '';
+import { buildApiUrl } from '../config/client-env.js';
 
 export type MatchFeedViewState =
   | { status: 'loading'; date: string }
@@ -22,7 +13,7 @@ export type MatchFeedViewState =
 
 export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/matches?date=${encodeURIComponent(date)}`);
+    const response = await fetch(buildApiUrl(`/api/v1/matches?date=${encodeURIComponent(date)}`));
 
     if (!response.ok) {
       let message = `Match feed unavailable with HTTP ${response.status}.`;
