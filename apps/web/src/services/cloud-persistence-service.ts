@@ -1,3 +1,6 @@
+const getApiBaseUrl = () => (typeof window !== 'undefined' && (window as Window & { MIRAICHI_ENV?: { API_URL?: string } }).MIRAICHI_ENV?.API_URL) || '';
+
 export type CloudPersistenceViewState={status:'loading'}|{status:'ready'}|{status:'unavailable';reason:string};
 export type FetchLike=(input:RequestInfo|URL,init?:RequestInit)=>Promise<Response>;
-export async function getCloudPersistenceViewState(fetcher:FetchLike=fetch):Promise<CloudPersistenceViewState>{try{const response=await fetcher('/api/v1/cloud-persistence/status');if(!response.ok)return{status:'unavailable',reason:'Cloud persistence is unavailable.'};const payload=await response.json() as {state?:string;message?:string};return payload.state==='ready'?{status:'ready'}:{status:'unavailable',reason:payload.message??'Cloud persistence setup is required.'};}catch{return{status:'unavailable',reason:'Cloud persistence is unavailable.'};}}
+export async function getCloudPersistenceViewState(fetcher:FetchLike=fetch):Promise<CloudPersistenceViewState>{try{const response=await fetcher(`${getApiBaseUrl()}/api/v1/cloud-persistence/status`);if(!response.ok)return{status:'unavailable',reason:'Cloud persistence is unavailable.'};const payload=await response.json() as {state?:string;message?:string};return payload.state==='ready'?{status:'ready'}:{status:'unavailable',reason:payload.message??'Cloud persistence setup is required.'};}catch{return{status:'unavailable',reason:'Cloud persistence is unavailable.'};}}
+
