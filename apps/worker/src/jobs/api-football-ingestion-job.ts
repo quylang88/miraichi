@@ -14,17 +14,28 @@ import {
   buildServingMatchesFromWarehouse,
   readServingMatchStoreSnapshot
 } from '../../../api/src/repositories/serving-match-store.js';
+import { LocalMatchDetailStore } from '../../../api/src/repositories/local-match-detail-store.js';
 import {
   ApiFootballClient,
   type ApiFootballFixtureItem
 } from '../sources/api-football/api-football-client.js';
-import { adaptApiFootballMatches } from '../sources/api-football/api-football-adapter.js';
+import { ApiFootballQuotaExceededError } from '../sources/api-football/api-football-usage-ledger.js';
+import {
+  adaptApiFootballMatches,
+  adaptApiFootballMatchDetail
+} from '../sources/api-football/api-football-adapter.js';
 import { validateApiFootballPublicationCandidate } from '../sources/api-football/api-football-publication-validator.js';
 import {
   loadLastGoodWarehouseSnapshot,
   mergeCanonicalWarehouseSnapshots
 } from '../sources/api-football/api-football-snapshot-merge.js';
 import { withApiFootballJobLease } from '../sources/api-football/api-football-job-lease.js';
+import {
+  planApiFootballIngestion,
+  resolveProviderFixtureIdFromMatch,
+  SCHEDULE_PLANNER_CONFIG,
+  TERMINAL_STATUS_CODES
+} from '../sources/api-football/api-football-schedule-planner.js';
 import type { LocalMatch } from '@miraichi/shared';
 
 export interface ConcludingWindow {
@@ -94,37 +105,97 @@ export async function runApiFootballIngestionJob(
   const registry = options.registry || API_FOOTBALL_COMPETITION_REGISTRY;
   const client = options.client || new ApiFootballClient({ now, dataRoot: options.dataRoot });
   const servingRoot = join(options.dataRoot, 'serving');
-  const targetDate = options.date || now().toISOString().slice(0, 10);
 
-  // Auto mode selection: if window_poll requested or ongoing matches in window, run window_poll, else daily_sync
-  let mode = options.mode || 'auto';
-  if (mode === 'auto') {
-    let currentServingMatches: LocalMatch[] = [];
-    try {
-      const snapshot = await readServingMatchStoreSnapshot(servingRoot);
-      currentServingMatches = snapshot.matches;
-    } catch {
-      currentServingMatches = [];
+  let currentServingMatches: LocalMatch[] = [];
+  try {
+    const snapshot = await readServingMatchStoreSnapshot(servingRoot);
+    currentServingMatches = snapshot.matches;
+  } catch {
+    currentServingMatches = [];
+  }
+
+  const ledgerState = await client.ledger.getState(now());
+  const canRequest = await client.ledger.canRequest(false, now());
+
+  const lastPolledAtByMatchId = new Map<string, string>();
+  const nextDueAtByMatchId = new Map<string, string>();
+  const lastReportedStatusByMatchId = new Map<string, string>();
+  if (ledgerState.matchPollStates) {
+    for (const [id, poll] of Object.entries(ledgerState.matchPollStates)) {
+      if (poll.lastPolledAt) lastPolledAtByMatchId.set(id, poll.lastPolledAt);
+      if (poll.nextDueAt) nextDueAtByMatchId.set(id, poll.nextDueAt);
+      if (poll.lastReportedStatus) lastReportedStatusByMatchId.set(id, poll.lastReportedStatus);
+    }
+  }
+
+  const plan = planApiFootballIngestion({
+    mode: options.mode || 'auto',
+    now: now(),
+    targetDate: options.date,
+    lastSuccessfulDailySyncDate: ledgerState.lastSuccessfulDailySyncDate,
+    canRequest,
+    matches: currentServingMatches,
+    lastPolledAtByMatchId,
+    nextDueAtByMatchId,
+    lastReportedStatusByMatchId
+  });
+
+  const effectiveMode: 'daily_sync' | 'window_poll' =
+    options.mode === 'window_poll' ? 'window_poll' : 'daily_sync';
+
+  if (plan.actions.length === 0) {
+    const quotaUsedToday = ledgerState.dailyUsage.reserved;
+    if (plan.reason === 'quota_deferred') {
+      await Promise.all(plan.dueMatches.map(({ match }) =>
+        client.ledger.recordMatchPoll(match.id, {
+          polledAt: null,
+          nextDueAt: addSeconds(now(), API_FOOTBALL_QUOTA_CONFIG.pollingIntervalSeconds),
+          sloEligibleAt: sloEligibleAt(match),
+          deferralReason: 'quota'
+        }, now())
+      ));
+      return {
+        status: 'skipped',
+        runId,
+        mode: effectiveMode,
+        matchesProcessed: 0,
+        matchesCompleted: 0,
+        quotaUsedToday,
+        error: 'Normal API-Football quota ceiling reached'
+      };
     }
 
-    const currentMs = now().getTime();
-    const activeInWindow = currentServingMatches.some((m) => {
-      if (m.status !== 'scheduled') return false;
-      const kMs = Date.parse(m.kickoffUtc);
-      return (
-        currentMs >= kMs + API_FOOTBALL_QUOTA_CONFIG.concludingWindowStartMinutes * 60_000 &&
-        currentMs <= kMs + API_FOOTBALL_QUOTA_CONFIG.concludingWindowEndMinutes * 60_000
-      );
-    });
-
-    mode = activeInWindow ? 'window_poll' : 'daily_sync';
+    return {
+      status: 'skipped',
+      runId,
+      mode: effectiveMode,
+      matchesProcessed: 0,
+      matchesCompleted: 0,
+      quotaUsedToday
+    };
   }
 
-  if (mode === 'daily_sync') {
-    return handleDailySync(options, client, registry, runId, targetDate, now);
-  } else {
-    return handleWindowPoll(options, client, registry, runId, now);
+  const dailySyncAction = plan.actions.find((a) => a.type === 'daily_sync');
+  if (dailySyncAction && dailySyncAction.type === 'daily_sync') {
+    return handleDailySync(options, client, registry, runId, dailySyncAction.date, now);
   }
+
+  const windowPollActions = plan.actions.filter(
+    (a): a is { type: 'window_poll'; fixtureIds: number[]; matches: LocalMatch[] } =>
+      a.type === 'window_poll'
+  );
+  if (windowPollActions.length > 0) {
+    return handleWindowPoll(options, client, registry, runId, windowPollActions, now);
+  }
+
+  return {
+    status: 'skipped',
+    runId,
+    mode: effectiveMode,
+    matchesProcessed: 0,
+    matchesCompleted: 0,
+    quotaUsedToday: await getReservedQuota(client, now())
+  };
 }
 
 async function handleDailySync(
@@ -135,20 +206,12 @@ async function handleDailySync(
   targetDate: string,
   now: () => Date
 ): Promise<ApiFootballIngestionRunResult> {
-  if (!(await client.ledger.canRequest(false, now()))) {
-    return {
-      status: 'skipped',
-      runId,
-      mode: 'daily_sync',
-      matchesProcessed: 0,
-      matchesCompleted: 0,
-      quotaUsedToday: await getReservedQuota(client, now()),
-      error: 'Daily quota ceiling reached'
-    };
-  }
+  const servingRoot = join(options.dataRoot, 'serving');
 
   try {
-    const response = await client.fetchFixturesByDate(targetDate);
+    const response = await client.fetchFixturesByDate(targetDate, {
+      timezone: API_FOOTBALL_QUOTA_CONFIG.ownerTimezone
+    });
     const enabledLeagueIds = new Set(
       registry.filter((r) => r.enabled).map((r) => r.providerLeagueId)
     );
@@ -163,7 +226,7 @@ async function handleDailySync(
       observedAt: now().toISOString()
     });
 
-    const servingRoot = join(options.dataRoot, 'serving');
+    let publishedMatches: LocalMatch[] = [];
 
     // Merge base warehouse snapshot with daily sync delta under exclusive job lease
     await withApiFootballJobLease(options.dataRoot, async () => {
@@ -193,6 +256,14 @@ async function handleDailySync(
         warehouseRoot,
         importedAt: now().toISOString()
       });
+      publishedMatches = servingMatches.matches;
+
+      await upsertFixtureDetails(
+        options.dataRoot,
+        relevantFixtures,
+        publishedMatches,
+        now
+      );
 
       await buildServingMatchStore({
         servingRoot,
@@ -205,6 +276,9 @@ async function handleDailySync(
         warehouseRunId: runId
       });
     });
+
+    // Record successful daily sync
+    await client.ledger.recordSuccessfulDailySync(targetDate, now());
 
     const providerFixtureIdsByMatchId = new Map(
       adapted.links
@@ -254,91 +328,76 @@ async function handleWindowPoll(
   client: ApiFootballClient,
   registry: readonly ApiFootballCompetitionEntry[],
   runId: string,
+  windowPollActions: Array<{ type: 'window_poll'; fixtureIds: number[]; matches: LocalMatch[] }>,
   now: () => Date
 ): Promise<ApiFootballIngestionRunResult> {
   const servingRoot = join(options.dataRoot, 'serving');
-  let currentServingMatches: LocalMatch[] = [];
+  const attemptedMatches = windowPollActions.flatMap((action) => action.matches);
+  const terminalPolls: Array<{ match: LocalMatch; status: string }> = [];
 
   try {
-    const snapshot = await readServingMatchStoreSnapshot(servingRoot);
-    currentServingMatches = snapshot.matches;
-  } catch {
-    return {
-      status: 'skipped',
-      runId,
-      mode: 'window_poll',
-      matchesProcessed: 0,
-      matchesCompleted: 0,
-      quotaUsedToday: await getReservedQuota(client, now()),
-      error: 'Serving store snapshot not found'
-    };
-  }
-
-  const currentMs = now().getTime();
-  const concludingMatches: Array<{ match: LocalMatch; fixtureId: number }> = [];
-
-  for (const match of currentServingMatches) {
-    if (match.status !== 'scheduled') continue;
-    const kMs = Date.parse(match.kickoffUtc);
-    if (Number.isNaN(kMs)) continue;
-
-    const inWindow =
-      currentMs >= kMs + API_FOOTBALL_QUOTA_CONFIG.concludingWindowStartMinutes * 60_000 &&
-      currentMs <= kMs + API_FOOTBALL_QUOTA_CONFIG.concludingWindowEndMinutes * 60_000;
-
-    if (inWindow) {
-      const fixtureId = parseProviderFixtureId(
-        match.sourceRefs.find((ref) => ref.sourceId === 'api-football')?.sourceMatchId
-      );
-      if (fixtureId !== null) {
-        concludingMatches.push({ match, fixtureId });
+    const allReturnedFixtures: ApiFootballFixtureItem[] = [];
+    for (const pollAction of windowPollActions) {
+      const response = await client.fetchFixturesByIds(pollAction.fixtureIds);
+      const returnedFixtures = response.response || [];
+      allReturnedFixtures.push(...returnedFixtures);
+      for (const match of pollAction.matches) {
+        const fixtureId = resolveProviderFixtureIdFromMatch(match);
+        const fixtureItem = returnedFixtures.find((f) => f.fixture?.id === fixtureId);
+        const statusShort = fixtureItem?.fixture?.status?.short?.toUpperCase();
+        if (!fixtureItem || !statusShort) {
+          await recordPollDeferral(client, match, 'unknown_fixture', now);
+        } else if (TERMINAL_STATUS_CODES.has(statusShort)) {
+          terminalPolls.push({ match, status: statusShort });
+        } else {
+          await client.ledger.recordMatchPoll(match.id, {
+            polledAt: now().toISOString(),
+            lastReportedStatus: statusShort,
+            nextDueAt: addSeconds(now(), API_FOOTBALL_QUOTA_CONFIG.pollingIntervalSeconds),
+            sloEligibleAt: sloEligibleAt(match)
+          }, now());
+        }
       }
     }
-  }
-
-  if (concludingMatches.length === 0) {
-    return {
-      status: 'skipped',
-      runId,
-      mode: 'window_poll',
-      matchesProcessed: 0,
-      matchesCompleted: 0,
-      quotaUsedToday: await getReservedQuota(client, now())
-    };
-  }
-
-  if (!(await client.ledger.canRequest(false, now()))) {
-    return {
-      status: 'skipped',
-      runId,
-      mode: 'window_poll',
-      matchesProcessed: 0,
-      matchesCompleted: 0,
-      quotaUsedToday: await getReservedQuota(client, now()),
-      error: 'Daily quota ceiling reached'
-    };
-  }
-
-  try {
-    const fixtureIds = concludingMatches.map((c) => c.fixtureId);
-    const response = await client.fetchFixturesByIds(fixtureIds);
 
     const adapted = adaptApiFootballMatches({
       registry,
-      fixtures: response.response || [],
+      fixtures: allReturnedFixtures,
       observedAt: now().toISOString()
     });
 
     const completedCount = adapted.matches.filter((match) => match.status === 'completed').length;
-    const allRequestedFixturesAreTerminal =
-      adapted.matches.length === concludingMatches.length &&
-      adapted.matches.every((match) =>
-        match.status === 'completed' ||
-        match.status === 'postponed' ||
-        match.status === 'cancelled'
+
+    const adaptedFixtureIds = new Set(adapted.links
+      .filter((link) =>
+        link.entityType === 'match' &&
+        link.provider === 'api-football' &&
+        link.providerEntityType === 'fixture'
+      )
+      .map((link) => parseProviderFixtureId(link.providerEntityId))
+      .filter((fixtureId): fixtureId is number => fixtureId !== null));
+    for (const terminalPoll of terminalPolls) {
+      const fixtureId = resolveProviderFixtureIdFromMatch(terminalPoll.match);
+      if (fixtureId !== null && !adaptedFixtureIds.has(fixtureId)) {
+        await recordPollDeferral(client, terminalPoll.match, 'coverage', now);
+      }
+    }
+
+    // Check if any returned fixture is live/non-terminal
+    const hasLiveOrNonTerminal = allReturnedFixtures.some((f) => {
+      const short = f.fixture?.status?.short?.toUpperCase() || '';
+      return !TERMINAL_STATUS_CODES.has(short);
+    });
+
+    const allMatchesTerminal =
+      !hasLiveOrNonTerminal &&
+      terminalPolls.length === attemptedMatches.length &&
+      adapted.matches.length === attemptedMatches.length &&
+      adapted.matches.every(
+        (m) => m.status === 'completed' || m.status === 'postponed' || m.status === 'cancelled'
       );
 
-    if (!allRequestedFixturesAreTerminal) {
+    if (!allMatchesTerminal) {
       return {
         status: 'not_modified',
         runId,
@@ -348,6 +407,22 @@ async function handleWindowPoll(
         quotaUsedToday: await getReservedQuota(client, now())
       };
     }
+
+    if (terminalPolls.some(({ match }) => {
+      const fixtureId = resolveProviderFixtureIdFromMatch(match);
+      return fixtureId === null || !adaptedFixtureIds.has(fixtureId);
+    })) {
+      return {
+        status: 'not_modified',
+        runId,
+        mode: 'window_poll',
+        matchesProcessed: adapted.matches.length,
+        matchesCompleted: completedCount,
+        quotaUsedToday: await getReservedQuota(client, now())
+      };
+    }
+
+    let publishedMatches: LocalMatch[] = [];
 
     // Merge base warehouse snapshot with window poll delta under exclusive job lease
     await withApiFootballJobLease(options.dataRoot, async () => {
@@ -377,6 +452,14 @@ async function handleWindowPoll(
         warehouseRoot,
         importedAt: now().toISOString()
       });
+      publishedMatches = servingMatches.matches;
+
+      await upsertFixtureDetails(
+        options.dataRoot,
+        allReturnedFixtures,
+        publishedMatches,
+        now
+      );
 
       await buildServingMatchStore({
         servingRoot,
@@ -390,6 +473,15 @@ async function handleWindowPoll(
       });
     });
 
+    for (const { match, status } of terminalPolls) {
+      await client.ledger.recordMatchPoll(match.id, {
+        polledAt: now().toISOString(),
+        lastReportedStatus: status,
+        nextDueAt: null,
+        sloEligibleAt: sloEligibleAt(match)
+      }, now());
+    }
+
     return {
       status: 'published',
       runId,
@@ -399,6 +491,10 @@ async function handleWindowPoll(
       quotaUsedToday: await getReservedQuota(client, now())
     };
   } catch (error) {
+    const reason = error instanceof ApiFootballQuotaExceededError ? 'quota' : 'provider_error';
+    await Promise.all(attemptedMatches.map((match) =>
+      recordPollDeferral(client, match, reason, now).catch(() => undefined)
+    ));
     return {
       status: 'failed',
       runId,
@@ -408,6 +504,56 @@ async function handleWindowPoll(
       quotaUsedToday: await getReservedQuota(client, now()),
       error: error instanceof Error ? error.message : String(error)
     };
+  }
+}
+
+function addSeconds(date: Date, seconds: number): string {
+  return new Date(date.getTime() + seconds * 1000).toISOString();
+}
+
+function sloEligibleAt(match: LocalMatch): string {
+  const kickoffMs = Date.parse(match.kickoffUtc);
+  return new Date(
+    kickoffMs + SCHEDULE_PLANNER_CONFIG.concludingWindowStartMinutes * 60_000
+  ).toISOString();
+}
+
+async function recordPollDeferral(
+  client: ApiFootballClient,
+  match: LocalMatch,
+  reason: 'quota' | 'provider_error' | 'unknown_fixture' | 'coverage',
+  now: () => Date
+): Promise<void> {
+  await client.ledger.recordMatchPoll(match.id, {
+    polledAt: reason === 'quota' ? null : now().toISOString(),
+    nextDueAt: addSeconds(now(), API_FOOTBALL_QUOTA_CONFIG.pollingIntervalSeconds),
+    sloEligibleAt: sloEligibleAt(match),
+    deferralReason: reason
+  }, now());
+}
+
+async function upsertFixtureDetails(
+  dataRoot: string,
+  fixtures: readonly ApiFootballFixtureItem[],
+  publishedMatches: readonly LocalMatch[],
+  now: () => Date
+): Promise<void> {
+  const detailStore = new LocalMatchDetailStore({ dataRoot });
+  for (const fixture of fixtures) {
+    if (!fixture.fixture?.id) continue;
+    const fixtureId = String(fixture.fixture.id);
+    const localMatch = publishedMatches.find((match) =>
+      match.sourceRefs.some(
+        (ref) => ref.sourceId === 'api-football' && String(ref.sourceMatchId) === fixtureId
+      )
+    );
+    if (!localMatch || localMatch.status !== 'completed') continue;
+
+    await detailStore.upsertDetail(adaptApiFootballMatchDetail({
+      fixtureItem: fixture,
+      canonicalMatch: localMatch,
+      observedAt: now().toISOString()
+    }));
   }
 }
 

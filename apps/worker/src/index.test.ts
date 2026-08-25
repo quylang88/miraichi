@@ -1,8 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
+import path from 'node:path';
 import type { ApiFootballIngestionRunResult } from './jobs/api-football-ingestion-job.js';
+import * as ingestionJobModule from './jobs/api-football-ingestion-job.js';
+import { ApiFootballClient } from './sources/api-football/api-football-client.js';
 import {
   API_FOOTBALL_SCHEDULE_INTERVAL_MS,
-  startApiFootballSchedule
+  defaultDataRoot,
+  startApiFootballSchedule,
+  startWorker
 } from './index.js';
 
 function successfulResult(): ApiFootballIngestionRunResult {
@@ -13,6 +18,18 @@ function successfulResult(): ApiFootballIngestionRunResult {
     matchesProcessed: 1,
     matchesCompleted: 1,
     quotaUsedToday: 5
+  };
+}
+
+function failedResult(error = 'Job failed internally'): ApiFootballIngestionRunResult {
+  return {
+    status: 'failed',
+    runId: 'run-failed',
+    mode: 'daily_sync',
+    matchesProcessed: 0,
+    matchesCompleted: 0,
+    quotaUsedToday: 5,
+    error
   };
 }
 
@@ -108,5 +125,80 @@ describe('startApiFootballSchedule', () => {
 
     tick!();
     expect(runJob).toHaveBeenCalledTimes(2);
+  });
+
+  it('logs a failed result status and continues scheduling later ticks', async () => {
+    const runJob = vi.fn()
+      .mockResolvedValueOnce(failedResult('Rate limit exceeded'))
+      .mockResolvedValue(successfulResult());
+    const log = vi.fn();
+    let tick: (() => void) | undefined;
+    const setIntervalFn = vi.fn((callback: () => void) => {
+      tick = callback;
+      return { id: 'api-football' } as unknown as ReturnType<typeof setInterval>;
+    }) as unknown as typeof setInterval;
+
+    startApiFootballSchedule({
+      runJob,
+      setIntervalFn,
+      clearIntervalFn: vi.fn() as unknown as typeof clearInterval,
+      log
+    });
+
+    await settle();
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('Rate limit exceeded'));
+
+    tick!();
+    expect(runJob).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('defaultDataRoot', () => {
+  it('resolves canonical default data directory under apps/api/data', () => {
+    const root = defaultDataRoot();
+    expect(path.isAbsolute(root)).toBe(true);
+    expect(root.replace(/\\/g, '/')).toContain('apps/api/data');
+  });
+});
+
+describe('startWorker', () => {
+  it('initializes daemon with single client and executes ingestion job on ticks', async () => {
+    const spy = vi.spyOn(ingestionJobModule, 'runApiFootballIngestionJob').mockResolvedValue(successfulResult());
+    const log = vi.fn();
+    const intervalHandle = { id: 'worker-daemon' } as unknown as ReturnType<typeof setInterval>;
+    let intervalCallback: (() => void) | undefined;
+    const setIntervalFn = vi.fn((cb: () => void) => {
+      intervalCallback = cb;
+      return intervalHandle;
+    }) as unknown as typeof setInterval;
+    const clearIntervalFn = vi.fn() as unknown as typeof clearInterval;
+
+    const dummyClient = new ApiFootballClient({ apiKey: 'test-key', dataRoot: 'C:/fake/path' });
+
+    const worker = startWorker({
+      dataRoot: 'C:/fake/path',
+      client: dummyClient,
+      log,
+      setIntervalFn,
+      clearIntervalFn
+    });
+
+    await settle();
+    expect(worker.intervalMilliseconds).toBe(API_FOOTBALL_SCHEDULE_INTERVAL_MS);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+      dataRoot: 'C:/fake/path',
+      mode: 'auto',
+      client: dummyClient
+    }));
+
+    // Trigger subsequent tick after initial run has settled
+    intervalCallback!();
+    await settle();
+    expect(spy).toHaveBeenCalledTimes(2);
+
+    worker.stop();
+    expect(clearIntervalFn).toHaveBeenCalledWith(intervalHandle);
+    spy.mockRestore();
   });
 });

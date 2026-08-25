@@ -1,6 +1,12 @@
-import { resolve } from 'node:path';
-import { runApiFootballIngestionJob } from '../apps/worker/src/jobs/api-football-ingestion-job.js';
-import { API_FOOTBALL_COMPETITION_REGISTRY } from '../packages/config/src/index.js';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
+import {
+  runApiFootballIngestionJob,
+  type ApiFootballIngestionRunResult
+} from '../apps/worker/src/jobs/api-football-ingestion-job.js';
+import {
+  API_FOOTBALL_COMPETITION_REGISTRY,
+  type ApiFootballCompetitionEntry
+} from '../packages/config/src/index.js';
 import { ApiFootballUsageLedger } from '../apps/worker/src/sources/api-football/api-football-usage-ledger.js';
 import { ApiFootballClient } from '../apps/worker/src/sources/api-football/api-football-client.js';
 
@@ -13,62 +19,151 @@ try {
   // Ignore if .env is missing
 }
 
-async function main(): Promise<void> {
-  const apiKey = process.env.API_FOOTBALL_KEY?.trim();
-  if (!apiKey) {
-    console.error('Error: Missing API_FOOTBALL_KEY environment variable. Configure API_FOOTBALL_KEY in .env before running.');
-    process.exit(1);
+export type IngestionCliMode = 'daily_sync' | 'window_poll' | 'auto';
+
+const VALID_MODES: ReadonlySet<string> = new Set<IngestionCliMode>([
+  'daily_sync',
+  'window_poll',
+  'auto'
+]);
+
+export interface ParsedCaptureArgs {
+  mode?: IngestionCliMode | undefined;
+  date?: string | undefined;
+  dataRoot: string;
+}
+
+export interface CaptureCliOptions {
+  args?: string[] | undefined;
+  apiKey?: string | undefined;
+  registry?: readonly ApiFootballCompetitionEntry[] | undefined;
+  client?: ApiFootballClient | undefined;
+  cwd?: string | undefined;
+  logFn?: ((message: string) => void) | undefined;
+  now?: (() => Date) | undefined;
+}
+
+export function parseCaptureArgs(args: string[], cwd: string = process.cwd()): ParsedCaptureArgs {
+  let mode: IngestionCliMode | undefined;
+  let date: string | undefined;
+  const workspaceRoot = resolve(cwd);
+  let dataRoot = resolve(workspaceRoot, 'apps/api/data');
+
+  for (const arg of args) {
+    if (arg.startsWith('--mode=')) {
+      const val = arg.slice('--mode='.length).trim();
+      if (!VALID_MODES.has(val as IngestionCliMode)) {
+        throw new Error(`invalid --mode option: ${val}`);
+      }
+      mode = val as IngestionCliMode;
+    } else if (arg.startsWith('--date=')) {
+      const val = arg.slice('--date='.length).trim();
+      if (!isCalendarDate(val)) {
+        throw new Error(`invalid --date option: ${val}`);
+      }
+      date = val;
+    } else if (arg.startsWith('--data-root=')) {
+      const val = arg.slice('--data-root='.length).trim();
+      if (!val || !isAbsolute(val)) {
+        throw new Error(`--data-root must be an absolute path: ${val}`);
+      }
+      const normalizedDataRoot = resolve(val);
+      const relativePath = relative(workspaceRoot, normalizedDataRoot);
+      const isContainedChild = relativePath !== '' &&
+        relativePath !== '..' &&
+        !relativePath.startsWith(`..${sep}`) &&
+        !isAbsolute(relativePath);
+      if (!isContainedChild) {
+        throw new Error(`--data-root must be a contained child path of ${workspaceRoot}: ${val}`);
+      }
+      dataRoot = normalizedDataRoot;
+    } else {
+      throw new Error(`unknown argument: ${arg}`);
+    }
   }
 
-  const args = process.argv.slice(2);
-  const modeArg = args.find((a) => a.startsWith('--mode='))?.split('=')[1] as 'daily_sync' | 'window_poll' | 'auto' | undefined;
-  const dateArg = args.find((a) => a.startsWith('--date='))?.split('=')[1];
-  const dataRootArg = args.find((a) => a.startsWith('--data-root='))?.split('=')[1];
+  return { mode, date, dataRoot };
+}
 
-  const dataRoot = dataRootArg ? resolve(dataRootArg) : resolve(process.cwd(), 'apps/api/data');
-  const ledger = new ApiFootballUsageLedger({ dataRoot });
-  const client = new ApiFootballClient({ apiKey, ledger, dataRoot });
+function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/u.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year!, month! - 1, day!));
+  return parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month! - 1 &&
+    parsed.getUTCDate() === day;
+}
 
-  const initialQuota = await ledger.getState();
+export async function runCaptureApiFootballCli(
+  options: CaptureCliOptions = {}
+): Promise<ApiFootballIngestionRunResult> {
+  const log = options.logFn || console.log;
+  const parsed = parseCaptureArgs(options.args || process.argv.slice(2), options.cwd);
+  const apiKey = (options.apiKey !== undefined ? options.apiKey : process.env.API_FOOTBALL_KEY)?.trim();
 
-  console.log(`=======================================================`);
-  console.log(`⚽ API-FOOTBALL INGESTION (${modeArg || 'auto'})`);
-  console.log(`=======================================================`);
-  console.log(`- API Key: Configured`);
-  console.log(`- Quota used today: ${initialQuota.dailyUsage.reserved}/${initialQuota.dailyUsage.limit}`);
-  if (dateArg) console.log(`- Target date: ${dateArg}`);
-  console.log(`-------------------------------------------------------`);
+  if (!apiKey) {
+    throw new Error('Missing API_FOOTBALL_KEY environment variable. Configure API_FOOTBALL_KEY in .env before running.');
+  }
 
-  const result = await runApiFootballIngestionJob({
-    dataRoot,
-    mode: modeArg || 'auto',
-    ...(dateArg ? { date: dateArg } : {}),
-    registry: API_FOOTBALL_COMPETITION_REGISTRY,
-    client
+  const effectiveDataRoot = parsed.dataRoot;
+  const registry = options.registry || API_FOOTBALL_COMPETITION_REGISTRY;
+  const ledger = options.client?.ledger || new ApiFootballUsageLedger({ dataRoot: effectiveDataRoot });
+  const client = options.client || new ApiFootballClient({
+    apiKey,
+    ledger,
+    dataRoot: effectiveDataRoot,
+    ...(options.now ? { now: options.now } : {})
   });
 
-  const finalQuota = await ledger.getState();
+  const initialQuota = await ledger.getState(options.now ? options.now() : undefined);
 
-  console.log(`\n=======================================================`);
-  console.log(`📊 INGESTION RESULT:`);
-  console.log(`=======================================================`);
-  console.log(`- Status: ${result.status}`);
-  console.log(`- Mode: ${result.mode}`);
-  console.log(`- Run ID: ${result.runId}`);
-  console.log(`- Matches processed: ${result.matchesProcessed}`);
-  console.log(`- Matches completed (FT): ${result.matchesCompleted}`);
-  console.log(`- Quota used today: ${finalQuota.dailyUsage.reserved}/${finalQuota.dailyUsage.limit}`);
+  log(`=======================================================`);
+  log(`⚽ API-FOOTBALL INGESTION (${parsed.mode || 'auto'})`);
+  log(`=======================================================`);
+  log(`- API Key: Configured`);
+  log(`- Quota used today: ${initialQuota.dailyUsage.reserved}/${initialQuota.dailyUsage.limit}`);
+  if (parsed.date) log(`- Target date: ${parsed.date}`);
+  log(`-------------------------------------------------------`);
+
+  const result = await runApiFootballIngestionJob({
+    dataRoot: effectiveDataRoot,
+    mode: parsed.mode || 'auto',
+    ...(parsed.date ? { date: parsed.date } : {}),
+    registry,
+    client,
+    ...(options.now ? { now: options.now } : {})
+  });
+
+  const finalQuota = await ledger.getState(options.now ? options.now() : undefined);
+
+  log(`\n=======================================================`);
+  log(`📊 INGESTION RESULT:`);
+  log(`=======================================================`);
+  log(`- Status: ${result.status}`);
+  log(`- Mode: ${result.mode}`);
+  log(`- Run ID: ${result.runId}`);
+  log(`- Matches processed: ${result.matchesProcessed}`);
+  log(`- Matches completed (FT): ${result.matchesCompleted}`);
+  log(`- Quota used today: ${finalQuota.dailyUsage.reserved}/${finalQuota.dailyUsage.limit}`);
 
   if (result.concludingWindows && result.concludingWindows.length > 0) {
-    console.log(`- Active concluding windows: ${result.concludingWindows.length} matches`);
+    log(`- Active concluding windows: ${result.concludingWindows.length} matches`);
   }
 
   if (result.error) {
-    console.error(`- Error: ${result.error}`);
+    log(`- Error: ${result.error}`);
   }
+
+  return result;
 }
 
-main().catch((err) => {
-  console.error('Ingestion failed:', err);
-  process.exit(1);
-});
+// Direct invocation check
+if (process.argv[1] && (
+  process.argv[1].endsWith('capture-api-football.ts') ||
+  process.argv[1].endsWith('capture-api-football.js')
+)) {
+  runCaptureApiFootballCli().catch((err) => {
+    console.error('\nIngestion failed with error:', err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  });
+}

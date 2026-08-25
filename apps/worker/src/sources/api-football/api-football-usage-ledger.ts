@@ -18,12 +18,22 @@ export interface ApiFootballLastReportedHeader {
   observedAt: string | null;
 }
 
+export interface ApiFootballMatchPollState {
+  lastPolledAt?: string;
+  lastReportedStatus?: string;
+  nextDueAt?: string | null;
+  sloEligibleAt?: string;
+  deferralReason?: 'quota' | 'provider_error' | 'unknown_fixture' | 'coverage';
+}
+
 export interface ApiFootballUsageState {
   schemaVersion: typeof API_FOOTBALL_USAGE_SCHEMA_VERSION;
   dayKey: string;
   dailyUsage: ApiFootballDailyUsage;
   rollingRequests: string[];
   lastReportedHeader: ApiFootballLastReportedHeader;
+  lastSuccessfulDailySyncDate?: string | null;
+  matchPollStates?: Record<string, ApiFootballMatchPollState>;
   updatedAt: string;
 }
 
@@ -136,7 +146,7 @@ export class ApiFootballUsageLedger {
         const todayKey = now.toISOString().slice(0, 10);
 
         if (state.dayKey !== todayKey) {
-          state = this.createInitialState(todayKey, now);
+          state = this.createInitialState(todayKey, now, state);
         }
 
         const currNowMs = now.getTime();
@@ -189,7 +199,7 @@ export class ApiFootballUsageLedger {
       const todayKey = now.toISOString().slice(0, 10);
 
       if (state.dayKey !== todayKey) {
-        state = this.createInitialState(todayKey, now);
+        state = this.createInitialState(todayKey, now, state);
       }
 
       const limitStr =
@@ -233,6 +243,82 @@ export class ApiFootballUsageLedger {
         state.dailyUsage.reserved = Math.max(state.dailyUsage.reserved, state.dailyUsage.confirmed);
       }
 
+      state.updatedAt = now.toISOString();
+      await this.writeState(state);
+      return state;
+    });
+  }
+
+  public async recordSuccessfulDailySync(
+    date: string,
+    now = this.now()
+  ): Promise<ApiFootballUsageState> {
+    if (!isExactCalendarDate(date)) {
+      throw new Error(`Invalid daily sync date format: ${date}`);
+    }
+    return this.withLock(async () => {
+      let state = await this.readState(now);
+      const todayKey = now.toISOString().slice(0, 10);
+      if (state.dayKey !== todayKey) {
+        state = this.createInitialState(todayKey, now, state);
+      }
+      state.lastSuccessfulDailySyncDate = date;
+      state.updatedAt = now.toISOString();
+      await this.writeState(state);
+      return state;
+    });
+  }
+
+  public async recordMatchPoll(
+    matchId: string,
+    pollInfo: {
+      polledAt?: string | null;
+      lastReportedStatus?: string;
+      nextDueAt?: string | null;
+      sloEligibleAt?: string;
+      deferralReason?: ApiFootballMatchPollState['deferralReason'];
+    } = {},
+    now = this.now()
+  ): Promise<ApiFootballUsageState> {
+    if (
+      typeof matchId !== 'string' ||
+      !/^[A-Za-z0-9_-]+$/u.test(matchId) ||
+      ['__proto__', 'constructor', 'prototype'].includes(matchId)
+    ) {
+      throw new Error('Match ID must contain only safe canonical ID characters');
+    }
+    for (const timestamp of [pollInfo.polledAt, pollInfo.nextDueAt, pollInfo.sloEligibleAt]) {
+      if (timestamp !== undefined && timestamp !== null && Number.isNaN(Date.parse(timestamp))) {
+        throw new Error(`Invalid match poll timestamp: ${timestamp}`);
+      }
+    }
+    if (pollInfo.lastReportedStatus !== undefined && pollInfo.lastReportedStatus.trim() === '') {
+      throw new Error('Reported status must be non-empty when provided');
+    }
+    return this.withLock(async () => {
+      let state = await this.readState(now);
+      const todayKey = now.toISOString().slice(0, 10);
+      if (state.dayKey !== todayKey) {
+        state = this.createInitialState(todayKey, now, state);
+      }
+      if (!state.matchPollStates) {
+        state.matchPollStates = {};
+      }
+      const existing = state.matchPollStates[matchId] ?? {};
+      const nextPollState: ApiFootballMatchPollState = {
+        ...existing,
+        ...(pollInfo.polledAt === null
+          ? {}
+          : { lastPolledAt: pollInfo.polledAt ?? existing.lastPolledAt ?? now.toISOString() }),
+        ...(pollInfo.lastReportedStatus !== undefined ? { lastReportedStatus: pollInfo.lastReportedStatus } : {}),
+        ...(pollInfo.nextDueAt !== undefined ? { nextDueAt: pollInfo.nextDueAt } : {}),
+        ...(pollInfo.sloEligibleAt !== undefined ? { sloEligibleAt: pollInfo.sloEligibleAt } : {}),
+        ...(pollInfo.deferralReason !== undefined ? { deferralReason: pollInfo.deferralReason } : {})
+      };
+      if (pollInfo.deferralReason === undefined) {
+        delete nextPollState.deferralReason;
+      }
+      state.matchPollStates[matchId] = nextPollState;
       state.updatedAt = now.toISOString();
       await this.writeState(state);
       return state;
@@ -346,7 +432,7 @@ export class ApiFootballUsageLedger {
     try {
       const content = await readFile(this.storagePath, 'utf8');
       const parsed = parseUsageState(content);
-      return parsed.dayKey === todayKey ? parsed : this.createInitialState(todayKey, now);
+      return parsed.dayKey === todayKey ? parsed : this.createInitialState(todayKey, now, parsed);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         const backupPath = `${this.storagePath}.backup`;
@@ -355,7 +441,7 @@ export class ApiFootballUsageLedger {
           await rename(backupPath, this.storagePath);
           return backupState.dayKey === todayKey
             ? backupState
-            : this.createInitialState(todayKey, now);
+            : this.createInitialState(todayKey, now, backupState);
         } catch (backupError) {
           if ((backupError as NodeJS.ErrnoException).code === 'ENOENT') {
             return this.createInitialState(todayKey, now);
@@ -372,7 +458,36 @@ export class ApiFootballUsageLedger {
     }
   }
 
-  private createInitialState(dayKey: string, now: Date): ApiFootballUsageState {
+  private createInitialState(
+    dayKey: string,
+    now: Date,
+    previousState?: Partial<ApiFootballUsageState>
+  ): ApiFootballUsageState {
+    const lastSuccessfulDailySyncDate =
+      previousState?.lastSuccessfulDailySyncDate !== undefined
+        ? previousState.lastSuccessfulDailySyncDate
+        : null;
+
+    const matchPollStates: Record<string, ApiFootballMatchPollState> = {};
+    if (previousState?.matchPollStates && typeof previousState.matchPollStates === 'object') {
+      const cutoffMs = now.getTime() - 24 * 60 * 60 * 1000;
+      for (const [matchId, poll] of Object.entries(previousState.matchPollStates)) {
+        if (poll && typeof poll === 'object') {
+          const retentionAnchor = poll.lastPolledAt ?? poll.nextDueAt;
+          const polledMs = retentionAnchor ? Date.parse(retentionAnchor) : NaN;
+          if (!Number.isNaN(polledMs) && polledMs >= cutoffMs) {
+            matchPollStates[matchId] = {
+              ...(poll.lastPolledAt !== undefined ? { lastPolledAt: poll.lastPolledAt } : {}),
+              ...(poll.lastReportedStatus !== undefined ? { lastReportedStatus: poll.lastReportedStatus } : {}),
+              ...(poll.nextDueAt !== undefined ? { nextDueAt: poll.nextDueAt } : {}),
+              ...(poll.sloEligibleAt !== undefined ? { sloEligibleAt: poll.sloEligibleAt } : {}),
+              ...(poll.deferralReason !== undefined ? { deferralReason: poll.deferralReason } : {})
+            };
+          }
+        }
+      }
+    }
+
     return {
       schemaVersion: API_FOOTBALL_USAGE_SCHEMA_VERSION,
       dayKey,
@@ -388,6 +503,8 @@ export class ApiFootballUsageLedger {
         resetsInSeconds: null,
         observedAt: null
       },
+      lastSuccessfulDailySyncDate,
+      matchPollStates,
       updatedAt: now.toISOString()
     };
   }
@@ -440,24 +557,80 @@ function parseUsageState(content: string): ApiFootballUsageState {
   const isNullableNumber = (value: unknown): value is number | null =>
     value === null || (typeof value === 'number' && Number.isFinite(value));
 
+  const isValidDailySyncDate =
+    parsed.lastSuccessfulDailySyncDate === undefined ||
+    parsed.lastSuccessfulDailySyncDate === null ||
+    (typeof parsed.lastSuccessfulDailySyncDate === 'string' &&
+      isExactCalendarDate(parsed.lastSuccessfulDailySyncDate));
+
+  const isValidMatchPollStates =
+    parsed.matchPollStates === undefined ||
+    (parsed.matchPollStates !== null &&
+      typeof parsed.matchPollStates === 'object' &&
+      !Array.isArray(parsed.matchPollStates) &&
+      Object.values(parsed.matchPollStates).every(
+        (poll) =>
+          poll !== null &&
+          typeof poll === 'object' &&
+          ((typeof (poll as ApiFootballMatchPollState).lastPolledAt === 'string' &&
+            !Number.isNaN(Date.parse((poll as ApiFootballMatchPollState).lastPolledAt!))) ||
+            (typeof (poll as ApiFootballMatchPollState).nextDueAt === 'string' &&
+              !Number.isNaN(Date.parse((poll as ApiFootballMatchPollState).nextDueAt!)))) &&
+          ((poll as ApiFootballMatchPollState).lastReportedStatus === undefined ||
+            typeof (poll as ApiFootballMatchPollState).lastReportedStatus === 'string') &&
+          ((poll as ApiFootballMatchPollState).nextDueAt === undefined ||
+            (poll as ApiFootballMatchPollState).nextDueAt === null ||
+            (typeof (poll as ApiFootballMatchPollState).nextDueAt === 'string' &&
+              !Number.isNaN(Date.parse((poll as ApiFootballMatchPollState).nextDueAt!)))) &&
+          ((poll as ApiFootballMatchPollState).sloEligibleAt === undefined ||
+            (typeof (poll as ApiFootballMatchPollState).sloEligibleAt === 'string' &&
+              !Number.isNaN(Date.parse((poll as ApiFootballMatchPollState).sloEligibleAt!)))) &&
+          ((poll as ApiFootballMatchPollState).deferralReason === undefined ||
+            ['quota', 'provider_error', 'unknown_fixture', 'coverage'].includes(
+              (poll as ApiFootballMatchPollState).deferralReason!
+            ))
+      ));
+
   if (
     parsed.schemaVersion !== API_FOOTBALL_USAGE_SCHEMA_VERSION ||
-    typeof parsed.dayKey !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(parsed.dayKey) ||
+    typeof parsed.dayKey !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/u.test(parsed.dayKey) ||
     !dailyUsage ||
     !isNonNegativeInteger(dailyUsage.reserved) ||
     !isNonNegativeInteger(dailyUsage.confirmed) ||
     !isNonNegativeInteger(dailyUsage.limit) ||
     !Array.isArray(parsed.rollingRequests) ||
-    !parsed.rollingRequests.every((value) => typeof value === 'string' && !Number.isNaN(Date.parse(value))) ||
+    !parsed.rollingRequests.every(
+      (value) => typeof value === 'string' && !Number.isNaN(Date.parse(value))
+    ) ||
     !header ||
     !isNullableNumber(header.limit) ||
     !isNullableNumber(header.remaining) ||
     !isNullableNumber(header.resetsInSeconds ?? null) ||
-    !(header.observedAt === null || (typeof header.observedAt === 'string' && !Number.isNaN(Date.parse(header.observedAt)))) ||
-    typeof parsed.updatedAt !== 'string' || Number.isNaN(Date.parse(parsed.updatedAt))
+    !(
+      header.observedAt === null ||
+      (typeof header.observedAt === 'string' && !Number.isNaN(Date.parse(header.observedAt)))
+    ) ||
+    !isValidDailySyncDate ||
+    !isValidMatchPollStates ||
+    typeof parsed.updatedAt !== 'string' ||
+    Number.isNaN(Date.parse(parsed.updatedAt))
   ) {
     throw new Error('Invalid API-Football usage ledger schema');
   }
 
-  return parsed as ApiFootballUsageState;
+  return {
+    ...parsed,
+    lastSuccessfulDailySyncDate: parsed.lastSuccessfulDailySyncDate ?? null,
+    matchPollStates: parsed.matchPollStates ?? {}
+  } as ApiFootballUsageState;
+}
+
+function isExactCalendarDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year!, month! - 1, day!));
+  return parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month! - 1 &&
+    parsed.getUTCDate() === day;
 }

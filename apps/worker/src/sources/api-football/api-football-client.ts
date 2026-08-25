@@ -163,9 +163,17 @@ export class ApiFootballClient {
 
   public async fetchFixturesByDate(
     date: string,
-    options: { emergency?: boolean } = {}
+    options: { emergency?: boolean; timezone?: string } = {}
   ): Promise<ApiFootballApiResponse<ApiFootballFixtureItem>> {
-    return this.executeGet<ApiFootballFixtureItem>('/fixtures', { date }, options);
+    const params: Record<string, string> = { date };
+    if (options.timezone) {
+      params.timezone = options.timezone;
+    }
+    return this.executeGet<ApiFootballFixtureItem>(
+      '/fixtures',
+      params,
+      options.emergency === undefined ? {} : { emergency: options.emergency }
+    );
   }
 
   public async fetchFixturesByIds(

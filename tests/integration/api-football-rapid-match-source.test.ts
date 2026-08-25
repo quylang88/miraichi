@@ -200,13 +200,13 @@ describe('API-Football Rapid Match Source End-to-End Integration', () => {
       expect(dailySyncResult.status).toBe('synced');
       expect(dailySyncResult.matchesProcessed).toBe(1);
 
-      // 3. Fast Poll when match is finishing at 16:35 UTC (95 min into 15:00 kickoff)
+      // 3. Fast Poll when match is finishing at 16:45 UTC (105 min into 15:00 kickoff)
       const pollResult = await runApiFootballIngestionJob({
         dataRoot: tempDir,
         mode: 'window_poll',
         client,
         registry: TEST_COMPETITIONS,
-        now: () => new Date('2026-08-25T16:35:00.000Z')
+        now: () => new Date('2026-08-25T16:45:00.000Z')
       });
 
       expect(pollResult.status).toBe('published');

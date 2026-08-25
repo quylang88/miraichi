@@ -23,8 +23,9 @@ describe('api-football-source-registry', () => {
     expect(API_FOOTBALL_QUOTA_CONFIG.dailyLimit).toBe(100);
     expect(API_FOOTBALL_QUOTA_CONFIG.hardCeiling).toBe(85);
     expect(API_FOOTBALL_QUOTA_CONFIG.reserveBudget).toBe(15);
-    expect(API_FOOTBALL_QUOTA_CONFIG.concludingWindowStartMinutes).toBe(88);
-    expect(API_FOOTBALL_QUOTA_CONFIG.concludingWindowEndMinutes).toBe(115);
+    expect(API_FOOTBALL_QUOTA_CONFIG.ownerTimezone).toBe('Asia/Tokyo');
+    expect(API_FOOTBALL_QUOTA_CONFIG.concludingWindowStartMinutes).toBe(100);
+    expect(API_FOOTBALL_QUOTA_CONFIG.concludingWindowEndMinutes).toBe(120);
     expect(API_FOOTBALL_QUOTA_CONFIG.pollingIntervalSeconds).toBe(150);
   });
 

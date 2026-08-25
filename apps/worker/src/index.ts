@@ -2,12 +2,14 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   API_FOOTBALL_COMPETITION_REGISTRY,
-  API_FOOTBALL_QUOTA_CONFIG
+  API_FOOTBALL_QUOTA_CONFIG,
+  type ApiFootballCompetitionEntry
 } from '@miraichi/config';
 import {
   runApiFootballIngestionJob,
   type ApiFootballIngestionRunResult
 } from './jobs/api-football-ingestion-job.js';
+import { ApiFootballClient } from './sources/api-football/api-football-client.js';
 
 export const API_FOOTBALL_SCHEDULE_INTERVAL_MS = API_FOOTBALL_QUOTA_CONFIG.pollingIntervalSeconds * 1000;
 
@@ -54,23 +56,48 @@ function messageFor(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function defaultDataRoot(): string {
+export function defaultDataRoot(): string {
   const workspaceRoot = fileURLToPath(new URL('../../../', import.meta.url));
   return path.resolve(workspaceRoot, 'apps/api/data');
 }
 
-function startWorker(): void {
-  console.log(`[Worker Daemon] Starting API-Football smart-window ingestion scheduler (${API_FOOTBALL_SCHEDULE_INTERVAL_MS / 1000}s interval)...`);
-  startApiFootballSchedule({
+export interface WorkerOptions {
+  dataRoot?: string;
+  client?: ApiFootballClient;
+  registry?: readonly ApiFootballCompetitionEntry[];
+  setIntervalFn?: typeof setInterval;
+  clearIntervalFn?: typeof clearInterval;
+  log?: (message: string) => void;
+  now?: () => Date;
+}
+
+export function startWorker(options: WorkerOptions = {}): {
+  intervalMilliseconds: number;
+  stop: () => void;
+} {
+  const dataRoot = options.dataRoot || defaultDataRoot();
+  const client = options.client || new ApiFootballClient({
+    dataRoot,
+    ...(options.now ? { now: options.now } : {})
+  });
+  const registry = options.registry || API_FOOTBALL_COMPETITION_REGISTRY;
+  const setIntervalFn = options.setIntervalFn || setInterval;
+  const clearIntervalFn = options.clearIntervalFn || clearInterval;
+  const log = options.log || console.error;
+  const now = options.now || (() => new Date());
+
+  log(`[Worker Daemon] Starting API-Football smart-window ingestion scheduler (${API_FOOTBALL_SCHEDULE_INTERVAL_MS / 1000}s interval)...`);
+  return startApiFootballSchedule({
     runJob: () => runApiFootballIngestionJob({
-      dataRoot: defaultDataRoot(),
+      dataRoot,
       mode: 'auto',
-      registry: API_FOOTBALL_COMPETITION_REGISTRY,
-      now: () => new Date()
+      registry,
+      client,
+      now
     }),
-    setIntervalFn: setInterval,
-    clearIntervalFn: clearInterval,
-    log: console.error
+    setIntervalFn,
+    clearIntervalFn,
+    log
   });
 }
 

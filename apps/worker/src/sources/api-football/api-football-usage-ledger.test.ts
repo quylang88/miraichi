@@ -351,4 +351,112 @@ describe('ApiFootballUsageLedger', () => {
       await rm(tempDir, { recursive: true, force: true });
     }
   });
+
+  it('records and persists successful daily sync date', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ledger-daily-sync-'));
+    const storagePath = join(tempDir, 'usage-ledger.json');
+
+    try {
+      const now = new Date('2026-08-25T12:00:00.000Z');
+      const ledger = new ApiFootballUsageLedger({ storagePath, now: () => now });
+
+      const state0 = await ledger.getState();
+      expect(state0.lastSuccessfulDailySyncDate).toBeNull();
+      expect(state0.matchPollStates).toEqual({});
+
+      // Record daily sync
+      const state1 = await ledger.recordSuccessfulDailySync('2026-08-25');
+      expect(state1.lastSuccessfulDailySyncDate).toBe('2026-08-25');
+
+      // Separate instance reading persisted file
+      const ledger2 = new ApiFootballUsageLedger({ storagePath, now: () => now });
+      const state2 = await ledger2.getState();
+      expect(state2.lastSuccessfulDailySyncDate).toBe('2026-08-25');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects impossible sync dates and unsafe poll keys before corrupting the ledger', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ledger-input-validation-'));
+    const storagePath = join(tempDir, 'usage-ledger.json');
+
+    try {
+      const ledger = new ApiFootballUsageLedger({ storagePath });
+      await expect(ledger.recordSuccessfulDailySync('2026-02-30')).rejects.toThrow(
+        /invalid daily sync date/i
+      );
+      await expect(ledger.recordMatchPoll('__proto__', {
+        polledAt: 'not-a-time'
+      })).rejects.toThrow(/safe canonical id/i);
+      await expect(ledger.recordMatchPoll('match-safe', {
+        nextDueAt: 'not-a-time'
+      })).rejects.toThrow(/invalid match poll timestamp/i);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('records match poll timestamp and status and preserves them across day rotation', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ledger-match-poll-'));
+    const storagePath = join(tempDir, 'usage-ledger.json');
+
+    try {
+      let currentTime = new Date('2026-08-25T23:50:00.000Z');
+      const ledger = new ApiFootballUsageLedger({ storagePath, now: () => currentTime });
+
+      await ledger.recordSuccessfulDailySync('2026-08-25');
+      await ledger.recordMatchPoll('match-123', {
+        polledAt: '2026-08-25T23:50:00.000Z',
+        lastReportedStatus: '2H',
+        nextDueAt: '2026-08-25T23:52:30.000Z',
+        sloEligibleAt: '2026-08-25T23:50:00.000Z'
+      });
+
+      const state1 = await ledger.getState();
+      expect(state1.matchPollStates?.['match-123']).toEqual({
+        lastPolledAt: '2026-08-25T23:50:00.000Z',
+        lastReportedStatus: '2H',
+        nextDueAt: '2026-08-25T23:52:30.000Z',
+        sloEligibleAt: '2026-08-25T23:50:00.000Z'
+      });
+
+      // Day rotates to 2026-08-26
+      currentTime = new Date('2026-08-26T00:10:00.000Z');
+      const state2 = await ledger.getState();
+      expect(state2.dayKey).toBe('2026-08-26');
+      expect(state2.lastSuccessfulDailySyncDate).toBe('2026-08-25');
+      expect(state2.matchPollStates?.['match-123']).toEqual({
+        lastPolledAt: '2026-08-25T23:50:00.000Z',
+        lastReportedStatus: '2H',
+        nextDueAt: '2026-08-25T23:52:30.000Z',
+        sloEligibleAt: '2026-08-25T23:50:00.000Z'
+      });
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects invalid schema with corrupt sync date or poll states', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ledger-schema-invalid-'));
+    const storagePath = join(tempDir, 'usage-ledger.json');
+
+    try {
+      const invalidJson = JSON.stringify({
+        schemaVersion: API_FOOTBALL_USAGE_SCHEMA_VERSION,
+        dayKey: '2026-08-25',
+        dailyUsage: { reserved: 0, confirmed: 0, limit: 85 },
+        rollingRequests: [],
+        lastReportedHeader: { limit: null, remaining: null, resetsInSeconds: null, observedAt: null },
+        lastSuccessfulDailySyncDate: 'not-a-date',
+        updatedAt: '2026-08-25T12:00:00.000Z'
+      });
+      await writeFile(storagePath, invalidJson, 'utf8');
+
+      const ledger = new ApiFootballUsageLedger({ storagePath });
+      await expect(ledger.getState()).rejects.toThrow('api_football_usage_ledger_invalid');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
 });

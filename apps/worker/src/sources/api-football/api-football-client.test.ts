@@ -158,6 +158,34 @@ describe('ApiFootballClient', () => {
     }
   });
 
+  it('sends the configured owner timezone with a daily fixtures request', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-client-date-timezone-'));
+    const ledgerPath = join(tempDir, 'usage-ledger.json');
+
+    try {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({ ...MOCK_RESPONSE, parameters: { date: '2026-08-25' } })
+      });
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        ledger: new ApiFootballUsageLedger({ storagePath: ledgerPath })
+      });
+
+      await client.fetchFixturesByDate('2026-08-25', { timezone: 'Asia/Tokyo' });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://v3.football.api-sports.io/fixtures?date=2026-08-25&timezone=Asia%2FTokyo',
+        expect.anything()
+      );
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it('fetches fixtures in batch by ids', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-client-batch-'));
     const ledgerPath = join(tempDir, 'usage-ledger.json');

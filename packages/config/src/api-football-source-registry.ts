@@ -33,6 +33,7 @@ export interface ApiFootballQuotaConfig {
   dailyLimit: number;
   hardCeiling: number;
   reserveBudget: number;
+  ownerTimezone: string;
   concludingWindowStartMinutes: number;
   concludingWindowEndMinutes: number;
   pollingIntervalSeconds: number;
@@ -42,8 +43,9 @@ export const API_FOOTBALL_QUOTA_CONFIG: ApiFootballQuotaConfig = Object.freeze({
   dailyLimit: 100,
   hardCeiling: 85,
   reserveBudget: 15,
-  concludingWindowStartMinutes: 88,
-  concludingWindowEndMinutes: 115,
+  ownerTimezone: 'Asia/Tokyo',
+  concludingWindowStartMinutes: 100,
+  concludingWindowEndMinutes: 120,
   pollingIntervalSeconds: 150
 });
 
