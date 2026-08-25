@@ -89,6 +89,81 @@ function isPrimaryTabId(value: string): value is ProductionNavigationTabId {
   return getSafeNavigationTabId(value) === value;
 }
 
+function updateScreenContent(id: string, html: string): void {
+  const existing = document.getElementById(id);
+  if (!existing) return;
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  const newEl = temp.firstElementChild;
+  if (newEl) {
+    existing.innerHTML = newEl.innerHTML;
+  }
+}
+
+function updateTodayScreenView(): void {
+  const settings = settingsService.getSettings();
+  const translate = createTranslator(settings.locale);
+  updateScreenContent('screen-today', renderTodayScreen({
+    activeTabId: isPrimaryTabId(currentScreenName) ? currentScreenName : 'today',
+    translate,
+    bets: betRecordsState,
+    bankroll: bankrollState,
+    discipline: disciplineConfigState,
+    report: todayReportState
+  }));
+}
+
+function updateMatchesScreenView(): void {
+  const settings = settingsService.getSettings();
+  const translate = createTranslator(settings.locale);
+  updateScreenContent('screen-matches', renderMatchesScreen({
+    activeTabId: isPrimaryTabId(currentScreenName) ? currentScreenName : 'today',
+    translate,
+    locale: settings.locale,
+    matchFeed: matchFeedState,
+    timezone: settings.timezone,
+    filters: activeFilters,
+    searchQuery: currentSearchQuery,
+    isFilterPanelOpen
+  }));
+  const searchInput = appRoot.querySelector('#match-search') as HTMLInputElement | null;
+  if (searchInput && searchInput.value !== currentSearchQuery) {
+    searchInput.value = currentSearchQuery;
+  }
+}
+
+function updateBetsScreenView(): void {
+  const settings = settingsService.getSettings();
+  const translate = createTranslator(settings.locale);
+  updateScreenContent('screen-bets', renderBetsScreen({
+    activeTabId: isPrimaryTabId(currentScreenName) ? currentScreenName : 'today',
+    translate,
+    state: betRecordsState,
+    filter: betRecordFilter,
+    bankroll: bankrollState
+  }));
+}
+
+function updateBankrollScreenView(): void {
+  const settings = settingsService.getSettings();
+  const translate = createTranslator(settings.locale);
+  const resolvedTimeZone = settings.timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : settings.timezone;
+  updateScreenContent('screen-bankroll', renderBankrollScreen({
+    activeTabId: isPrimaryTabId(currentScreenName) ? currentScreenName : 'today',
+    translate,
+    locale: settings.locale,
+    timeZone: resolvedTimeZone,
+    state: bankrollState,
+    view: bankrollView,
+    disciplineConfigState,
+    reportState: bankrollReportState,
+    reportPeriod,
+    customCalendarMonth,
+    customRangeStart,
+    customRangeEnd
+  }));
+}
+
 function render(activeTabId: string, fullRebuild = false): void {
   const safeActiveTabId = getSafeNavigationTabId(activeTabId);
   currentScreenName = safeActiveTabId;
@@ -106,7 +181,6 @@ function render(activeTabId: string, fullRebuild = false): void {
   const settings = settingsService.getSettings();
   const translate = createTranslator(settings.locale);
   document.documentElement.lang = settings.locale;
-  const resolvedTimeZone = settings.timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : settings.timezone;
 
   const shellEl = appRoot.querySelector('.app-shell');
   if (!shellEl || fullRebuild) {
@@ -134,34 +208,21 @@ function render(activeTabId: string, fullRebuild = false): void {
     appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settings.locale);
     appRoot.querySelector('.app-shell')?.setAttribute('data-density', settings.displayDensity);
   } else {
-    const updateScreen = (id: string, html: string) => {
-      const existing = document.getElementById(id);
-      if (!existing) return;
-      const temp = document.createElement('div');
-      temp.innerHTML = html;
-      const newEl = temp.firstElementChild;
-      if (newEl) {
-        existing.replaceWith(newEl);
-      }
-    };
-
-    updateScreen('screen-today', renderTodayScreen({ activeTabId: safeActiveTabId, translate, bets: betRecordsState, bankroll: bankrollState, discipline: disciplineConfigState, report: todayReportState }));
-    updateScreen('screen-matches', renderMatchesScreen({ activeTabId: safeActiveTabId, translate, locale: settings.locale, matchFeed: matchFeedState, timezone: settings.timezone, filters: activeFilters, searchQuery: currentSearchQuery, isFilterPanelOpen }));
-    updateScreen('screen-bets', renderBetsScreen({ activeTabId: safeActiveTabId, translate, state: betRecordsState, filter: betRecordFilter, bankroll: bankrollState }));
-    updateScreen('screen-bankroll', renderBankrollScreen({ activeTabId: safeActiveTabId, translate, locale: settings.locale, timeZone: resolvedTimeZone, state: bankrollState, view: bankrollView, disciplineConfigState, reportState: bankrollReportState, reportPeriod, customCalendarMonth, customRangeStart, customRangeEnd }));
-
-    setActiveScreen(safeActiveTabId);
+    updateTodayScreenView();
+    updateMatchesScreenView();
+    updateBetsScreenView();
+    updateBankrollScreenView();
   }
 
   // Restore filter values and apply
   const searchInput = appRoot.querySelector('#match-search') as HTMLInputElement | null;
-  if (searchInput) {
+  if (searchInput && searchInput.value !== currentSearchQuery) {
     searchInput.value = currentSearchQuery;
   }
   // Restore focus state
   if (activeElementId) {
     const elementToFocus = document.getElementById(activeElementId);
-    if (elementToFocus) {
+    if (elementToFocus && document.activeElement !== elementToFocus) {
       elementToFocus.focus();
       if (elementToFocus instanceof HTMLInputElement && selectionStart !== null && selectionEnd !== null) {
         elementToFocus.setSelectionRange(selectionStart, selectionEnd);
@@ -411,12 +472,14 @@ function toggleMatchCard(button: HTMLElement): void {
 
 async function refreshBetRecords(): Promise<void> {
   betRecordsState = await loadBetRecordsViewState();
-  render(currentScreenName);
+  updateBetsScreenView();
+  updateTodayScreenView();
 }
 
 async function refreshBankroll(selectedAccountId?: string): Promise<void> {
   bankrollState = await loadBankrollViewState(fetch, selectedAccountId);
-  render(currentScreenName);
+  updateBankrollScreenView();
+  updateTodayScreenView();
 }
 
 function errorCode(error: unknown): string {
@@ -432,12 +495,14 @@ async function refreshReports(customParams?: { period: BetReportPeriod; startDat
     const state: BetReportViewState = { status: 'unavailable', code: 'discipline_config_required' };
     bankrollReportState = state;
     todayReportState = state;
-    render(currentScreenName);
+    updateBankrollScreenView();
+    updateTodayScreenView();
     return;
   }
   bankrollReportState = { status: 'loading' };
   todayReportState = { status: 'loading' };
-  render(currentScreenName);
+  updateBankrollScreenView();
+  updateTodayScreenView();
   const accountId = bankrollState.status === 'ready' ? bankrollState.selectedAccountId : undefined;
   const withAccount = accountId ? { accountId } : {};
   const periodToLoad = customParams?.period ?? reportPeriod;
@@ -460,12 +525,14 @@ async function refreshReports(customParams?: { period: BetReportPeriod; startDat
   todayReportState = todayResult.status === 'fulfilled'
     ? { status: 'ready', report: todayResult.value }
     : { status: 'unavailable', code: errorCode(todayResult.reason) };
-  render(currentScreenName);
+  updateBankrollScreenView();
+  updateTodayScreenView();
 }
 
 async function refreshDisciplineConfig(): Promise<void> {
   disciplineConfigState = { status: 'loading' };
-  render(currentScreenName);
+  updateBankrollScreenView();
+  updateTodayScreenView();
   try {
     disciplineConfigState = { status: 'ready', config: await loadDisciplineConfig() };
   } catch (error) {
@@ -549,14 +616,14 @@ appRoot.addEventListener('click', (event) => {
   const betFilterTarget = eventTarget.closest<HTMLElement>('[data-bet-filter]');
   if (betFilterTarget?.dataset.betFilter) {
     betRecordFilter = betFilterTarget.dataset.betFilter as BetRecordFilter;
-    render(currentScreenName);
+    updateBetsScreenView();
     return;
   }
 
   const bankrollViewTarget = eventTarget.closest<HTMLElement>('[data-bankroll-view]');
   if (bankrollViewTarget?.dataset.bankrollView) {
     bankrollView = bankrollViewTarget.dataset.bankrollView as BankrollSecondaryView;
-    render(currentScreenName);
+    updateBankrollScreenView();
     if (bankrollView === 'analytics' && bankrollReportState.status !== 'ready') void refreshReports();
     return;
   }
@@ -566,7 +633,7 @@ appRoot.addEventListener('click', (event) => {
     const selected = reportPeriodTarget.dataset.reportPeriod as BetReportPeriod;
     reportPeriod = selected;
     if (selected === 'custom') {
-      render(currentScreenName);
+      updateBankrollScreenView();
     } else {
       void refreshReports();
     }
@@ -581,7 +648,7 @@ appRoot.addEventListener('click', (event) => {
     const yyyy = newDate.getFullYear();
     const mm = String(newDate.getMonth() + 1).padStart(2, '0');
     customCalendarMonth = `${yyyy}-${mm}`;
-    render(currentScreenName);
+    updateBankrollScreenView();
     return;
   }
 
@@ -610,7 +677,7 @@ appRoot.addEventListener('click', (event) => {
         customRangeEnd = null;
       }
     }
-    render(currentScreenName);
+    updateBankrollScreenView();
     return;
   }
 
@@ -768,7 +835,7 @@ appRoot.addEventListener('click', (event) => {
   const filterBtn = eventTarget.closest<HTMLElement>('.filter-button');
   if (filterBtn) {
     isFilterPanelOpen = !isFilterPanelOpen;
-    render(currentScreenName);
+    updateMatchesScreenView();
     return;
   }
 
@@ -869,7 +936,7 @@ appRoot.addEventListener('input', (event) => {
 
   if (target instanceof HTMLInputElement && target.id === 'match-search') {
     currentSearchQuery = target.value;
-    render(currentScreenName);
+    updateMatchesScreenView();
   }
 });
 
@@ -881,19 +948,19 @@ appRoot.addEventListener('change', (event) => {
   }
   if (target instanceof HTMLInputElement && target.name === 'filter-groupby') {
     activeFilters.groupby = target.value;
-    render(currentScreenName);
+    updateMatchesScreenView();
     return;
   }
 
   if (target instanceof HTMLInputElement && target.name === 'filter-type') {
     activeFilters.type = target.value;
-    render(currentScreenName);
+    updateMatchesScreenView();
     return;
   }
 
   if (target instanceof HTMLInputElement && target.name === 'filter-gender') {
     activeFilters.gender = target.value;
-    render(currentScreenName);
+    updateMatchesScreenView();
     return;
   }
 
@@ -903,7 +970,7 @@ appRoot.addEventListener('change', (event) => {
     } else {
       activeFilters.selectedLeagues.delete(target.value);
     }
-    render(currentScreenName);
+    updateMatchesScreenView();
     return;
   }
 
@@ -1117,11 +1184,11 @@ async function refreshMatchFeed(): Promise<void> {
   activeFilters.selectedLeagues.clear();
   const date = matchFeedState.date;
   matchFeedState = { status: 'loading', date };
-  render(currentScreenName);
+  updateMatchesScreenView();
   const result = await getMatchFeed(date);
   if (matchFeedState.date === date) {
     matchFeedState = result;
-    render(currentScreenName);
+    updateMatchesScreenView();
   }
 }
 

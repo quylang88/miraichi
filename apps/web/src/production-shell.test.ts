@@ -1094,12 +1094,16 @@ describe('production shell smooth tab navigation and skeleton loading', () => {
     expect(bankrollHtml).toContain('data-bankroll-state="loading"');
   });
 
-  it('wires non-destructive active screen switching in shell entry', () => {
+  it('wires non-destructive active screen switching and flicker-free sub-tab updates in shell entry', () => {
     const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
     expect(shellSource).toContain('setActiveScreen(tabId);');
     expect(shellSource).toContain('updateUrl(tabId);');
     expect(shellSource).toContain('function setActiveScreen(screenName: string): void');
-    expect(shellSource).toContain('existing.replaceWith(newEl);');
+    expect(shellSource).toContain('existing.innerHTML = newEl.innerHTML;');
+    expect(shellSource).toContain('updateBetsScreenView();');
+    expect(shellSource).toContain('updateBankrollScreenView();');
+    expect(shellSource).toContain('updateMatchesScreenView();');
+    expect(shellSource).toContain('updateTodayScreenView();');
   });
 });
 
