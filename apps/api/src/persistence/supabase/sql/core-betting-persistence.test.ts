@@ -10,7 +10,7 @@ describe('core betting persistence migration', () => {
       expect(sql).toContain(`create table if not exists miraichi_app.${table}`);
       expect(sql).toContain(`alter table miraichi_app.${table} enable row level security`);
     }
-    for (const column of ['bankroll_account_id', 'pre_bet_emotion', 'pre_bet_motivation', 'settlement_type', 'profit_loss_points', 'settled_at']) {
+    for (const column of ['bankroll_account_id', 'pre_bet_emotion', 'pre_bet_motivation', 'settlement_type', 'profit_loss_points', 'settled_at', 'week_start_day']) {
       expect(sql).toContain(column);
     }
     expect(sql).toContain("'bet_settlement_correction'");

@@ -15,7 +15,7 @@ export async function handleDiscipline(req:IncomingMessage,res:ServerResponse,de
     if(payload.ownerProfileId!==undefined)return sendError(res,400,'invalid_discipline_config','Owner profile is server-controlled.');
     if(path.endsWith('/discipline-config')&&req.method==='PUT'){
       const existing=await deps.adapter.getDisciplineConfig(deps.ownerProfileId);
-      const config:DisciplineConfig={ownerProfileId:deps.ownerProfileId,dailyStopLossPoints:payload.dailyStopLossPoints===null?null:Number(payload.dailyStopLossPoints),weeklyStopLossPoints:payload.weeklyStopLossPoints===null?null:Number(payload.weeklyStopLossPoints),bigBetThresholdPoints:payload.bigBetThresholdPoints===null?null:Number(payload.bigBetThresholdPoints),timeZone:String(payload.timeZone??''),cooldownSeconds:15,version:(existing?.version??0)+1,updatedAt:now()};
+      const config:DisciplineConfig={ownerProfileId:deps.ownerProfileId,dailyStopLossPoints:payload.dailyStopLossPoints===null?null:Number(payload.dailyStopLossPoints),weeklyStopLossPoints:payload.weeklyStopLossPoints===null?null:Number(payload.weeklyStopLossPoints),bigBetThresholdPoints:payload.bigBetThresholdPoints===null?null:Number(payload.bigBetThresholdPoints),timeZone:String(payload.timeZone??''),weekStartDay:(payload.weekStartDay as 'monday' | 'sunday') ?? existing?.weekStartDay ?? 'monday',cooldownSeconds:15,version:(existing?.version??0)+1,updatedAt:now()};
       const validation=validateDisciplineConfig(config);if(!validation.ok)return sendError(res,400,'invalid_discipline_config',validation.errors.join('; '));
       return sendJson(res,200,await deps.adapter.upsertDisciplineConfig(config));
     }

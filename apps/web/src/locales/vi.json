@@ -185,7 +185,10 @@
   "bankroll.dailyStopLoss": "Điểm dừng lỗ ngày",
   "bankroll.weeklyStopLoss": "Điểm dừng lỗ tuần",
   "bankroll.bigBetThreshold": "Ngưỡng cược lớn",
-  "bankroll.timeZone": "Múi giờ IANA",
+  "bankroll.weekStartDay": "Ngày bắt đầu tuần",
+  "bankroll.monday": "Thứ Hai",
+  "bankroll.sunday": "Chủ Nhật",
+  "bankroll.weekStartDayHint": "Mốc ngày và tuần được tính lúc 00:00 theo múi giờ Cài đặt ứng dụng.",
   "bankroll.rulesNotConfigured": "Chưa cấu hình quy tắc kỷ luật",
   "bankroll.deposit": "Nạp",
   "bankroll.withdrawal": "Rút",
@@ -219,5 +222,5 @@
   "error.discipline_ack_required": "Bạn phải xác nhận ghi đè quy tắc kỷ luật.",
   "error.validation_failed": "Kiểm tra lại biểu mẫu rồi thử lại.",
   "error.request_failed": "Yêu cầu thất bại. Hãy thử lại.",
-  "error.discipline_config_required": "Hãy cấu hình múi giờ báo cáo trước."
+  "error.discipline_config_required": "Hãy cấu hình quy tắc kỷ luật trước."
 }

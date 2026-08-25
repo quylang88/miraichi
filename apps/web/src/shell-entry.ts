@@ -844,11 +844,15 @@ appRoot.addEventListener('submit', (event) => {
       const raw = String(form.get(name) ?? '').trim();
       return raw === '' ? null : Number(raw);
     };
+    const weekStartDay = (form.get('weekStartDay') as 'monday' | 'sunday') || 'monday';
+    const activeSettings = settingsService.getSettings();
+    const resolvedTimeZone = activeSettings.timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : activeSettings.timezone;
     const input = {
       dailyStopLossPoints: nullablePoints('dailyStopLossPoints'),
       weeklyStopLossPoints: nullablePoints('weeklyStopLossPoints'),
       bigBetThresholdPoints: nullablePoints('bigBetThresholdPoints'),
-      timeZone: String(form.get('timeZone') ?? '').trim()
+      timeZone: resolvedTimeZone,
+      weekStartDay
     };
     void updateDisciplineConfig(input).then(async (config) => {
       disciplineConfigState = { status: 'ready', config };
@@ -896,6 +900,20 @@ appRoot.addEventListener('submit', (event) => {
     settingsService.setSetting('timezone', String(form.get('timezone') ?? 'local'));
     closeSheets();
     render(currentScreenName);
+    if (disciplineConfigState.status === 'ready' && disciplineConfigState.config) {
+      const activeSettings = settingsService.getSettings();
+      const resolvedTimeZone = activeSettings.timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : activeSettings.timezone;
+      void updateDisciplineConfig({
+        dailyStopLossPoints: disciplineConfigState.config.dailyStopLossPoints,
+        weeklyStopLossPoints: disciplineConfigState.config.weeklyStopLossPoints,
+        bigBetThresholdPoints: disciplineConfigState.config.bigBetThresholdPoints,
+        timeZone: resolvedTimeZone,
+        weekStartDay: disciplineConfigState.config.weekStartDay ?? 'monday'
+      }).then(async (config) => {
+        disciplineConfigState = { status: 'ready', config };
+        await refreshReports();
+      });
+    }
     return;
   }
 

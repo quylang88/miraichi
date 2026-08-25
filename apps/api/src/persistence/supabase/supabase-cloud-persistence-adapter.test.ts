@@ -63,6 +63,38 @@ describe('supabase cloud persistence adapter', () => {
     expect(client.calls.some((call) => call.text.includes('bet_settlement_event'))).toBe(true);
   });
 
+  it('upserts discipline config including week_start_day', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary', now: () => '2026-07-02T00:00:00.000Z' });
+    client.enqueueRows([{
+      owner_profile_id: 'owner-primary',
+      daily_stop_loss_points: null,
+      weekly_stop_loss_points: 200,
+      big_bet_threshold_points: 50,
+      time_zone: 'Asia/Tokyo',
+      week_start_day: 'sunday',
+      cooldown_seconds: 15,
+      version: 1,
+      updated_at: '2026-07-02T00:00:00.000Z'
+    }]);
+    const config = {
+      ownerProfileId: 'owner-primary',
+      dailyStopLossPoints: null,
+      weeklyStopLossPoints: 200,
+      bigBetThresholdPoints: 50,
+      timeZone: 'Asia/Tokyo',
+      weekStartDay: 'sunday' as const,
+      cooldownSeconds: 15 as const,
+      version: 1,
+      updatedAt: '2026-07-02T00:00:00.000Z'
+    };
+    const result = await adapter.upsertDisciplineConfig(config);
+    expect(result.weekStartDay).toBe('sunday');
+    const call = client.calls.find((c) => c.text.includes('miraichi_app.discipline_config'));
+    expect(call?.text).toContain('week_start_day');
+    expect(call?.values[5]).toBe('sunday');
+  });
+
   it('does not leak credentials when connectivity fails', async () => {
     const client: PostgresQueryClient = {
       query: async () => { throw new Error('postgresql://secret@db.example'); },

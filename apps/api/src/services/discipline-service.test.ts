@@ -19,6 +19,16 @@ describe('discipline service',()=>{
     expect(result).toEqual({triggeredRules:['big_bet','daily_stop_loss','weekly_stop_loss'],dailyProfitLossPoints:-100,weeklyProfitLossPoints:-200});
   });
 
+  it('groups weekly P&L from Sunday when weekStartDay is sunday',()=>{
+    const sundayConfig: DisciplineConfig = { ...config, weekStartDay: 'sunday' };
+    const result=evaluateDisciplineAttempt({config:sundayConfig,stakePoints:50,at:'2026-08-21T01:00:00.000Z',settlementEvents:[
+      event('today','2026-08-20T15:30:00.000Z',-100),
+      event('same-week-sunday','2026-08-16T00:00:00.000Z',-100),
+      event('previous-week-saturday','2026-08-15T00:00:00.000Z',-999)
+    ]});
+    expect(result).toEqual({triggeredRules:['big_bet','daily_stop_loss','weekly_stop_loss'],dailyProfitLossPoints:-100,weeklyProfitLossPoints:-200});
+  });
+
   it('binds a challenge to a stable payload hash and 15 second availability',()=>{
     const payload={betId:'b',stakePoints:50,notes:'x'};
     expect(hashBetAttemptPayload(payload)).toBe(hashBetAttemptPayload({notes:'x',stakePoints:50,betId:'b'}));

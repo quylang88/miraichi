@@ -52,9 +52,11 @@ describe('memory cloud persistence adapter', () => {
 
   it('stores versioned discipline config and consumes a challenge once', async () => {
     const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
-    const config = { ownerProfileId: 'owner-primary', dailyStopLossPoints: 100, weeklyStopLossPoints: null, bigBetThresholdPoints: 50, timeZone: 'Asia/Tokyo', cooldownSeconds: 15 as const, version: 1, updatedAt: fixedNow() };
+    const config = { ownerProfileId: 'owner-primary', dailyStopLossPoints: 100, weeklyStopLossPoints: null, bigBetThresholdPoints: 50, timeZone: 'Asia/Tokyo', weekStartDay: 'sunday' as const, cooldownSeconds: 15 as const, version: 1, updatedAt: fixedNow() };
     expect(await adapter.upsertDisciplineConfig(config)).toEqual(config);
     expect(await adapter.getDisciplineConfig('owner-primary')).toEqual(config);
+    const defaultConfig = { ownerProfileId: 'owner-primary', dailyStopLossPoints: 100, weeklyStopLossPoints: null, bigBetThresholdPoints: 50, timeZone: 'Asia/Tokyo', cooldownSeconds: 15 as const, version: 2, updatedAt: fixedNow() };
+    expect(await adapter.upsertDisciplineConfig(defaultConfig)).toEqual({ ...defaultConfig, weekStartDay: 'monday' });
     const challenge = { challengeId: 'c1', ownerProfileId: 'owner-primary', payloadHash: 'hash', ruleVersion: 1, triggeredRules: ['big_bet'] as const, dailyProfitLossPoints: 0, weeklyProfitLossPoints: 0, createdAt: fixedNow(), availableAt: fixedNow() };
     await adapter.createDisciplineChallenge(challenge);
     expect((await adapter.consumeDisciplineChallenge('owner-primary', 'c1', fixedNow()))?.consumedAt).toBe(fixedNow());

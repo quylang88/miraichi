@@ -3,12 +3,14 @@ export const PRE_BET_MOTIVATIONS = Object.freeze(['planned_analysis', 'familiar_
 export const PLAN_ADHERENCE_VALUES = Object.freeze(['yes', 'partly', 'no'] as const);
 export const SETTLEMENT_TYPES = Object.freeze(['full_win', 'half_win', 'push', 'void', 'half_loss', 'full_loss', 'manual_adjustment'] as const);
 export const DISCIPLINE_RULE_TYPES = Object.freeze(['big_bet', 'daily_stop_loss', 'weekly_stop_loss'] as const);
+export const WEEK_START_DAYS = Object.freeze(['monday', 'sunday'] as const);
 
 export type PreBetEmotion = typeof PRE_BET_EMOTIONS[number];
 export type PreBetMotivation = typeof PRE_BET_MOTIVATIONS[number];
 export type PlanAdherence = typeof PLAN_ADHERENCE_VALUES[number];
 export type SettlementType = typeof SETTLEMENT_TYPES[number];
 export type DisciplineRuleType = typeof DISCIPLINE_RULE_TYPES[number];
+export type WeekStartDay = typeof WEEK_START_DAYS[number];
 
 export interface DisciplineConfig {
   readonly ownerProfileId: string;
@@ -16,6 +18,7 @@ export interface DisciplineConfig {
   readonly weeklyStopLossPoints: number | null;
   readonly bigBetThresholdPoints: number | null;
   readonly timeZone: string;
+  readonly weekStartDay?: 'monday' | 'sunday';
   readonly cooldownSeconds: 15;
   readonly version: number;
   readonly updatedAt: string;
@@ -109,6 +112,9 @@ export function validateDisciplineConfig(input: unknown): ContractValidationResu
     if (threshold !== null && (!finite(threshold) || threshold <= 0 || !decimalsAtMost(threshold, 2))) errors.push(`${key} must be null or a positive number with at most 2 decimals`);
   }
   if (!isValidIanaTimeZone(value.timeZone)) errors.push('timeZone must be a valid IANA timezone');
+  if (value.weekStartDay !== undefined && !WEEK_START_DAYS.includes(value.weekStartDay as WeekStartDay)) {
+    errors.push('weekStartDay must be monday or sunday');
+  }
   if (value.cooldownSeconds !== 15) errors.push('cooldownSeconds must be 15 in V1');
   if (!Number.isInteger(value.version) || Number(value.version) < 1) errors.push('version must be a positive integer');
   if (!text(value.updatedAt) || !ISO.test(value.updatedAt)) errors.push('updatedAt must be an ISO datetime');

@@ -28,6 +28,14 @@ describe('core betting contracts', () => {
     expect(validateDisciplineConfig({ ...config, cooldownSeconds: 10 }).ok).toBe(false);
   });
 
+  it('validates optional weekStartDay correctly', () => {
+    expect(validateDisciplineConfig({ ...config, weekStartDay: 'monday' })).toEqual({ ok: true });
+    expect(validateDisciplineConfig({ ...config, weekStartDay: 'sunday' })).toEqual({ ok: true });
+    expect(validateDisciplineConfig({ ...config, weekStartDay: 'tuesday' as never }).ok).toBe(false);
+    expect(validateDisciplineConfig({ ...config, weekStartDay: '' as never }).ok).toBe(false);
+    expect(validateDisciplineConfig({ ...config, weekStartDay: null as never }).ok).toBe(false);
+  });
+
   it('requires complete manual bet, account, psychology and precise numeric input', () => {
     expect(validateCreateOngoingBetInput(bet)).toEqual({ ok: true });
     expect(validateCreateOngoingBetInput({ ...bet, bankrollAccountId: '' }).ok).toBe(false);

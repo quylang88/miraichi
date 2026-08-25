@@ -31,7 +31,7 @@ async function requireOk(response: Response): Promise<Response> {
 
 export type DisciplineConfigUpdate = Pick<
   DisciplineConfig,
-  'dailyStopLossPoints' | 'weeklyStopLossPoints' | 'bigBetThresholdPoints' | 'timeZone'
+  'dailyStopLossPoints' | 'weeklyStopLossPoints' | 'bigBetThresholdPoints' | 'timeZone' | 'weekStartDay'
 >;
 export type DisciplineConfigViewState =
   | { readonly status: 'loading' }
@@ -48,7 +48,8 @@ export async function updateDisciplineConfig(input: DisciplineConfigUpdate, fetc
     dailyStopLossPoints: input.dailyStopLossPoints,
     weeklyStopLossPoints: input.weeklyStopLossPoints,
     bigBetThresholdPoints: input.bigBetThresholdPoints,
-    timeZone: input.timeZone
+    timeZone: input.timeZone,
+    ...(input.weekStartDay ? { weekStartDay: input.weekStartDay } : {})
   };
   const response = await requireOk(await fetcher(buildApiUrl('/api/v1/discipline-config'), {
     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)

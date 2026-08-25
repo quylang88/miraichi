@@ -115,8 +115,36 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('data-bankroll-view="discipline"');
     expect(html).toContain('value=""');
     expect(html).toContain('Discipline rules not configured');
+    expect(html).toContain('id="discipline-week-start-day"');
+    expect(html).not.toContain('id="discipline-timezone"');
     expect(html).not.toContain('yield');
     expect(html).not.toContain('ROI');
+  });
+
+  it('renders week start day selector and hint in discipline view for english and vietnamese', () => {
+    const mondayHtml = renderAppShell({
+      activeTabId: 'bankroll', bankrollView: 'discipline',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 90, openExposure: 20, availableBalance: 70, accounts: [] } },
+      disciplineConfigState: { status: 'ready', config: { ownerProfileId: 'owner-primary', dailyStopLossPoints: null, weeklyStopLossPoints: null, bigBetThresholdPoints: null, timeZone: 'Asia/Tokyo', weekStartDay: 'monday', cooldownSeconds: 15, version: 1, updatedAt: '2026-08-21T00:00:00.000Z' } }
+    });
+    expect(mondayHtml).toContain('id="discipline-week-start-day"');
+    expect(mondayHtml).toContain('<option value="monday" selected>Monday</option>');
+    expect(mondayHtml).toContain('<option value="sunday">Sunday</option>');
+    expect(mondayHtml).toContain('Daily and weekly limits reset at 00:00 in your App Settings timezone.');
+    expect(mondayHtml).not.toContain('id="discipline-timezone"');
+
+    const sundayHtml = renderAppShell({
+      activeTabId: 'bankroll', bankrollView: 'discipline',
+      translate: createTranslator('vi'),
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 90, openExposure: 20, availableBalance: 70, accounts: [] } },
+      disciplineConfigState: { status: 'ready', config: { ownerProfileId: 'owner-primary', dailyStopLossPoints: null, weeklyStopLossPoints: null, bigBetThresholdPoints: null, timeZone: 'Asia/Tokyo', weekStartDay: 'sunday', cooldownSeconds: 15, version: 1, updatedAt: '2026-08-21T00:00:00.000Z' } }
+    });
+    expect(sundayHtml).toContain('id="discipline-week-start-day"');
+    expect(sundayHtml).toContain('Ngày bắt đầu tuần');
+    expect(sundayHtml).toContain('<option value="monday">Thứ Hai</option>');
+    expect(sundayHtml).toContain('<option value="sunday" selected>Chủ Nhật</option>');
+    expect(sundayHtml).toContain('Mốc ngày và tuần được tính lúc 00:00 theo múi giờ Cài đặt ứng dụng.');
+    expect(sundayHtml).not.toContain('id="discipline-timezone"');
   });
 
   it('localizes report enum labels, includes outcome counts, and keeps manual settlement fields hidden by default', () => {
@@ -170,6 +198,8 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).not.toContain('2026-07-02T00:00:00.000Z');
     const shellEntry = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
     expect(shellEntry).not.toContain('window.prompt');
+    expect(shellEntry).toContain("form.get('weekStartDay')");
+    expect(shellEntry).toContain('settingsService.getSettings()');
   });
 });
 

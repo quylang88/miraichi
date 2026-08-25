@@ -60,7 +60,11 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
       bets.set(id, clone(record)); return clone(record);
     },
     getDisciplineConfig: async (owner) => clone(disciplineConfigs.get(owner) ?? null),
-    upsertDisciplineConfig: async (config) => { disciplineConfigs.set(config.ownerProfileId, clone(config)); return clone(config); },
+    upsertDisciplineConfig: async (config) => {
+      const normalized: DisciplineConfig = { ...clone(config), weekStartDay: config.weekStartDay ?? 'monday' };
+      disciplineConfigs.set(config.ownerProfileId, normalized);
+      return clone(normalized);
+    },
     createDisciplineChallenge: async (challenge) => {
       const id = key(challenge.ownerProfileId, challenge.challengeId);
       if (disciplineChallenges.has(id)) throw new Error('Duplicate discipline challenge ID');
@@ -160,7 +164,7 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
       envelope.bankrollAccounts.forEach((item) => accounts.set(key(owner, item.accountId), clone(item)));
       envelope.bankrollLedgerEntries.forEach((item) => ledger.set(key(owner, item.entryId), clone(item)));
       if (envelope.schemaVersion === 'miraichi.cloud-backup.v2') {
-        envelope.disciplineConfigs.forEach((item) => disciplineConfigs.set(owner, clone(item)));
+        envelope.disciplineConfigs.forEach((item) => disciplineConfigs.set(owner, clone({ ...item, weekStartDay: item.weekStartDay ?? 'monday' })));
         envelope.settlementEvents.forEach((item) => settlementEvents.set(key(owner, item.settlementEventId), clone(item)));
       }
     },

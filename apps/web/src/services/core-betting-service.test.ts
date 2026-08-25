@@ -32,7 +32,7 @@ describe('core betting web service', () => {
     const calls: Array<{ url: string; body: string | undefined }> = [];
     const config = {
       ownerProfileId: 'owner-primary', dailyStopLossPoints: null, weeklyStopLossPoints: null,
-      bigBetThresholdPoints: null, timeZone: 'Asia/Tokyo', cooldownSeconds: 15 as const,
+      bigBetThresholdPoints: null, timeZone: 'Asia/Tokyo', weekStartDay: 'sunday' as const, cooldownSeconds: 15 as const,
       version: 1, updatedAt: ongoingInput.updatedAt
     };
     const fetcher = async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -44,6 +44,7 @@ describe('core betting web service', () => {
     await updateDisciplineConfig({ ...config, ownerProfileId: undefined, version: undefined, updatedAt: undefined } as never, fetcher);
     expect(calls[1]?.body).not.toContain('ownerProfileId');
     expect(calls[1]?.body).toContain('"dailyStopLossPoints":null');
+    expect(calls[1]?.body).toContain('"weekStartDay":"sunday"');
   });
 
   it('creates a one-time discipline challenge and then records the same ongoing payload', async () => {

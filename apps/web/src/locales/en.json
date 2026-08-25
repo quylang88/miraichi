@@ -185,7 +185,10 @@
   "bankroll.dailyStopLoss": "Daily stop-loss points",
   "bankroll.weeklyStopLoss": "Weekly stop-loss points",
   "bankroll.bigBetThreshold": "Big-bet threshold points",
-  "bankroll.timeZone": "IANA timezone",
+  "bankroll.weekStartDay": "Week start day",
+  "bankroll.monday": "Monday",
+  "bankroll.sunday": "Sunday",
+  "bankroll.weekStartDayHint": "Daily and weekly limits reset at 00:00 in your App Settings timezone.",
   "bankroll.rulesNotConfigured": "Discipline rules not configured",
   "bankroll.deposit": "Deposit",
   "bankroll.withdrawal": "Withdrawal",
@@ -219,5 +222,5 @@
   "error.discipline_ack_required": "Discipline acknowledgement is required.",
   "error.validation_failed": "Review the form and try again.",
   "error.request_failed": "The request failed. Try again.",
-  "error.discipline_config_required": "Configure a reporting timezone first."
+  "error.discipline_config_required": "Configure discipline rules first."
 }

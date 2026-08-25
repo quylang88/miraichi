@@ -26,7 +26,14 @@ function discipline(state: DisciplineConfigViewState, translate: TranslateFuncti
     <div class="field"><label for="daily-stop-loss">${escapeHtml(translate('bankroll.dailyStopLoss'))}</label><input class="field-input" id="daily-stop-loss" name="dailyStopLossPoints" type="number" min="0" step="0.01" value="${value(config?.dailyStopLossPoints)}"></div>
     <div class="field"><label for="weekly-stop-loss">${escapeHtml(translate('bankroll.weeklyStopLoss'))}</label><input class="field-input" id="weekly-stop-loss" name="weeklyStopLossPoints" type="number" min="0" step="0.01" value="${value(config?.weeklyStopLossPoints)}"></div>
     <div class="field"><label for="big-bet-threshold">${escapeHtml(translate('bankroll.bigBetThreshold'))}</label><input class="field-input" id="big-bet-threshold" name="bigBetThresholdPoints" type="number" min="0" step="0.01" value="${value(config?.bigBetThresholdPoints)}"></div>
-    <div class="field"><label for="discipline-timezone">${escapeHtml(translate('bankroll.timeZone'))}</label><input class="field-input" id="discipline-timezone" name="timeZone" value="${escapeHtml(config?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone)}" required></div>
+    <div class="field">
+      <label for="discipline-week-start-day">${escapeHtml(translate('bankroll.weekStartDay'))}</label>
+      <select class="field-select" id="discipline-week-start-day" name="weekStartDay">
+        <option value="monday"${config?.weekStartDay !== 'sunday' ? ' selected' : ''}>${escapeHtml(translate('bankroll.monday'))}</option>
+        <option value="sunday"${config?.weekStartDay === 'sunday' ? ' selected' : ''}>${escapeHtml(translate('bankroll.sunday'))}</option>
+      </select>
+      <p class="field-hint">${escapeHtml(translate('bankroll.weekStartDayHint'))}</p>
+    </div>
     <button class="primary-button" type="submit">${escapeHtml(translate('common.save'))}</button><div class="sheet-feedback" id="discipline-feedback" aria-live="polite"></div>
   </form>`;
 }

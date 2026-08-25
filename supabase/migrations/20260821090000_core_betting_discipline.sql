@@ -37,6 +37,7 @@ create table if not exists miraichi_app.discipline_config (
   weekly_stop_loss_points numeric(18,2) check (weekly_stop_loss_points is null or weekly_stop_loss_points > 0),
   big_bet_threshold_points numeric(18,2) check (big_bet_threshold_points is null or big_bet_threshold_points > 0),
   time_zone text not null,
+  week_start_day text not null default 'monday' check (week_start_day in ('monday', 'sunday')),
   cooldown_seconds integer not null check (cooldown_seconds = 15),
   version integer not null check (version > 0),
   updated_at timestamptz not null

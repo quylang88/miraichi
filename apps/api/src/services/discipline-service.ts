@@ -12,10 +12,15 @@ const dateKey = (iso: string, timeZone: string): string => {
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? '';
   return `${part('year')}-${part('month')}-${part('day')}`;
 };
-const weekStart = (key: string): string => {
+const weekStart = (key: string, weekStartDay: 'monday' | 'sunday' = 'monday'): string => {
   const date = new Date(`${key}T00:00:00.000Z`);
-  const day = date.getUTCDay() || 7;
-  date.setUTCDate(date.getUTCDate() - day + 1);
+  const day = date.getUTCDay();
+  if (weekStartDay === 'sunday') {
+    date.setUTCDate(date.getUTCDate() - day);
+  } else {
+    const diff = day === 0 ? 6 : day - 1;
+    date.setUTCDate(date.getUTCDate() - diff);
+  }
   return date.toISOString().slice(0, 10);
 };
 const round4 = (value: number): number => Math.round((value + Number.EPSILON) * 10_000) / 10_000;
@@ -27,14 +32,15 @@ export function evaluateDisciplineAttempt({ config, stakePoints, settlementEvent
   readonly at: string;
 }): DisciplineEvaluation {
   if (!config) return { triggeredRules: [], dailyProfitLossPoints: 0, weeklyProfitLossPoints: 0 };
+  const weekStartDay = config.weekStartDay ?? 'monday';
   const currentDate = dateKey(at, config.timeZone);
-  const currentWeek = weekStart(currentDate);
+  const currentWeek = weekStart(currentDate, weekStartDay);
   let dailyProfitLossPoints = 0;
   let weeklyProfitLossPoints = 0;
   for (const event of settlementEvents) {
     const effectiveDate = dateKey(event.effectiveAt, config.timeZone);
     if (effectiveDate === currentDate) dailyProfitLossPoints += event.ledgerDeltaPoints;
-    if (weekStart(effectiveDate) === currentWeek) weeklyProfitLossPoints += event.ledgerDeltaPoints;
+    if (weekStart(effectiveDate, weekStartDay) === currentWeek) weeklyProfitLossPoints += event.ledgerDeltaPoints;
   }
   dailyProfitLossPoints = round4(dailyProfitLossPoints);
   weeklyProfitLossPoints = round4(weeklyProfitLossPoints);
