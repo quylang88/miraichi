@@ -214,6 +214,8 @@
   "settings.displayDensity": "Display density",
   "settings.standard": "Standard",
   "settings.compact": "Compact",
+  "settings.timezone": "Timezone",
+  "settings.timezoneLocal": "Local time",
   "error.discipline_ack_required": "Discipline acknowledgement is required.",
   "error.validation_failed": "Review the form and try again.",
   "error.request_failed": "The request failed. Try again.",

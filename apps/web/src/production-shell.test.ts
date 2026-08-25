@@ -431,6 +431,14 @@ describe('production shell settings and i18n boundaries', () => {
     expect(settings.getSettings().displayDensity).toBe('compact');
 
     expect(() => settings.setSetting('displayDensity', 'invalid-density')).toThrow();
+
+    // Verify settings sheet renders timezone select
+    const html = renderAppShell({ translate: t });
+    expect(html).toContain('id="settings-timezone"');
+    expect(html).toContain('name="timezone"');
+    expect(html).toContain('value="local"');
+    expect(html).toContain('value="UTC"');
+    expect(html).toContain('value="Asia/Ho_Chi_Minh"');
   });
 
   it('respects timezone settings when rendering kickoff times in app shell', () => {

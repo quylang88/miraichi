@@ -566,8 +566,10 @@ appRoot.addEventListener('click', (event) => {
     const settings = settingsService.getSettings();
     const locale = document.getElementById('settings-locale') as HTMLSelectElement | null;
     const density = document.getElementById('settings-density') as HTMLSelectElement | null;
+    const timezone = document.getElementById('settings-timezone') as HTMLSelectElement | null;
     if (locale) locale.value = settings.locale;
     if (density) density.value = settings.displayDensity;
+    if (timezone) timezone.value = settings.timezone;
     return;
   }
 
@@ -891,6 +893,7 @@ appRoot.addEventListener('submit', (event) => {
     const form = new FormData(target);
     settingsService.setSetting('locale', String(form.get('locale') ?? 'en'));
     settingsService.setSetting('displayDensity', String(form.get('displayDensity') ?? 'standard'));
+    settingsService.setSetting('timezone', String(form.get('timezone') ?? 'local'));
     closeSheets();
     render(currentScreenName);
     return;
