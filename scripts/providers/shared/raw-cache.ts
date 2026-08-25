@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import type { Dirent } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
-import { OPENFOOTBALL_SOURCE_REGISTRY } from '../../../packages/config/src/openfootball-source-registry.js';
+import { API_FOOTBALL_COMPETITION_REGISTRY } from '../../../packages/config/src/api-football-source-registry.js';
 import {
   validateRawProviderPayloadEnvelope,
   type ProviderId,
@@ -10,13 +10,13 @@ import {
   type RawProviderPayloadEnvelope
 } from '../../../packages/shared/src/contracts/provider-ingestion-contracts.js';
 
-const OPENFOOTBALL_SOURCE_BINDING_POLICY: ProviderSourceBindingPolicy = {
+const API_FOOTBALL_SOURCE_BINDING_POLICY: ProviderSourceBindingPolicy = {
   resolveSourceBinding(provider, allowlistEntryId) {
-    if (provider !== 'openfootball') {
+    if (provider !== 'api-football') {
       return undefined;
     }
 
-    const source = OPENFOOTBALL_SOURCE_REGISTRY.find((entry) => entry.entryId === allowlistEntryId);
+    const source = API_FOOTBALL_COMPETITION_REGISTRY.find((entry) => entry.entryId === allowlistEntryId);
     if (!source) {
       return undefined;
     }
@@ -24,11 +24,10 @@ const OPENFOOTBALL_SOURCE_BINDING_POLICY: ProviderSourceBindingPolicy = {
     return {
       allowlistEntryId: source.entryId,
       endpointKey: source.entryId,
-      urlPath: `/openfootball/${source.repository}/${source.ref}/${source.filePath}`,
+      urlPath: `/fixtures`,
       source: {
-        repository: source.repository,
-        ref: source.ref,
-        filePath: source.filePath
+        leagueId: String(source.providerLeagueId),
+        competitionId: source.competitionId
       }
     };
   }
@@ -138,7 +137,7 @@ function sortedJson(value: unknown): unknown {
 }
 
 function assertValidRawProviderPayload(envelope: RawProviderPayloadEnvelope): void {
-  const validation = validateRawProviderPayloadEnvelope(envelope, OPENFOOTBALL_SOURCE_BINDING_POLICY);
+  const validation = validateRawProviderPayloadEnvelope(envelope, API_FOOTBALL_SOURCE_BINDING_POLICY);
   if (!validation.ok) {
     throw providerRawPayloadInvalid(validation.errors.join('; '));
   }

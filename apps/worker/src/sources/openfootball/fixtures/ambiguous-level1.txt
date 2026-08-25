@@ -1,9 +1,0 @@
-= Ambiguous Cup 2026
-▪ Matchday 1
-  11/06/2026
-    Team Alpha v Team Beta
-  Sat Aug 22
-    Team Alpha v Team Beta
-    12:30  Team Alpha - Team Beta
-    14:00  Team Alpha -1-2 Team Beta
-    unexpected metadata payload

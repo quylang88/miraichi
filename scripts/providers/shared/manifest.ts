@@ -1,6 +1,6 @@
 import { mkdir, appendFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { OPENFOOTBALL_SOURCE_REGISTRY } from '../../../packages/config/src/openfootball-source-registry.js';
+import { API_FOOTBALL_COMPETITION_REGISTRY } from '../../../packages/config/src/api-football-source-registry.js';
 import type {
   ProviderId,
   ProviderCaptureManifestEntry,
@@ -8,13 +8,13 @@ import type {
 } from '../../../packages/shared/src/contracts/provider-ingestion-contracts.js';
 import { validateProviderCaptureManifestEntry } from '../../../packages/shared/src/contracts/provider-ingestion-contracts.js';
 
-const OPENFOOTBALL_SOURCE_BINDING_POLICY: ProviderSourceBindingPolicy = {
+const API_FOOTBALL_SOURCE_BINDING_POLICY: ProviderSourceBindingPolicy = {
   resolveSourceBinding(provider, allowlistEntryId) {
-    if (provider !== 'openfootball') {
+    if (provider !== 'api-football') {
       return undefined;
     }
 
-    const source = OPENFOOTBALL_SOURCE_REGISTRY.find((entry) => entry.entryId === allowlistEntryId);
+    const source = API_FOOTBALL_COMPETITION_REGISTRY.find((entry) => entry.entryId === allowlistEntryId);
     if (!source) {
       return undefined;
     }
@@ -22,11 +22,10 @@ const OPENFOOTBALL_SOURCE_BINDING_POLICY: ProviderSourceBindingPolicy = {
     return {
       allowlistEntryId: source.entryId,
       endpointKey: source.entryId,
-      urlPath: `/openfootball/${source.repository}/${source.ref}/${source.filePath}`,
+      urlPath: `/fixtures`,
       source: {
-        repository: source.repository,
-        ref: source.ref,
-        filePath: source.filePath
+        leagueId: String(source.providerLeagueId),
+        competitionId: source.competitionId
       }
     };
   }
@@ -105,7 +104,7 @@ function assertValidProviderManifestEntry(
     throw providerManifestInvalid('Manifest provider does not match its evidence path');
   }
 
-  const validation = validateProviderCaptureManifestEntry(entry, OPENFOOTBALL_SOURCE_BINDING_POLICY);
+  const validation = validateProviderCaptureManifestEntry(entry, API_FOOTBALL_SOURCE_BINDING_POLICY);
   if (!validation.ok) {
     throw providerManifestInvalid(validation.errors.join('; '));
   }

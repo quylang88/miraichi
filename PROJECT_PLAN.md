@@ -44,24 +44,25 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Complete the web screens in order: Bets, Bankroll, Today, Matches while preserving the Black Apple/OLED baseline.
 - [x] Split EN/VI into parity-tested JSON catalogs and remove raw domain enum labels from the owner workflow.
 - [x] Prove responsive layout, core owner-flow integration, product boundaries, and all local large-boundary gates.
+- [x] Accept ADR-0047 superseding ADR-0045: Integrate API-Football as single competition-agnostic match provider.
+- [x] Create extensible 50-competition registry in `packages/config` with zero hardcoded tournament biases.
+- [x] Implement API-Football client with Daily Quota Guard (85 req/day ceiling + 15 reserve).
+- [x] Implement multi-season historical hydration job with idempotent checkpoint resume.
+- [x] Implement Smart Window Polling (SLA <= 5 min for FT results) and publication validator.
+- [x] Completely eradicate OpenFootball registries, parsers, capture scripts, and fixtures.
+- [x] End-to-end integration test proving hydration, daily sync, fast poll, and API serving across 50 leagues.
 
-## Local Integration Evidence — 2026-08-21
+## Local Integration Evidence — 2026-08-25
 
-- `pnpm run verify:product-boundary` — passed.
-- `pnpm run verify:local` — passed with 83 test files and 409 tests at the recorded gate; lifecycle, syntax, typecheck, audit, and type-safety checks also passed.
-- `pnpm run test:integration` — passed after updating the E2E/PWA harness to the approved ongoing-bet, backup V2, settlement, and split-screen contracts.
-- `pnpm run build:web-static` — passed and produced the local static artifact.
-- Browser QA covered 320×568, 390×844, and desktop in EN and VI. Manual Add Bet remained available independently from match feed state; the exercised flow was discipline threshold → cooldown acknowledgement → ongoing bet → settlement preview/confirmation → bankroll/report update.
-- `.playwright-cli/` inspection cache and the temporary `output/playwright/` screenshots were removed after QA; the exercised viewport and workflow evidence is recorded above.
-- No staging deployment, production migration, production promotion, crawler extension, OpenFootball extension, or live-context work was performed.
-
-OpenFootball remains the only selected external match source family, but all new provider, crawler, and manual-live-context work is pending during this phase. Existing factual snapshots remain read-only context. Manual bet recording must work without a match feed.
+- `pnpm run verify:product-boundary` — passed; OpenFootball paths and legacy AI paths strictly forbidden.
+- `pnpm run verify:local` — passed across shared, config, worker, api, and web packages.
+- `pnpm run test:integration` — passed covering API-Football multi-season hydration, daily sync, smart window polling, and serving store publication.
+- Quota guard protects free tier (100 req/day) with 85 req ceiling and 15 reserve.
 
 ## Later Phases
 
-1. Resume Manual Live Bet Context Snapshot planning only after the current core owner workflow closes and the owner explicitly reactivates it.
-2. Integration verification for API/web owner-record flows; OpenFootball integration remains unchanged.
-3. Staging deployment and smoke evidence.
-4. Final owner feedback and production promotion only after all release gates pass.
+1. Execute initial historical hydration against configured leagues (`pnpm run seed:api-football`).
+2. Staging deployment and smoke evidence.
+3. Final owner feedback and production promotion only after all release gates pass.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

@@ -1,21 +1,24 @@
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { OPENFOOTBALL_SOURCE_REGISTRY } from '@miraichi/config';
 import {
-  runOpenFootballIngestionJob,
-  type OpenFootballIngestionRunResult
-} from './jobs/openfootball-ingestion-job.js';
+  API_FOOTBALL_COMPETITION_REGISTRY,
+  API_FOOTBALL_QUOTA_CONFIG
+} from '@miraichi/config';
+import {
+  runApiFootballIngestionJob,
+  type ApiFootballIngestionRunResult
+} from './jobs/api-football-ingestion-job.js';
 
-export const OPENFOOTBALL_SCHEDULE_INTERVAL_MS = 360 * 60_000;
+export const API_FOOTBALL_SCHEDULE_INTERVAL_MS = API_FOOTBALL_QUOTA_CONFIG.pollingIntervalSeconds * 1000;
 
 export interface ScheduleDependencies {
-  runJob: () => Promise<OpenFootballIngestionRunResult>;
+  runJob: () => Promise<ApiFootballIngestionRunResult>;
   setIntervalFn: typeof setInterval;
   clearIntervalFn: typeof clearInterval;
   log: (message: string) => void;
 }
 
-export function startOpenFootballSchedule(dependencies: ScheduleDependencies): {
+export function startApiFootballSchedule(dependencies: ScheduleDependencies): {
   intervalMilliseconds: number;
   stop: () => void;
 } {
@@ -27,10 +30,10 @@ export function startOpenFootballSchedule(dependencies: ScheduleDependencies): {
     try {
       const result = await dependencies.runJob();
       if (result.status === 'failed') {
-        dependencies.log(`[OpenFootball] Capture failed: ${result.errorCodes.join(', ')}`);
+        dependencies.log(`[API-Football] Ingestion failed: ${result.error || 'Unknown error'}`);
       }
     } catch (error) {
-      dependencies.log(`[OpenFootball] Capture failed: ${messageFor(error)}`);
+      dependencies.log(`[API-Football] Ingestion failed: ${messageFor(error)}`);
     } finally {
       running = false;
     }
@@ -39,10 +42,10 @@ export function startOpenFootballSchedule(dependencies: ScheduleDependencies): {
   void runDueJob();
   const interval = dependencies.setIntervalFn(() => {
     void runDueJob();
-  }, OPENFOOTBALL_SCHEDULE_INTERVAL_MS);
+  }, API_FOOTBALL_SCHEDULE_INTERVAL_MS);
 
   return {
-    intervalMilliseconds: OPENFOOTBALL_SCHEDULE_INTERVAL_MS,
+    intervalMilliseconds: API_FOOTBALL_SCHEDULE_INTERVAL_MS,
     stop: () => dependencies.clearIntervalFn(interval)
   };
 }
@@ -57,11 +60,12 @@ function defaultDataRoot(): string {
 }
 
 function startWorker(): void {
-  console.log('[Worker Daemon] Starting six-hour OpenFootball ingestion scheduler...');
-  startOpenFootballSchedule({
-    runJob: () => runOpenFootballIngestionJob({
+  console.log(`[Worker Daemon] Starting API-Football smart-window ingestion scheduler (${API_FOOTBALL_SCHEDULE_INTERVAL_MS / 1000}s interval)...`);
+  startApiFootballSchedule({
+    runJob: () => runApiFootballIngestionJob({
       dataRoot: defaultDataRoot(),
-      sources: OPENFOOTBALL_SOURCE_REGISTRY,
+      mode: 'auto',
+      registry: API_FOOTBALL_COMPETITION_REGISTRY,
       now: () => new Date()
     }),
     setIntervalFn: setInterval,

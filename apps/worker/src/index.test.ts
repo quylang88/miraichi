@@ -1,17 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { OpenFootballIngestionRunResult } from './jobs/openfootball-ingestion-job.js';
+import type { ApiFootballIngestionRunResult } from './jobs/api-football-ingestion-job.js';
 import {
-  OPENFOOTBALL_SCHEDULE_INTERVAL_MS,
-  startOpenFootballSchedule
+  API_FOOTBALL_SCHEDULE_INTERVAL_MS,
+  startApiFootballSchedule
 } from './index.js';
 
-function successfulResult(): OpenFootballIngestionRunResult {
+function successfulResult(): ApiFootballIngestionRunResult {
   return {
-    status: 'skipped',
+    status: 'published',
     runId: 'run-1',
-    changedSourceCount: 0,
-    notModifiedSourceCount: 0,
-    errorCodes: []
+    mode: 'window_poll',
+    matchesProcessed: 1,
+    matchesCompleted: 1,
+    quotaUsedToday: 5
   };
 }
 
@@ -34,41 +35,40 @@ async function settle(): Promise<void> {
   await Promise.resolve();
 }
 
-describe('startOpenFootballSchedule', () => {
-  it('starts immediately and schedules subsequent runs every six hours', () => {
+describe('startApiFootballSchedule', () => {
+  it('starts immediately and schedules subsequent ticks on polling interval', () => {
     const runJob = vi.fn().mockResolvedValue(successfulResult());
-    const intervalHandle = { id: 'openfootball' } as unknown as ReturnType<typeof setInterval>;
+    const intervalHandle = { id: 'api-football' } as unknown as ReturnType<typeof setInterval>;
     const setIntervalFn = vi.fn(() => intervalHandle) as unknown as typeof setInterval;
     const clearIntervalFn = vi.fn() as unknown as typeof clearInterval;
 
-    const schedule = startOpenFootballSchedule({
+    const schedule = startApiFootballSchedule({
       runJob,
       setIntervalFn,
       clearIntervalFn,
       log: vi.fn()
     });
 
-    expect(OPENFOOTBALL_SCHEDULE_INTERVAL_MS).toBe(360 * 60_000);
-    expect(schedule.intervalMilliseconds).toBe(360 * 60_000);
+    expect(schedule.intervalMilliseconds).toBe(API_FOOTBALL_SCHEDULE_INTERVAL_MS);
     expect(runJob).toHaveBeenCalledTimes(1);
-    expect(setIntervalFn).toHaveBeenCalledWith(expect.any(Function), 360 * 60_000);
+    expect(setIntervalFn).toHaveBeenCalledWith(expect.any(Function), API_FOOTBALL_SCHEDULE_INTERVAL_MS);
 
     schedule.stop();
     expect(clearIntervalFn).toHaveBeenCalledWith(intervalHandle);
   });
 
-  it('coalesces overlapping ticks until the running job settles', async () => {
-    const firstRun = deferred<OpenFootballIngestionRunResult>();
+  it('coalesces overlapping ticks until running job settles', async () => {
+    const firstRun = deferred<ApiFootballIngestionRunResult>();
     const runJob = vi.fn()
       .mockReturnValueOnce(firstRun.promise)
       .mockResolvedValue(successfulResult());
     let tick: (() => void) | undefined;
     const setIntervalFn = vi.fn((callback: () => void) => {
       tick = callback;
-      return { id: 'openfootball' } as unknown as ReturnType<typeof setInterval>;
+      return { id: 'api-football' } as unknown as ReturnType<typeof setInterval>;
     }) as unknown as typeof setInterval;
 
-    startOpenFootballSchedule({
+    startApiFootballSchedule({
       runJob,
       setIntervalFn,
       clearIntervalFn: vi.fn() as unknown as typeof clearInterval,
@@ -87,16 +87,16 @@ describe('startOpenFootballSchedule', () => {
 
   it('logs a rejected run and continues scheduling later ticks', async () => {
     const runJob = vi.fn()
-      .mockRejectedValueOnce(new Error('capture failed'))
+      .mockRejectedValueOnce(new Error('Ingestion network error'))
       .mockResolvedValue(successfulResult());
     const log = vi.fn();
     let tick: (() => void) | undefined;
     const setIntervalFn = vi.fn((callback: () => void) => {
       tick = callback;
-      return { id: 'openfootball' } as unknown as ReturnType<typeof setInterval>;
+      return { id: 'api-football' } as unknown as ReturnType<typeof setInterval>;
     }) as unknown as typeof setInterval;
 
-    startOpenFootballSchedule({
+    startApiFootballSchedule({
       runJob,
       setIntervalFn,
       clearIntervalFn: vi.fn() as unknown as typeof clearInterval,
@@ -104,39 +104,7 @@ describe('startOpenFootballSchedule', () => {
     });
 
     await settle();
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('capture failed'));
-
-    tick!();
-    expect(runJob).toHaveBeenCalledTimes(2);
-  });
-
-  it('logs a failed job result and remains scheduled', async () => {
-    const failedResult: OpenFootballIngestionRunResult = {
-      status: 'failed',
-      runId: 'run-failed',
-      changedSourceCount: 0,
-      notModifiedSourceCount: 0,
-      errorCodes: ['source_unavailable']
-    };
-    const runJob = vi.fn()
-      .mockResolvedValueOnce(failedResult)
-      .mockResolvedValue(successfulResult());
-    const log = vi.fn();
-    let tick: (() => void) | undefined;
-    const setIntervalFn = vi.fn((callback: () => void) => {
-      tick = callback;
-      return { id: 'openfootball' } as unknown as ReturnType<typeof setInterval>;
-    }) as unknown as typeof setInterval;
-
-    startOpenFootballSchedule({
-      runJob,
-      setIntervalFn,
-      clearIntervalFn: vi.fn() as unknown as typeof clearInterval,
-      log
-    });
-
-    await settle();
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('source_unavailable'));
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('Ingestion network error'));
 
     tick!();
     expect(runJob).toHaveBeenCalledTimes(2);

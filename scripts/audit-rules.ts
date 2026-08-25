@@ -22,10 +22,16 @@ const RULES = [
     // Allowed files for this specific rule (tests and validators checking agnosticism checks)
     allowList: [
       'packages/config/src/competition-registry.mock.ts',
-      'packages/config/src/openfootball-source-registry.ts',
+      'packages/config/src/api-football-source-registry.ts',
+      'packages/config/src/api-football-source-registry.test.ts',
       'scripts/phase2-verify.ts',
       'apps/api/src/services/cloud-match-snapshot-sync.test.ts',
-      'packages/shared/src/contracts/provider-ingestion-contracts.test.ts'
+      'packages/shared/src/contracts/provider-ingestion-contracts.test.ts',
+      'apps/worker/src/jobs/api-football-hydration-job.test.ts',
+      'apps/worker/src/jobs/api-football-ingestion-job.test.ts',
+      'apps/worker/src/sources/api-football/api-football-adapter.test.ts',
+      'apps/worker/src/sources/api-football/api-football-client.test.ts',
+      'apps/worker/src/sources/api-football/hydration-checkpoint-manager.test.ts'
     ]
   },
   {

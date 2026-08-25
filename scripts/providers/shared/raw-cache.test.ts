@@ -12,31 +12,31 @@ import {
 import { appendProviderManifestEntry } from './manifest.js';
 import { appendCanonicalWarehouseRecord } from './canonical-warehouse.js';
 
-const OPENFOOTBALL_ENDPOINT = 'openfootball-england-premier-league-2026-27';
-const OPENFOOTBALL_URL_PATH = '/openfootball/england/master/2026-27/1-premierleague.txt';
+const TEST_ENDPOINT = 'api-football-eng-premier-league';
+const TEST_URL_PATH = '/fixtures';
 
-function createOpenFootballEnvelope(
+function createApiFootballEnvelope(
   fetchedAt: string,
   payload: string,
   payloadHash = createTextPayloadHash(payload)
 ): RawProviderPayloadEnvelope {
   return {
     schemaVersion: 'miraichi.provider.raw.v1',
-    provider: 'openfootball',
-    endpointKey: OPENFOOTBALL_ENDPOINT,
-    urlPath: OPENFOOTBALL_URL_PATH,
-    query: {},
+    provider: 'api-football',
+    endpointKey: TEST_ENDPOINT,
+    urlPath: TEST_URL_PATH,
+    query: { league: '39', season: '2026' },
     fetchedAt,
     payloadHash,
-    rateLimit: {},
+    rateLimit: { remaining: 80, resetsInSeconds: 3600 },
     source: {
-      allowlistEntryId: OPENFOOTBALL_ENDPOINT,
-      repository: 'england',
-      ref: 'master',
-      filePath: '2026-27/1-premierleague.txt'
+      allowlistEntryId: TEST_ENDPOINT,
+      leagueId: 39,
+      season: 2026,
+      queryType: 'season'
     },
     response: {
-      contentType: 'text/plain; charset=utf-8',
+      contentType: 'application/json; charset=utf-8',
       byteCount: Buffer.byteLength(payload, 'utf8')
     },
     payload
@@ -48,7 +48,7 @@ describe('provider-neutral raw cache and warehouse', () => {
     expect(createPayloadHash({ b: 2, a: 1 })).toBe(createPayloadHash({ a: 1, b: 2 }));
   });
 
-  it('hashes OpenFootball source text byte-exactly', () => {
+  it('hashes source text byte-exactly', () => {
     expect(createTextPayloadHash('a\r\nb\n')).not.toBe(createTextPayloadHash('a\nb\n'));
   });
 
@@ -70,35 +70,35 @@ describe('provider-neutral raw cache and warehouse', () => {
     expect(JSON.parse(await readFile(path, 'utf8')).provider).toBe('manual-snapshot');
   });
 
-  it('archives exact OpenFootball text and selects the envelope with the newest fetchedAt', async () => {
+  it('archives provider payload and selects the envelope with the newest fetchedAt', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
-    await writeRawProviderPayload(root, createOpenFootballEnvelope(
-      '2026-07-02T12:00:00.000Z',
-      '= Older source text\n',
+    await writeRawProviderPayload(root, createApiFootballEnvelope(
+      '2026-08-25T12:00:00.000Z',
+      '{"response":[{"id":1001}]}',
       'f'.repeat(64)
     ));
-    const latestPath = await writeRawProviderPayload(root, createOpenFootballEnvelope(
-      '2026-07-02T13:00:00.000Z',
-      '= English Premier League 2026/27\r\n',
+    const latestPath = await writeRawProviderPayload(root, createApiFootballEnvelope(
+      '2026-08-25T13:00:00.000Z',
+      '{"response":[{"id":1001,"status":"FT"}]}',
       'a'.repeat(64)
     ));
 
-    const latest = await readLatestRawProviderPayload(root, 'openfootball', OPENFOOTBALL_ENDPOINT);
+    const latest = await readLatestRawProviderPayload(root, 'api-football', TEST_ENDPOINT);
 
     expect(latest).toMatchObject({
-      provider: 'openfootball',
-      payload: '= English Premier League 2026/27\r\n',
-      fetchedAt: '2026-07-02T13:00:00.000Z'
+      provider: 'api-football',
+      payload: '{"response":[{"id":1001,"status":"FT"}]}',
+      fetchedAt: '2026-08-25T13:00:00.000Z'
     });
     expect(await readFile(latestPath, 'utf8')).toMatch(/\n$/);
   });
 
   it('rejects an invalid raw envelope before it creates an evidence file', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
-    const invalid = createOpenFootballEnvelope('2026-07-02T12:00:00.000Z', '= text\n');
-    invalid.source = { ...invalid.source!, repository: 'worldcup' };
+    const invalid = createApiFootballEnvelope('2026-08-25T12:00:00.000Z', '{}');
+    invalid.source = { ...invalid.source!, leagueId: -1 };
 
-    await expect(writeRawProviderPayload(root, invalid)).rejects.toThrow('source.repository');
+    await expect(writeRawProviderPayload(root, invalid)).rejects.toThrow('source.leagueId');
     await expect(access(join(root, 'providers'))).rejects.toThrow();
   });
 
@@ -106,9 +106,9 @@ describe('provider-neutral raw cache and warehouse', () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
     const traversalHash = '../outside'.padEnd(64, 'a');
 
-    await expect(writeRawProviderPayload(root, createOpenFootballEnvelope(
-      '2026-07-02T12:00:00.000Z',
-      '= text\n',
+    await expect(writeRawProviderPayload(root, createApiFootballEnvelope(
+      '2026-08-25T12:00:00.000Z',
+      '{}',
       traversalHash
     ))).rejects.toThrow('payloadHash');
     await expect(access(join(root, 'providers'))).rejects.toThrow();

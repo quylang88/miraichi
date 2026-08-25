@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 export const FORBIDDEN_PRODUCT_PATHS = [
   'apps/local-ai',
   'scripts/providers/sportmonks',
-  'apps/api/data/providers/sportmonks'
+  'apps/api/data/providers/sportmonks',
+  'apps/worker/src/sources/openfootball',
+  'scripts/capture-openfootball.ts'
 ] as const;
 
 const FORBIDDEN_SCRIPT = /(^dev:local-ai$|^phase4:|^phase8:|sportmonks)/i;
