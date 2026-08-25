@@ -313,6 +313,13 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(shellEntry).toContain("form.get('weekStartDay')");
     expect(shellEntry).toContain('settingsService.getSettings()');
   });
+
+  it('renders separate warning note card and create account form when bankroll is empty', () => {
+    const html = renderAppShell({ activeTabId: 'bankroll', bankrollView: 'overview', bankrollState: { status: 'empty' } });
+    expect(html).toContain('class="note-card warning" data-bankroll-state="empty"');
+    expect(html).toContain('id="create-bankroll-form"');
+    expect(html).toMatch(/<section class="note-card warning" data-bankroll-state="empty">[\s\S]*?<\/section><section class="note-card"><form[^>]*id="create-bankroll-form"/);
+  });
 });
 
 describe('production PWA shell rendering', () => {
