@@ -171,7 +171,7 @@ export function validateLocalMatch(input: unknown): ValidationResult {
 
   // status
   if (input.status === 'in_play') {
-    errors.push('Field "status" cannot be "in_play" in Phase 9');
+    errors.push('Field "status" cannot be "in_play" in the terminal-only match feed');
   } else if (typeof input.status !== 'string' || !VALID_MATCH_STATUSES.includes(input.status as LocalMatchStatus)) {
     errors.push(`Field "status" must be one of: ${VALID_MATCH_STATUSES.join(', ')}`);
   }

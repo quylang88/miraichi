@@ -51,6 +51,27 @@ describe('api-football-source-registry', () => {
     expect(enabled.every((c) => c.enabled)).toBe(true);
   });
 
+  it('accepts national-team competition type', () => {
+    const validNationalTeamEntry = [
+      {
+        ...API_FOOTBALL_COMPETITION_REGISTRY[0]!,
+        competitionType: 'national-team' as const
+      }
+    ];
+    expect(validateApiFootballSourceRegistry(validNationalTeamEntry)).toEqual([]);
+  });
+
+  it('rejects unknown competition types', () => {
+    const invalidEntry = [
+      {
+        ...API_FOOTBALL_COMPETITION_REGISTRY[0]!,
+        competitionType: 'invalid-type'
+      }
+    ];
+    const errors = validateApiFootballSourceRegistry(invalidEntry);
+    expect(errors).toContain('entries[0].competitionType must be "club" or "national-team"');
+  });
+
   it('rejects invalid or duplicate registry entries', () => {
     expect(validateApiFootballSourceRegistry([])).toEqual(['Registry entries must be a non-empty array']);
 

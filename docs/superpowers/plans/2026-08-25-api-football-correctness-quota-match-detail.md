@@ -9,7 +9,7 @@
 ## Owner-Approved Boundary
 
 - Result freshness is a **best-effort SLO of <= 5 minutes**, not a hard SLA. The SLO is eligible only while API-Football is available, the fixture is known, and normal quota remains.
-- Match detail is ingested during live/terminal fixture polling. Historical detail is fetched lazily by the worker and cached after the owner first requests it.
+- Match results and detail are persisted only after a terminal `FT`/`AET`/`PEN` response. Historical detail is fetched lazily only for completed matches after the owner first requests it. Provider live responses are polling control only and are not persisted or published.
 - Competition configuration continues to support both `club` and `national-team`; neither type receives core-code priority.
 - Basic detail includes factual header data, score breakdown, goals/cards/penalties/substitutions, and the two-team summary for corners, cards, shots, shots on target, and possession.
 - The browser calls only Miraichi API routes. Provider credentials, URLs, fixture IDs, rate-limit state, and refresh orchestration stay server-side.
@@ -35,6 +35,7 @@
 - `fixtures?ids=` requests contain at most 20 IDs.
 - Current-season hydration is scheduled across every enabled competition before any historical-season target; history then proceeds round-robin by recency.
 - Missing provider coverage produces explicit `unavailable`/warning state and never fabricated zeros or invented events.
+- Provider live states never enter canonical/local contracts: a non-terminal poll keeps the stored match scheduled with null scores and does not publish a new snapshot or detail cache entry.
 
 ---
 
@@ -57,7 +58,7 @@
 - A target for provider season `2024` is stored as season `2024` even when the registry current season is `2026`.
 - Daily and hydration adaptation of league `39` both use canonical competition ID `eng-premier-league`, never `league-39`.
 - Changing only `fixture.id` does not change the canonical match ID; the changed provider ID appears only in the provider link.
-- `1H`, `HT`, `2H`, `ET`, `BT`, and `P` normalize to `in_play` and preserve factual current scores; terminal statuses remain completed.
+- `1H`, `HT`, `2H`, `ET`, `BT`, `P`, and `LIVE` remain non-published polling state; canonical/local matches stay `scheduled` with null scores. Only `FT`, `AET`, and `PEN` normalize to `completed` with factual terminal scores.
 - `competitionEntry.competitionType` is projected instead of a hardcoded `club` value.
 
 **Red command:**
@@ -66,12 +67,12 @@
 pnpm exec vitest run packages/config/src/api-football-source-registry.test.ts packages/shared/src/contracts/local-match-contracts.test.ts packages/shared/src/contracts/provider-ingestion-contracts.test.ts apps/worker/src/sources/api-football/api-football-adapter.test.ts
 ```
 
-Expected: FAIL on national-team configuration, historical season mapping, canonical ID stability, and live status.
+Expected: FAIL on national-team configuration, historical season validation, canonical ID stability, and terminal-only status projection.
 
 **Implementation:**
 
 - Change `ApiFootballCompetitionEntry.competitionType` to `LocalCompetitionType` and keep the initial 50 entries as club competitions.
-- Add `in_play` to provider-neutral canonical/local status contracts and remove the obsolete Phase 9 rejection.
+- Keep `in_play` rejected by provider-neutral canonical/local status contracts. Treat provider live states as internal polling control only.
 - Require adaptation to receive a registry entry and an expected target season; reject mismatched league ID or season instead of guessing.
 - Build the canonical match ID from a hash of `competitionId | season | normalizedRound | homeTeamId | awayTeamId`. Kickoff time and provider fixture ID are excluded.
 - Keep `fixture.id` solely in `ProviderLink.providerEntityId` and subsequent server-side lookup.
@@ -319,10 +320,10 @@ git diff --check
 - Daily sync groups each response fixture through its configured registry entry and preserves all historical serving matches.
 - Twenty-one due fixtures become two requests of 20 and 1; 41 become three requests.
 - Provider fixture IDs are resolved from server-side source refs/provider links, never parsed from canonical match IDs.
-- The first normal poll is due at kickoff +100 minutes; in-play, extra-time, and penalty statuses continue every 150 seconds up to +180 minutes or terminal state.
+- The first normal poll is due at kickoff +100 minutes; provider responses that remain live, in extra time, or in penalties schedule another internal poll every 150 seconds up to +180 minutes or terminal state without publishing live state.
 - `FT`, `AET`, `PEN`, cancelled, and postponed stop future polling immediately.
 - No due work or no normal quota makes zero fetch calls and does not mutate the serving manifest.
-- Poll responses atomically merge matches and upsert embedded detail before returning `published`.
+- Only fully terminal poll responses atomically merge matches and upsert embedded detail before returning `published`; non-terminal responses record the next due poll and return `not_modified` without mutating public stores.
 
 **Red command:**
 
@@ -372,7 +373,7 @@ git diff --check
 
 - Cached detail returns HTTP 200 without queue or provider work.
 - A scheduled match without detail returns basic factual detail without enqueueing a wasteful provider request.
-- An in-play/completed historical cache miss enqueues only canonical match ID and returns HTTP 202 `detail_pending` with `Retry-After`.
+- A completed historical cache miss enqueues only canonical match ID and returns HTTP 202 `detail_pending` with `Retry-After`; scheduled/non-terminal matches never enqueue detail work.
 - Duplicate owner requests coalesce into one queue item.
 - Worker resolves the provider fixture ID server-side, batches up to 20 queue items, writes details, and marks queue items completed only after cache publication.
 - Missing normal quota leaves the item pending with `quota_deferred`; provider failure records retry metadata and does not erase cached detail.
@@ -476,7 +477,7 @@ git diff --check
 - Daily sync preserves history; a 21-match smart window publishes two chunks and retains unrelated fixtures.
 - Worker restart shares quota state, makes one daily sync, respects 10/minute, and never exceeds normal ceiling 85.
 - Club and national-team registry entries both reach the serving store without core branching.
-- Live/FT polling writes match detail; a historical cache miss goes 202 -> worker refresh -> 200 cached detail with no second provider call.
+- Terminal `FT`/`AET`/`PEN` polling writes match detail; a completed historical cache miss goes 202 -> worker refresh -> 200 cached detail with no second provider call.
 - Extra-time and penalty fixtures remain eligible after +115 minutes; terminal fixtures stop immediately.
 - Provider/key/fixture IDs never appear in public match-detail payloads.
 
@@ -492,7 +493,7 @@ Expected: at least one integration test remains red until every preceding slice 
 
 - Wire all API-Football integration tests into `api-football:integration`.
 - Update serving README with exact local flow, cache/queue locations, free-plan limits, one-daily-sync rule, hydration ordering, and safe CLI commands.
-- Amend ADR-0047 language from hard SLA to owner-approved best-effort SLO and document live/FT plus lazy historical detail.
+- Amend ADR-0047 language from hard SLA to owner-approved best-effort SLO and document terminal-only publication plus lazy completed-history detail.
 - Update `PROJECT_PLAN.md` only after the full gates pass; do not mark staging, owner feedback, or production approved.
 
 **Large-boundary verification:**

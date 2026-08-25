@@ -58,16 +58,19 @@ describe('runApiFootballHydrationJob', () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-hydration-test-'));
 
     try {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async (): Promise<ApiFootballApiResponse<ApiFootballFixtureItem>> => ({
-          get: 'fixtures',
-          parameters: { league: '39', season: '2026' },
-          errors: [],
-          results: 1,
-          response: [MOCK_FIXTURE]
-        })
+      const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+        const season = Number(new URL(url).searchParams.get('season'));
+        return {
+          ok: true,
+          status: 200,
+          json: async (): Promise<ApiFootballApiResponse<ApiFootballFixtureItem>> => ({
+            get: 'fixtures',
+            parameters: { league: '39', season: String(season) },
+            errors: [],
+            results: 1,
+            response: [{ ...MOCK_FIXTURE, league: { ...MOCK_FIXTURE.league, season } }]
+          })
+        };
       });
 
       const client = new ApiFootballClient({ fetchFn: mockFetch as unknown as typeof fetch });

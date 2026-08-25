@@ -53,7 +53,7 @@ export interface ApiFootballIngestionRunResult {
 }
 
 export function computeConcludingWindows(
-  matches: readonly { matchId: string; kickoffUtc: string; status: string }[],
+  matches: readonly { matchId: string; providerFixtureId?: number; kickoffUtc: string; status: string }[],
   config = API_FOOTBALL_QUOTA_CONFIG
 ): ConcludingWindow[] {
   const windows: ConcludingWindow[] = [];
@@ -66,15 +66,11 @@ export function computeConcludingWindows(
     const windowStartMs = kickoffMs + config.concludingWindowStartMinutes * 60_000;
     const windowEndMs = kickoffMs + config.concludingWindowEndMinutes * 60_000;
 
-    // Extract provider fixture ID from match ID (e.g. match-eng-premier-league-2026-1001)
-    const parts = match.matchId.split('-');
-    const fixtureIdStr = parts[parts.length - 1];
-    const fixtureId = fixtureIdStr ? parseInt(fixtureIdStr, 10) : NaN;
-
-    if (!Number.isNaN(fixtureId)) {
+    const fixtureId = match.providerFixtureId;
+    if (Number.isInteger(fixtureId) && fixtureId! > 0) {
       windows.push({
         matchId: match.matchId,
-        providerFixtureId: fixtureId,
+        providerFixtureId: fixtureId!,
         kickoffUtc: match.kickoffUtc,
         windowStartUtc: new Date(windowStartMs).toISOString(),
         windowEndUtc: new Date(windowEndMs).toISOString(),
@@ -159,6 +155,7 @@ async function handleDailySync(
     );
 
     const adapted = adaptApiFootballMatches({
+      registry,
       fixtures: relevantFixtures,
       observedAt: now().toISOString()
     });
@@ -189,7 +186,25 @@ async function handleDailySync(
       warehouseRunId: runId
     });
 
-    const windows = computeConcludingWindows(adapted.matches);
+    const providerFixtureIdsByMatchId = new Map(
+      adapted.links
+        .filter((link) =>
+          link.entityType === 'match' &&
+          link.provider === 'api-football' &&
+          link.providerEntityType === 'fixture'
+        )
+        .map((link) => [link.entityId, parseProviderFixtureId(link.providerEntityId)] as const)
+        .filter((entry): entry is readonly [string, number] => entry[1] !== null)
+    );
+    const windows = computeConcludingWindows(adapted.matches.map((match) => {
+      const providerFixtureId = providerFixtureIdsByMatchId.get(match.matchId);
+      return {
+        matchId: match.matchId,
+        kickoffUtc: match.kickoffUtc,
+        status: match.status,
+        ...(providerFixtureId === undefined ? {} : { providerFixtureId })
+      };
+    }));
     const completedCount = adapted.matches.filter((m) => m.status === 'completed').length;
 
     return {
@@ -252,9 +267,10 @@ async function handleWindowPoll(
       currentMs <= kMs + API_FOOTBALL_QUOTA_CONFIG.concludingWindowEndMinutes * 60_000;
 
     if (inWindow) {
-      const parts = match.id.split('-');
-      const fixtureId = parseInt(parts[parts.length - 1] || '', 10);
-      if (!Number.isNaN(fixtureId)) {
+      const fixtureId = parseProviderFixtureId(
+        match.sourceRefs.find((ref) => ref.sourceId === 'api-football')?.sourceMatchId
+      );
+      if (fixtureId !== null) {
         concludingMatches.push({ match, fixtureId });
       }
     }
@@ -288,9 +304,30 @@ async function handleWindowPoll(
     const response = await client.fetchFixturesByIds(fixtureIds);
 
     const adapted = adaptApiFootballMatches({
+      registry,
       fixtures: response.response || [],
       observedAt: now().toISOString()
     });
+
+    const completedCount = adapted.matches.filter((match) => match.status === 'completed').length;
+    const allRequestedFixturesAreTerminal =
+      adapted.matches.length === concludingMatches.length &&
+      adapted.matches.every((match) =>
+        match.status === 'completed' ||
+        match.status === 'postponed' ||
+        match.status === 'cancelled'
+      );
+
+    if (!allRequestedFixturesAreTerminal) {
+      return {
+        status: 'not_modified',
+        runId,
+        mode: 'window_poll',
+        matchesProcessed: adapted.matches.length,
+        matchesCompleted: completedCount,
+        quotaUsedToday: client.quotaGuard.getState(now()).usedToday
+      };
+    }
 
     const validation = validateApiFootballPublicationCandidate({
       candidateMatches: adapted.matches,
@@ -345,8 +382,6 @@ async function handleWindowPoll(
       warehouseRunId: runId
     });
 
-    const completedCount = adapted.matches.filter((m) => m.status === 'completed').length;
-
     return {
       status: 'published',
       runId,
@@ -366,4 +401,10 @@ async function handleWindowPoll(
       error: error instanceof Error ? error.message : String(error)
     };
   }
+}
+
+function parseProviderFixtureId(value: string | undefined): number | null {
+  if (value === undefined || !/^\d+$/u.test(value)) return null;
+  const fixtureId = Number(value);
+  return Number.isSafeInteger(fixtureId) && fixtureId > 0 ? fixtureId : null;
 }

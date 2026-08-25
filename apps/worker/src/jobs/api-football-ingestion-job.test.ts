@@ -18,7 +18,7 @@ const SAMPLE_REGISTRY: readonly ApiFootballCompetitionEntry[] = [
     country: 'England',
     category: 'top5_europe',
     competitionType: 'club',
-    providerLeagueId: 39,
+    providerLeagueId: 99998,
     currentSeason: 2026,
     historicalSeasons: [],
     sourceTimezone: 'Europe/London',
@@ -36,7 +36,7 @@ const MOCK_FIXTURE_SCHEDULED: ApiFootballFixtureItem = {
     status: { long: 'Not Started', short: 'NS', elapsed: null }
   },
   league: {
-    id: 39,
+    id: 99998,
     name: 'Premier League',
     country: 'England',
     season: 2026,
@@ -70,17 +70,38 @@ const MOCK_FIXTURE_FINISHED: ApiFootballFixtureItem = {
   }
 };
 
+const MOCK_FIXTURE_LIVE: ApiFootballFixtureItem = {
+  ...MOCK_FIXTURE_SCHEDULED,
+  fixture: {
+    ...MOCK_FIXTURE_SCHEDULED.fixture,
+    status: { long: 'Second Half', short: '2H', elapsed: 88 }
+  },
+  goals: { home: 1, away: 0 },
+  score: {
+    halftime: { home: 1, away: 0 },
+    fulltime: { home: null, away: null },
+    extratime: { home: null, away: null },
+    penalty: { home: null, away: null }
+  }
+};
+
 describe('computeConcludingWindows', () => {
   it('computes concluding window range [T+88m, T+115m] for scheduled matches', () => {
     const windows = computeConcludingWindows([
-      { matchId: 'match-eng-premier-league-2026-1001', kickoffUtc: '2026-08-25T15:00:00.000Z', status: 'scheduled' },
-      { matchId: 'match-eng-premier-league-2026-1002', kickoffUtc: '2026-08-25T15:00:00.000Z', status: 'completed' }
+      { matchId: 'match-canonical-a', providerFixtureId: 1001, kickoffUtc: '2026-08-25T15:00:00.000Z', status: 'scheduled' },
+      { matchId: 'match-canonical-b', providerFixtureId: 1002, kickoffUtc: '2026-08-25T15:00:00.000Z', status: 'completed' }
     ]);
 
     expect(windows).toHaveLength(1);
     expect(windows[0]?.providerFixtureId).toBe(1001);
     expect(windows[0]?.windowStartUtc).toBe('2026-08-25T16:28:00.000Z'); // 15:00 + 88m = 16:28
     expect(windows[0]?.windowEndUtc).toBe('2026-08-25T16:55:00.000Z');   // 15:00 + 115m = 16:55
+  });
+
+  it('does not derive provider fixture identity from a canonical match id', () => {
+    expect(computeConcludingWindows([
+      { matchId: 'match-1001', kickoffUtc: '2026-08-25T15:00:00.000Z', status: 'scheduled' }
+    ])).toEqual([]);
   });
 });
 
@@ -180,6 +201,53 @@ describe('runApiFootballIngestionJob', () => {
       expect(pollResult.status).toBe('published');
       expect(pollResult.matchesProcessed).toBe(1);
       expect(pollResult.matchesCompleted).toBe(1);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('does not publish or expose scores when a concluding-window response is still live', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ingest-live-noop-'));
+
+    try {
+      let fetchCount = 0;
+      const mockFetch = vi.fn().mockImplementation(async () => {
+        fetchCount += 1;
+        const fixture = fetchCount === 1 ? MOCK_FIXTURE_SCHEDULED : MOCK_FIXTURE_LIVE;
+        return {
+          ok: true,
+          status: 200,
+          json: async (): Promise<ApiFootballApiResponse<ApiFootballFixtureItem>> => ({
+            get: 'fixtures',
+            parameters: fetchCount === 1 ? { date: '2026-08-25' } : { ids: '1001' },
+            errors: [],
+            results: 1,
+            response: [fixture]
+          })
+        };
+      });
+
+      const client = new ApiFootballClient({ fetchFn: mockFetch as unknown as typeof fetch });
+      await runApiFootballIngestionJob({
+        dataRoot: tempDir,
+        mode: 'daily_sync',
+        date: '2026-08-25',
+        client,
+        registry: SAMPLE_REGISTRY,
+        now: () => new Date('2026-08-25T05:00:00.000Z')
+      });
+
+      const pollResult = await runApiFootballIngestionJob({
+        dataRoot: tempDir,
+        mode: 'window_poll',
+        client,
+        registry: SAMPLE_REGISTRY,
+        now: () => new Date('2026-08-25T16:35:00.000Z')
+      });
+
+      expect(pollResult.status).toBe('not_modified');
+      expect(pollResult.matchesProcessed).toBe(1);
+      expect(pollResult.matchesCompleted).toBe(0);
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }

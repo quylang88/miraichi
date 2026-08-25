@@ -7,7 +7,10 @@ import type {
   FieldProvenance,
   ProviderLink
 } from '@miraichi/shared';
-import type { ApiFootballCompetitionEntry } from '@miraichi/config';
+import {
+  API_FOOTBALL_COMPETITION_REGISTRY,
+  type ApiFootballCompetitionEntry
+} from '@miraichi/config';
 import type { ApiFootballFixtureItem } from './api-football-client.js';
 
 export interface ApiFootballCanonicalBatch {
@@ -21,6 +24,8 @@ export interface ApiFootballCanonicalBatch {
 
 export interface AdaptApiFootballMatchesInput {
   competitionEntry?: ApiFootballCompetitionEntry;
+  expectedSeason?: number;
+  registry?: readonly ApiFootballCompetitionEntry[];
   fixtures: readonly ApiFootballFixtureItem[];
   observedAt: string;
 }
@@ -31,6 +36,8 @@ function sha256(value: string): string {
 
 function slugify(value: string): string {
   return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/gu, '')
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/gu, '-')
@@ -49,7 +56,7 @@ export function mapApiFootballStatusToCanonical(shortStatus: string): CanonicalM
     case 'BT':
     case 'P':
     case 'LIVE':
-      return 'scheduled'; // Core serving contracts treat ongoing matches as scheduled until completed, or in_play context
+      return 'scheduled';
     case 'FT':
     case 'AET':
     case 'PEN':
@@ -68,7 +75,7 @@ export function mapApiFootballStatusToCanonical(shortStatus: string): CanonicalM
 }
 
 export function adaptApiFootballMatches(input: AdaptApiFootballMatchesInput): ApiFootballCanonicalBatch {
-  const { fixtures, observedAt, competitionEntry } = input;
+  const { fixtures, observedAt } = input;
   const matches: CanonicalMatch[] = [];
   const teamsMap = new Map<string, CanonicalTeam>();
   const compsMap = new Map<string, CanonicalCompetition>();
@@ -89,16 +96,49 @@ export function adaptApiFootballMatches(input: AdaptApiFootballMatchesInput): Ap
       continue;
     }
 
-    const compId = competitionEntry?.competitionId ?? `league-${league?.id ?? 'unknown'}`;
-    const compName = competitionEntry?.competitionName ?? league?.name ?? 'Unknown Competition';
-    const season = String(competitionEntry?.currentSeason ?? league?.season ?? '2026');
+    let entry: ApiFootballCompetitionEntry | undefined = input.competitionEntry;
+    if (entry) {
+      if (typeof league?.id === 'number' && league.id !== entry.providerLeagueId) {
+        issues.push({
+          code: 'league_id_mismatch',
+          message: `Fixture league ID ${league.id} does not match expected entry provider league ID ${entry.providerLeagueId}`,
+          fixtureId: fixture.id
+        });
+        continue;
+      }
+    } else {
+      const registry = input.registry ?? API_FOOTBALL_COMPETITION_REGISTRY;
+      entry = registry.find((r) => r.providerLeagueId === league?.id);
+      if (!entry) {
+        issues.push({
+          code: 'unregistered_league',
+          message: `Fixture league ID ${league?.id} is not registered in competition registry`,
+          fixtureId: fixture.id
+        });
+        continue;
+      }
+    }
+
+    if (input.expectedSeason !== undefined && league?.season !== input.expectedSeason) {
+      issues.push({
+        code: 'season_mismatch',
+        message: `Fixture season ${String(league?.season)} does not match expected season ${input.expectedSeason}`,
+        fixtureId: fixture.id
+      });
+      continue;
+    }
+
+    const compId = entry.competitionId;
+    const compName = entry.competitionName;
+    const compType = entry.competitionType;
+    const season = String(league?.season ?? input.expectedSeason ?? entry.currentSeason);
 
     // Canonical Competition
     if (!compsMap.has(compId)) {
       compsMap.set(compId, {
         competitionId: compId,
         name: compName,
-        type: 'club',
+        type: compType,
         updatedAt: observedAt
       });
       links.push({
@@ -106,7 +146,7 @@ export function adaptApiFootballMatches(input: AdaptApiFootballMatchesInput): Ap
         entityId: compId,
         provider: 'api-football',
         providerEntityType: 'league',
-        providerEntityId: String(league?.id ?? compId),
+        providerEntityId: String(entry.providerLeagueId),
         confidence: 1.0,
         linkedBy: 'api-football-adapter',
         linkedAt: observedAt
@@ -173,18 +213,32 @@ export function adaptApiFootballMatches(input: AdaptApiFootballMatchesInput): Ap
     }
 
     const canonicalStatus = mapApiFootballStatusToCanonical(fixture.status?.short || '');
-    const matchId = `match-${compId}-${season}-${fixture.id}`;
+    const normalizedRound = slugify(league?.round || '');
+    const matchHash = sha256(`${compId}|${season}|${normalizedRound}|${homeTeamId}|${awayTeamId}`).slice(0, 16);
+    const matchId = `match-${matchHash}`;
 
     // Score resolution
-    let scoreHome: number | null = goals?.home ?? null;
-    let scoreAway: number | null = goals?.away ?? null;
+    let scoreHome: number | null = null;
+    let scoreAway: number | null = null;
 
     if (canonicalStatus === 'completed') {
-      if (scoreHome === null && score?.fulltime?.home !== null) scoreHome = score.fulltime.home;
-      if (scoreAway === null && score?.fulltime?.away !== null) scoreAway = score.fulltime.away;
-    } else if (canonicalStatus === 'scheduled') {
-      scoreHome = null;
-      scoreAway = null;
+      scoreHome = goals?.home ?? null;
+      scoreAway = goals?.away ?? null;
+
+      if (scoreHome === null) {
+        if (score?.fulltime?.home !== null && score?.fulltime?.home !== undefined) {
+          scoreHome = score.fulltime.home;
+        } else if (score?.halftime?.home !== null && score?.halftime?.home !== undefined) {
+          scoreHome = score.halftime.home;
+        }
+      }
+      if (scoreAway === null) {
+        if (score?.fulltime?.away !== null && score?.fulltime?.away !== undefined) {
+          scoreAway = score.fulltime.away;
+        } else if (score?.halftime?.away !== null && score?.halftime?.away !== undefined) {
+          scoreAway = score.halftime.away;
+        }
+      }
     }
 
     const canonicalMatch: CanonicalMatch = {

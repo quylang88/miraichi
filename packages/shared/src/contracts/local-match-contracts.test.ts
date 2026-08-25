@@ -145,14 +145,14 @@ describe('Local Match Contracts Validation', () => {
     expect(result2.ok ? [] : result2.errors).toContain('Forbidden field "providerFixtureId" is present');
   });
 
-  it('rejects status "in_play" because Phase 9 has no live data', () => {
+  it('rejects status "in_play" because the serving store publishes terminal updates only', () => {
     const invalidMatch = {
       ...validScheduledMatch,
       status: 'in_play'
     };
     const result = validateLocalMatch(invalidMatch);
     expect(result.ok).toBe(false);
-    expect(result.ok ? [] : result.errors).toContain('Field "status" cannot be "in_play" in Phase 9');
+    expect(result.ok ? [] : result.errors).toContain('Field "status" cannot be "in_play" in the terminal-only match feed');
   });
 
   it('accepts club competitions', () => {

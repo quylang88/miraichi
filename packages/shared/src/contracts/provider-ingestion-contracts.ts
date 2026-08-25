@@ -490,7 +490,9 @@ export function validateCanonicalMatch(input: unknown): ValidationResult {
   if (!isValidIsoDateTime(input.kickoffUtc)) {
     errors.push('Field "kickoffUtc" must be a valid ISO datetime string');
   }
-  if (!VALID_CANONICAL_STATUSES.includes(input.status as CanonicalMatchStatus)) {
+  if (input.status === 'in_play') {
+    errors.push('Field "status" cannot be "in_play" in the terminal-only canonical feed');
+  } else if (!VALID_CANONICAL_STATUSES.includes(input.status as CanonicalMatchStatus)) {
     errors.push(`Field "status" must be one of: ${VALID_CANONICAL_STATUSES.join(', ')}`);
   }
   if (typeof input.homeTeamId !== 'string' || input.homeTeamId.trim() === '') {

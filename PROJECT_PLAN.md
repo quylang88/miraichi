@@ -4,8 +4,8 @@
 
 - **Status**: Active
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
-- **Completed phase**: `phase:implementation-plan API-Football Correctness, Quota Hardening, And Basic Match Detail` — exact TDD slices were written on 2026-08-25.
-- **Active phase**: the API-Football implementation plan is closed locally; `phase:code-slice` has not been started.
+- **Completed phase**: `phase:code-slice API-Football Correctness, Quota Hardening, And Basic Match Detail — Slice 1` — competition, season, terminal-only status, canonical identity, and provider-link lookup were corrected locally on 2026-08-25.
+- **Active phase**: Slice 1 is closed locally; Slice 2 durable quota work has not been started.
 - **Promotion state**: staging, owner feedback, and production are not started or approved.
 - **Current lifecycle source of truth**: this file.
 
@@ -52,9 +52,10 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Completely eradicate OpenFootball registries, parsers, capture scripts, and fixtures.
 - [x] End-to-end integration test proving hydration, daily sync, fast poll, and API serving across 50 leagues.
 - [x] Review commits `92e7eca` and `b14bdea`; identify snapshot replacement, non-durable quota, repeated daily sync, season/identity drift, fixed hydration order, unbounded ID batches, and empty match-detail blockers.
-- [x] Owner approved a best-effort result SLO <= 5 minutes, live/FT ingestion plus lazy historical detail cache, and `club | national-team` registry support.
+- [x] Owner approved a best-effort result SLO <= 5 minutes, terminal-only result/detail publication plus lazy completed-history detail cache, and `club | national-team` registry support. Provider live responses are polling control only and are not persisted or published.
 - [x] Write the exact TDD implementation plan at `docs/superpowers/plans/2026-08-25-api-football-correctness-quota-match-detail.md`.
-- [ ] Execute API-Football correctness and quota-hardening slices in order; do not run a real provider key against the active serving root before local integration passes.
+- [x] Complete Slice 1: correct registry type, target-season validation, canonical identity, terminal-only status/score projection, and provider fixture lookup through source refs.
+- [ ] Execute API-Football correctness and quota-hardening Slices 2–9 in order; do not run a real provider key against the active serving root before local integration passes.
 - [ ] Prove complete-snapshot preservation, durable quota across restarts, one daily sync, 20-ID chunking, fair 50/51+ hydration, extended terminal polling, and cached match detail.
 
 ## Local Integration Evidence — 2026-08-25
@@ -68,7 +69,7 @@ The 2026-08-25 commit review invalidated the API-Football-specific conclusions a
 
 ## Later Phases
 
-1. Start `phase:code-slice API-Football Correctness, Quota Hardening, And Basic Match Detail` with Slice 1 from the approved implementation plan.
+1. Start `phase:code-slice API-Football Correctness, Quota Hardening, And Basic Match Detail` with Slice 2 from the approved implementation plan.
 2. Run a fresh `phase:integration-test` only after all nine slices pass their focused gates.
 3. Request staging approval before any live-key smoke or initial historical hydration.
 4. Staging deployment and smoke evidence.

@@ -289,6 +289,24 @@ describe('provider-neutral ingestion contracts', () => {
     })).toEqual({ ok: true });
   });
 
+  it('rejects canonical matches with in_play status', () => {
+    const result = validateCanonicalMatch({
+      matchId: 'match-20260702-japan-vietnam',
+      competitionId: 'competition-world-cup',
+      season: '2026',
+      kickoffUtc: '2026-07-02T12:00:00.000Z',
+      status: 'in_play',
+      homeTeamId: 'team-japan',
+      awayTeamId: 'team-vietnam',
+      scoreHome: 1,
+      scoreAway: 0,
+      venue: 'National Stadium',
+      updatedAt: '2026-07-02T00:00:00.000Z'
+    });
+    expect(result.ok).toBe(false);
+    expect(result.ok ? [] : result.errors).toContain('Field "status" cannot be "in_play" in the terminal-only canonical feed');
+  });
+
   it('links canonical matches to provider ids with confidence', () => {
     expect(validateProviderLink({
       entityType: 'match',

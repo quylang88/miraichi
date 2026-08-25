@@ -88,6 +88,7 @@ export async function runApiFootballHydrationJob(
       const response = await client.fetchSeasonFixtures(target.entry.providerLeagueId, target.season);
       const adapted = adaptApiFootballMatches({
         competitionEntry: target.entry,
+        expectedSeason: target.season,
         fixtures: response.response || [],
         observedAt: now().toISOString()
       });

@@ -3,7 +3,7 @@
 - **Status**: Accepted
 - **Date**: 2026-08-25
 - **Owner approval**: Explicitly approved by the project owner on 2026-08-25.
-- **Amendment approval**: On 2026-08-25 the owner explicitly approved a best-effort result SLO <= 5 minutes, live/FT ingestion plus lazy historical match-detail caching, and continued `club | national-team` configuration support.
+- **Amendment approval**: On 2026-08-25 the owner explicitly approved a best-effort result SLO <= 5 minutes, terminal-only result/detail publication plus lazy completed-history match-detail caching, and continued `club | national-team` configuration support. Provider live responses are used only to decide whether terminal polling must continue; they are not persisted or published.
 - **Supersedes**: ADR-0045 (for external match data source feed).
 
 ## Context
@@ -45,8 +45,9 @@ The project owner requires:
    - *Quota Guard*: A durable cross-restart ledger enforces the 85-request normal ceiling, retains 15 requests outside automatic use, respects the free per-minute limit, and reconciles provider response headers.
 
 5. **Basic Match Detail**:
-   - Live/terminal fixture batches normalize factual referee, elapsed time, score breakdown, events, and the approved two-team statistics into a provider-neutral local detail cache.
-   - A historical cache miss is queued by canonical match ID; the worker resolves provider identity server-side, fetches lazily within normal quota, and caches the result.
+   - Only terminal fixture batches normalize factual referee, elapsed time, score breakdown, events, and the approved two-team statistics into a provider-neutral local detail cache.
+   - A completed historical cache miss is queued by canonical match ID; the worker resolves provider identity server-side, fetches lazily within normal quota, and caches the result.
+   - Non-terminal provider responses are polling control only. They do not mutate the canonical warehouse, serving store, or match-detail cache.
    - The API route never calls API-Football directly and never exposes credentials, provider URLs, or provider fixture IDs.
    - Basic detail excludes predictions, xG, automated betting advice, player ratings, and bulk historical player hydration.
 

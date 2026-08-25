@@ -9,6 +9,8 @@ export type CompetitionCategory =
   | 'domestic_cup'
   | 'world_club';
 
+export type ApiFootballCompetitionType = 'club' | 'national-team';
+
 export interface ApiFootballCompetitionEntry {
   entryId: string;
   sourceId: 'api-football';
@@ -16,7 +18,7 @@ export interface ApiFootballCompetitionEntry {
   competitionName: string;
   country: string;
   category: CompetitionCategory;
-  competitionType: 'club';
+  competitionType: ApiFootballCompetitionType;
   providerLeagueId: number;
   currentSeason: number;
   historicalSeasons: readonly number[];
@@ -828,8 +830,8 @@ export function validateApiFootballSourceRegistry(entries: readonly unknown[]): 
       errors.push(`entries[${index}].country must be a non-empty string`);
     }
 
-    if (entry.competitionType !== 'club') {
-      errors.push(`entries[${index}].competitionType must be "club"`);
+    if (entry.competitionType !== 'club' && entry.competitionType !== 'national-team') {
+      errors.push(`entries[${index}].competitionType must be "club" or "national-team"`);
     }
 
     if (typeof entry.providerLeagueId !== 'number' || !Number.isInteger(entry.providerLeagueId) || entry.providerLeagueId <= 0) {
