@@ -95,4 +95,24 @@ describe('core betting web service', () => {
     };
     expect(await loadBetSettlementTimeline('bet-1', fetcher)).toMatchObject([{ settlementEventId: 'settle-1' }]);
   });
+
+  it('serializes startDate and endDate query parameters when period is custom', async () => {
+    const calls: string[] = [];
+    const fetcher = async (input: RequestInfo | URL) => {
+      calls.push(String(input));
+      return new Response(JSON.stringify({ period: 'custom', netProfitLossPoints: 10, winRate: 1, dailyBuckets: [] }), { status: 200 });
+    };
+    await loadBetReport({
+      period: 'custom',
+      anchor: '2026-08-25',
+      startDate: '2026-08-01',
+      endDate: '2026-08-15',
+      accountId: 'account-1'
+    }, fetcher);
+    expect(calls[0]).toContain('period=custom');
+    expect(calls[0]).toContain('anchor=2026-08-25');
+    expect(calls[0]).toContain('startDate=2026-08-01');
+    expect(calls[0]).toContain('endDate=2026-08-15');
+    expect(calls[0]).toContain('accountId=account-1');
+  });
 });

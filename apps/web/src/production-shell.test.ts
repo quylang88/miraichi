@@ -164,6 +164,110 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(css).toMatch(/\.field\[hidden\]\s*\{[^}]*display:\s*none\s*!important/s);
   });
 
+  it('renders bankroll analytics period presets in EN and VI with correct active highlights', () => {
+    const enHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      reportPeriod: 'previous_week',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'ready', report: { period: { kind: 'previous_week', startDate: '2026-08-10', endDate: '2026-08-16', timeZone: 'UTC' }, netProfitLossPoints: 0, totalSettledBets: 0, totalStakePoints: 0, averageStakePoints: 0, winRatePercent: 0, outcomes: {}, daily: [], market: {}, psychology: { emotion: {}, motivation: {}, planAdherence: {} }, disciplineOverrideCount: 0 } }
+    });
+    expect(enHtml).toContain('data-report-period="this_week"');
+    expect(enHtml).toContain('data-report-period="previous_week"');
+    expect(enHtml).toContain('data-report-period="this_month"');
+    expect(enHtml).toContain('data-report-period="all"');
+    expect(enHtml).toContain('data-report-period="custom"');
+    expect(enHtml).toContain('This Week');
+    expect(enHtml).toContain('Previous Week');
+    expect(enHtml).toContain('This Month');
+    expect(enHtml).toContain('All Time');
+    expect(enHtml).toContain('Custom');
+    expect(enHtml).toContain('<button class="active" type="button" data-report-period="previous_week">Previous Week</button>');
+    expect(enHtml).toContain('class="report-range-badge">📅 2026-08-10 – 2026-08-16</div>');
+
+    const viHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      translate: createTranslator('vi'),
+      locale: 'vi',
+      reportPeriod: 'this_week',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'ready', report: { period: { kind: 'this_week', startDate: '2026-08-17', endDate: '2026-08-23', timeZone: 'UTC' }, netProfitLossPoints: 0, totalSettledBets: 0, totalStakePoints: 0, averageStakePoints: 0, winRatePercent: 0, outcomes: {}, daily: [], market: {}, psychology: { emotion: {}, motivation: {}, planAdherence: {} }, disciplineOverrideCount: 0 } }
+    });
+    expect(viHtml).toContain('Tuần này');
+    expect(viHtml).toContain('Tuần trước');
+    expect(viHtml).toContain('Tháng này');
+    expect(viHtml).toContain('Tất cả');
+    expect(viHtml).toContain('Tùy chỉnh');
+    expect(viHtml).toContain('<button class="active" type="button" data-report-period="this_week">Tuần này</button>');
+    expect(viHtml).toContain('class="report-range-badge">📅 2026-08-17 – 2026-08-23</div>');
+  });
+
+  it('renders single interactive calendar picker for custom date filtering with range highlights and status hint', () => {
+    // 1. Initial custom view without selection (in August 2026)
+    const emptyCalendarHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      reportPeriod: 'custom',
+      customCalendarMonth: '2026-08',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'empty' }
+    });
+    expect(emptyCalendarHtml).toContain('class="calendar-picker"');
+    expect(emptyCalendarHtml).toContain('data-cal-nav="prev"');
+    expect(emptyCalendarHtml).toContain('data-cal-nav="next"');
+    expect(emptyCalendarHtml).toContain('August 2026');
+    expect(emptyCalendarHtml).toContain('data-cal-date="2026-08-01"');
+    expect(emptyCalendarHtml).toContain('data-cal-date="2026-08-31"');
+    expect(emptyCalendarHtml).toContain('Tap to select start date');
+    expect(emptyCalendarHtml).toContain('data-action="apply-custom-range" disabled');
+
+    // 2. Start date selected only
+    const startOnlyHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      reportPeriod: 'custom',
+      customCalendarMonth: '2026-08',
+      customRangeStart: '2026-08-05',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'empty' }
+    });
+    expect(startOnlyHtml).toContain('class="cal-day selected-start" data-cal-date="2026-08-05"');
+    expect(startOnlyHtml).toContain('From 2026-08-05 (Tap to select end date)');
+    expect(startOnlyHtml).not.toContain('data-action="apply-custom-range" disabled');
+
+    // 3. Full range selected with in-range days in Vietnamese
+    const rangeHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      translate: createTranslator('vi'),
+      locale: 'vi',
+      reportPeriod: 'custom',
+      customCalendarMonth: '2026-08',
+      customRangeStart: '2026-08-05',
+      customRangeEnd: '2026-08-10',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'ready', report: { period: { kind: 'custom', startDate: '2026-08-05', endDate: '2026-08-10', timeZone: 'UTC' }, netProfitLossPoints: 15, totalSettledBets: 2, totalStakePoints: 20, averageStakePoints: 10, winRatePercent: 100, outcomes: { full_win: 2 }, daily: [{ date: '2026-08-06', profitLossPoints: 15 }], market: { '1X2': { count: 2, profitLossPoints: 15 } }, psychology: { emotion: { calm: { count: 2, profitLossPoints: 15 } }, motivation: { planned_analysis: { count: 2, profitLossPoints: 15 } }, planAdherence: { yes: { count: 2, profitLossPoints: 15 } } }, disciplineOverrideCount: 0 } }
+    });
+    expect(rangeHtml).toContain('class="cal-day selected-start" data-cal-date="2026-08-05"');
+    expect(rangeHtml).toContain('class="cal-day in-range" data-cal-date="2026-08-06"');
+    expect(rangeHtml).toContain('class="cal-day in-range" data-cal-date="2026-08-07"');
+    expect(rangeHtml).toContain('class="cal-day in-range" data-cal-date="2026-08-08"');
+    expect(rangeHtml).toContain('class="cal-day in-range" data-cal-date="2026-08-09"');
+    expect(rangeHtml).toContain('class="cal-day selected-end" data-cal-date="2026-08-10"');
+    expect(rangeHtml).toContain('Từ 2026-08-05 đến 2026-08-10 (6 ngày)');
+    expect(rangeHtml).toContain('class="report-range-badge">📅 2026-08-05 – 2026-08-10</div>');
+  });
+
+  it('verifies calendar interaction logic and reset mechanics in shell-entry.ts source', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellSource).toContain('[data-cal-nav]');
+    expect(shellSource).toContain('[data-cal-date]');
+    expect(shellSource).toContain('[data-action="apply-custom-range"]');
+    expect(shellSource).toContain('customRangeStart = null');
+    expect(shellSource).toContain('customRangeEnd = null');
+  });
+
   it('keeps manual Add Bet available when the match feed is unavailable', () => {
     const html = renderAppShell({ activeTabId: 'matches', matchFeed: { status: 'unavailable', date: '2026-08-21', reason: 'offline', warnings: [], snapshot: { snapshotId: 's', generatedAt: '2026-08-21T00:00:00.000Z', importedAt: '2026-08-21T00:00:00.000Z', matchCount: 0, competitions: [], sources: [], freshness: 'missing', warnings: [] } } });
     expect(html).toContain('data-open-manual-add');

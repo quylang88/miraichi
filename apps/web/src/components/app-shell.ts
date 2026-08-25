@@ -55,7 +55,8 @@ export function renderAppShell({
   searchQuery = '', isFilterPanelOpen = false, betRecordsState = defaultBetRecordsState,
   bankrollState = defaultBankrollState, betRecordFilter = 'ongoing', bankrollView = 'overview',
   disciplineConfigState = defaultDisciplineConfigState, reportState = defaultReportState,
-  todayReportState = defaultReportState, reportPeriod = 'week'
+  todayReportState = defaultReportState, reportPeriod = 'week',
+  customCalendarMonth, customRangeStart = null, customRangeEnd = null
 }: {
   readonly activeTabId?: string;
   readonly translate?: TranslateFunction;
@@ -73,6 +74,9 @@ export function renderAppShell({
   readonly reportState?: BetReportViewState;
   readonly todayReportState?: BetReportViewState;
   readonly reportPeriod?: BetReportPeriod;
+  readonly customCalendarMonth?: string;
+  readonly customRangeStart?: string | null;
+  readonly customRangeEnd?: string | null;
 } = {}): string {
   const safeActiveTabId = getSafeNavigationTabId(activeTabId);
   const activeTab = navigationTabs.find((tab: NavigationTab) => tab.id === safeActiveTabId) ?? navigationTabs[0];
@@ -81,7 +85,7 @@ export function renderAppShell({
     renderTodayScreen({ activeTabId: safeActiveTabId, translate, bets: betRecordsState, bankroll: bankrollState, discipline: disciplineConfigState, report: todayReportState }),
     renderMatchesScreen({ activeTabId: safeActiveTabId, translate, locale, matchFeed, timezone, filters, searchQuery, isFilterPanelOpen }),
     renderBetsScreen({ activeTabId: safeActiveTabId, translate, state: betRecordsState, filter: betRecordFilter, bankroll: bankrollState }),
-    renderBankrollScreen({ activeTabId: safeActiveTabId, translate, locale, timeZone: resolvedTimeZone, state: bankrollState, view: bankrollView, disciplineConfigState, reportState, reportPeriod })
+    renderBankrollScreen({ activeTabId: safeActiveTabId, translate, locale, timeZone: resolvedTimeZone, state: bankrollState, view: bankrollView, disciplineConfigState, reportState, reportPeriod, customCalendarMonth, customRangeStart, customRangeEnd })
   ].join('');
   return `<div class="production-page"><div class="app-shell" data-production-shell="phase-5-9" data-production-baseline="black-apple-ledger" aria-label="${escapeHtml(translate('common.appLabel'))}"><main class="main-scroll" id="main-scroll" data-active-tab="${escapeHtml(safeActiveTabId)}" aria-label="${escapeHtml(translate(activeTab.descriptionKey, activeTab.fallbackDescription))}">${panels}${renderMatchDetailScreen(translate)}</main>${renderBottomNavigation({ activeTabId: safeActiveTabId, tabs: navigationTabs, translate })}${renderSheets(bankrollState, translate)}</div></div>`;
 }

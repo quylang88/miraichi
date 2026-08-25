@@ -38,17 +38,83 @@ function discipline(state: DisciplineConfigViewState, translate: TranslateFuncti
   </form>`;
 }
 
-function analytics(state: BetReportViewState, selectedPeriod: BetReportPeriod, translate: TranslateFunction): string {
-  const periodButton = (period: BetReportPeriod, key: string) => `<button class="${selectedPeriod === period ? 'active' : ''}" type="button" data-report-period="${period}">${escapeHtml(translate(key))}</button>`;
-  const controls = `<div class="segmented report-periods" role="tablist">${periodButton('week', 'bankroll.thisWeek')}${periodButton('month', 'bankroll.thisMonth')}${periodButton('previous_month', 'bankroll.previousMonth')}${periodButton('all', 'bankroll.allTime')}</div>`;
-  if (state.status === 'loading') return `${controls}<section class="note-card"><div class="note-title">${escapeHtml(translate('common.loading'))}</div></section>`;
-  if (state.status === 'unavailable') return `${controls}<section class="note-card warning"><div class="note-title">${escapeHtml(translate(`error.${state.code}`, translate('error.request_failed')))}</div></section>`;
-  if (state.status === 'empty') return `${controls}<p class="empty-state">${escapeHtml(translate('bets.emptySettled'))}</p>`;
+function renderSingleRangeCalendar(
+  month: string,
+  rangeStart: string | null,
+  rangeEnd: string | null,
+  translate: TranslateFunction,
+  locale: SupportedLocale,
+  todayStr: string
+): string {
+  const [yearNum, monthNum] = (month || todayStr.slice(0, 7)).split('-').map(Number);
+  const dateObj = new Date(yearNum, monthNum - 1, 1);
+  const rawMonthTitle = new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { month: 'long', year: 'numeric' }).format(dateObj);
+  const monthTitle = rawMonthTitle.charAt(0).toUpperCase() + rawMonthTitle.slice(1);
+
+  const firstDay = new Date(yearNum, monthNum - 1, 1).getDay();
+  const leadDays = (firstDay + 6) % 7;
+  const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+
+  let cells = '';
+  for (let i = 0; i < leadDays; i++) {
+    cells += '<span class="cal-day empty" aria-hidden="true"></span>';
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${yearNum}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const classes: string[] = ['cal-day'];
+    if (dateStr === todayStr) classes.push('today');
+    if (rangeStart && dateStr === rangeStart) classes.push('selected-start');
+    if (rangeEnd && dateStr === rangeEnd) classes.push('selected-end');
+    if (rangeStart && rangeEnd && dateStr > rangeStart && dateStr < rangeEnd) classes.push('in-range');
+
+    cells += `<button type="button" class="${classes.join(' ')}" data-cal-date="${dateStr}">${d}</button>`;
+  }
+
+  let statusHint = translate('bankroll.selectStartDate');
+  if (rangeStart && !rangeEnd) {
+    statusHint = `${translate('bankroll.from')} ${rangeStart} (${translate('bankroll.selectEndDate')})`;
+  } else if (rangeStart && rangeEnd) {
+    const startMs = new Date(rangeStart).getTime();
+    const endMs = new Date(rangeEnd).getTime();
+    const diffDays = Math.round((endMs - startMs) / (24 * 60 * 60 * 1000)) + 1;
+    statusHint = `${translate('bankroll.from')} ${rangeStart} ${translate('bankroll.to')} ${rangeEnd} (${diffDays} ${translate('bankroll.days')})`;
+  }
+
+  return `<div class="calendar-picker"><div class="cal-header"><button type="button" class="cal-nav-btn" data-cal-nav="prev" aria-label="${escapeHtml(translate('bankroll.prevMonth'))}">‹</button><span class="cal-month-title">${escapeHtml(monthTitle)}</span><button type="button" class="cal-nav-btn" data-cal-nav="next" aria-label="${escapeHtml(translate('bankroll.nextMonth'))}">›</button></div><div class="cal-weekdays"><span>${escapeHtml(translate('matches.weekday.1'))}</span><span>${escapeHtml(translate('matches.weekday.2'))}</span><span>${escapeHtml(translate('matches.weekday.3'))}</span><span>${escapeHtml(translate('matches.weekday.4'))}</span><span>${escapeHtml(translate('matches.weekday.5'))}</span><span>${escapeHtml(translate('matches.weekday.6'))}</span><span>${escapeHtml(translate('matches.weekday.0'))}</span></div><div class="cal-grid">${cells}</div><div class="cal-actions"><span class="cal-status-hint">${escapeHtml(statusHint)}</span><button type="button" class="primary-button" data-action="apply-custom-range"${!rangeStart ? ' disabled' : ''}>${escapeHtml(translate('bankroll.applyFilter'))}</button></div></div>`;
+}
+
+function analytics(
+  state: BetReportViewState,
+  selectedPeriod: BetReportPeriod,
+  translate: TranslateFunction,
+  customCalendarMonth?: string,
+  customRangeStart?: string | null,
+  customRangeEnd?: string | null,
+  locale: SupportedLocale = 'en'
+): string {
+  const periodButton = (period: BetReportPeriod, key: string) => {
+    const isActive = selectedPeriod === period || (period === 'this_week' && selectedPeriod === 'week') || (period === 'this_month' && selectedPeriod === 'month');
+    return `<button class="${isActive ? 'active' : ''}" type="button" data-report-period="${period}">${escapeHtml(translate(key))}</button>`;
+  };
+  const controls = `<div class="segmented report-periods" role="tablist">${periodButton('this_week', 'bankroll.thisWeek')}${periodButton('previous_week', 'bankroll.previousWeek')}${periodButton('this_month', 'bankroll.thisMonth')}${periodButton('all', 'bankroll.allTime')}${periodButton('custom', 'bankroll.customRange')}</div>`;
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const calendarPicker = selectedPeriod === 'custom'
+    ? renderSingleRangeCalendar(customCalendarMonth || todayStr.slice(0, 7), customRangeStart ?? null, customRangeEnd ?? null, translate, locale, todayStr)
+    : '';
+
+  if (state.status === 'loading') return `${controls}${calendarPicker}<section class="note-card"><div class="note-title">${escapeHtml(translate('common.loading'))}</div></section>`;
+  if (state.status === 'unavailable') return `${controls}${calendarPicker}<section class="note-card warning"><div class="note-title">${escapeHtml(translate(`error.${state.code}`, translate('error.request_failed')))}</div></section>`;
+  if (state.status === 'empty') return `${controls}${calendarPicker}<p class="empty-state">${escapeHtml(translate('bets.emptySettled'))}</p>`;
   const report = state.report;
+  const rangeBadge = (report.period.startDate && report.period.endDate)
+    ? `<div class="report-range-badge">📅 ${escapeHtml(report.period.startDate)} – ${escapeHtml(report.period.endDate)}</div>`
+    : '';
   const bars = report.daily.map((bucket) => `<div class="report-bar ${bucket.profitLossPoints < 0 ? 'negative' : 'positive'}" title="${escapeHtml(bucket.date)}: ${bucket.profitLossPoints} pts"><span style="height:${Math.max(4, Math.min(100, Math.abs(bucket.profitLossPoints)))}%"></span><small>${escapeHtml(bucket.date.slice(5))}</small></div>`).join('');
   const breakdown = (title: string, prefix: string | null, entries: Readonly<Record<string, { readonly count: number; readonly profitLossPoints: number }>>) => `<section class="note-card"><div class="note-eyebrow">${escapeHtml(title)}</div>${Object.entries(entries).map(([key, item]) => `<div class="ledger-row"><span>${escapeHtml(prefix ? translate(`${prefix}.${key}`, key) : key)}</span><span>${item.count} · ${item.profitLossPoints} pts</span></div>`).join('') || `<p class="empty-state">—</p>`}</section>`;
   const outcomes = `<section class="note-card"><div class="note-eyebrow">${escapeHtml(translate('reports.outcomes'))}</div>${Object.entries(report.outcomes).map(([key, count]) => `<div class="ledger-row"><span>${escapeHtml(translate(`settlement.${key}`, key))}</span><span>${count}</span></div>`).join('') || `<p class="empty-state">—</p>`}</section>`;
-  return `${controls}<div class="metric-grid">${metricRow(translate('reports.netPnl'), `${report.netProfitLossPoints} pts`)}${metricRow(translate('reports.averageStake'), `${report.averageStakePoints} pts`)}${metricRow(translate('reports.winRate'), `${report.winRatePercent}%`)}${metricRow(translate('reports.overrides'), String(report.disciplineOverrideCount))}</div><div class="report-bars" aria-label="${escapeHtml(translate('reports.netPnl'))}">${bars}</div><div class="analytics-grid">${outcomes}${breakdown(translate('reports.markets'), null, report.market)}${breakdown(translate('reports.emotions'), 'emotion', report.psychology.emotion)}${breakdown(translate('reports.motivations'), 'motivation', report.psychology.motivation)}${breakdown(translate('reports.planAdherence'), 'adherence', report.psychology.planAdherence)}</div>`;
+  return `${controls}${calendarPicker}${rangeBadge}<div class="metric-grid">${metricRow(translate('reports.netPnl'), `${report.netProfitLossPoints} pts`)}${metricRow(translate('reports.averageStake'), `${report.averageStakePoints} pts`)}${metricRow(translate('reports.winRate'), `${report.winRatePercent}%`)}${metricRow(translate('reports.overrides'), String(report.disciplineOverrideCount))}</div><div class="report-bars" aria-label="${escapeHtml(translate('reports.netPnl'))}">${bars}</div><div class="analytics-grid">${outcomes}${breakdown(translate('reports.markets'), null, report.market)}${breakdown(translate('reports.emotions'), 'emotion', report.psychology.emotion)}${breakdown(translate('reports.motivations'), 'motivation', report.psychology.motivation)}${breakdown(translate('reports.planAdherence'), 'adherence', report.psychology.planAdherence)}</div>`;
 }
 
 export function renderBankrollScreen(input: {
@@ -61,20 +127,33 @@ export function renderBankrollScreen(input: {
   readonly disciplineConfigState: DisciplineConfigViewState;
   readonly reportState: BetReportViewState;
   readonly reportPeriod: BetReportPeriod;
+  readonly customCalendarMonth?: string;
+  readonly customRangeStart?: string | null;
+  readonly customRangeEnd?: string | null;
 }): string {
-  const { activeTabId, translate, locale, timeZone, state, view, disciplineConfigState, reportState, reportPeriod } = input;
+  const {
+    activeTabId, translate, locale, timeZone, state, view,
+    disciplineConfigState, reportState, reportPeriod,
+    customCalendarMonth, customRangeStart, customRangeEnd
+  } = input;
   const tab = (value: BankrollSecondaryView, key: string) => `<button class="${view === value ? 'active' : ''}" type="button" data-bankroll-view="${value}">${escapeHtml(translate(key))}</button>`;
   let body = `<section class="note-card" data-bankroll-state="loading"><div class="note-title">${escapeHtml(translate('common.loading'))}</div></section>`;
   if (state.status === 'unavailable') body = `<section class="note-card warning" data-bankroll-state="unavailable"><div class="note-title">${escapeHtml(translate('common.unavailable'))}</div><p class="note-copy">${escapeHtml(translate('error.request_failed'))}</p></section>`;
   if (state.status === 'empty') body = view === 'discipline'
     ? discipline(disciplineConfigState, translate)
     : view === 'analytics'
-      ? analytics(reportState, reportPeriod, translate)
+      ? analytics(reportState, reportPeriod, translate, customCalendarMonth, customRangeStart, customRangeEnd, locale)
       : `<section class="note-card" data-bankroll-state="empty"><div class="note-title">${escapeHtml(translate('bankroll.noAccounts'))}</div><form class="form-grid" id="create-bankroll-form"><div class="field"><label for="bankroll-label">${escapeHtml(translate('bankroll.account'))}</label><input class="field-input" id="bankroll-label" name="label" required></div><div class="field"><label for="bankroll-opening">${escapeHtml(translate('bankroll.openingPoints'))}</label><input class="field-input" id="bankroll-opening" name="opening" type="number" step="0.01" required></div><button class="primary-button" type="submit">${escapeHtml(translate('common.save'))}</button></form></section>`;
   if (state.status === 'ready') {
     const selected = state.accounts.find((account) => account.accountId === state.selectedAccountId) ?? state.accounts[0]!;
     const options = state.accounts.map((account) => `<option value="${escapeHtml(account.accountId)}" ${account.accountId === selected.accountId ? 'selected' : ''}>${escapeHtml(account.label)}</option>`).join('');
-    const content = view === 'overview' ? overview(state, translate) : view === 'analytics' ? analytics(reportState, reportPeriod, translate) : view === 'discipline' ? discipline(disciplineConfigState, translate) : ledger(state, translate, locale, timeZone);
+    const content = view === 'overview'
+      ? overview(state, translate)
+      : view === 'analytics'
+        ? analytics(reportState, reportPeriod, translate, customCalendarMonth, customRangeStart, customRangeEnd, locale)
+        : view === 'discipline'
+          ? discipline(disciplineConfigState, translate)
+          : ledger(state, translate, locale, timeZone);
     body = `<div data-bankroll-state="ready"><div class="bankroll-toolbar"><label for="bankroll-account-select">${escapeHtml(translate('bankroll.account'))}</label><select id="bankroll-account-select" data-bankroll-account-select>${options}</select><span class="points-state">${selected.currentBalancePoints} pts</span></div>${content}</div>`;
   }
   return `<section class="${screenClass('bankroll', activeTabId)}" id="screen-bankroll" data-shell-tab-panel="bankroll" aria-labelledby="bankroll-title">${screenHeader(translate('bankroll.eyebrow'), translate('bankroll.title'), 'bankroll-title', `<button class="secondary-button" type="button" data-open-settings>${escapeHtml(translate('bankroll.settings'))}</button>`)}<div class="segmented bankroll-views" role="tablist">${tab('overview', 'bankroll.overview')}${tab('analytics', 'bankroll.analytics')}${tab('discipline', 'bankroll.discipline')}${tab('ledger', 'bankroll.ledger')}</div><div class="points-grid">${body}</div></section>`;

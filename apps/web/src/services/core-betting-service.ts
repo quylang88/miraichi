@@ -105,7 +105,7 @@ export async function loadBetSettlementTimeline(betId: string, fetcher: FetchLik
   return response.json() as Promise<readonly BetSettlementEvent[]>;
 }
 
-export type BetReportPeriod = 'week' | 'month' | 'previous_month' | 'all';
+export type BetReportPeriod = 'this_week' | 'previous_week' | 'this_month' | 'all' | 'custom' | 'week' | 'month';
 export interface BetReport {
   readonly period: { readonly kind: BetReportPeriod; readonly startDate: string | null; readonly endDate: string | null; readonly timeZone: string };
   readonly netProfitLossPoints: number;
@@ -130,10 +130,18 @@ export type BetReportViewState =
   | { readonly status: 'unavailable'; readonly code: string };
 
 export async function loadBetReport(
-  input: { readonly period: BetReportPeriod; readonly anchor: string; readonly accountId?: string },
+  input: {
+    readonly period: BetReportPeriod;
+    readonly anchor: string;
+    readonly startDate?: string;
+    readonly endDate?: string;
+    readonly accountId?: string;
+  },
   fetcher: FetchLike = fetch
 ): Promise<BetReport> {
   const query = new URLSearchParams({ period: input.period, anchor: input.anchor });
+  if (input.startDate) query.set('startDate', input.startDate);
+  if (input.endDate) query.set('endDate', input.endDate);
   if (input.accountId) query.set('accountId', input.accountId);
   const response = await requireOk(await fetcher(buildApiUrl(`/api/v1/bet-reports?${query.toString()}`)));
   return response.json() as Promise<BetReport>;

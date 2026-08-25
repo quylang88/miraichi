@@ -52,6 +52,9 @@ let disciplineConfigState: DisciplineConfigViewState = { status: 'loading' };
 let bankrollReportState: BetReportViewState = { status: 'loading' };
 let todayReportState: BetReportViewState = { status: 'loading' };
 let reportPeriod: BetReportPeriod = 'week';
+let customCalendarMonth = todayLocalDate().slice(0, 7);
+let customRangeStart: string | null = null;
+let customRangeEnd: string | null = null;
 let selectedSettlementBetId = '';
 let selectedSettlementTimeline: readonly BetSettlementEvent[] = [];
 let pendingOngoingInput: CreateOngoingBetInput | null = null;
@@ -114,7 +117,10 @@ function render(activeTabId: string): void {
     disciplineConfigState,
     reportState: bankrollReportState,
     todayReportState,
-    reportPeriod
+    reportPeriod,
+    customCalendarMonth,
+    customRangeStart,
+    customRangeEnd
   });
   appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settings.locale);
   appRoot.querySelector('.app-shell')?.setAttribute('data-density', settings.displayDensity);
@@ -393,7 +399,7 @@ function localAnchorDate(): string {
   return todayLocalDate();
 }
 
-async function refreshReports(): Promise<void> {
+async function refreshReports(customParams?: { period: BetReportPeriod; startDate?: string; endDate?: string }): Promise<void> {
   if (disciplineConfigState.status !== 'ready' || !disciplineConfigState.config) {
     const state: BetReportViewState = { status: 'unavailable', code: 'discipline_config_required' };
     bankrollReportState = state;
@@ -406,8 +412,17 @@ async function refreshReports(): Promise<void> {
   render(currentScreenName);
   const accountId = bankrollState.status === 'ready' ? bankrollState.selectedAccountId : undefined;
   const withAccount = accountId ? { accountId } : {};
+  const periodToLoad = customParams?.period ?? reportPeriod;
+  const customStart = customParams?.startDate ?? (periodToLoad === 'custom' ? (customRangeStart ?? undefined) : undefined);
+  const customEnd = customParams?.endDate ?? (periodToLoad === 'custom' ? (customRangeEnd ?? customRangeStart ?? undefined) : undefined);
+
   const [bankrollResult, todayResult] = await Promise.allSettled([
-    loadBetReport({ period: reportPeriod, anchor: localAnchorDate(), ...withAccount }),
+    loadBetReport({
+      period: periodToLoad,
+      anchor: localAnchorDate(),
+      ...(periodToLoad === 'custom' ? { startDate: customStart, endDate: customEnd } : {}),
+      ...withAccount
+    }),
     loadBetReport({ period: 'week', anchor: localAnchorDate(), ...withAccount })
   ]);
   bankrollReportState = bankrollResult.status === 'fulfilled'
@@ -519,8 +534,63 @@ appRoot.addEventListener('click', (event) => {
 
   const reportPeriodTarget = eventTarget.closest<HTMLElement>('[data-report-period]');
   if (reportPeriodTarget?.dataset.reportPeriod) {
-    reportPeriod = reportPeriodTarget.dataset.reportPeriod as BetReportPeriod;
-    void refreshReports();
+    const selected = reportPeriodTarget.dataset.reportPeriod as BetReportPeriod;
+    reportPeriod = selected;
+    if (selected === 'custom') {
+      render(currentScreenName);
+    } else {
+      void refreshReports();
+    }
+    return;
+  }
+
+  const calNavTarget = eventTarget.closest<HTMLElement>('[data-cal-nav]');
+  if (calNavTarget?.dataset.calNav) {
+    const [yearNum, monthNum] = customCalendarMonth.split('-').map(Number);
+    const offset = calNavTarget.dataset.calNav === 'prev' ? -1 : 1;
+    const newDate = new Date(yearNum, monthNum - 1 + offset, 1);
+    const yyyy = newDate.getFullYear();
+    const mm = String(newDate.getMonth() + 1).padStart(2, '0');
+    customCalendarMonth = `${yyyy}-${mm}`;
+    render(currentScreenName);
+    return;
+  }
+
+  const calDateTarget = eventTarget.closest<HTMLElement>('[data-cal-date]');
+  if (calDateTarget?.dataset.calDate) {
+    const clickedDate = calDateTarget.dataset.calDate;
+    if (!customRangeStart) {
+      customRangeStart = clickedDate;
+      customRangeEnd = null;
+    } else if (!customRangeEnd) {
+      if (clickedDate === customRangeStart) {
+        customRangeStart = null;
+        customRangeEnd = null;
+      } else if (clickedDate < customRangeStart) {
+        customRangeStart = clickedDate;
+        customRangeEnd = null;
+      } else {
+        customRangeEnd = clickedDate;
+      }
+    } else {
+      if (clickedDate === customRangeStart || clickedDate === customRangeEnd) {
+        customRangeStart = null;
+        customRangeEnd = null;
+      } else {
+        customRangeStart = clickedDate;
+        customRangeEnd = null;
+      }
+    }
+    render(currentScreenName);
+    return;
+  }
+
+  const applyCustomRangeTarget = eventTarget.closest<HTMLElement>('[data-action="apply-custom-range"]');
+  if (applyCustomRangeTarget && customRangeStart) {
+    const startDate = customRangeStart;
+    const endDate = customRangeEnd ?? customRangeStart;
+    reportPeriod = 'custom';
+    void refreshReports({ period: 'custom', startDate, endDate });
     return;
   }
 

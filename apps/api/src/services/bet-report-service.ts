@@ -1,18 +1,18 @@
 import { SETTLEMENT_TYPES, type BetSettlementEvent, type CloudBetRecord, type SettlementType } from '@miraichi/shared';
 
-export type BetReportPeriod='week'|'month'|'previous_month'|'all';
+export type BetReportPeriod = 'this_week' | 'previous_week' | 'this_month' | 'all' | 'custom' | 'week' | 'month';
 type BreakdownItem={count:number;profitLossPoints:number};
 const round4=(value:number)=>Math.round((value+Number.EPSILON)*10_000)/10_000;
 const dateKey=(iso:string,timeZone:string)=>{const parts=new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(iso));const get=(type:Intl.DateTimeFormatPartTypes)=>parts.find((part)=>part.type===type)?.value??'';return`${get('year')}-${get('month')}-${get('day')}`;};
 const addDays=(key:string,days:number)=>{const date=new Date(`${key}T00:00:00.000Z`);date.setUTCDate(date.getUTCDate()+days);return date.toISOString().slice(0,10);};
 const weekStart=(key:string,weekStartDay:'monday'|'sunday'='monday')=>{const date=new Date(`${key}T00:00:00.000Z`);const day=date.getUTCDay();if(weekStartDay==='sunday'){date.setUTCDate(date.getUTCDate()-day);}else{const diff=day===0?6:day-1;date.setUTCDate(date.getUTCDate()-diff);}return date.toISOString().slice(0,10);};
 const monthBounds=(anchor:string,offset=0)=>{const date=new Date(`${anchor.slice(0,7)}-01T00:00:00.000Z`);date.setUTCMonth(date.getUTCMonth()+offset);const start=date.toISOString().slice(0,10);date.setUTCMonth(date.getUTCMonth()+1);date.setUTCDate(date.getUTCDate()-1);return{startDate:start,endDate:date.toISOString().slice(0,10)};};
-const bounds=(period:BetReportPeriod,anchor:string,weekStartDay:'monday'|'sunday'='monday')=>{if(period==='week'){const startDate=weekStart(anchor,weekStartDay);return{startDate,endDate:addDays(startDate,6)};}return period==='month'?monthBounds(anchor):period==='previous_month'?monthBounds(anchor,-1):{startDate:null,endDate:null};};
+const bounds=(period:BetReportPeriod,anchor:string,weekStartDay:'monday'|'sunday'='monday',customRange?:{startDate:string;endDate:string})=>{if(period==='week'||period==='this_week'){const startDate=weekStart(anchor,weekStartDay);return{startDate,endDate:addDays(startDate,6)};}if(period==='previous_week'){const currentWeekStart=weekStart(anchor,weekStartDay);const startDate=addDays(currentWeekStart,-7);return{startDate,endDate:addDays(startDate,6)};}if(period==='month'||period==='this_month'){return monthBounds(anchor);}if(period==='custom'&&customRange){return customRange;}return{startDate:null,endDate:null};};
 const within=(key:string,period:{startDate:string|null;endDate:string|null})=>(!period.startDate||key>=period.startDate)&&(!period.endDate||key<=period.endDate);
 const addBreakdown=(target:Record<string,BreakdownItem>,key:string,pnl:number)=>{const current=target[key]??{count:0,profitLossPoints:0};target[key]={count:current.count+1,profitLossPoints:round4(current.profitLossPoints+pnl)};};
 
-export function buildBetReport({period,anchor,timeZone,weekStartDay='monday',bets,events,accountId}:{period:BetReportPeriod;anchor:string;timeZone:string;weekStartDay?:'monday'|'sunday';bets:readonly CloudBetRecord[];events:readonly BetSettlementEvent[];accountId?:string}){
-  const periodBounds=bounds(period,anchor,weekStartDay);
+export function buildBetReport({period,anchor,timeZone,weekStartDay='monday',customRange,bets,events,accountId}:{period:BetReportPeriod;anchor:string;timeZone:string;weekStartDay?:'monday'|'sunday';customRange?:{startDate:string;endDate:string};bets:readonly CloudBetRecord[];events:readonly BetSettlementEvent[];accountId?:string}){
+  const periodBounds=bounds(period,anchor,weekStartDay,customRange);
   const selectedEvents=events.filter((event)=>(!accountId||event.bankrollAccountId===accountId)&&within(dateKey(event.effectiveAt,timeZone),periodBounds));
   const selectedBets=bets.filter((bet)=>bet.status!=='pending'&&bet.settledAt&&(!accountId||bet.bankrollAccountId===accountId)&&within(dateKey(bet.settledAt,timeZone),periodBounds));
   const outcomes=Object.fromEntries(SETTLEMENT_TYPES.map((type)=>[type,0])) as Record<SettlementType,number>;
