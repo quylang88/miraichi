@@ -396,6 +396,198 @@ a:focus-visible {
   color: var(--text-color-muted);
 }
 
+/* Match detail */
+.match-detail-summary {
+  background: var(--surface-color-secondary);
+  border: 1px solid var(--border-color-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  text-align: center;
+}
+
+.match-detail-scoreline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--spacing-sm);
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.match-detail-scoreline strong {
+  font-size: 1.5rem;
+  white-space: nowrap;
+}
+
+.match-detail-competition {
+  color: var(--text-color-muted);
+  font-size: 0.85rem;
+  margin: 0 0 var(--spacing-xs);
+}
+
+.match-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+  margin: 0;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.match-detail-meta div {
+  min-width: 0;
+}
+
+.match-detail-meta dt {
+  color: var(--text-color-muted);
+  margin-bottom: 2px;
+}
+
+.match-detail-meta dd {
+  color: var(--text-color-primary);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.match-detail-section h2 {
+  color: var(--text-color-primary);
+  font-size: 1rem;
+  margin: 0 0 var(--spacing-sm);
+}
+
+.match-detail-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.match-detail-score-breakdown,
+.match-detail-stats table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--spacing-md);
+  background: var(--surface-color-secondary);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  min-width: 420px;
+}
+
+.match-detail-score-breakdown th,
+.match-detail-stats table th {
+  background: var(--surface-color-tertiary);
+  color: var(--text-color-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.match-detail-score-breakdown th,
+.match-detail-stats table th,
+.match-detail-score-breakdown td,
+.match-detail-stats table td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: center;
+  border-bottom: 1px solid var(--border-color-subtle);
+}
+
+.match-detail-score-breakdown th:first-child,
+.match-detail-stats table th:first-child,
+.match-detail-score-breakdown td:first-child,
+.match-detail-stats table td:first-child {
+  text-align: left;
+  color: var(--text-color-muted);
+}
+
+.match-detail-timeline {
+  background: var(--surface-color-secondary);
+  border: 1px solid var(--border-color-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  list-style: none;
+  margin-top: 0;
+}
+
+.match-detail-event {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.9rem;
+}
+
+.match-event-time {
+  min-width: 45px;
+  color: var(--text-color-muted);
+  font-weight: 600;
+}
+
+.match-event-icon {
+  font-size: 1.1rem;
+}
+
+.match-event-player {
+  color: var(--text-color-primary);
+}
+
+.match-event-content {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 2px var(--spacing-xs);
+  min-width: 0;
+}
+
+.match-event-type {
+  color: var(--text-color-primary);
+  font-weight: 600;
+}
+
+.match-event-team,
+.match-event-assist {
+  color: var(--text-color-muted);
+}
+
+.match-event-team::before,
+.match-event-player::before,
+.match-event-assist::before {
+  content: "·";
+  margin-right: var(--spacing-xs);
+}
+
+.match-detail-coverage-warning {
+  background: var(--surface-color-secondary);
+  border-left: 3px solid var(--warning-color, #d9a441);
+  color: var(--text-color-muted);
+  margin: 0 0 var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.match-detail-pending,
+.match-detail-unavailable,
+.match-detail-no-events,
+.match-detail-no-stats {
+  padding: var(--spacing-lg);
+  text-align: center;
+  color: var(--text-color-muted);
+  background: var(--surface-color-secondary);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-color-subtle);
+}
+
+.match-detail-unavailable p {
+  margin-top: 0;
+}
+
+@media (min-width: 520px) {
+  .match-detail-meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 720px) {
   .app-shell__top-bar {
     padding-left: var(--spacing-xl);

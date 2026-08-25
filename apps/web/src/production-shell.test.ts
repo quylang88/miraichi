@@ -19,6 +19,7 @@ import {
 } from './services/i18n-service.js';
 import { getTodayDateTileParts } from './components/app-shell.js';
 import { renderSettlementTimeline } from './components/screens/bets-screen.js';
+import { renderMatchDetailView } from './components/match-detail-view.js';
 import {
   renderSkeletonMetrics,
   renderSkeletonBetRows,
@@ -1146,3 +1147,209 @@ describe('production shell smooth tab navigation and skeleton loading', () => {
   });
 });
 
+describe('Slice 8 basic match detail UI and guardrails', () => {
+  it('contains all required match detail translation keys in EN and VI catalogs with exact parity', () => {
+    const enKeys = getCatalogKeys('en');
+    const viKeys = getCatalogKeys('vi');
+    expect(enKeys).toEqual(viKeys);
+
+    const requiredDetailKeys = [
+      'detail.title',
+      'detail.back',
+      'detail.loading',
+      'detail.pendingRefresh',
+      'detail.unavailable',
+      'detail.retry',
+      'detail.referee',
+      'detail.venue',
+      'detail.kickoff',
+      'detail.status',
+      'detail.elapsed',
+      'detail.score',
+      'detail.halftime',
+      'detail.fulltime',
+      'detail.extratime',
+      'detail.penalty',
+      'detail.stats',
+      'detail.timeline',
+      'detail.noData',
+      'detail.stat.cornerKicks',
+      'detail.stat.yellowCards',
+      'detail.stat.redCards',
+      'detail.stat.totalShots',
+      'detail.stat.shotsOnGoal',
+      'detail.stat.possession',
+      'detail.event.goal',
+      'detail.event.ownGoal',
+      'detail.event.penaltyGoal',
+      'detail.event.yellowCard',
+      'detail.event.redCard',
+      'detail.event.missedPenalty',
+      'detail.event.substitution',
+      'detail.noEvents',
+      'detail.noStats',
+      'detail.partialData',
+      'detail.assist',
+      'detail.playerIn'
+    ];
+
+    for (const key of requiredDetailKeys) {
+      expect(enKeys).toContain(key);
+      expect(viKeys).toContain(key);
+    }
+  });
+
+  it('wires service-backed match detail loading with bounded retry and timer cleanup in shell entry', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellSource).toContain("import { fetchMatchDetail, type MatchDetailViewState } from './services/match-detail-service.js';");
+    expect(shellSource).toContain('async function loadAndRenderMatchDetail(matchId: string, retryCount = 0): Promise<void>');
+    expect(shellSource).toContain('fetchMatchDetail(matchId, { signal: abortController.signal })');
+    expect(shellSource).toContain('matchDetailRetryTimer = window.setTimeout(');
+    expect(shellSource).toContain('window.clearTimeout(matchDetailRetryTimer);');
+    expect(shellSource).toContain("eventTarget.closest('#match-detail-back')");
+    expect(shellSource).toContain("eventTarget.closest('[data-match-detail-retry]')");
+    expect(shellSource).toContain('matchDetailAbortController.abort();');
+  });
+
+  it('does not request historical detail until the owner opens the Info tab', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    const openMatchStart = shellSource.indexOf("const openMatchTarget = eventTarget.closest<HTMLElement>('[data-open-match]')");
+    const scopedAddStart = shellSource.indexOf("if (eventTarget.closest('[data-open-scoped-add]'))", openMatchStart);
+    const openMatchBlock = shellSource.slice(openMatchStart, scopedAddStart);
+
+    expect(openMatchBlock).not.toContain('loadAndRenderMatchDetail(');
+  });
+
+  it('renders competition, round, score context, chronological events, assist and both team rows', () => {
+    const html = renderMatchDetailView({
+      status: 'ready',
+      detail: {
+        match: {
+          id: 'match-1',
+          competition: { id: 'competition-1', name: 'Featured League', type: 'club', season: '2026' },
+          kickoffUtc: '2026-08-25T19:00:00.000Z',
+          status: 'completed',
+          homeTeam: { id: 'home-1', name: 'Arsenal' },
+          awayTeam: { id: 'away-1', name: 'Liverpool' },
+          score: { home: 2, away: 1 },
+          venue: 'Emirates Stadium',
+          round: 'Round 3',
+          sourceRefs: [],
+          updatedAt: '2026-08-25T21:00:00.000Z'
+        },
+        status: 'completed',
+        elapsedMinute: 90,
+        referee: 'Jane Referee',
+        scoreBreakdown: {
+          halftime: { home: 1, away: 0 },
+          fulltime: { home: 2, away: 1 },
+          extratime: { home: null, away: null },
+          penalty: { home: null, away: null }
+        },
+        events: [
+          { minute: 90, extraMinute: 4, teamId: 'home-1', type: 'goal', detail: 'Normal Goal', player: 'Late Scorer', assist: 'Final Pass', label: 'late' },
+          { minute: 45, teamId: 'away-1', type: 'card', detail: 'Red Card', player: 'Away Player', label: 'card' }
+        ],
+        teamStats: [
+          { teamId: 'away-1', teamName: 'Liverpool', cornerKicks: 6, yellowCards: 2, redCards: 1, totalShots: 11, shotsOnGoal: 4, possessionPercentage: 48 },
+          { teamId: 'home-1', teamName: 'Arsenal', cornerKicks: 5, yellowCards: 1, redCards: 0, totalShots: 14, shotsOnGoal: 6, possessionPercentage: 52 }
+        ],
+        updatedAt: '2026-08-25T21:00:00.000Z'
+      }
+    }, createTranslator('en'), 'en', 'UTC');
+
+    expect(html).toContain('Featured League');
+    expect(html).toContain('2026 · Round 3');
+    expect(html).toContain('Emirates Stadium');
+    expect(html).toContain('Jane Referee');
+    expect(html).toContain('90+4&#39;');
+    expect(html).toContain('Final Pass');
+    expect(html).toContain('Arsenal');
+    expect(html).toContain('Liverpool');
+    expect(html.indexOf('45&#39;')).toBeLessThan(html.indexOf('90+4&#39;'));
+  });
+
+  it('renders null factual values as localized unavailable and escapes all supplied labels', () => {
+    const html = renderMatchDetailView({
+      status: 'ready',
+      detail: {
+        match: {
+          id: 'match-1',
+          competition: { id: 'competition-1', name: '<img src=x onerror=alert(1)>', type: 'national-team', season: '2026' },
+          kickoffUtc: '2026-08-25T19:00:00.000Z',
+          status: 'completed',
+          homeTeam: { id: 'home-1', name: '<Home>' },
+          awayTeam: { id: 'away-1', name: 'Away & Co' },
+          score: { home: null, away: null },
+          sourceRefs: [],
+          updatedAt: '2026-08-25T21:00:00.000Z'
+        },
+        status: 'completed',
+        elapsedMinute: null,
+        referee: null,
+        scoreBreakdown: {
+          halftime: { home: null, away: null },
+          fulltime: { home: null, away: null },
+          extratime: { home: null, away: null },
+          penalty: { home: null, away: null }
+        },
+        events: [{ minute: null, type: 'other', label: '<script>alert(1)</script>' }],
+        teamStats: [
+          { teamId: 'home-1', cornerKicks: null, yellowCards: null, redCards: null, totalShots: null, shotsOnGoal: null, possessionPercentage: null },
+          { teamId: 'away-1', cornerKicks: null, yellowCards: null, redCards: null, totalShots: null, shotsOnGoal: null, possessionPercentage: null }
+        ],
+        updatedAt: '2026-08-25T21:00:00.000Z'
+      }
+    }, createTranslator('vi'), 'vi', 'UTC');
+
+    expect(html).not.toContain('<img');
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain("null'");
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    expect(html).toContain('Không có dữ liệu');
+    expect(html).not.toMatch(/>0<\/td>/);
+  });
+
+  it('renders bounded pending/unavailable states with a manual retry control', () => {
+    const pending = renderMatchDetailView({
+      status: 'pending',
+      match: {
+        id: 'match-1',
+        competition: { id: 'competition-1', name: 'League', type: 'club', season: '2026' },
+        kickoffUtc: '2026-08-25T19:00:00.000Z',
+        status: 'completed',
+        homeTeam: { id: 'home-1', name: 'Home' },
+        awayTeam: { id: 'away-1', name: 'Away' },
+        score: { home: 1, away: 0 },
+        sourceRefs: [],
+        updatedAt: '2026-08-25T21:00:00.000Z'
+      },
+      retryAfterSeconds: 150
+    }, createTranslator('vi'), 'vi', 'UTC');
+    const unavailable = renderMatchDetailView({ status: 'unavailable', match: null, warnings: ['detail_request_failed'] }, createTranslator('vi'), 'vi', 'UTC');
+
+    expect(pending).toContain('Đang lấy dữ liệu chi tiết');
+    expect(unavailable).toContain('data-match-detail-retry');
+    expect(unavailable).toContain('Thử lại');
+    expect(unavailable).not.toContain('detail_request_failed');
+  });
+
+  it('renders factual context only without betting advice, predictions, xG, confidence, or AI picks', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    const forbiddenTerms = [
+      'prediction',
+      'expected_goals',
+      'expectedGoals',
+      'confidence',
+      'recommendedBet',
+      'aiPick',
+      'kelly',
+      'roi',
+      'clv'
+    ];
+    for (const term of forbiddenTerms) {
+      expect(shellSource.toLowerCase()).not.toContain(term.toLowerCase());
+    }
+  });
+
+});

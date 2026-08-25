@@ -1,10 +1,12 @@
 import { getSafeNavigationTabId, type ProductionNavigationTabId } from './config/navigation-tabs.js';
 import { renderAppShell } from './components/app-shell.js';
+import { renderMatchDetailView } from './components/match-detail-view.js';
 import { createSettingsService } from './services/settings-service.js';
 import { createTranslator } from './services/i18n-service.js';
 import { getMatchFeed, type MatchFeedViewState } from './services/match-feed-service.js';
 import { deleteCloudBetDraft, loadBetRecordsViewState, saveCloudBetDraft, type BetRecordsViewState } from './services/bet-record-service.js';
 import { createBankrollAccount, createBankrollTransfer, createLedgerEntry, loadBankrollViewState, type BankrollViewState } from './services/bankroll-service.js';
+import { fetchMatchDetail, type MatchDetailViewState } from './services/match-detail-service.js';
 import {
   ApiRequestError,
   createDisciplineChallenge,
@@ -81,6 +83,11 @@ let matchFeedState: MatchFeedViewState = {
   status: 'loading',
   date: todayLocalDate()
 };
+
+let matchDetailRetryTimer: number | null = null;
+let matchDetailAbortController: AbortController | null = null;
+let matchDetailRequestVersion = 0;
+let matchDetailState: MatchDetailViewState | { status: 'loading' } = { status: 'loading' };
 
 function getInitialTabId(): ProductionNavigationTabId {
   const params = new URLSearchParams(window.location.search);
@@ -253,77 +260,63 @@ function setText(id: string, value: string): void {
     element.textContent = value;
   }
 }
-const API_BASE_URL = (typeof window !== 'undefined' && (window as Window & { MIRAICHI_ENV?: { API_URL?: string } }).MIRAICHI_ENV?.API_URL) || '';
-
-function escapeText(str: string): string {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-function renderEventIcon(type: string): string {
-  if (type === 'Goal') return '⚽';
-  if (type === 'Card') return '🟨';
-  if (type === 'subst') return '🔄';
-  return '📋';
-}
-
-async function loadAndRenderMatchDetail(matchId: string): Promise<void> {
+function renderMatchDetailState(): void {
   const infoPanel = document.getElementById('match-detail-panel-info');
   if (!infoPanel) return;
+  const settings = settingsService.getSettings();
+  const timeZone = settings.timezone === 'local'
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone
+    : settings.timezone;
+  infoPanel.innerHTML = renderMatchDetailView(
+    matchDetailState,
+    createTranslator(settings.locale),
+    settings.locale,
+    timeZone
+  );
+}
 
-  infoPanel.innerHTML = '<p class="match-info-loading">Loading match details…</p>';
+function cancelMatchDetailLoad(): void {
+  matchDetailRequestVersion += 1;
+  if (matchDetailRetryTimer !== null) {
+    window.clearTimeout(matchDetailRetryTimer);
+    matchDetailRetryTimer = null;
+  }
+  if (matchDetailAbortController !== null) {
+    matchDetailAbortController.abort();
+    matchDetailAbortController = null;
+  }
+}
 
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/matches/detail?id=${encodeURIComponent(matchId)}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json() as {
-      match: { homeTeam: { name: string }; awayTeam: { name: string }; score: { home: number | null; away: number | null }; kickoffUtc: string; venue?: string };
-      events?: Array<{ minute: number | null; type: 'goal' | 'card' | 'substitution' | 'penalty' | 'other'; teamId?: string; label: string }>;
-      notes?: string[];
+async function loadAndRenderMatchDetail(matchId: string, retryCount = 0): Promise<void> {
+  cancelMatchDetailLoad();
+  const requestVersion = matchDetailRequestVersion;
+  const abortController = new AbortController();
+  matchDetailAbortController = abortController;
+  matchDetailState = { status: 'loading' };
+  renderMatchDetailState();
+
+  const result = await fetchMatchDetail(matchId, { signal: abortController.signal });
+  if (requestVersion !== matchDetailRequestVersion || currentOpenMatchId !== matchId) {
+    return;
+  }
+  matchDetailAbortController = null;
+
+  if (result.status === 'pending' && retryCount >= 3) {
+    matchDetailState = {
+      status: 'unavailable',
+      match: result.match,
+      warnings: ['detail_refresh_timeout']
     };
+    renderMatchDetailState();
+    return;
+  }
 
-    const m = data.match;
-    const home = m.homeTeam.name;
-    const away = m.awayTeam.name;
-    const score = (m.score && m.score.home !== null) ? `${m.score.home} – ${m.score.away}` : '– –';
-    const kickoff = m.kickoffUtc ? new Date(m.kickoffUtc).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
-    const venue = m.venue ? ` · ${m.venue}` : '';
-
-    const events = Array.isArray(data.events) ? data.events : [];
-    const eventsHtml = events.length === 0
-      ? '<p class="match-info-error">No events recorded.</p>'
-      : events.map(ev => `
-        <div class="match-event-item">
-          <span class="match-event-icon">${renderEventIcon(ev.type)}</span>
-          <span class="match-event-time">${ev.minute ?? ''}'</span>
-          <div class="match-event-detail">
-            <div class="match-event-player">${escapeText(ev.label)}</div>
-          </div>
-        </div>
-      `).join('');
-
-    const notes = Array.isArray(data.notes) ? data.notes : [];
-    const notesHtml = notes.length === 0
-      ? ''
-      : `<div class="match-info-notes">${notes.map(n => `<p>${escapeText(n)}</p>`).join('')}</div>`;
-
-    infoPanel.innerHTML = `
-      <div class="match-info-card">
-        <div class="match-info-scoreline">
-          <div class="match-info-team">${escapeText(home)}</div>
-          <div class="match-info-score">${score}</div>
-          <div class="match-info-team">${escapeText(away)}</div>
-        </div>
-        <div class="match-info-meta">
-          <span>${escapeText(kickoff)}</span>${venue ? `<span>${escapeText(venue)}</span>` : ''}
-        </div>
-        <div class="match-event-timeline">${eventsHtml}</div>
-        ${notesHtml}
-      </div>
-    `;
-  } catch {
-    infoPanel.innerHTML = '<p class="match-info-error">Could not load match details. Try again later.</p>';
+  matchDetailState = result;
+  renderMatchDetailState();
+  if (result.status === 'pending') {
+    matchDetailRetryTimer = window.setTimeout(() => {
+      void loadAndRenderMatchDetail(matchId, retryCount + 1);
+    }, result.retryAfterSeconds * 1000);
   }
 }
 
@@ -868,6 +861,7 @@ appRoot.addEventListener('click', (event) => {
 
   const tabTarget = eventTarget.closest<HTMLElement>('[data-tab-target]');
   if (tabTarget) {
+    cancelMatchDetailLoad();
     const tabId = getSafeNavigationTabId(tabTarget.dataset.tabTarget);
     setActiveScreen(tabId);
     updateUrl(tabId);
@@ -876,6 +870,7 @@ appRoot.addEventListener('click', (event) => {
 
   const openMatchTarget = eventTarget.closest<HTMLElement>('[data-open-match]');
   if (openMatchTarget) {
+    cancelMatchDetailLoad();
     const title = openMatchTarget.dataset.matchTitle || 'Selected match group';
     const meta = openMatchTarget.dataset.matchMeta || 'matchGroupId context';
     const matchId = openMatchTarget.dataset.matchId || '';
@@ -884,9 +879,8 @@ appRoot.addEventListener('click', (event) => {
     setMatchDetailContext(title, meta);
     resetMatchDetailTabs();
     setActiveScreen('match-detail');
-    if (matchId) {
-      void loadAndRenderMatchDetail(matchId);
-    }
+    matchDetailState = { status: 'loading' };
+    renderMatchDetailState();
     return;
   }
 
@@ -910,7 +904,15 @@ appRoot.addEventListener('click', (event) => {
   }
 
   if (eventTarget.closest('#match-detail-back')) {
+    cancelMatchDetailLoad();
     setActiveScreen(matchDetailReturnScreen);
+    return;
+  }
+
+  if (eventTarget.closest('[data-match-detail-retry]')) {
+    if (currentOpenMatchId) {
+      void loadAndRenderMatchDetail(currentOpenMatchId);
+    }
     return;
   }
 
@@ -918,9 +920,10 @@ appRoot.addEventListener('click', (event) => {
   if (detailTabTarget) {
     setSegmentActive(detailTabTarget);
     updateDetailPanel(detailTabTarget);
-    // If switching to info tab and we have a match id, load detail
     if (detailTabTarget.dataset.detailTab === 'info' && currentOpenMatchId) {
       void loadAndRenderMatchDetail(currentOpenMatchId);
+    } else {
+      cancelMatchDetailLoad();
     }
     return;
   }
@@ -1189,6 +1192,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('popstate', () => {
+  cancelMatchDetailLoad();
   setActiveScreen(getInitialTabId());
 });
 
