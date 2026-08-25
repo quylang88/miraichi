@@ -88,6 +88,8 @@ apps/api/data/providers/*/reports/**
 
 # Serving store and warehouse generated data
 apps/api/data/api-football/**
+apps/api/data/match-details/**
+apps/api/data/match-detail-refresh/**
 apps/api/data/serving/manifest.json
 apps/api/data/serving/versions/**
 apps/api/data/warehouse/versions/**

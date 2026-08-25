@@ -9,12 +9,17 @@ import {
   runApiFootballIngestionJob,
   type ApiFootballIngestionRunResult
 } from './jobs/api-football-ingestion-job.js';
+import {
+  runApiFootballMatchDetailJob,
+  type ApiFootballMatchDetailJobResult
+} from './jobs/api-football-match-detail-job.js';
 import { ApiFootballClient } from './sources/api-football/api-football-client.js';
 
 export const API_FOOTBALL_SCHEDULE_INTERVAL_MS = API_FOOTBALL_QUOTA_CONFIG.pollingIntervalSeconds * 1000;
 
 export interface ScheduleDependencies {
   runJob: () => Promise<ApiFootballIngestionRunResult>;
+  runMatchDetailJob?: () => Promise<ApiFootballMatchDetailJobResult>;
   setIntervalFn: typeof setInterval;
   clearIntervalFn: typeof clearInterval;
   log: (message: string) => void;
@@ -30,12 +35,25 @@ export function startApiFootballSchedule(dependencies: ScheduleDependencies): {
     if (running) return;
     running = true;
     try {
-      const result = await dependencies.runJob();
-      if (result.status === 'failed') {
-        dependencies.log(`[API-Football] Ingestion failed: ${result.error || 'Unknown error'}`);
+      try {
+        const result = await dependencies.runJob();
+        if (result.status === 'failed') {
+          dependencies.log(`[API-Football] Ingestion failed: ${result.error || 'Unknown error'}`);
+        }
+      } catch (error) {
+        dependencies.log(`[API-Football] Ingestion failed: ${messageFor(error)}`);
       }
-    } catch (error) {
-      dependencies.log(`[API-Football] Ingestion failed: ${messageFor(error)}`);
+
+      if (dependencies.runMatchDetailJob) {
+        try {
+          const detailResult = await dependencies.runMatchDetailJob();
+          if (detailResult.status === 'failed') {
+            dependencies.log(`[API-Football] Match detail refresh failed: ${detailResult.error || 'Unknown error'}`);
+          }
+        } catch (error) {
+          dependencies.log(`[API-Football] Match detail refresh failed: ${messageFor(error)}`);
+        }
+      }
     } finally {
       running = false;
     }
@@ -92,6 +110,11 @@ export function startWorker(options: WorkerOptions = {}): {
       dataRoot,
       mode: 'auto',
       registry,
+      client,
+      now
+    }),
+    runMatchDetailJob: () => runApiFootballMatchDetailJob({
+      dataRoot,
       client,
       now
     }),

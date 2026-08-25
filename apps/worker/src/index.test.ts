@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import path from 'node:path';
 import type { ApiFootballIngestionRunResult } from './jobs/api-football-ingestion-job.js';
 import * as ingestionJobModule from './jobs/api-football-ingestion-job.js';
+import type { ApiFootballMatchDetailJobResult } from './jobs/api-football-match-detail-job.js';
+import * as matchDetailJobModule from './jobs/api-football-match-detail-job.js';
 import { ApiFootballClient } from './sources/api-football/api-football-client.js';
 import {
   API_FOOTBALL_SCHEDULE_INTERVAL_MS,
@@ -17,6 +19,17 @@ function successfulResult(): ApiFootballIngestionRunResult {
     mode: 'window_poll',
     matchesProcessed: 1,
     matchesCompleted: 1,
+    quotaUsedToday: 5
+  };
+}
+
+function successfulDetailResult(): ApiFootballMatchDetailJobResult {
+  return {
+    status: 'success',
+    itemsProcessed: 1,
+    itemsCompleted: 1,
+    itemsDeferred: 0,
+    itemsFailed: 0,
     quotaUsedToday: 5
   };
 }
@@ -151,6 +164,54 @@ describe('startApiFootballSchedule', () => {
     tick!();
     expect(runJob).toHaveBeenCalledTimes(2);
   });
+
+  it('runs match detail refresh job when provided and logs any failures', async () => {
+    const runJob = vi.fn().mockResolvedValue(successfulResult());
+    const runMatchDetailJob = vi.fn()
+      .mockResolvedValueOnce({
+        status: 'failed',
+        itemsProcessed: 1,
+        itemsCompleted: 0,
+        itemsDeferred: 0,
+        itemsFailed: 1,
+        quotaUsedToday: 5,
+        error: 'Detail fetch failed'
+      })
+      .mockRejectedValueOnce(new Error('Detail unhandled crash'))
+      .mockResolvedValue(successfulDetailResult());
+    const log = vi.fn();
+    let tick: (() => void) | undefined;
+    const setIntervalFn = vi.fn((callback: () => void) => {
+      tick = callback;
+      return { id: 'api-football' } as unknown as ReturnType<typeof setInterval>;
+    }) as unknown as typeof setInterval;
+
+    startApiFootballSchedule({
+      runJob,
+      runMatchDetailJob,
+      setIntervalFn,
+      clearIntervalFn: vi.fn() as unknown as typeof clearInterval,
+      log
+    });
+
+    await settle();
+    expect(runJob).toHaveBeenCalledTimes(1);
+    expect(runMatchDetailJob).toHaveBeenCalledTimes(1);
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('Detail fetch failed'));
+
+    // Tick 2: throws exception
+    tick!();
+    await settle();
+    expect(runJob).toHaveBeenCalledTimes(2);
+    expect(runMatchDetailJob).toHaveBeenCalledTimes(2);
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('Detail unhandled crash'));
+
+    // Tick 3: succeeds
+    tick!();
+    await settle();
+    expect(runJob).toHaveBeenCalledTimes(3);
+    expect(runMatchDetailJob).toHaveBeenCalledTimes(3);
+  });
 });
 
 describe('defaultDataRoot', () => {
@@ -162,8 +223,9 @@ describe('defaultDataRoot', () => {
 });
 
 describe('startWorker', () => {
-  it('initializes daemon with single client and executes ingestion job on ticks', async () => {
-    const spy = vi.spyOn(ingestionJobModule, 'runApiFootballIngestionJob').mockResolvedValue(successfulResult());
+  it('initializes daemon with single client and executes ingestion and match detail jobs on ticks', async () => {
+    const ingestionSpy = vi.spyOn(ingestionJobModule, 'runApiFootballIngestionJob').mockResolvedValue(successfulResult());
+    const detailSpy = vi.spyOn(matchDetailJobModule, 'runApiFootballMatchDetailJob').mockResolvedValue(successfulDetailResult());
     const log = vi.fn();
     const intervalHandle = { id: 'worker-daemon' } as unknown as ReturnType<typeof setInterval>;
     let intervalCallback: (() => void) | undefined;
@@ -185,20 +247,27 @@ describe('startWorker', () => {
 
     await settle();
     expect(worker.intervalMilliseconds).toBe(API_FOOTBALL_SCHEDULE_INTERVAL_MS);
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+    expect(ingestionSpy).toHaveBeenCalledTimes(1);
+    expect(ingestionSpy).toHaveBeenCalledWith(expect.objectContaining({
       dataRoot: 'C:/fake/path',
       mode: 'auto',
+      client: dummyClient
+    }));
+    expect(detailSpy).toHaveBeenCalledTimes(1);
+    expect(detailSpy).toHaveBeenCalledWith(expect.objectContaining({
+      dataRoot: 'C:/fake/path',
       client: dummyClient
     }));
 
     // Trigger subsequent tick after initial run has settled
     intervalCallback!();
     await settle();
-    expect(spy).toHaveBeenCalledTimes(2);
+    expect(ingestionSpy).toHaveBeenCalledTimes(2);
+    expect(detailSpy).toHaveBeenCalledTimes(2);
 
     worker.stop();
     expect(clearIntervalFn).toHaveBeenCalledWith(intervalHandle);
-    spy.mockRestore();
+    ingestionSpy.mockRestore();
+    detailSpy.mockRestore();
   });
 });
