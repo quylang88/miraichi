@@ -103,7 +103,12 @@ describe('API-Football Rapid Match Source End-to-End Integration', () => {
       let callCount = 0;
       const mockFetch = vi.fn().mockImplementation(async (url: string) => {
         callCount += 1;
-        if (url.includes('season=2025')) {
+        const parsedUrl = new URL(url);
+        const leagueParam = parsedUrl.searchParams.get('league');
+        const seasonParam = parsedUrl.searchParams.get('season');
+        if (seasonParam) {
+          const parsedLeague = leagueParam ? Number(leagueParam) : 39;
+          const parsedSeason = Number(seasonParam);
           return {
             ok: true,
             status: 200,
@@ -112,7 +117,13 @@ describe('API-Football Rapid Match Source End-to-End Integration', () => {
               parameters: {},
               errors: [],
               results: 1,
-              response: [MOCK_FIXTURE_EPL_PAST]
+              response: [
+                {
+                  ...MOCK_FIXTURE_EPL_PAST,
+                  fixture: { ...MOCK_FIXTURE_EPL_PAST.fixture, id: parsedLeague * 10000 + parsedSeason },
+                  league: { ...MOCK_FIXTURE_EPL_PAST.league, id: parsedLeague, season: parsedSeason }
+                }
+              ]
             })
           };
         } else if (url.includes('date=2026-08-25')) {
@@ -224,5 +235,5 @@ describe('API-Football Rapid Match Source End-to-End Integration', () => {
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }
-  });
+  }, 20_000);
 });

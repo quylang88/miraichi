@@ -4,8 +4,8 @@
 
 - **Status**: Active
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
-- **Completed phase**: `phase:code-slice API-Football Correctness, Quota Hardening, And Basic Match Detail — Slice 2` — durable daily/per-minute quota reservation, header reconciliation, fail-closed locking, explicit runtime data roots, and quota CLI wiring were completed locally on 2026-08-25.
-- **Active phase**: Slice 2 is closed locally; Slice 3 complete-snapshot merge work has not been started.
+- **Completed phase**: `phase:code-slice API-Football Correctness, Quota Hardening, And Basic Match Detail — Slice 3` — last-good warehouse snapshot merging, monotonic terminal status enforcement, fail-closed checkpoint validation, post-publish checkpointing, and exclusive publication job lease were completed locally on 2026-08-25.
+- **Active phase**: Slice 3 is closed locally; Slice 4 fair 50/51+ hydration work has not been started.
 - **Promotion state**: staging, owner feedback, and production are not started or approved.
 - **Current lifecycle source of truth**: this file.
 
@@ -56,7 +56,8 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Write the exact TDD implementation plan at `docs/superpowers/plans/2026-08-25-api-football-correctness-quota-match-detail.md`.
 - [x] Complete Slice 1: correct registry type, target-season validation, canonical identity, terminal-only status/score projection, and provider fixture lookup through source refs.
 - [x] Complete Slice 2: replace in-memory quota tracking with one durable ledger shared by worker/CLI, reconcile provider headers, and keep generated API-Football runtime state out of Git and test source paths.
-- [ ] Execute API-Football correctness and quota-hardening Slices 3–9 in order; do not run a real provider key against the active serving root before local integration passes.
+- [x] Complete Slice 3: merge complete warehouse snapshots, enforce monotonic terminal status, fail-closed checkpoints, and publish before checkpointing under an exclusive publication job lease.
+- [ ] Execute API-Football correctness and quota-hardening Slices 4–9 in order; do not run a real provider key against the active serving root before local integration passes.
 - [ ] Prove complete-snapshot preservation, durable quota across restarts, one daily sync, 20-ID chunking, fair 50/51+ hydration, extended terminal polling, and cached match detail.
 
 ## Local Integration Evidence — 2026-08-25
@@ -70,7 +71,7 @@ The 2026-08-25 commit review invalidated the API-Football-specific conclusions a
 
 ## Later Phases
 
-1. Start `phase:code-slice API-Football Correctness, Quota Hardening, And Basic Match Detail` with Slice 3 from the approved implementation plan.
+1. Start `phase:code-slice API-Football Correctness, Quota Hardening, And Basic Match Detail` with Slice 4 from the approved implementation plan.
 2. Run a fresh `phase:integration-test` only after all nine slices pass their focused gates.
 3. Request staging approval before any live-key smoke or initial historical hydration.
 4. Staging deployment and smoke evidence.

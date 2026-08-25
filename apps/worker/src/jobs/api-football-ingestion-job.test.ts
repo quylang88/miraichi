@@ -295,4 +295,92 @@ describe('runApiFootballIngestionJob', () => {
       await rm(tempDir, { recursive: true, force: true });
     }
   });
+
+  it('preserves historical matches when running daily sync', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ingest-preserve-history-'));
+    const { runApiFootballHydrationJob } = await import('./api-football-hydration-job.js');
+    const { readServingMatchStoreSnapshot } = await import('../../../api/src/repositories/serving-match-store.js');
+
+    try {
+      let mockCount = 0;
+      const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+        mockCount++;
+        if (url.includes('season=')) {
+          // Hydration response for 2025
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              get: 'fixtures',
+              parameters: { league: '99998', season: '2025' },
+              errors: [],
+              results: 1,
+              response: [
+                {
+                  ...MOCK_FIXTURE_FINISHED,
+                  fixture: { ...MOCK_FIXTURE_FINISHED.fixture, id: 9001 },
+                  league: { ...MOCK_FIXTURE_FINISHED.league, season: 2025 }
+                }
+              ]
+            })
+          };
+        } else {
+          // Daily sync response for 2026-08-25
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              get: 'fixtures',
+              parameters: { date: '2026-08-25' },
+              errors: [],
+              results: 1,
+              response: [MOCK_FIXTURE_SCHEDULED]
+            })
+          };
+        }
+      });
+
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        dataRoot: tempDir
+      });
+
+      // 1. Initial hydration: season 2025
+      await runApiFootballHydrationJob({
+        dataRoot: tempDir,
+        client,
+        registry: [
+          {
+            ...SAMPLE_REGISTRY[0]!,
+            currentSeason: 2025,
+            historicalSeasons: []
+          }
+        ]
+      });
+
+      const snapAfterHydration = await readServingMatchStoreSnapshot(join(tempDir, 'serving'));
+      expect(snapAfterHydration.matches).toHaveLength(1);
+      expect(snapAfterHydration.matches[0]?.competition.season).toBe('2025');
+
+      // 2. Daily sync for date 2026-08-25
+      const syncResult = await runApiFootballIngestionJob({
+        dataRoot: tempDir,
+        mode: 'daily_sync',
+        date: '2026-08-25',
+        client,
+        registry: SAMPLE_REGISTRY,
+        now: () => new Date('2026-08-25T05:00:00.000Z')
+      });
+
+      expect(syncResult.status).toBe('synced');
+
+      // CRITICAL CHECK: Final serving store MUST retain both 2025 historical match and 2026 scheduled match
+      const snapAfterDailySync = await readServingMatchStoreSnapshot(join(tempDir, 'serving'));
+      expect(snapAfterDailySync.matches).toHaveLength(2);
+      expect(snapAfterDailySync.matches.map((m) => m.competition.season).sort()).toEqual(['2025', '2026']);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 20_000);
 });

@@ -122,4 +122,236 @@ describe('runApiFootballHydrationJob', () => {
       await rm(tempDir, { recursive: true, force: true });
     }
   });
+
+  it('preserves both targets across two separate 1-target hydration runs', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-hydration-test-'));
+    const { readServingMatchStoreSnapshot } = await import('../../../api/src/repositories/serving-match-store.js');
+
+    try {
+      const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+        const season = Number(new URL(url).searchParams.get('season'));
+        return {
+          ok: true,
+          status: 200,
+          json: async (): Promise<ApiFootballApiResponse<ApiFootballFixtureItem>> => ({
+            get: 'fixtures',
+            parameters: { league: '39', season: String(season) },
+            errors: [],
+            results: 1,
+            response: [
+              {
+                ...MOCK_FIXTURE,
+                fixture: { ...MOCK_FIXTURE.fixture, id: 1000 + season },
+                league: { ...MOCK_FIXTURE.league, season }
+              }
+            ]
+          })
+        };
+      });
+
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        dataRoot: tempDir
+      });
+      const checkpointManager = new HydrationCheckpointManager({
+        storagePath: join(tempDir, 'hydration-checkpoints.json')
+      });
+
+      // Run 1: Hydrate only 1 batch (e.g. season 2025)
+      const res1 = await runApiFootballHydrationJob({
+        dataRoot: tempDir,
+        client,
+        checkpointManager,
+        registry: SAMPLE_REGISTRY,
+        maxBatchesPerRun: 1,
+        now: () => new Date('2026-08-25T12:00:00.000Z')
+      });
+
+      expect(res1.seasonsHydrated).toBe(1);
+      const servingSnap1 = await readServingMatchStoreSnapshot(join(tempDir, 'serving'));
+      expect(servingSnap1.matches).toHaveLength(1);
+
+      // Run 2: Hydrate next batch (season 2026)
+      const res2 = await runApiFootballHydrationJob({
+        dataRoot: tempDir,
+        client,
+        checkpointManager,
+        registry: SAMPLE_REGISTRY,
+        maxBatchesPerRun: 1,
+        now: () => new Date('2026-08-25T12:01:00.000Z')
+      });
+
+      expect(res2.seasonsHydrated).toBe(1);
+
+      // CRITICAL CHECK: Final serving store snapshot MUST contain BOTH seasons (2 matches), NOT just the 2nd!
+      const servingSnap2 = await readServingMatchStoreSnapshot(join(tempDir, 'serving'));
+      expect(servingSnap2.matches).toHaveLength(2);
+      expect(servingSnap2.matches.map((m) => m.competition.season).sort()).toEqual(['2025', '2026']);
+      expect(checkpointManager.isHydrated(39, 2025)).toBe(true);
+      expect(checkpointManager.isHydrated(39, 2026)).toBe(true);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('leaves prior serving manifest and checkpoint unchanged when publication fails', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-hydration-test-'));
+    const { readServingMatchStoreSnapshot, readServingMatchStoreManifest } = await import('../../../api/src/repositories/serving-match-store.js');
+
+    try {
+      let callCount = 0;
+      const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+        callCount++;
+        const season = Number(new URL(url).searchParams.get('season'));
+        // For 2nd call, return invalid fixture that fails validation / causes publish error
+        if (callCount === 2) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              get: 'fixtures',
+              parameters: { league: '39', season: String(season) },
+              errors: [],
+              results: 1,
+              response: [
+                {
+                  ...MOCK_FIXTURE,
+                  fixture: {
+                    ...MOCK_FIXTURE.fixture,
+                    status: { long: 'Finished', short: 'FT', elapsed: 90 }
+                  },
+                  goals: { home: null, away: null },
+                  score: { halftime: { home: null, away: null }, fulltime: { home: null, away: null }, extratime: { home: null, away: null }, penalty: { home: null, away: null } }
+                  // Completed match with missing scores -> publication validation will fail!
+                }
+              ]
+            })
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async (): Promise<ApiFootballApiResponse<ApiFootballFixtureItem>> => ({
+            get: 'fixtures',
+            parameters: { league: '39', season: String(season) },
+            errors: [],
+            results: 1,
+            response: [{ ...MOCK_FIXTURE, league: { ...MOCK_FIXTURE.league, season } }]
+          })
+        };
+      });
+
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        dataRoot: tempDir
+      });
+      const checkpointManager = new HydrationCheckpointManager({
+        storagePath: join(tempDir, 'hydration-checkpoints.json')
+      });
+
+      // Run 1: Succeeds
+      await runApiFootballHydrationJob({
+        dataRoot: tempDir,
+        client,
+        checkpointManager,
+        registry: SAMPLE_REGISTRY,
+        maxBatchesPerRun: 1,
+        now: () => new Date('2026-08-25T12:00:00.000Z')
+      });
+
+      const manifestBefore = await readServingMatchStoreManifest(join(tempDir, 'serving'));
+      expect(checkpointManager.isHydrated(39, 2025)).toBe(true);
+      expect(checkpointManager.isHydrated(39, 2026)).toBe(false);
+
+      // Run 2: Fails during publication validation
+      await expect(
+        runApiFootballHydrationJob({
+          dataRoot: tempDir,
+          client,
+          checkpointManager,
+          registry: SAMPLE_REGISTRY,
+          maxBatchesPerRun: 1,
+          now: () => new Date('2026-08-25T12:01:00.000Z')
+        })
+      ).rejects.toThrow();
+
+      // Manifest and checkpoint for 2026 must remain uncompleted / unchanged
+      const manifestAfter = await readServingMatchStoreManifest(join(tempDir, 'serving'));
+      expect(manifestAfter.currentVersion).toBe(manifestBefore.currentVersion);
+      expect(checkpointManager.isHydrated(39, 2026)).toBe(false);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 20_000);
+
+  it('fails closed when checkpoint file is corrupt and does not restart from 0', async () => {
+    const { writeFile } = await import('node:fs/promises');
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-hydration-test-'));
+    const checkpointStoragePath = join(tempDir, 'hydration-checkpoints.json');
+
+    try {
+      await writeFile(checkpointStoragePath, 'CORRUPT_JSON', 'utf8');
+
+      const client = new ApiFootballClient({ apiKey: 'test-api-key', dataRoot: tempDir });
+      await expect(
+        runApiFootballHydrationJob({
+          dataRoot: tempDir,
+          client,
+          registry: SAMPLE_REGISTRY
+        })
+      ).rejects.toThrow('hydration_checkpoint_corrupt');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('does not complete a hydration target when every provider fixture is rejected by the adapter', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-hydration-invalid-adapter-'));
+
+    try {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          get: 'fixtures',
+          parameters: { league: '39', season: '2025' },
+          errors: [],
+          results: 1,
+          response: [{
+            ...MOCK_FIXTURE,
+            league: { ...MOCK_FIXTURE.league, season: 2025 },
+            teams: {
+              ...MOCK_FIXTURE.teams,
+              home: { ...MOCK_FIXTURE.teams.home, name: '' }
+            }
+          }]
+        })
+      });
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        dataRoot: tempDir
+      });
+      const checkpointManager = new HydrationCheckpointManager({
+        storagePath: join(tempDir, 'hydration-checkpoints.json')
+      });
+
+      const result = await runApiFootballHydrationJob({
+        dataRoot: tempDir,
+        client,
+        checkpointManager,
+        registry: SAMPLE_REGISTRY,
+        maxBatchesPerRun: 1,
+        now: () => new Date('2026-08-25T12:00:00.000Z')
+      });
+
+      expect(result.seasonsHydrated).toBe(0);
+      expect(checkpointManager.isHydrated(39, 2025)).toBe(false);
+      expect(checkpointManager.getRecord(39, 2025)?.status).toBe('failed');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
 });

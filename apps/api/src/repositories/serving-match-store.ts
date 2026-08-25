@@ -318,7 +318,7 @@ export async function buildServingMatchesFromWarehouse(
   };
 }
 
-async function readManifest(servingRoot: string): Promise<ServingMatchStoreManifest> {
+export async function readServingMatchStoreManifest(servingRoot: string): Promise<ServingMatchStoreManifest> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(await fs.readFile(resolveContainedPath(path.resolve(servingRoot), 'manifest.json'), 'utf8'));
@@ -339,6 +339,10 @@ async function readManifest(servingRoot: string): Promise<ServingMatchStoreManif
     throw servingError('serving_match_store_invalid', 500, 'Serving match store manifest scopes must be an array');
   }
   return parsed as unknown as ServingMatchStoreManifest;
+}
+
+async function readManifest(servingRoot: string): Promise<ServingMatchStoreManifest> {
+  return readServingMatchStoreManifest(servingRoot);
 }
 
 async function readPartition(filePath: string): Promise<ServingMatchPartition> {

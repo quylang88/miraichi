@@ -10,14 +10,20 @@ import {
 } from '../../../../scripts/providers/shared/canonical-warehouse.js';
 import {
   buildServingMatchStore,
-  buildServingMatchesFromWarehouse,
+  buildServingMatchesFromWarehouse
 } from '../../../api/src/repositories/serving-match-store.js';
 import {
   ApiFootballClient,
   ApiFootballQuotaExceededError
 } from '../sources/api-football/api-football-client.js';
 import { adaptApiFootballMatches } from '../sources/api-football/api-football-adapter.js';
-import { HydrationCheckpointManager } from '../sources/api-football/hydration-checkpoint-manager.js';
+import { HydrationCheckpointManager, type HydrationTarget } from '../sources/api-football/hydration-checkpoint-manager.js';
+import {
+  loadLastGoodWarehouseSnapshot,
+  mergeCanonicalWarehouseSnapshots
+} from '../sources/api-football/api-football-snapshot-merge.js';
+import { withApiFootballJobLease } from '../sources/api-football/api-football-job-lease.js';
+import { validateApiFootballPublicationCandidate } from '../sources/api-football/api-football-publication-validator.js';
 
 export interface ApiFootballHydrationJobOptions {
   dataRoot: string;
@@ -68,8 +74,6 @@ export async function runApiFootballHydrationJob(
 
   let seasonsHydrated = 0;
   let matchesHydrated = 0;
-  let hitQuotaLimit = false;
-
   const accumulatedSnapshot: CanonicalWarehouseSnapshot = {
     matches: [],
     teams: [],
@@ -78,20 +82,40 @@ export async function runApiFootballHydrationJob(
     provenance: []
   };
 
+  const stagedSuccessfulTargets: Array<{ target: HydrationTarget; matchCount: number }> = [];
+
   for (const target of targetsToProcess) {
     if (!(await client.ledger.canRequest(false, now()))) {
-      hitQuotaLimit = true;
       break;
     }
 
     try {
       const response = await client.fetchSeasonFixtures(target.entry.providerLeagueId, target.season);
+      const fixtures = response.response || [];
+
+      if (fixtures.length === 0) {
+        await checkpointManager.markEmpty(
+          target.entry.competitionId,
+          target.entry.providerLeagueId,
+          target.season,
+          now()
+        );
+        continue;
+      }
+
       const adapted = adaptApiFootballMatches({
         competitionEntry: target.entry,
         expectedSeason: target.season,
-        fixtures: response.response || [],
+        fixtures,
         observedAt: now().toISOString()
       });
+
+      if (adapted.matches.length === 0 || adapted.issues.length > 0) {
+        const issueSummary = adapted.issues.length > 0
+          ? adapted.issues.map((issue) => `${issue.code}: ${issue.message}`).join('; ')
+          : 'adapter produced no canonical matches';
+        throw new Error(`api_football_hydration_adaptation_failed: ${issueSummary}`);
+      }
 
       accumulatedSnapshot.matches.push(...adapted.matches);
       accumulatedSnapshot.teams.push(...adapted.teams);
@@ -99,19 +123,11 @@ export async function runApiFootballHydrationJob(
       accumulatedSnapshot.links.push(...adapted.links);
       accumulatedSnapshot.provenance.push(...adapted.provenance);
 
-      await checkpointManager.markCompleted(
-        target.entry.competitionId,
-        target.entry.providerLeagueId,
-        target.season,
-        adapted.matches.length,
-        now()
-      );
-
+      stagedSuccessfulTargets.push({ target, matchCount: adapted.matches.length });
       seasonsHydrated += 1;
       matchesHydrated += adapted.matches.length;
     } catch (error) {
       if (error instanceof ApiFootballQuotaExceededError) {
-        hitQuotaLimit = true;
         break;
       }
       const errMsg = error instanceof Error ? error.message : String(error);
@@ -125,30 +141,67 @@ export async function runApiFootballHydrationJob(
     }
   }
 
-  // Publish whatever we have accumulated to warehouse and serving store
-  if (accumulatedSnapshot.matches.length > 0) {
-    const warehouseRoot = await writeCanonicalWarehouseRun(options.dataRoot, runId, accumulatedSnapshot);
-    const servingMatches = await buildServingMatchesFromWarehouse({
-      warehouseRoot,
-      importedAt: now().toISOString()
-    });
-    const servingRoot = join(options.dataRoot, 'serving');
-    await buildServingMatchStore({
-      servingRoot,
-      version: runId,
-      snapshotId: runId,
-      generatedAt: now().toISOString(),
-      importedAt: now().toISOString(),
-      sources: servingMatches.sources,
-      matches: servingMatches.matches,
-      warehouseRunId: runId
+  if (stagedSuccessfulTargets.length > 0) {
+    await withApiFootballJobLease(options.dataRoot, async () => {
+      const baseSnapshot = await loadLastGoodWarehouseSnapshot(options.dataRoot);
+      const mergedSnapshot = mergeCanonicalWarehouseSnapshots(baseSnapshot, accumulatedSnapshot);
+
+      const validation = validateApiFootballPublicationCandidate({
+        candidateMatches: mergedSnapshot.matches,
+        priorMatches: baseSnapshot.matches
+      });
+
+      if (!validation.ok) {
+        throw new Error(`Publication validation failed: ${validation.errors.join('; ')}`);
+      }
+
+      const warehouseRoot = await writeCanonicalWarehouseRun(options.dataRoot, runId, mergedSnapshot);
+      const servingMatches = await buildServingMatchesFromWarehouse({
+        warehouseRoot,
+        importedAt: now().toISOString()
+      });
+
+      const servingRoot = join(options.dataRoot, 'serving');
+      for (const staged of stagedSuccessfulTargets) {
+        const found = servingMatches.matches.some(
+          (m) =>
+            m.competition.id === staged.target.entry.competitionId &&
+            m.competition.season === String(staged.target.season)
+        );
+        if (!found && staged.matchCount > 0) {
+          throw new Error(
+            `Hydration target ${staged.target.entry.competitionId} season ${staged.target.season} missing in published serving store`
+          );
+        }
+      }
+
+      await buildServingMatchStore({
+        servingRoot,
+        version: runId,
+        snapshotId: runId,
+        generatedAt: now().toISOString(),
+        importedAt: now().toISOString(),
+        sources: servingMatches.sources,
+        matches: servingMatches.matches,
+        warehouseRunId: runId
+      });
+
+      await checkpointManager.markCompletedBatch(
+        stagedSuccessfulTargets.map((staged) => ({
+          competitionId: staged.target.entry.competitionId,
+          leagueId: staged.target.entry.providerLeagueId,
+          season: staged.target.season,
+          matchCount: staged.matchCount
+        })),
+        now()
+      );
     });
   }
 
   const remainingPending = checkpointManager.getPendingHydrations(registry).length;
 
   return {
-    status: remainingPending === 0 ? 'completed' : hitQuotaLimit ? 'partial' : 'partial',
+    status: remainingPending === 0 ? 'completed' : 'partial',
     runId,
     seasonsHydrated,
     matchesHydrated,

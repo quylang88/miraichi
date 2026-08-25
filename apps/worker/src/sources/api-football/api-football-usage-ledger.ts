@@ -296,7 +296,9 @@ export class ApiFootballUsageLedger {
                 : NaN;
 
             const ownerIsAlive = typeof parsed.pid === 'number' && isProcessAlive(parsed.pid);
-            if (!ownerIsAlive && !Number.isNaN(createdAtMs)) {
+            if (ownerIsAlive) {
+              // A live owner keeps the lock regardless of its age.
+            } else if (!Number.isNaN(createdAtMs)) {
               const lockAge = Date.now() - createdAtMs;
               if (lockAge > this.staleLockTimeoutMs) {
                 await unlink(this.lockPath).catch(() => {});

@@ -288,6 +288,47 @@ describe('ApiFootballUsageLedger', () => {
     }
   });
 
+  it('does not steal a live ledger lock after the stale timeout', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ledger-live-owner-'));
+    const storagePath = join(tempDir, 'usage-ledger.json');
+
+    try {
+      const ledger1 = new ApiFootballUsageLedger({
+        storagePath,
+        staleLockTimeoutMs: 20,
+        lockRetryDelayMs: 5
+      });
+      const ledger2 = new ApiFootballUsageLedger({
+        storagePath,
+        staleLockTimeoutMs: 20,
+        lockRetryDelayMs: 5
+      });
+      let releaseFirst: (() => void) | undefined;
+      const holdFirst = new Promise<void>((resolve) => { releaseFirst = resolve; });
+      let signalFirstStarted: (() => void) | undefined;
+      const firstStarted = new Promise<void>((resolve) => { signalFirstStarted = resolve; });
+
+      const first = ledger1.withLock(async () => {
+        signalFirstStarted?.();
+        await holdFirst;
+      });
+      await firstStarted;
+
+      let secondEntered = false;
+      const second = ledger2.withLock(async () => {
+        secondEntered = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      expect(secondEntered).toBe(false);
+
+      releaseFirst?.();
+      await Promise.all([first, second]);
+      expect(secondEntered).toBe(true);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it('locks concurrently so multiple reservations do not overwrite each other', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ledger-concurrency-'));
     const storagePath = join(tempDir, 'usage-ledger.json');

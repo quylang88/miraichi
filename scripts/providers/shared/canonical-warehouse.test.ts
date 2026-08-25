@@ -11,6 +11,7 @@ import type {
 } from '../../../packages/shared/src/index.js';
 import {
   appendCanonicalWarehouseRecord,
+  readCanonicalWarehouseRun,
   resolveCanonicalWarehouseRun,
   writeCanonicalWarehouseRun,
   type CanonicalWarehouseSnapshot
@@ -110,5 +111,58 @@ describe('immutable canonical warehouse runs', () => {
     await expect(resolveCanonicalWarehouseRun(root, 'run-link')).rejects.toThrow('directory');
     await fs.rm(root, { recursive: true, force: true });
     await fs.rm(outside, { recursive: true, force: true });
+  });
+
+  it('reads back a full canonical warehouse run matching the written snapshot', async () => {
+    const root = await fs.mkdtemp(join(os.tmpdir(), 'miraichi-warehouse-'));
+    const initialSnapshot = snapshot();
+    await writeCanonicalWarehouseRun(root, 'run-read-001', initialSnapshot);
+
+    const loaded = await readCanonicalWarehouseRun(root, 'run-read-001');
+
+    expect(loaded.matches).toHaveLength(initialSnapshot.matches.length);
+    expect(loaded.matches.map((m) => m.matchId).sort()).toEqual(initialSnapshot.matches.map((m) => m.matchId).sort());
+    expect(loaded.teams).toHaveLength(initialSnapshot.teams.length);
+    expect(loaded.competitions).toHaveLength(initialSnapshot.competitions.length);
+    expect(loaded.links).toHaveLength(initialSnapshot.links.length);
+    expect(loaded.provenance).toHaveLength(initialSnapshot.provenance.length);
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it('fails safely when reading a non-existent run', async () => {
+    const root = await fs.mkdtemp(join(os.tmpdir(), 'miraichi-warehouse-'));
+    await expect(readCanonicalWarehouseRun(root, 'non-existent-run')).rejects.toThrow('does not exist');
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it('fails closed when a referenced run is missing a required collection file', async () => {
+    const root = await fs.mkdtemp(join(os.tmpdir(), 'miraichi-warehouse-'));
+    try {
+      await writeCanonicalWarehouseRun(root, 'run-incomplete-001', snapshot());
+      await fs.unlink(join(root, 'warehouse', 'versions', 'run-incomplete-001', 'canonical-teams.jsonl'));
+
+      await expect(readCanonicalWarehouseRun(root, 'run-incomplete-001')).rejects.toThrow(
+        'Canonical warehouse run is incomplete'
+      );
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses to write an invalid canonical snapshot', async () => {
+    const root = await fs.mkdtemp(join(os.tmpdir(), 'miraichi-warehouse-'));
+    try {
+      const invalidSnapshot = snapshot();
+      invalidSnapshot.provenance[0] = {
+        ...invalidSnapshot.provenance[0]!,
+        valueHash: 'not-a-sha256'
+      };
+
+      await expect(writeCanonicalWarehouseRun(root, 'run-invalid-001', invalidSnapshot)).rejects.toThrow(
+        'Canonical warehouse snapshot is invalid'
+      );
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
   });
 });

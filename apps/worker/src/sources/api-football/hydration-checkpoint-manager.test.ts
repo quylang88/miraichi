@@ -107,4 +107,104 @@ describe('HydrationCheckpointManager', () => {
     expect(newPending).toHaveLength(3); // V-League 2024, 2025, 2026
     expect(newPending.every((p) => p.entry.providerLeagueId === 340)).toBe(true);
   });
+
+  it('marks empty provider responses as empty and keeps them un-hydrated / retryable', async () => {
+    const manager = new HydrationCheckpointManager();
+    await manager.markEmpty('eng-premier-league', 39, 2024);
+
+    expect(manager.isHydrated(39, 2024)).toBe(false);
+    const rec = manager.getRecord(39, 2024);
+    expect(rec?.status).toBe('empty');
+    expect(rec?.matchCount).toBe(0);
+
+    const pending = manager.getPendingHydrations(SAMPLE_REGISTRY);
+    expect(pending.some((t) => t.entry.providerLeagueId === 39 && t.season === 2024)).toBe(true);
+  });
+
+  it('fails closed when loading a corrupt or malformed checkpoint file', async () => {
+    const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ckpt-test-'));
+    const storagePath = join(tempDir, 'corrupt-checkpoints.json');
+
+    try {
+      // 1. Invalid JSON
+      await writeFile(storagePath, 'NOT_JSON{{{', 'utf8');
+      const manager1 = new HydrationCheckpointManager({ storagePath });
+      await expect(manager1.load()).rejects.toThrow('hydration_checkpoint_corrupt');
+
+      // 2. Invalid schema (missing schemaVersion or records)
+      await writeFile(storagePath, JSON.stringify({ schemaVersion: 'wrong.version' }), 'utf8');
+      const manager2 = new HydrationCheckpointManager({ storagePath });
+      await expect(manager2.load()).rejects.toThrow('hydration_checkpoint_corrupt');
+
+      await writeFile(storagePath, '', 'utf8');
+      const manager3 = new HydrationCheckpointManager({ storagePath });
+      await expect(manager3.load()).rejects.toThrow('hydration_checkpoint_corrupt');
+
+      await writeFile(storagePath, JSON.stringify({
+        schemaVersion: 'miraichi.hydration.v1',
+        updatedAt: '2026-08-25T12:00:00.000Z',
+        records: {
+          '39:2025': {
+            competitionId: 'eng-premier-league',
+            leagueId: 39,
+            season: 2024,
+            status: 'completed',
+            matchCount: 380,
+            lastHydratedAt: '2026-08-25T12:00:00.000Z'
+          }
+        }
+      }), 'utf8');
+      const manager4 = new HydrationCheckpointManager({ storagePath });
+      await expect(manager4.load()).rejects.toThrow('hydration_checkpoint_corrupt');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('recovers the last valid checkpoint backup after an interrupted replacement', async () => {
+    const { mkdtemp, rename, rm } = await import('node:fs/promises');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ckpt-recovery-'));
+    const storagePath = join(tempDir, 'hydration-checkpoints.json');
+
+    try {
+      const manager1 = new HydrationCheckpointManager({ storagePath });
+      await manager1.markCompleted('eng-premier-league', 39, 2024, 380);
+      await rename(storagePath, `${storagePath}.backup`);
+
+      const manager2 = new HydrationCheckpointManager({ storagePath });
+      await manager2.load();
+
+      expect(manager2.isHydrated(39, 2024)).toBe(true);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('atomically saves and reloads valid checkpoint records', async () => {
+    const { mkdtemp, rm } = await import('node:fs/promises');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ckpt-test-'));
+    const storagePath = join(tempDir, 'valid-checkpoints.json');
+
+    try {
+      const manager1 = new HydrationCheckpointManager({ storagePath });
+      await manager1.markCompleted('eng-premier-league', 39, 2024, 380);
+      await manager1.markFailed('esp-la-liga', 140, 2025, 'quota');
+
+      const manager2 = new HydrationCheckpointManager({ storagePath });
+      await manager2.load();
+
+      expect(manager2.isHydrated(39, 2024)).toBe(true);
+      expect(manager2.getRecord(39, 2024)?.matchCount).toBe(380);
+      expect(manager2.getRecord(140, 2025)?.status).toBe('failed');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
 });

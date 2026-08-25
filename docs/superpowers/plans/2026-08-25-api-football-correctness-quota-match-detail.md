@@ -163,6 +163,10 @@ git diff --check
 - Modify: `scripts/providers/shared/canonical-warehouse.test.ts`
 - Create: `apps/worker/src/sources/api-football/api-football-snapshot-merge.ts`
 - Create: `apps/worker/src/sources/api-football/api-football-snapshot-merge.test.ts`
+- Create: `apps/worker/src/sources/api-football/api-football-job-lease.ts`
+- Create: `apps/worker/src/sources/api-football/api-football-job-lease.test.ts`
+- Modify: `apps/worker/src/sources/api-football/api-football-usage-ledger.ts`
+- Modify: `apps/worker/src/sources/api-football/api-football-usage-ledger.test.ts`
 - Modify: `apps/api/src/repositories/serving-match-store.ts`
 - Modify: `apps/api/src/repositories/serving-match-store.test.ts`
 - Modify: `apps/worker/src/sources/api-football/hydration-checkpoint-manager.ts`
@@ -190,12 +194,16 @@ Expected: FAIL because every current job publishes only its delta and checkpoint
 **Implementation:**
 
 - Add `readCanonicalWarehouseRun(dataRoot, runId)` and export a validated read-only serving manifest accessor.
+- Validate all five required warehouse collections both before writing and while reading; missing, malformed, invalid, or duplicate records fail closed.
 - Load the warehouse run referenced by the current serving manifest; absence is an empty first-run snapshot, corruption is fatal.
 - Merge matches, teams, competitions, provider links, and provenance by their canonical keys. Newer `updatedAt` wins while terminal status is monotonic and source links/provenance are deduplicated.
+- Preserve terminal status/score provenance when a newer provider delta attempts to regress a completed match.
 - Write one full immutable candidate warehouse run, derive the entire serving snapshot from that run, validate counts/identity, then atomically replace the serving manifest.
 - Move all `markCompleted` operations after successful manifest replacement and verify each target's competition/season exists in the published snapshot.
+- Persist all successful target completions in one transactional checkpoint batch after publication.
 - Write checkpoints through temp + fsync/close + rename and validate schema/version/record keys during load.
 - Acquire one provider job lease for hydration or ingestion publication so the CLI and worker cannot publish concurrently.
+- Never evict a lease or quota lock while its owner PID is still alive, even when the operation exceeds the stale timeout.
 
 **Green verification:**
 

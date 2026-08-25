@@ -5,6 +5,7 @@ import * as path from 'path';
 import type { LocalMatch } from '@miraichi/shared';
 import {
   buildServingMatchStore,
+  readServingMatchStoreManifest,
   readServingMatchStoreSnapshot
 } from './serving-match-store.js';
 
@@ -289,6 +290,35 @@ describe('serving match store', () => {
 
     const manifest = JSON.parse(await fs.readFile(path.join(root, 'manifest.json'), 'utf8'));
     expect(manifest.warehouseRunId).toBe('run-001');
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it('reads the serving manifest directly via readServingMatchStoreManifest', async () => {
+    const root = await tempServingRoot();
+    await buildServingMatchStore({
+      servingRoot: root,
+      version: 'v-direct-manifest',
+      snapshotId: 'serving-v-direct',
+      generatedAt: importedAt,
+      importedAt,
+      sources: [{ sourceId: 'openfootball', importedAt }],
+      matches: [match()],
+      warehouseRunId: 'run-manifest-test'
+    });
+
+    const manifest = await readServingMatchStoreManifest(root);
+    expect(manifest.schemaVersion).toBe('miraichi.serving.match-store.v1');
+    expect(manifest.currentVersion).toBe('v-direct-manifest');
+    expect(manifest.warehouseRunId).toBe('run-manifest-test');
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it('fails with serving_match_store_missing when reading non-existent manifest', async () => {
+    const root = await tempServingRoot();
+    await expect(readServingMatchStoreManifest(root)).rejects.toMatchObject({
+      code: 'serving_match_store_missing',
+      statusCode: 503
+    });
     await fs.rm(root, { recursive: true, force: true });
   });
 });

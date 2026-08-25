@@ -3,8 +3,7 @@ import { join } from 'node:path';
 import {
   API_FOOTBALL_COMPETITION_REGISTRY,
   API_FOOTBALL_QUOTA_CONFIG,
-  type ApiFootballCompetitionEntry,
-  findCompetitionByLeagueId
+  type ApiFootballCompetitionEntry
 } from '@miraichi/config';
 import {
   writeCanonicalWarehouseRun,
@@ -21,7 +20,12 @@ import {
 } from '../sources/api-football/api-football-client.js';
 import { adaptApiFootballMatches } from '../sources/api-football/api-football-adapter.js';
 import { validateApiFootballPublicationCandidate } from '../sources/api-football/api-football-publication-validator.js';
-import type { CanonicalMatch, LocalMatch } from '@miraichi/shared';
+import {
+  loadLastGoodWarehouseSnapshot,
+  mergeCanonicalWarehouseSnapshots
+} from '../sources/api-football/api-football-snapshot-merge.js';
+import { withApiFootballJobLease } from '../sources/api-football/api-football-job-lease.js';
+import type { LocalMatch } from '@miraichi/shared';
 
 export interface ConcludingWindow {
   matchId: string;
@@ -95,7 +99,6 @@ export async function runApiFootballIngestionJob(
   // Auto mode selection: if window_poll requested or ongoing matches in window, run window_poll, else daily_sync
   let mode = options.mode || 'auto';
   if (mode === 'auto') {
-    // Check if there are active matches in concluding window
     let currentServingMatches: LocalMatch[] = [];
     try {
       const snapshot = await readServingMatchStoreSnapshot(servingRoot);
@@ -160,30 +163,47 @@ async function handleDailySync(
       observedAt: now().toISOString()
     });
 
-    // Merge or write to warehouse
-    const warehouseRoot = await writeCanonicalWarehouseRun(options.dataRoot, runId, {
-      matches: adapted.matches,
-      teams: adapted.teams,
-      competitions: adapted.competitions,
-      links: adapted.links,
-      provenance: adapted.provenance
-    });
-
-    const servingMatches = await buildServingMatchesFromWarehouse({
-      warehouseRoot,
-      importedAt: now().toISOString()
-    });
-
     const servingRoot = join(options.dataRoot, 'serving');
-    await buildServingMatchStore({
-      servingRoot,
-      version: runId,
-      snapshotId: runId,
-      generatedAt: now().toISOString(),
-      importedAt: now().toISOString(),
-      sources: servingMatches.sources,
-      matches: servingMatches.matches,
-      warehouseRunId: runId
+
+    // Merge base warehouse snapshot with daily sync delta under exclusive job lease
+    await withApiFootballJobLease(options.dataRoot, async () => {
+      const baseSnapshot = await loadLastGoodWarehouseSnapshot(options.dataRoot);
+      const deltaSnapshot: CanonicalWarehouseSnapshot = {
+        matches: adapted.matches,
+        teams: adapted.teams,
+        competitions: adapted.competitions,
+        links: adapted.links,
+        provenance: adapted.provenance
+      };
+
+      const mergedSnapshot = mergeCanonicalWarehouseSnapshots(baseSnapshot, deltaSnapshot);
+
+      const validation = validateApiFootballPublicationCandidate({
+        candidateMatches: mergedSnapshot.matches,
+        priorMatches: baseSnapshot.matches
+      });
+
+      if (!validation.ok) {
+        throw new Error(`Publication validation failed: ${validation.errors.join('; ')}`);
+      }
+
+      const warehouseRoot = await writeCanonicalWarehouseRun(options.dataRoot, runId, mergedSnapshot);
+
+      const servingMatches = await buildServingMatchesFromWarehouse({
+        warehouseRoot,
+        importedAt: now().toISOString()
+      });
+
+      await buildServingMatchStore({
+        servingRoot,
+        version: runId,
+        snapshotId: runId,
+        generatedAt: now().toISOString(),
+        importedAt: now().toISOString(),
+        sources: servingMatches.sources,
+        matches: servingMatches.matches,
+        warehouseRunId: runId
+      });
     });
 
     const providerFixtureIdsByMatchId = new Map(
@@ -329,57 +349,45 @@ async function handleWindowPoll(
       };
     }
 
-    const validation = validateApiFootballPublicationCandidate({
-      candidateMatches: adapted.matches,
-      priorMatches: currentServingMatches.map((m) => ({
-        matchId: m.id,
-        competitionId: m.competition.id,
-        season: m.competition.season,
-        kickoffUtc: m.kickoffUtc,
-        status: m.status,
-        homeTeamId: m.homeTeam.id,
-        awayTeamId: m.awayTeam.id,
-        scoreHome: m.score.home,
-        scoreAway: m.score.away,
-        updatedAt: m.updatedAt
-      }))
-    });
-
-    if (!validation.ok) {
-      return {
-        status: 'failed',
-        runId,
-        mode: 'window_poll',
-        matchesProcessed: adapted.matches.length,
-        matchesCompleted: 0,
-        quotaUsedToday: await getReservedQuota(client, now()),
-        error: `Publication validation failed: ${validation.errors.join('; ')}`
+    // Merge base warehouse snapshot with window poll delta under exclusive job lease
+    await withApiFootballJobLease(options.dataRoot, async () => {
+      const baseSnapshot = await loadLastGoodWarehouseSnapshot(options.dataRoot);
+      const deltaSnapshot: CanonicalWarehouseSnapshot = {
+        matches: adapted.matches,
+        teams: adapted.teams,
+        competitions: adapted.competitions,
+        links: adapted.links,
+        provenance: adapted.provenance
       };
-    }
 
-    // Write updated warehouse run & rebuild serving store
-    const warehouseRoot = await writeCanonicalWarehouseRun(options.dataRoot, runId, {
-      matches: adapted.matches,
-      teams: adapted.teams,
-      competitions: adapted.competitions,
-      links: adapted.links,
-      provenance: adapted.provenance
-    });
+      const mergedSnapshot = mergeCanonicalWarehouseSnapshots(baseSnapshot, deltaSnapshot);
 
-    const servingMatches = await buildServingMatchesFromWarehouse({
-      warehouseRoot,
-      importedAt: now().toISOString()
-    });
+      const validation = validateApiFootballPublicationCandidate({
+        candidateMatches: mergedSnapshot.matches,
+        priorMatches: baseSnapshot.matches
+      });
 
-    await buildServingMatchStore({
-      servingRoot,
-      version: runId,
-      snapshotId: runId,
-      generatedAt: now().toISOString(),
-      importedAt: now().toISOString(),
-      sources: servingMatches.sources,
-      matches: servingMatches.matches,
-      warehouseRunId: runId
+      if (!validation.ok) {
+        throw new Error(`Publication validation failed: ${validation.errors.join('; ')}`);
+      }
+
+      const warehouseRoot = await writeCanonicalWarehouseRun(options.dataRoot, runId, mergedSnapshot);
+
+      const servingMatches = await buildServingMatchesFromWarehouse({
+        warehouseRoot,
+        importedAt: now().toISOString()
+      });
+
+      await buildServingMatchStore({
+        servingRoot,
+        version: runId,
+        snapshotId: runId,
+        generatedAt: now().toISOString(),
+        importedAt: now().toISOString(),
+        sources: servingMatches.sources,
+        matches: servingMatches.matches,
+        warehouseRunId: runId
+      });
     });
 
     return {
