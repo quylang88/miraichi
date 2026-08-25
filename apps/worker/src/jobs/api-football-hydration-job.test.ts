@@ -73,7 +73,11 @@ describe('runApiFootballHydrationJob', () => {
         };
       });
 
-      const client = new ApiFootballClient({ fetchFn: mockFetch as unknown as typeof fetch });
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        dataRoot: tempDir
+      });
       const checkpointManager = new HydrationCheckpointManager();
 
       const result = await runApiFootballHydrationJob({
@@ -103,7 +107,7 @@ describe('runApiFootballHydrationJob', () => {
       await checkpointManager.markCompleted('eng-premier-league', 39, 2025, 380);
       await checkpointManager.markCompleted('eng-premier-league', 39, 2026, 380);
 
-      const client = new ApiFootballClient();
+      const client = new ApiFootballClient({ apiKey: 'test-api-key', dataRoot: tempDir });
       const result = await runApiFootballHydrationJob({
         dataRoot: tempDir,
         client,

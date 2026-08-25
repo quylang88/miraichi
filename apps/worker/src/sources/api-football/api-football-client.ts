@@ -1,4 +1,18 @@
-import { API_FOOTBALL_QUOTA_CONFIG } from '@miraichi/config';
+import {
+  ApiFootballUsageLedger,
+  ApiFootballQuotaExceededError,
+  type ApiFootballUsageState,
+  type ApiFootballDailyUsage,
+  type ApiFootballLastReportedHeader
+} from './api-football-usage-ledger.js';
+
+export {
+  ApiFootballQuotaExceededError,
+  ApiFootballUsageLedger,
+  type ApiFootballUsageState,
+  type ApiFootballDailyUsage,
+  type ApiFootballLastReportedHeader
+};
 
 export interface ApiFootballFixtureItem {
   fixture: {
@@ -48,13 +62,6 @@ export interface ApiFootballApiResponse<T = ApiFootballFixtureItem> {
   response: T[];
 }
 
-export class ApiFootballQuotaExceededError extends Error {
-  constructor(message: string, public readonly usedToday: number, public readonly limit: number) {
-    super(message);
-    this.name = 'ApiFootballQuotaExceededError';
-  }
-}
-
 export class ApiFootballHttpError extends Error {
   constructor(message: string, public readonly statusCode: number, public readonly responseBody?: string) {
     super(message);
@@ -62,95 +69,44 @@ export class ApiFootballHttpError extends Error {
   }
 }
 
-export interface DailyQuotaState {
-  dateUtc: string;
-  usedToday: number;
-  limit: number;
-}
-
-export class DailyQuotaGuard {
-  private dateUtc: string;
-  private usedToday: number;
-  private readonly hardCeiling: number;
-  private readonly totalLimit: number;
-
-  constructor(options?: {
-    now?: () => Date;
-    hardCeiling?: number;
-    totalLimit?: number;
-    initialUsed?: number;
-  }) {
-    const now = options?.now ? options.now() : new Date();
-    this.dateUtc = now.toISOString().slice(0, 10);
-    this.hardCeiling = options?.hardCeiling ?? API_FOOTBALL_QUOTA_CONFIG.hardCeiling;
-    this.totalLimit = options?.totalLimit ?? API_FOOTBALL_QUOTA_CONFIG.dailyLimit;
-    this.usedToday = options?.initialUsed ?? 0;
-  }
-
-  public checkAndRotate(now: Date = new Date()): void {
-    const currentDateUtc = now.toISOString().slice(0, 10);
-    if (currentDateUtc !== this.dateUtc) {
-      this.dateUtc = currentDateUtc;
-      this.usedToday = 0;
-    }
-  }
-
-  public canRequest(emergency = false, now: Date = new Date()): boolean {
-    this.checkAndRotate(now);
-    const ceiling = emergency ? this.totalLimit : this.hardCeiling;
-    return this.usedToday < ceiling;
-  }
-
-  public recordRequest(emergency = false, now: Date = new Date()): void {
-    this.checkAndRotate(now);
-    const ceiling = emergency ? this.totalLimit : this.hardCeiling;
-    if (this.usedToday >= ceiling) {
-      throw new ApiFootballQuotaExceededError(
-        `API-Football daily request quota reached (${this.usedToday}/${ceiling}) for ${this.dateUtc}`,
-        this.usedToday,
-        ceiling
-      );
-    }
-    this.usedToday += 1;
-  }
-
-  public getState(now: Date = new Date()): DailyQuotaState {
-    this.checkAndRotate(now);
-    return {
-      dateUtc: this.dateUtc,
-      usedToday: this.usedToday,
-      limit: this.hardCeiling
-    };
-  }
-
-  public getRemainingQuota(emergency = false, now: Date = new Date()): number {
-    this.checkAndRotate(now);
-    const ceiling = emergency ? this.totalLimit : this.hardCeiling;
-    return Math.max(0, ceiling - this.usedToday);
-  }
-}
-
 export interface ApiFootballClientOptions {
   apiKey?: string;
   baseUrl?: string;
   fetchFn?: typeof fetch;
-  quotaGuard?: DailyQuotaGuard;
+  ledger?: ApiFootballUsageLedger;
+  ledgerPath?: string;
+  dataRoot?: string;
   now?: () => Date;
+  sleepFn?: (ms: number) => Promise<void>;
+  hardCeiling?: number;
+  totalLimit?: number;
 }
 
 export class ApiFootballClient {
   private readonly apiKey: string;
   private readonly baseUrl: string;
   private readonly fetchFn: typeof fetch;
-  public readonly quotaGuard: DailyQuotaGuard;
+  public readonly ledger: ApiFootballUsageLedger;
   private readonly now: () => Date;
 
   constructor(options: ApiFootballClientOptions = {}) {
-    this.apiKey = options.apiKey || process.env.API_FOOTBALL_KEY || process.env.RAPIDAPI_KEY || 'mock-api-key';
-    this.baseUrl = options.baseUrl || 'https://v3.football.api-sports.io';
+    this.apiKey = (options.apiKey !== undefined ? options.apiKey : process.env.API_FOOTBALL_KEY) || '';
+    this.baseUrl = options.baseUrl || process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
     this.fetchFn = options.fetchFn || globalThis.fetch.bind(globalThis);
     this.now = options.now || (() => new Date());
-    this.quotaGuard = options.quotaGuard || new DailyQuotaGuard({ now: this.now });
+
+    if (options.ledger) {
+      this.ledger = options.ledger;
+    } else {
+      this.ledger = new ApiFootballUsageLedger({
+        storagePath: options.ledgerPath,
+        dataRoot: options.dataRoot,
+        hardCeiling: options.hardCeiling,
+        totalLimit: options.totalLimit,
+        now: this.now,
+        sleepFn: options.sleepFn
+      });
+    }
   }
 
   public async fetchSeasonFixtures(
@@ -158,10 +114,14 @@ export class ApiFootballClient {
     season: number,
     options: { emergency?: boolean } = {}
   ): Promise<ApiFootballApiResponse<ApiFootballFixtureItem>> {
-    return this.executeGet<ApiFootballFixtureItem>('/fixtures', {
-      league: String(leagueId),
-      season: String(season)
-    }, options);
+    return this.executeGet<ApiFootballFixtureItem>(
+      '/fixtures',
+      {
+        league: String(leagueId),
+        season: String(season)
+      },
+      options
+    );
   }
 
   public async fetchFixturesByDate(
@@ -207,7 +167,13 @@ export class ApiFootballClient {
     params: Record<string, string>,
     options: { emergency?: boolean } = {}
   ): Promise<ApiFootballApiResponse<T>> {
-    this.quotaGuard.recordRequest(options.emergency, this.now());
+    if (!this.apiKey || this.apiKey.trim() === '') {
+      const error = new Error('api_football_key_missing');
+      (error as { code?: string }).code = 'api_football_key_missing';
+      throw error;
+    }
+
+    await this.ledger.reserveSlot(options.emergency !== undefined ? { emergency: options.emergency } : {});
 
     const url = new URL(endpoint, this.baseUrl);
     for (const [key, value] of Object.entries(params)) {
@@ -216,13 +182,17 @@ export class ApiFootballClient {
 
     const headers: Record<string, string> = {
       'x-apisports-key': this.apiKey,
-      'Accept': 'application/json'
+      Accept: 'application/json'
     };
 
     const response = await this.fetchFn(url.toString(), {
       method: 'GET',
       headers
     });
+
+    if (response.headers) {
+      await this.ledger.reconcileHeaders(response.headers);
+    }
 
     if (!response.ok) {
       const body = await response.text().catch(() => '');

@@ -87,6 +87,7 @@ apps/api/data/providers/*/reports/**
 !apps/api/data/providers/*/reports/.gitkeep
 
 # Serving store and warehouse generated data
+apps/api/data/api-football/**
 apps/api/data/serving/manifest.json
 apps/api/data/serving/versions/**
 apps/api/data/warehouse/versions/**
@@ -94,4 +95,3 @@ apps/api/data/warehouse/runs/**
 !apps/api/data/serving/README.md
 !apps/api/data/serving/.gitkeep
 !apps/api/data/warehouse/.gitkeep
-

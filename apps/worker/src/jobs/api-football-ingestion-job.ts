@@ -88,7 +88,7 @@ export async function runApiFootballIngestionJob(
   const now = options.now || (() => new Date());
   const runId = `api-football-run-${now().toISOString().replace(/[^0-9]/gu, '')}-${randomUUID().slice(0, 8)}`;
   const registry = options.registry || API_FOOTBALL_COMPETITION_REGISTRY;
-  const client = options.client || new ApiFootballClient({ now });
+  const client = options.client || new ApiFootballClient({ now, dataRoot: options.dataRoot });
   const servingRoot = join(options.dataRoot, 'serving');
   const targetDate = options.date || now().toISOString().slice(0, 10);
 
@@ -132,14 +132,14 @@ async function handleDailySync(
   targetDate: string,
   now: () => Date
 ): Promise<ApiFootballIngestionRunResult> {
-  if (!client.quotaGuard.canRequest(false, now())) {
+  if (!(await client.ledger.canRequest(false, now()))) {
     return {
       status: 'skipped',
       runId,
       mode: 'daily_sync',
       matchesProcessed: 0,
       matchesCompleted: 0,
-      quotaUsedToday: client.quotaGuard.getState(now()).usedToday,
+      quotaUsedToday: await getReservedQuota(client, now()),
       error: 'Daily quota ceiling reached'
     };
   }
@@ -214,7 +214,7 @@ async function handleDailySync(
       matchesProcessed: adapted.matches.length,
       matchesCompleted: completedCount,
       concludingWindows: windows,
-      quotaUsedToday: client.quotaGuard.getState(now()).usedToday
+      quotaUsedToday: await getReservedQuota(client, now())
     };
   } catch (error) {
     return {
@@ -223,7 +223,7 @@ async function handleDailySync(
       mode: 'daily_sync',
       matchesProcessed: 0,
       matchesCompleted: 0,
-      quotaUsedToday: client.quotaGuard.getState(now()).usedToday,
+      quotaUsedToday: await getReservedQuota(client, now()),
       error: error instanceof Error ? error.message : String(error)
     };
   }
@@ -249,7 +249,7 @@ async function handleWindowPoll(
       mode: 'window_poll',
       matchesProcessed: 0,
       matchesCompleted: 0,
-      quotaUsedToday: client.quotaGuard.getState(now()).usedToday,
+      quotaUsedToday: await getReservedQuota(client, now()),
       error: 'Serving store snapshot not found'
     };
   }
@@ -283,18 +283,18 @@ async function handleWindowPoll(
       mode: 'window_poll',
       matchesProcessed: 0,
       matchesCompleted: 0,
-      quotaUsedToday: client.quotaGuard.getState(now()).usedToday
+      quotaUsedToday: await getReservedQuota(client, now())
     };
   }
 
-  if (!client.quotaGuard.canRequest(false, now())) {
+  if (!(await client.ledger.canRequest(false, now()))) {
     return {
       status: 'skipped',
       runId,
       mode: 'window_poll',
       matchesProcessed: 0,
       matchesCompleted: 0,
-      quotaUsedToday: client.quotaGuard.getState(now()).usedToday,
+      quotaUsedToday: await getReservedQuota(client, now()),
       error: 'Daily quota ceiling reached'
     };
   }
@@ -325,7 +325,7 @@ async function handleWindowPoll(
         mode: 'window_poll',
         matchesProcessed: adapted.matches.length,
         matchesCompleted: completedCount,
-        quotaUsedToday: client.quotaGuard.getState(now()).usedToday
+        quotaUsedToday: await getReservedQuota(client, now())
       };
     }
 
@@ -352,7 +352,7 @@ async function handleWindowPoll(
         mode: 'window_poll',
         matchesProcessed: adapted.matches.length,
         matchesCompleted: 0,
-        quotaUsedToday: client.quotaGuard.getState(now()).usedToday,
+        quotaUsedToday: await getReservedQuota(client, now()),
         error: `Publication validation failed: ${validation.errors.join('; ')}`
       };
     }
@@ -388,7 +388,7 @@ async function handleWindowPoll(
       mode: 'window_poll',
       matchesProcessed: adapted.matches.length,
       matchesCompleted: completedCount,
-      quotaUsedToday: client.quotaGuard.getState(now()).usedToday
+      quotaUsedToday: await getReservedQuota(client, now())
     };
   } catch (error) {
     return {
@@ -397,7 +397,7 @@ async function handleWindowPoll(
       mode: 'window_poll',
       matchesProcessed: 0,
       matchesCompleted: 0,
-      quotaUsedToday: client.quotaGuard.getState(now()).usedToday,
+      quotaUsedToday: await getReservedQuota(client, now()),
       error: error instanceof Error ? error.message : String(error)
     };
   }
@@ -407,4 +407,8 @@ function parseProviderFixtureId(value: string | undefined): number | null {
   if (value === undefined || !/^\d+$/u.test(value)) return null;
   const fixtureId = Number(value);
   return Number.isSafeInteger(fixtureId) && fixtureId > 0 ? fixtureId : null;
+}
+
+async function getReservedQuota(client: ApiFootballClient, now: Date): Promise<number> {
+  return (await client.ledger.getState(now)).dailyUsage.reserved;
 }

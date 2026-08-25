@@ -8,6 +8,7 @@ import type { ApiFootballCompetitionEntry } from '@miraichi/config';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { ApiFootballUsageLedger } from '../sources/api-football/api-football-usage-ledger.js';
 
 const SAMPLE_REGISTRY: readonly ApiFootballCompetitionEntry[] = [
   {
@@ -122,7 +123,11 @@ describe('runApiFootballIngestionJob', () => {
         })
       });
 
-      const client = new ApiFootballClient({ fetchFn: mockFetch as unknown as typeof fetch });
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        dataRoot: tempDir
+      });
       const result = await runApiFootballIngestionJob({
         dataRoot: tempDir,
         mode: 'daily_sync',
@@ -178,7 +183,11 @@ describe('runApiFootballIngestionJob', () => {
         }
       });
 
-      const client = new ApiFootballClient({ fetchFn: mockFetch as unknown as typeof fetch });
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        dataRoot: tempDir
+      });
 
       await runApiFootballIngestionJob({
         dataRoot: tempDir,
@@ -227,7 +236,11 @@ describe('runApiFootballIngestionJob', () => {
         };
       });
 
-      const client = new ApiFootballClient({ fetchFn: mockFetch as unknown as typeof fetch });
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        dataRoot: tempDir
+      });
       await runApiFootballIngestionJob({
         dataRoot: tempDir,
         mode: 'daily_sync',
@@ -248,6 +261,36 @@ describe('runApiFootballIngestionJob', () => {
       expect(pollResult.status).toBe('not_modified');
       expect(pollResult.matchesProcessed).toBe(1);
       expect(pollResult.matchesCompleted).toBe(0);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('skips before network when the durable normal quota is exhausted', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ingest-durable-quota-'));
+
+    try {
+      const ledger = new ApiFootballUsageLedger({ dataRoot: tempDir, hardCeiling: 1 });
+      await ledger.reserveSlot();
+      const mockFetch = vi.fn();
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        ledger
+      });
+
+      const result = await runApiFootballIngestionJob({
+        dataRoot: tempDir,
+        mode: 'daily_sync',
+        date: '2026-08-25',
+        client,
+        registry: SAMPLE_REGISTRY,
+        now: () => new Date('2026-08-25T05:00:00.000Z')
+      });
+
+      expect(result.status).toBe('skipped');
+      expect(result.quotaUsedToday).toBe(1);
+      expect(mockFetch).not.toHaveBeenCalled();
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }

@@ -44,7 +44,7 @@ export async function runApiFootballHydrationJob(
   const now = options.now || (() => new Date());
   const runId = `api-football-hydration-${now().toISOString().replace(/[^0-9]/gu, '')}-${randomUUID().slice(0, 8)}`;
   const registry = options.registry || API_FOOTBALL_COMPETITION_REGISTRY;
-  const client = options.client || new ApiFootballClient({ now });
+  const client = options.client || new ApiFootballClient({ now, dataRoot: options.dataRoot });
   const checkpointStoragePath = join(options.dataRoot, 'hydration-checkpoints.json');
   const checkpointManager = options.checkpointManager || new HydrationCheckpointManager({ storagePath: checkpointStoragePath });
 
@@ -59,7 +59,7 @@ export async function runApiFootballHydrationJob(
       seasonsHydrated: 0,
       matchesHydrated: 0,
       pendingCount: 0,
-      quotaUsedToday: client.quotaGuard.getState(now()).usedToday
+      quotaUsedToday: await getReservedQuota(client, now())
     };
   }
 
@@ -79,7 +79,7 @@ export async function runApiFootballHydrationJob(
   };
 
   for (const target of targetsToProcess) {
-    if (!client.quotaGuard.canRequest(false, now())) {
+    if (!(await client.ledger.canRequest(false, now()))) {
       hitQuotaLimit = true;
       break;
     }
@@ -153,6 +153,10 @@ export async function runApiFootballHydrationJob(
     seasonsHydrated,
     matchesHydrated,
     pendingCount: remainingPending,
-    quotaUsedToday: client.quotaGuard.getState(now()).usedToday
+    quotaUsedToday: await getReservedQuota(client, now())
   };
+}
+
+async function getReservedQuota(client: ApiFootballClient, now: Date): Promise<number> {
+  return (await client.ledger.getState(now)).dailyUsage.reserved;
 }

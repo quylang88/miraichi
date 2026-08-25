@@ -98,9 +98,17 @@ git diff --check
 - Create: `apps/worker/src/sources/api-football/api-football-usage-ledger.test.ts`
 - Modify: `apps/worker/src/sources/api-football/api-football-client.ts`
 - Modify: `apps/worker/src/sources/api-football/api-football-client.test.ts`
+- Modify: `apps/worker/src/jobs/api-football-hydration-job.ts`
+- Modify: `apps/worker/src/jobs/api-football-hydration-job.test.ts`
+- Modify: `apps/worker/src/jobs/api-football-ingestion-job.ts`
+- Modify: `apps/worker/src/jobs/api-football-ingestion-job.test.ts`
+- Modify: `tests/integration/api-football-rapid-match-source.test.ts`
 - Modify: `.env.example`
+- Modify: `.gitignore`
+- Create: `apps/api/data/README.md`
 - Modify: `scripts/capture-api-football.ts`
 - Modify: `scripts/seed-api-football-history.ts`
+- Create: `scripts/quota-status-api-football.ts`
 - Modify: `package.json`
 
 **Failing tests:**
@@ -129,6 +137,9 @@ Expected: FAIL because usage is in-memory, response headers are ignored, and mis
 - Enforce a rolling 10-request/60-second limiter using injected `now` and `sleep`; never busy-wait.
 - Allow one new-day probe reservation, then trust provider headers as the authoritative quota signal.
 - Make `ApiFootballClient` require an explicit durable ledger and a real direct-dashboard `API_FOOTBALL_KEY` in production scripts.
+- Remove the in-memory `DailyQuotaGuard`; jobs, CLI status, and tests read the durable ledger as the single quota source of truth.
+- Require an explicit `dataRoot`, `ledgerPath`, or ledger instance so tests cannot write generated quota state into the source tree.
+- Fail closed on a corrupt ledger or failed provider-header reconciliation, and release only a lock owned by the current operation.
 - Remove the unimplemented `RAPIDAPI_KEY` path from `.env.example` and documentation in this boundary.
 - Add `api-football:quota-status` as a read-only CLI command that prints persisted use and last provider-reported remaining quota without making a request.
 

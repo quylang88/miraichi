@@ -154,7 +154,12 @@ describe('API-Football Rapid Match Source End-to-End Integration', () => {
         }
       });
 
-      const client = new ApiFootballClient({ fetchFn: mockFetch as unknown as typeof fetch });
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        dataRoot: tempDir,
+        sleepFn: async () => {}
+      });
       const checkpointManager = new HydrationCheckpointManager({
         storagePath: join(tempDir, 'hydration-checkpoints.json')
       });
@@ -215,7 +220,7 @@ describe('API-Football Rapid Match Source End-to-End Integration', () => {
       expect(match.sourceRefs[0]?.sourceId).toBe('api-football');
 
       // Verify quota usage remains strictly within bounds
-      expect(client.quotaGuard.getState().usedToday).toBeLessThanOrEqual(85);
+      expect((await client.ledger.getState()).dailyUsage.reserved).toBeLessThanOrEqual(85);
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }
