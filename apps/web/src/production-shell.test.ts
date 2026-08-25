@@ -19,6 +19,14 @@ import {
 } from './services/i18n-service.js';
 import { getTodayDateTileParts } from './components/app-shell.js';
 import { renderSettlementTimeline } from './components/screens/bets-screen.js';
+import {
+  renderSkeletonMetrics,
+  renderSkeletonBetRows,
+  renderSkeletonMatchRows,
+  renderSkeletonLedgerRows,
+  renderSkeletonCard
+} from './components/screens/screen-shared.js';
+
 
 
 function createMemoryStorage(initial: Record<string, string> = {}): Storage {
@@ -1028,3 +1036,70 @@ describe('production shell match filters panel', () => {
     expect(html).not.toContain('No provider matches');
   });
 });
+
+describe('production shell smooth tab navigation and skeleton loading', () => {
+  it('generates accessible skeleton placeholder markup for metrics, cards, and list rows', () => {
+    const metricSkeleton = renderSkeletonMetrics(3);
+    expect(metricSkeleton).toContain('class="metric-grid" aria-hidden="true"');
+    expect(metricSkeleton).toContain('class="skeleton-text heading"');
+
+    const betSkeleton = renderSkeletonBetRows(2);
+    expect(betSkeleton).toContain('class="bet-row bet-card"');
+    expect(betSkeleton).toContain('class="skeleton-pill"');
+
+    const matchSkeleton = renderSkeletonMatchRows(3);
+    expect(matchSkeleton).toContain('class="match-row"');
+    expect(matchSkeleton).toContain('class="date-group" aria-hidden="true"');
+
+    const ledgerSkeleton = renderSkeletonLedgerRows(2);
+    expect(ledgerSkeleton).toContain('class="ledger-row"');
+
+    const cardSkeleton = renderSkeletonCard();
+    expect(cardSkeleton).toContain('class="note-card" aria-hidden="true"');
+  });
+
+  it('renders skeleton placeholders on Today, Matches, Bets, and Bankroll screens during API loading', () => {
+    // Today loading state
+    const todayHtml = renderAppShell({
+      activeTabId: 'today',
+      bankrollState: { status: 'loading' },
+      reportState: { status: 'loading' },
+      betRecordsState: { status: 'loading' },
+      disciplineConfigState: { status: 'loading' }
+    });
+    expect(todayHtml).toContain('class="skeleton-text heading"');
+    expect(todayHtml).toContain('class="skeleton-pill"');
+
+    // Matches loading state
+    const matchesHtml = renderAppShell({
+      activeTabId: 'matches',
+      matchFeed: { status: 'loading', date: '2026-08-25' }
+    });
+    expect(matchesHtml).toContain('data-match-feed-state="loading"');
+    expect(matchesHtml).toContain('class="match-row"');
+
+    // Bets loading state
+    const betsHtml = renderAppShell({
+      activeTabId: 'bets',
+      betRecordsState: { status: 'loading' }
+    });
+    expect(betsHtml).toContain('data-bet-records-state="loading"');
+    expect(betsHtml).toContain('class="bet-row bet-card"');
+
+    // Bankroll loading state
+    const bankrollHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollState: { status: 'loading' }
+    });
+    expect(bankrollHtml).toContain('data-bankroll-state="loading"');
+  });
+
+  it('wires non-destructive active screen switching in shell entry', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellSource).toContain('setActiveScreen(tabId);');
+    expect(shellSource).toContain('updateUrl(tabId);');
+    expect(shellSource).toContain('function setActiveScreen(screenName: string): void');
+    expect(shellSource).toContain('existing.replaceWith(newEl);');
+  });
+});
+

@@ -74,9 +74,9 @@ export function renderAppShell({
   readonly reportState?: BetReportViewState;
   readonly todayReportState?: BetReportViewState;
   readonly reportPeriod?: BetReportPeriod;
-  readonly customCalendarMonth?: string;
-  readonly customRangeStart?: string | null;
-  readonly customRangeEnd?: string | null;
+  readonly customCalendarMonth?: string | undefined;
+  readonly customRangeStart?: string | null | undefined;
+  readonly customRangeEnd?: string | null | undefined;
 } = {}): string {
   const safeActiveTabId = getSafeNavigationTabId(activeTabId);
   const activeTab = navigationTabs.find((tab: NavigationTab) => tab.id === safeActiveTabId) ?? navigationTabs[0];

@@ -21,6 +21,11 @@ import {
 import { calculateHkSettlementProfitLoss, type BetSettlementEvent, type CreateOngoingBetInput, type DisciplineChallenge, type SettlementType } from '@miraichi/shared';
 import { renderSettlementTimeline, type BetRecordFilter } from './components/screens/bets-screen.js';
 import type { BankrollSecondaryView } from './components/screens/bankroll-screen.js';
+import { renderTodayScreen } from './components/screens/today-screen.js';
+import { renderMatchesScreen } from './components/screens/matches-screen.js';
+import { renderBetsScreen } from './components/screens/bets-screen.js';
+import { renderBankrollScreen } from './components/screens/bankroll-screen.js';
+
 
 const root = document.getElementById('app-root');
 
@@ -84,7 +89,7 @@ function isPrimaryTabId(value: string): value is ProductionNavigationTabId {
   return getSafeNavigationTabId(value) === value;
 }
 
-function render(activeTabId: string): void {
+function render(activeTabId: string, fullRebuild = false): void {
   const safeActiveTabId = getSafeNavigationTabId(activeTabId);
   currentScreenName = safeActiveTabId;
   matchDetailReturnScreen = safeActiveTabId;
@@ -101,29 +106,52 @@ function render(activeTabId: string): void {
   const settings = settingsService.getSettings();
   const translate = createTranslator(settings.locale);
   document.documentElement.lang = settings.locale;
-  appRoot.innerHTML = renderAppShell({
-    activeTabId: safeActiveTabId,
-    translate,
-    locale: settings.locale,
-    matchFeed: matchFeedState,
-    timezone: settings.timezone,
-    filters: activeFilters,
-    searchQuery: currentSearchQuery,
-    isFilterPanelOpen,
-    betRecordsState,
-    bankrollState,
-    betRecordFilter,
-    bankrollView,
-    disciplineConfigState,
-    reportState: bankrollReportState,
-    todayReportState,
-    reportPeriod,
-    customCalendarMonth,
-    customRangeStart,
-    customRangeEnd
-  });
-  appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settings.locale);
-  appRoot.querySelector('.app-shell')?.setAttribute('data-density', settings.displayDensity);
+  const resolvedTimeZone = settings.timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : settings.timezone;
+
+  const shellEl = appRoot.querySelector('.app-shell');
+  if (!shellEl || fullRebuild) {
+    appRoot.innerHTML = renderAppShell({
+      activeTabId: safeActiveTabId,
+      translate,
+      locale: settings.locale,
+      matchFeed: matchFeedState,
+      timezone: settings.timezone,
+      filters: activeFilters,
+      searchQuery: currentSearchQuery,
+      isFilterPanelOpen,
+      betRecordsState,
+      bankrollState,
+      betRecordFilter,
+      bankrollView,
+      disciplineConfigState,
+      reportState: bankrollReportState,
+      todayReportState,
+      reportPeriod,
+      customCalendarMonth,
+      customRangeStart,
+      customRangeEnd
+    });
+    appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settings.locale);
+    appRoot.querySelector('.app-shell')?.setAttribute('data-density', settings.displayDensity);
+  } else {
+    const updateScreen = (id: string, html: string) => {
+      const existing = document.getElementById(id);
+      if (!existing) return;
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+      const newEl = temp.firstElementChild;
+      if (newEl) {
+        existing.replaceWith(newEl);
+      }
+    };
+
+    updateScreen('screen-today', renderTodayScreen({ activeTabId: safeActiveTabId, translate, bets: betRecordsState, bankroll: bankrollState, discipline: disciplineConfigState, report: todayReportState }));
+    updateScreen('screen-matches', renderMatchesScreen({ activeTabId: safeActiveTabId, translate, locale: settings.locale, matchFeed: matchFeedState, timezone: settings.timezone, filters: activeFilters, searchQuery: currentSearchQuery, isFilterPanelOpen }));
+    updateScreen('screen-bets', renderBetsScreen({ activeTabId: safeActiveTabId, translate, state: betRecordsState, filter: betRecordFilter, bankroll: bankrollState }));
+    updateScreen('screen-bankroll', renderBankrollScreen({ activeTabId: safeActiveTabId, translate, locale: settings.locale, timeZone: resolvedTimeZone, state: bankrollState, view: bankrollView, disciplineConfigState, reportState: bankrollReportState, reportPeriod, customCalendarMonth, customRangeStart, customRangeEnd }));
+
+    setActiveScreen(safeActiveTabId);
+  }
 
   // Restore filter values and apply
   const searchInput = appRoot.querySelector('#match-search') as HTMLInputElement | null;
@@ -420,7 +448,8 @@ async function refreshReports(customParams?: { period: BetReportPeriod; startDat
     loadBetReport({
       period: periodToLoad,
       anchor: localAnchorDate(),
-      ...(periodToLoad === 'custom' ? { startDate: customStart, endDate: customEnd } : {}),
+      ...(periodToLoad === 'custom' && customStart ? { startDate: customStart } : {}),
+      ...(periodToLoad === 'custom' && customEnd ? { endDate: customEnd } : {}),
       ...withAccount
     }),
     loadBetReport({ period: 'week', anchor: localAnchorDate(), ...withAccount })
@@ -752,7 +781,7 @@ appRoot.addEventListener('click', (event) => {
   const tabTarget = eventTarget.closest<HTMLElement>('[data-tab-target]');
   if (tabTarget) {
     const tabId = getSafeNavigationTabId(tabTarget.dataset.tabTarget);
-    render(tabId);
+    setActiveScreen(tabId);
     updateUrl(tabId);
     return;
   }
@@ -969,7 +998,7 @@ appRoot.addEventListener('submit', (event) => {
     settingsService.setSetting('displayDensity', String(form.get('displayDensity') ?? 'standard'));
     settingsService.setSetting('timezone', String(form.get('timezone') ?? 'local'));
     closeSheets();
-    render(currentScreenName);
+    render(currentScreenName, true);
     if (disciplineConfigState.status === 'ready' && disciplineConfigState.config) {
       const activeSettings = settingsService.getSettings();
       const resolvedTimeZone = activeSettings.timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : activeSettings.timezone;
@@ -1081,7 +1110,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('popstate', () => {
-  render(getInitialTabId());
+  setActiveScreen(getInitialTabId());
 });
 
 async function refreshMatchFeed(): Promise<void> {

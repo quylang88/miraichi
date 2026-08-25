@@ -4,7 +4,7 @@ import type { BankrollViewState } from '../../services/bankroll-service.js';
 import type { BetRecordsViewState } from '../../services/bet-record-service.js';
 import { formatDateTime, type SupportedLocale, type TranslateFunction } from '../../services/i18n-service.js';
 import { escapeHtml } from '../html.js';
-import { screenClass, screenHeader } from './screen-shared.js';
+import { renderSkeletonBetRows, screenClass, screenHeader } from './screen-shared.js';
 
 export type BetRecordFilter = 'ongoing' | 'drafts' | 'settled';
 
@@ -41,7 +41,7 @@ function betCard(record: CloudBetRecord, bankroll: BankrollViewState, translate:
 }
 
 function records(state: BetRecordsViewState, filter: BetRecordFilter, bankroll: BankrollViewState, translate: TranslateFunction): string {
-  if (state.status === 'loading') return `<section class="note-card" data-bet-records-state="loading"><div class="note-title">${escapeHtml(translate('common.loading'))}</div></section>`;
+  if (state.status === 'loading') return `<div data-bet-records-state="loading" aria-label="${escapeHtml(translate('common.loading'))}">${renderSkeletonBetRows(3)}</div>`;
   if (state.status === 'unavailable') return `<section class="note-card warning" data-bet-records-state="unavailable"><div class="note-title">${escapeHtml(translate('common.unavailable'))}</div><p class="note-copy">${escapeHtml(translate('error.request_failed'))}</p></section>`;
   if (state.status === 'empty') return `<section class="note-card" data-bet-records-state="empty"><div class="note-title">${escapeHtml(translate(`bets.empty${filter === 'ongoing' ? 'Ongoing' : filter === 'drafts' ? 'Drafts' : 'Settled'}`))}</div></section>`;
   if (filter === 'drafts') {

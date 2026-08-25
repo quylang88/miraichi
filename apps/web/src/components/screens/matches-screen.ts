@@ -2,7 +2,7 @@ import type { ProductionNavigationTabId } from '../../config/navigation-tabs.js'
 import { formatDateTime, t, type SupportedLocale, type TranslateFunction } from '../../services/i18n-service.js';
 import type { AppMatch, MatchFeedViewState } from '../../services/match-feed-service.js';
 import { escapeHtml } from '../html.js';
-import { screenClass, screenHeader } from './screen-shared.js';
+import { renderSkeletonMatchRows, screenClass, screenHeader } from './screen-shared.js';
 
 const backIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const nextIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -83,7 +83,7 @@ function renderSnapshotStatus(feed: Exclude<MatchFeedViewState, { status: 'loadi
 }
 
 function renderFeedState(feed: Exclude<MatchFeedViewState, { status: 'ready' }>, translate: TranslateFunction, locale: SupportedLocale, timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
-  if (feed.status === 'loading') return `<section class="note-card" data-match-feed-state="loading"><div class="note-eyebrow">${escapeHtml(translate('matches.store'))}</div><div class="note-title">${escapeHtml(translate('matches.loadingStore'))}</div><p class="note-copy">${escapeHtml(translate('matches.loadingFor', { date: feed.date }))}</p></section>`;
+  if (feed.status === 'loading') return `<div data-match-feed-state="loading" aria-label="${escapeHtml(translate('matches.loadingStore'))}">${renderSkeletonMatchRows(4)}</div>`;
   if (feed.status === 'unavailable') return `${renderSnapshotStatus(feed, translate, locale, timezone)}<section class="note-card warning" data-match-feed-state="unavailable"><div class="note-eyebrow">${escapeHtml(translate('matches.dataUpdateRequired'))}</div><div class="note-title">${escapeHtml(translate('matches.storeUnavailable'))}</div><p class="note-copy">${escapeHtml(translate('matches.feedUnavailable'))}</p></section>`;
   return `${renderSnapshotStatus(feed, translate, locale, timezone)}<section class="note-card" data-match-feed-state="empty"><div class="note-eyebrow">${escapeHtml(translate('matches.store'))}</div><div class="note-title">${escapeHtml(translate('matches.noMatchesTitle', { date: feed.date }))}</div><p class="note-copy">${escapeHtml(translate('matches.noMatchesCopy'))}</p></section>`;
 }

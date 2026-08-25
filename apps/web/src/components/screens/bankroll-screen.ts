@@ -3,7 +3,7 @@ import type { BankrollViewState } from '../../services/bankroll-service.js';
 import type { BetReportPeriod, BetReportViewState, DisciplineConfigViewState } from '../../services/core-betting-service.js';
 import { formatDateTime, type SupportedLocale, type TranslateFunction } from '../../services/i18n-service.js';
 import { escapeHtml } from '../html.js';
-import { metricRow, screenClass, screenHeader } from './screen-shared.js';
+import { metricRow, renderSkeletonCard, renderSkeletonLedgerRows, renderSkeletonMetrics, screenClass, screenHeader } from './screen-shared.js';
 
 export type BankrollSecondaryView = 'overview' | 'analytics' | 'discipline' | 'ledger';
 
@@ -17,7 +17,7 @@ function ledger(state: Extract<BankrollViewState, { status: 'ready' }>, translat
 }
 
 function discipline(state: DisciplineConfigViewState, translate: TranslateFunction): string {
-  if (state.status === 'loading') return `<section class="note-card"><div class="note-title">${escapeHtml(translate('common.loading'))}</div></section>`;
+  if (state.status === 'loading') return renderSkeletonCard();
   if (state.status === 'unavailable') return `<section class="note-card warning"><div class="note-title">${escapeHtml(translate(`error.${state.code}`, translate('error.request_failed')))}</div></section>`;
   const config = state.config;
   const notConfigured = !config || [config.dailyStopLossPoints, config.weeklyStopLossPoints, config.bigBetThresholdPoints].every((value) => value === null);
@@ -104,7 +104,7 @@ function analytics(
     ? renderSingleRangeCalendar(customCalendarMonth || todayStr.slice(0, 7), customRangeStart ?? null, customRangeEnd ?? null, translate, locale, todayStr)
     : '';
 
-  if (state.status === 'loading') return `${controls}${calendarPicker}<section class="note-card"><div class="note-title">${escapeHtml(translate('common.loading'))}</div></section>`;
+  if (state.status === 'loading') return `${controls}${calendarPicker}${renderSkeletonMetrics(4)}<div class="stack">${renderSkeletonCard()}</div>`;
   if (state.status === 'unavailable') return `${controls}${calendarPicker}<section class="note-card warning"><div class="note-title">${escapeHtml(translate(`error.${state.code}`, translate('error.request_failed')))}</div></section>`;
   if (state.status === 'empty') return `${controls}${calendarPicker}<p class="empty-state">${escapeHtml(translate('bets.emptySettled'))}</p>`;
   const report = state.report;
@@ -127,9 +127,9 @@ export function renderBankrollScreen(input: {
   readonly disciplineConfigState: DisciplineConfigViewState;
   readonly reportState: BetReportViewState;
   readonly reportPeriod: BetReportPeriod;
-  readonly customCalendarMonth?: string;
-  readonly customRangeStart?: string | null;
-  readonly customRangeEnd?: string | null;
+  readonly customCalendarMonth?: string | undefined;
+  readonly customRangeStart?: string | null | undefined;
+  readonly customRangeEnd?: string | null | undefined;
 }): string {
   const {
     activeTabId, translate, locale, timeZone, state, view,
@@ -137,7 +137,7 @@ export function renderBankrollScreen(input: {
     customCalendarMonth, customRangeStart, customRangeEnd
   } = input;
   const tab = (value: BankrollSecondaryView, key: string) => `<button class="${view === value ? 'active' : ''}" type="button" data-bankroll-view="${value}">${escapeHtml(translate(key))}</button>`;
-  let body = `<section class="note-card" data-bankroll-state="loading"><div class="note-title">${escapeHtml(translate('common.loading'))}</div></section>`;
+  let body = `<div data-bankroll-state="loading" aria-label="${escapeHtml(translate('common.loading'))}">${view === 'ledger' ? renderSkeletonLedgerRows(4) : view === 'discipline' ? renderSkeletonCard() : renderSkeletonMetrics(3)}</div>`;
   if (state.status === 'unavailable') body = `<section class="note-card warning" data-bankroll-state="unavailable"><div class="note-title">${escapeHtml(translate('common.unavailable'))}</div><p class="note-copy">${escapeHtml(translate('error.request_failed'))}</p></section>`;
   if (state.status === 'empty') body = view === 'discipline'
     ? discipline(disciplineConfigState, translate)

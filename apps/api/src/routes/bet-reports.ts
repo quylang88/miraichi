@@ -22,6 +22,6 @@ export async function handleBetReports(req:IncomingMessage,res:ServerResponse,de
     const config=await deps.adapter.getDisciplineConfig(deps.ownerProfileId);
     if(!config)return sendError(res,409,'discipline_config_required','Configure discipline rules first.');
     const [bets,events]=await Promise.all([deps.adapter.listBetRecords(deps.ownerProfileId),deps.adapter.listBetSettlementEvents(deps.ownerProfileId)]);
-    return sendJson(res,200,buildBetReport({period,anchor,timeZone:config.timeZone,weekStartDay:config.weekStartDay??'monday',customRange:startDate&&endDate?{startDate,endDate}:undefined,bets,events,...(accountId?{accountId}:{})}));
+    return sendJson(res,200,buildBetReport({period,anchor,timeZone:config.timeZone,weekStartDay:config.weekStartDay??'monday',...(startDate&&endDate?{customRange:{startDate,endDate}}:{}),bets,events,...(accountId?{accountId}:{})}));
   }catch(error){mapCloudError(res,error);}
 }

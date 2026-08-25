@@ -2007,7 +2007,8 @@ svg {
 
 @media (prefers-reduced-motion: no-preference) {
   .screen.active {
-    animation: enter-screen 160ms ease-out;
+    animation: enter-screen 140ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
   }
 
   .sheet.open {
@@ -2017,14 +2018,112 @@ svg {
 
 @keyframes enter-screen {
   from {
-    opacity: 0;
-    transform: translateY(4px);
+    opacity: 0.82;
+    transform: translateY(2px);
   }
 
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Skeleton Loaders (OLED Dark Baseline) */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-control);
+  display: block;
+}
+
+.skeleton-text {
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: 4px;
+  display: block;
+  height: 12px;
+  margin: 4px 0;
+}
+
+.skeleton-text.heading {
+  height: 22px;
+  width: 55%;
+}
+
+.skeleton-text.short {
+  width: 30%;
+}
+
+.skeleton-text.medium {
+  width: 60%;
+}
+
+.skeleton-box {
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-card);
+}
+
+.skeleton-pill {
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: 999px;
+  height: 24px;
+  width: 56px;
+}
+
+.skeleton-metric {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  min-height: 58px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.skeleton-row {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 11px 13px;
+}
+
+.skeleton-row .skeleton-left {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+
+.skeleton-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 @keyframes sheet-in {
