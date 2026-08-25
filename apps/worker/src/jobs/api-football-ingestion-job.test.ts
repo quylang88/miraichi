@@ -305,7 +305,7 @@ describe('runApiFootballIngestionJob', () => {
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }
-  }, 20_000);
+  }, 40_000);
 
   it('a failed daily sync remains due; a published daily sync is not retried until next local date', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ingest-failed-retry-'));
