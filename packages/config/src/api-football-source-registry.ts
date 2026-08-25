@@ -1,13 +1,16 @@
-export type CompetitionCategory =
-  | 'top5_europe'
-  | 'continental_cup'
-  | 'europe_tier2'
-  | 'europe_top_tier'
-  | 'americas'
-  | 'asia_pacific'
-  | 'middle_east'
-  | 'domestic_cup'
-  | 'world_club';
+export const API_FOOTBALL_COMPETITION_CATEGORIES = Object.freeze([
+  'top5_europe',
+  'continental_cup',
+  'europe_tier2',
+  'europe_top_tier',
+  'americas',
+  'asia_pacific',
+  'middle_east',
+  'domestic_cup',
+  'world_club'
+] as const);
+
+export type CompetitionCategory = typeof API_FOOTBALL_COMPETITION_CATEGORIES[number];
 
 export type ApiFootballCompetitionType = 'club' | 'national-team';
 
@@ -767,8 +770,15 @@ export function findCompetitionByEntryId(entryId: string): ApiFootballCompetitio
 }
 
 export function getHydrationSeasonsForCompetition(entry: ApiFootballCompetitionEntry): readonly number[] {
-  const seasons = new Set<number>([entry.currentSeason, ...entry.historicalSeasons]);
-  return Array.from(seasons).sort((a, b) => a - b);
+  const current = entry.currentSeason;
+  const historical = [...entry.historicalSeasons].sort((a, b) => b - a);
+  const result: number[] = [current];
+  for (const s of historical) {
+    if (!result.includes(s)) {
+      result.push(s);
+    }
+  }
+  return result;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -793,7 +803,9 @@ function hasValidIanaTimezone(value: unknown): boolean {
 export function validateApiFootballSourceRegistry(entries: readonly unknown[]): string[] {
   const errors: string[] = [];
   const entryIds = new Set<string>();
+  const competitionIds = new Set<string>();
   const leagueIds = new Set<number>();
+  const validCategories = new Set<string>(API_FOOTBALL_COMPETITION_CATEGORIES);
   let enabledCount = 0;
 
   if (!Array.isArray(entries) || entries.length === 0) {
@@ -820,6 +832,10 @@ export function validateApiFootballSourceRegistry(entries: readonly unknown[]): 
 
     if (!isNonEmptyString(entry.competitionId)) {
       errors.push(`entries[${index}].competitionId must be a non-empty string`);
+    } else if (competitionIds.has(entry.competitionId)) {
+      errors.push(`entries[${index}] has duplicate competitionId: ${entry.competitionId}`);
+    } else {
+      competitionIds.add(entry.competitionId);
     }
 
     if (!isNonEmptyString(entry.competitionName)) {
@@ -828,6 +844,10 @@ export function validateApiFootballSourceRegistry(entries: readonly unknown[]): 
 
     if (!isNonEmptyString(entry.country)) {
       errors.push(`entries[${index}].country must be a non-empty string`);
+    }
+
+    if (!isNonEmptyString(entry.category) || !validCategories.has(entry.category)) {
+      errors.push(`entries[${index}].category must be a supported competition category`);
     }
 
     if (entry.competitionType !== 'club' && entry.competitionType !== 'national-team') {
@@ -842,12 +862,18 @@ export function validateApiFootballSourceRegistry(entries: readonly unknown[]): 
       leagueIds.add(entry.providerLeagueId);
     }
 
-    if (typeof entry.currentSeason !== 'number' || !Number.isInteger(entry.currentSeason) || entry.currentSeason < 2000) {
+    const currentSeason = entry.currentSeason;
+    if (typeof currentSeason !== 'number' || !Number.isInteger(currentSeason) || currentSeason < 2000) {
       errors.push(`entries[${index}].currentSeason must be a valid 4-digit year`);
     }
 
     if (!Array.isArray(entry.historicalSeasons) || entry.historicalSeasons.some((s) => typeof s !== 'number' || !Number.isInteger(s) || s < 2000)) {
       errors.push(`entries[${index}].historicalSeasons must be an array of valid 4-digit years`);
+    } else if (
+      typeof currentSeason === 'number' &&
+      entry.historicalSeasons.some((season) => season > currentSeason)
+    ) {
+      errors.push(`entries[${index}].historicalSeasons cannot contain a season newer than currentSeason`);
     }
 
     if (!hasValidIanaTimezone(entry.sourceTimezone)) {

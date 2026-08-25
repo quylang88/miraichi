@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { HydrationCheckpointManager } from './hydration-checkpoint-manager.js';
-import type { ApiFootballCompetitionEntry } from '@miraichi/config';
+import {
+  API_FOOTBALL_COMPETITION_REGISTRY,
+  type ApiFootballCompetitionEntry
+} from '@miraichi/config';
 
 const SAMPLE_REGISTRY: readonly ApiFootballCompetitionEntry[] = [
   {
@@ -34,14 +37,77 @@ const SAMPLE_REGISTRY: readonly ApiFootballCompetitionEntry[] = [
 ];
 
 describe('HydrationCheckpointManager', () => {
-  it('identifies un-hydrated seasons across configured competitions', () => {
+  it('identifies un-hydrated seasons across configured competitions in fair season-layer order', () => {
     const manager = new HydrationCheckpointManager();
     const pending = manager.getPendingHydrations(SAMPLE_REGISTRY);
 
-    // EPL has 3 seasons (2024, 2025, 2026) and La Liga has 2 (2025, 2026) -> Total 5
+    // EPL: [2026, 2025, 2024], La Liga: [2026, 2025]
+    // Layer 0: EPL 2026, La Liga 2026
+    // Layer 1: EPL 2025, La Liga 2025
+    // Layer 2: EPL 2024
     expect(pending).toHaveLength(5);
     expect(pending[0]?.entry.competitionId).toBe('eng-premier-league');
-    expect(pending[0]?.season).toBe(2024);
+    expect(pending[0]?.season).toBe(2026);
+    expect(pending[1]?.entry.competitionId).toBe('esp-la-liga');
+    expect(pending[1]?.season).toBe(2026);
+    expect(pending[2]?.entry.competitionId).toBe('eng-premier-league');
+    expect(pending[2]?.season).toBe(2025);
+    expect(pending[3]?.entry.competitionId).toBe('esp-la-liga');
+    expect(pending[3]?.season).toBe(2025);
+    expect(pending[4]?.entry.competitionId).toBe('eng-premier-league');
+    expect(pending[4]?.season).toBe(2024);
+  });
+
+  it('places all 50 current seasons before previous and older layers deterministically', () => {
+    const manager = new HydrationCheckpointManager();
+    const pending = manager.getPendingHydrations(API_FOOTBALL_COMPETITION_REGISTRY);
+    const sortedCompetitionIds = API_FOOTBALL_COMPETITION_REGISTRY
+      .filter((entry) => entry.enabled)
+      .map((entry) => entry.competitionId)
+      .sort((a, b) => a.localeCompare(b));
+
+    expect(sortedCompetitionIds).toHaveLength(50);
+    expect(pending.slice(0, 50).map((target) => target.entry.competitionId)).toEqual(sortedCompetitionIds);
+    expect(pending.slice(50, 100).map((target) => target.entry.competitionId)).toEqual(sortedCompetitionIds);
+    expect(pending.slice(100, 150).map((target) => target.entry.competitionId)).toEqual(sortedCompetitionIds);
+    expect(pending.slice(0, 50).every((target) => target.season === target.entry.currentSeason)).toBe(true);
+    expect(pending.slice(50, 100).every((target) => (
+      target.season === [...target.entry.historicalSeasons].sort((a, b) => b - a)[0]
+    ))).toBe(true);
+    expect(pending.slice(100, 150).every((target) => (
+      target.season === [...target.entry.historicalSeasons].sort((a, b) => b - a)[1]
+    ))).toBe(true);
+  });
+
+  it('filters pending hydrations by seasonLayer (current, previous, older, YYYY), competition, and category', () => {
+    const manager = new HydrationCheckpointManager();
+
+    const currentOnly = manager.getPendingHydrations(SAMPLE_REGISTRY, { seasonLayer: 'current' });
+    expect(currentOnly).toHaveLength(2);
+    expect(currentOnly.map((t) => `${t.entry.competitionId}:${t.season}`)).toEqual([
+      'eng-premier-league:2026',
+      'esp-la-liga:2026'
+    ]);
+
+    const previousOnly = manager.getPendingHydrations(SAMPLE_REGISTRY, { seasonLayer: 'previous' });
+    expect(previousOnly).toHaveLength(2);
+    expect(previousOnly.map((t) => `${t.entry.competitionId}:${t.season}`)).toEqual([
+      'eng-premier-league:2025',
+      'esp-la-liga:2025'
+    ]);
+
+    const olderOnly = manager.getPendingHydrations(SAMPLE_REGISTRY, { seasonLayer: 'older' });
+    expect(olderOnly).toHaveLength(1);
+    expect(olderOnly[0]?.entry.competitionId).toBe('eng-premier-league');
+    expect(olderOnly[0]?.season).toBe(2024);
+
+    const year2025 = manager.getPendingHydrations(SAMPLE_REGISTRY, { seasonLayer: 2025 });
+    expect(year2025).toHaveLength(2);
+    expect(year2025.map((t) => t.season)).toEqual([2025, 2025]);
+
+    const compOnly = manager.getPendingHydrations(SAMPLE_REGISTRY, { competitionId: 'esp-la-liga' });
+    expect(compOnly).toHaveLength(2);
+    expect(compOnly.every((t) => t.entry.competitionId === 'esp-la-liga')).toBe(true);
   });
 
   it('marks seasons as completed and excludes them from pending list', async () => {
@@ -71,41 +137,59 @@ describe('HydrationCheckpointManager', () => {
   });
 
   it('automatically detects newly added 51st competition in future', () => {
-    const manager = new HydrationCheckpointManager({
-      initialRecords: [
-        { competitionId: 'eng-premier-league', leagueId: 39, season: 2024, status: 'completed', matchCount: 380 },
-        { competitionId: 'eng-premier-league', leagueId: 39, season: 2025, status: 'completed', matchCount: 380 },
-        { competitionId: 'eng-premier-league', leagueId: 39, season: 2026, status: 'completed', matchCount: 380 },
-        { competitionId: 'esp-la-liga', leagueId: 140, season: 2025, status: 'completed', matchCount: 380 },
-        { competitionId: 'esp-la-liga', leagueId: 140, season: 2026, status: 'completed', matchCount: 380 }
-      ]
-    });
+    const completedRecords = API_FOOTBALL_COMPETITION_REGISTRY.flatMap((entry) =>
+      [entry.currentSeason, ...entry.historicalSeasons].map((season) => ({
+        competitionId: entry.competitionId,
+        leagueId: entry.providerLeagueId,
+        season,
+        status: 'completed' as const,
+        matchCount: 1
+      }))
+    );
+    const manager = new HydrationCheckpointManager({ initialRecords: completedRecords });
+    expect(manager.getPendingHydrations(API_FOOTBALL_COMPETITION_REGISTRY)).toHaveLength(0);
 
-    // All sample registry entries are done
-    expect(manager.getPendingHydrations(SAMPLE_REGISTRY)).toHaveLength(0);
-
-    // Now owner adds a new 3rd league (e.g. V-League)
     const expandedRegistry: ApiFootballCompetitionEntry[] = [
-      ...SAMPLE_REGISTRY,
+      ...API_FOOTBALL_COMPETITION_REGISTRY,
       {
-        entryId: 'api-football-vie-v-league-1',
+        entryId: 'api-football-new-competition-51',
         sourceId: 'api-football',
-        competitionId: 'vie-v-league-1',
-        competitionName: 'V.League 1',
-        country: 'Vietnam',
+        competitionId: 'new-competition-51',
+        competitionName: 'New Competition 51',
+        country: 'Test',
         category: 'asia_pacific',
         competitionType: 'club',
-        providerLeagueId: 340,
+        providerLeagueId: 999_051,
         currentSeason: 2026,
         historicalSeasons: [2024, 2025],
-        sourceTimezone: 'Asia/Ho_Chi_Minh',
+        sourceTimezone: 'UTC',
         enabled: true
       }
     ];
 
     const newPending = manager.getPendingHydrations(expandedRegistry);
-    expect(newPending).toHaveLength(3); // V-League 2024, 2025, 2026
-    expect(newPending.every((p) => p.entry.providerLeagueId === 340)).toBe(true);
+    expect(newPending).toHaveLength(3);
+    expect(newPending.every((p) => p.entry.providerLeagueId === 999_051)).toBe(true);
+    expect(newPending.map((p) => p.season)).toEqual([2026, 2025, 2024]);
+  });
+
+  it('uses competition, provider league, and season together for checkpoint identity', () => {
+    const manager = new HydrationCheckpointManager({
+      initialRecords: [
+        {
+          competitionId: 'retired-competition-id',
+          leagueId: 39,
+          season: 2026,
+          status: 'completed',
+          matchCount: 380
+        }
+      ]
+    });
+
+    const currentOnly = manager.getPendingHydrations([SAMPLE_REGISTRY[0]!], { seasonLayer: 'current' });
+    expect(currentOnly.map((target) => `${target.entry.competitionId}:${target.entry.providerLeagueId}:${target.season}`)).toEqual([
+      'eng-premier-league:39:2026'
+    ]);
   });
 
   it('marks empty provider responses as empty and keeps them un-hydrated / retryable', async () => {

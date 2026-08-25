@@ -24,6 +24,14 @@ export interface HydrationStateFile {
   records: Record<string, HydrationRecord>;
 }
 
+export type HydrationSeasonLayer = 'current' | 'previous' | 'older' | number;
+
+export interface GetPendingHydrationsOptions {
+  seasonLayer?: HydrationSeasonLayer | undefined;
+  competitionId?: string | undefined;
+  category?: string | undefined;
+}
+
 export interface HydrationTarget {
   entry: ApiFootballCompetitionEntry;
   season: number;
@@ -181,9 +189,11 @@ export class HydrationCheckpointManager {
     }
   }
 
-  public isHydrated(leagueId: number, season: number): boolean {
+  public isHydrated(leagueId: number, season: number, competitionId?: string): boolean {
     const rec = this.records.get(this.keyFor(leagueId, season));
-    return rec !== undefined && rec.status === 'completed';
+    return rec !== undefined &&
+      rec.status === 'completed' &&
+      (competitionId === undefined || rec.competitionId === competitionId);
   }
 
   public getRecord(leagueId: number, season: number): HydrationRecord | undefined {
@@ -256,17 +266,77 @@ export class HydrationCheckpointManager {
     this.records = nextRecords;
   }
 
-  public getPendingHydrations(registry: readonly ApiFootballCompetitionEntry[]): HydrationTarget[] {
+  public getPendingHydrations(
+    registry: readonly ApiFootballCompetitionEntry[],
+    options?: GetPendingHydrationsOptions
+  ): HydrationTarget[] {
+    let competitions = registry.filter((entry) => entry.enabled);
+
+    if (options?.competitionId) {
+      const compKey = options.competitionId.trim();
+      competitions = competitions.filter(
+        (c) => c.competitionId === compKey || String(c.providerLeagueId) === compKey
+      );
+    }
+
+    if (options?.category) {
+      competitions = competitions.filter((c) => c.category === options.category);
+    }
+
+    competitions = [...competitions].sort((a, b) => a.competitionId.localeCompare(b.competitionId));
+
+    const competitionSeasons = competitions.map((entry) => ({
+      entry,
+      seasons: getHydrationSeasonsForCompetition(entry)
+    }));
+
+    let maxLayers = 0;
+    for (const item of competitionSeasons) {
+      if (item.seasons.length > maxLayers) {
+        maxLayers = item.seasons.length;
+      }
+    }
+
     const targets: HydrationTarget[] = [];
-    for (const entry of registry) {
-      if (!entry.enabled) continue;
-      const seasons = getHydrationSeasonsForCompetition(entry);
-      for (const season of seasons) {
-        if (!this.isHydrated(entry.providerLeagueId, season)) {
-          targets.push({ entry, season });
+    let allowedLayers: Set<number> | null = null;
+    let exactYear: number | null = null;
+
+    if (options?.seasonLayer !== undefined) {
+      const value = options.seasonLayer;
+      if (value === 'current') {
+        allowedLayers = new Set([0]);
+      } else if (value === 'previous') {
+        allowedLayers = new Set([1]);
+      } else if (value === 'older') {
+        allowedLayers = new Set();
+        for (let l = 2; l < Math.max(maxLayers, 3); l++) {
+          allowedLayers.add(l);
+        }
+      } else if (Number.isInteger(value) && value >= 1900) {
+        exactYear = value;
+      } else {
+        throw new Error(`Invalid hydration season layer: ${String(value)}`);
+      }
+    }
+
+    for (let layerIndex = 0; layerIndex < maxLayers; layerIndex++) {
+      if (allowedLayers && !allowedLayers.has(layerIndex) && exactYear === null) {
+        continue;
+      }
+
+      for (const item of competitionSeasons) {
+        if (layerIndex < item.seasons.length) {
+          const season = item.seasons[layerIndex]!;
+          if (exactYear !== null && season !== exactYear) {
+            continue;
+          }
+          if (!this.isHydrated(item.entry.providerLeagueId, season, item.entry.competitionId)) {
+            targets.push({ entry: item.entry, season });
+          }
         }
       }
     }
+
     return targets;
   }
 
@@ -286,7 +356,7 @@ export class HydrationCheckpointManager {
       for (const season of seasons) {
         totalRequired += 1;
         const rec = this.records.get(this.keyFor(entry.providerLeagueId, season));
-        if (rec?.status === 'completed') {
+        if (rec?.status === 'completed' && rec.competitionId === entry.competitionId) {
           completed += 1;
         } else if (rec?.status === 'failed') {
           failed += 1;

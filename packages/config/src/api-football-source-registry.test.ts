@@ -39,10 +39,10 @@ describe('api-football-source-registry', () => {
     expect(ucl?.providerLeagueId).toBe(2);
   });
 
-  it('extracts unique hydration seasons for multi-season ingestion', () => {
+  it('extracts unique hydration seasons ordered newest-first [current, previous, older]', () => {
     const epl = findCompetitionByLeagueId(39)!;
     const seasons = getHydrationSeasonsForCompetition(epl);
-    expect(seasons).toEqual([2024, 2025, 2026]);
+    expect(seasons).toEqual([2026, 2025, 2024]);
   });
 
   it('filters enabled competitions properly', () => {
@@ -80,5 +80,34 @@ describe('api-football-source-registry', () => {
       { ...API_FOOTBALL_COMPETITION_REGISTRY[0]!, entryId: 'duplicate-entry' }
     ];
     expect(validateApiFootballSourceRegistry(duplicateLeague)).toContain('entries[1] has duplicate providerLeagueId: 39');
+
+    const duplicateCompetition = [
+      { ...API_FOOTBALL_COMPETITION_REGISTRY[0]! },
+      {
+        ...API_FOOTBALL_COMPETITION_REGISTRY[1]!,
+        competitionId: API_FOOTBALL_COMPETITION_REGISTRY[0]!.competitionId
+      }
+    ];
+    expect(validateApiFootballSourceRegistry(duplicateCompetition)).toContain(
+      `entries[1] has duplicate competitionId: ${API_FOOTBALL_COMPETITION_REGISTRY[0]!.competitionId}`
+    );
+
+    const invalidCategory = [
+      { ...API_FOOTBALL_COMPETITION_REGISTRY[0]!, category: 'unknown-category' }
+    ];
+    expect(validateApiFootballSourceRegistry(invalidCategory)).toContain(
+      'entries[0].category must be a supported competition category'
+    );
+
+    const futureHistoricalSeason = [
+      {
+        ...API_FOOTBALL_COMPETITION_REGISTRY[0]!,
+        currentSeason: 2026,
+        historicalSeasons: [2025, 2027]
+      }
+    ];
+    expect(validateApiFootballSourceRegistry(futureHistoricalSeason)).toContain(
+      'entries[0].historicalSeasons cannot contain a season newer than currentSeason'
+    );
   });
 });

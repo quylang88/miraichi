@@ -17,7 +17,11 @@ import {
   ApiFootballQuotaExceededError
 } from '../sources/api-football/api-football-client.js';
 import { adaptApiFootballMatches } from '../sources/api-football/api-football-adapter.js';
-import { HydrationCheckpointManager, type HydrationTarget } from '../sources/api-football/hydration-checkpoint-manager.js';
+import {
+  HydrationCheckpointManager,
+  type HydrationSeasonLayer,
+  type HydrationTarget
+} from '../sources/api-football/hydration-checkpoint-manager.js';
 import {
   loadLastGoodWarehouseSnapshot,
   mergeCanonicalWarehouseSnapshots
@@ -27,10 +31,13 @@ import { validateApiFootballPublicationCandidate } from '../sources/api-football
 
 export interface ApiFootballHydrationJobOptions {
   dataRoot: string;
-  client?: ApiFootballClient;
-  checkpointManager?: HydrationCheckpointManager;
-  registry?: readonly ApiFootballCompetitionEntry[];
-  maxBatchesPerRun?: number;
+  client?: ApiFootballClient | undefined;
+  checkpointManager?: HydrationCheckpointManager | undefined;
+  registry?: readonly ApiFootballCompetitionEntry[] | undefined;
+  maxBatchesPerRun?: number | undefined;
+  seasonLayer?: HydrationSeasonLayer | undefined;
+  competitionId?: string | undefined;
+  category?: string | undefined;
   now?: () => Date;
 }
 
@@ -41,6 +48,8 @@ export interface ApiFootballHydrationRunResult {
   matchesHydrated: number;
   pendingCount: number;
   quotaUsedToday: number;
+  emptyCount: number;
+  failedCount: number;
   error?: string;
 }
 
@@ -56,7 +65,13 @@ export async function runApiFootballHydrationJob(
 
   await checkpointManager.load();
 
-  const pendingTargets = checkpointManager.getPendingHydrations(registry);
+  const filterOpts = {
+    seasonLayer: options.seasonLayer,
+    competitionId: options.competitionId,
+    category: options.category
+  };
+
+  const pendingTargets = checkpointManager.getPendingHydrations(registry, filterOpts);
 
   if (pendingTargets.length === 0) {
     return {
@@ -65,6 +80,8 @@ export async function runApiFootballHydrationJob(
       seasonsHydrated: 0,
       matchesHydrated: 0,
       pendingCount: 0,
+      emptyCount: 0,
+      failedCount: 0,
       quotaUsedToday: await getReservedQuota(client, now())
     };
   }
@@ -74,6 +91,8 @@ export async function runApiFootballHydrationJob(
 
   let seasonsHydrated = 0;
   let matchesHydrated = 0;
+  let emptyCount = 0;
+  let failedCount = 0;
   const accumulatedSnapshot: CanonicalWarehouseSnapshot = {
     matches: [],
     teams: [],
@@ -94,6 +113,7 @@ export async function runApiFootballHydrationJob(
       const fixtures = response.response || [];
 
       if (fixtures.length === 0) {
+        emptyCount += 1;
         await checkpointManager.markEmpty(
           target.entry.competitionId,
           target.entry.providerLeagueId,
@@ -130,6 +150,7 @@ export async function runApiFootballHydrationJob(
       if (error instanceof ApiFootballQuotaExceededError) {
         break;
       }
+      failedCount += 1;
       const errMsg = error instanceof Error ? error.message : String(error);
       await checkpointManager.markFailed(
         target.entry.competitionId,
@@ -198,14 +219,16 @@ export async function runApiFootballHydrationJob(
     });
   }
 
-  const remainingPending = checkpointManager.getPendingHydrations(registry).length;
+  const remainingPending = checkpointManager.getPendingHydrations(registry, filterOpts).length;
 
   return {
-    status: remainingPending === 0 ? 'completed' : 'partial',
+    status: remainingPending === 0 ? 'completed' : (seasonsHydrated === 0 && emptyCount === 0 && failedCount > 0 ? 'failed' : 'partial'),
     runId,
     seasonsHydrated,
     matchesHydrated,
     pendingCount: remainingPending,
+    emptyCount,
+    failedCount,
     quotaUsedToday: await getReservedQuota(client, now())
   };
 }
