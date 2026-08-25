@@ -53,18 +53,77 @@ export interface LocalMatch {
   updatedAt: string;
 }
 
+export interface LocalScoreBreakdown {
+  halftime: LocalMatchScore;
+  fulltime: LocalMatchScore;
+  extratime: LocalMatchScore;
+  penalty: LocalMatchScore;
+}
+
+export interface LocalMatchTeamStats {
+  teamId: string;
+  teamName?: string;
+  cornerKicks: number | null;
+  yellowCards: number | null;
+  redCards: number | null;
+  totalShots: number | null;
+  shotsOnGoal: number | null;
+  possessionPercentage: number | null;
+}
+
 export interface LocalMatchEvent {
   minute: number | null;
+  extraMinute?: number | null;
   teamId?: string;
   type: 'goal' | 'card' | 'substitution' | 'penalty' | 'other';
+  detail?: string | null;
+  player?: string | null;
+  assist?: string | null;
   label: string;
 }
 
 export interface LocalMatchDetail {
   match: LocalMatch;
-  referee?: string | undefined;
+  status: LocalMatchStatus;
+  elapsedMinute: number | null;
+  referee?: string | null;
+  scoreBreakdown?: LocalScoreBreakdown;
   events: LocalMatchEvent[];
-  notes: string[];
+  teamStats?: LocalMatchTeamStats[];
+  warnings?: string[];
+  notes?: string[];
+  updatedAt: string;
+}
+
+export function toProviderNeutralLocalMatch(match: LocalMatch): LocalMatch {
+  return {
+    id: match.id,
+    competition: {
+      id: match.competition.id,
+      name: match.competition.name,
+      type: match.competition.type,
+      season: match.competition.season
+    },
+    kickoffUtc: match.kickoffUtc,
+    status: match.status,
+    homeTeam: {
+      id: match.homeTeam.id,
+      name: match.homeTeam.name,
+      ...(match.homeTeam.countryCode !== undefined ? { countryCode: match.homeTeam.countryCode } : {})
+    },
+    awayTeam: {
+      id: match.awayTeam.id,
+      name: match.awayTeam.name,
+      ...(match.awayTeam.countryCode !== undefined ? { countryCode: match.awayTeam.countryCode } : {})
+    },
+    score: { home: match.score.home, away: match.score.away },
+    ...(match.venue !== undefined ? { venue: match.venue } : {}),
+    ...(match.round !== undefined ? { round: match.round } : {}),
+    ...(match.stage !== undefined ? { stage: match.stage } : {}),
+    ...(match.neutralVenue !== undefined ? { neutralVenue: match.neutralVenue } : {}),
+    sourceRefs: match.sourceRefs.map(({ sourceId, importedAt }) => ({ sourceId, importedAt })),
+    updatedAt: match.updatedAt
+  };
 }
 
 export interface LocalMatchSnapshotQuery {
@@ -400,6 +459,274 @@ export function validateLocalMatchFeedResponse(input: unknown): ValidationResult
     if (!result.ok) {
       errors.push(...result.errors.map(err => `snapshot: ${err}`));
     }
+  }
+
+  return errors.length === 0 ? { ok: true } : { ok: false, errors };
+}
+
+const FORBIDDEN_DETAIL_FIELDS = [
+  'providerFixtureId',
+  'sourceProviderId',
+  'providerUrl',
+  'fixtureId',
+  'xG',
+  'expectedGoals',
+  'expected_goals',
+  'predictions',
+  'odds',
+  'sourceMatchId',
+  'sourceUrl'
+] as const;
+
+const VALID_EVENT_TYPES = ['goal', 'card', 'substitution', 'penalty', 'other'] as const;
+
+function collectNestedForbiddenDetailFields(
+  value: unknown,
+  path: string,
+  errors: string[]
+): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectNestedForbiddenDetailFields(item, `${path}[${index}]`, errors));
+    return;
+  }
+  if (!isObject(value)) return;
+
+  for (const [key, nestedValue] of Object.entries(value)) {
+    const nestedPath = path ? `${path}.${key}` : key;
+    if ((FORBIDDEN_DETAIL_FIELDS as readonly string[]).includes(key)) {
+      errors.push(`${nestedPath}: Forbidden field "${key}" is present`);
+    }
+    collectNestedForbiddenDetailFields(nestedValue, nestedPath, errors);
+  }
+}
+
+export function validateLocalMatchDetail(input: unknown): ValidationResult {
+  const errors: string[] = [];
+
+  if (!isObject(input)) {
+    return { ok: false, errors: ['Input is not an object'] };
+  }
+
+  // Strictly reject forbidden provider/betting/analytical fields in input
+  for (const field of FORBIDDEN_DETAIL_FIELDS) {
+    if (field in input) {
+      errors.push(`Forbidden field "${field}" is present`);
+    }
+  }
+  for (const [key, value] of Object.entries(input)) {
+    if (!(FORBIDDEN_DETAIL_FIELDS as readonly string[]).includes(key)) {
+      collectNestedForbiddenDetailFields(value, key, errors);
+    }
+  }
+
+  // match
+  if (!('match' in input) || !isObject(input.match)) {
+    errors.push('Field "match" must be an object');
+  } else {
+    for (const field of FORBIDDEN_DETAIL_FIELDS) {
+      if (field in input.match) {
+        errors.push(`match: Forbidden field "${field}" is present`);
+      }
+    }
+    const matchResult = validateLocalMatch(input.match);
+    if (!matchResult.ok) {
+      errors.push(...matchResult.errors.map(err => `match: ${err}`));
+    }
+  }
+
+  // status
+  if (input.status === 'in_play') {
+    errors.push('Field "status" cannot be "in_play" in the terminal-only match feed');
+  } else if (typeof input.status !== 'string' || !VALID_MATCH_STATUSES.includes(input.status as LocalMatchStatus)) {
+    errors.push(`Field "status" must be one of: ${VALID_MATCH_STATUSES.join(', ')}`);
+  }
+  if (isObject(input.match) && typeof input.status === 'string' && input.match.status !== input.status) {
+    errors.push('Field "status" must match match.status');
+  }
+
+  // elapsedMinute
+  if (input.elapsedMinute !== null && (typeof input.elapsedMinute !== 'number' || !Number.isInteger(input.elapsedMinute) || input.elapsedMinute < 0)) {
+    errors.push('Field "elapsedMinute" must be a non-negative integer or null');
+  }
+
+  // referee
+  if (input.referee !== undefined && input.referee !== null && typeof input.referee !== 'string') {
+    errors.push('Field "referee" must be a string or null if provided');
+  }
+
+  // scoreBreakdown
+  if (input.scoreBreakdown !== undefined) {
+    if (!isObject(input.scoreBreakdown)) {
+      errors.push('Field "scoreBreakdown" must be an object if provided');
+    } else {
+      for (const field of FORBIDDEN_DETAIL_FIELDS) {
+        if (field in input.scoreBreakdown) {
+          errors.push(`scoreBreakdown: Forbidden field "${field}" is present`);
+        }
+      }
+      const periods = ['halftime', 'fulltime', 'extratime', 'penalty'] as const;
+      for (const period of periods) {
+        const p = input.scoreBreakdown[period];
+        if (!isObject(p)) {
+          errors.push(`scoreBreakdown.${period} must be an object`);
+        } else {
+          for (const field of FORBIDDEN_DETAIL_FIELDS) {
+            if (field in p) {
+              errors.push(`scoreBreakdown.${period}: Forbidden field "${field}" is present`);
+            }
+          }
+          const homeVal = p.home;
+          const awayVal = p.away;
+          if (homeVal !== null && (typeof homeVal !== 'number' || !Number.isInteger(homeVal) || homeVal < 0)) {
+            errors.push(`scoreBreakdown.${period}.home must be a non-negative integer or null`);
+          }
+          if (awayVal !== null && (typeof awayVal !== 'number' || !Number.isInteger(awayVal) || awayVal < 0)) {
+            errors.push(`scoreBreakdown.${period}.away must be a non-negative integer or null`);
+          }
+        }
+      }
+    }
+  }
+
+  // events
+  if (!Array.isArray(input.events)) {
+    errors.push('Field "events" must be an array');
+  } else {
+    input.events.forEach((event, index) => {
+      if (!isObject(event)) {
+        errors.push(`events[${index}] must be an object`);
+      } else {
+        for (const field of FORBIDDEN_DETAIL_FIELDS) {
+          if (field in event) {
+            errors.push(`events[${index}]: Forbidden field "${field}" is present`);
+          }
+        }
+        if (event.minute !== null && (typeof event.minute !== 'number' || !Number.isInteger(event.minute) || event.minute < 0)) {
+          errors.push(`events[${index}].minute must be a non-negative integer or null`);
+        }
+        if (event.extraMinute !== undefined && event.extraMinute !== null && (typeof event.extraMinute !== 'number' || !Number.isInteger(event.extraMinute) || event.extraMinute < 0)) {
+          errors.push(`events[${index}].extraMinute must be a non-negative integer or null if provided`);
+        }
+        if (event.teamId !== undefined && (typeof event.teamId !== 'string' || event.teamId.trim() === '')) {
+          errors.push(`events[${index}].teamId must be a non-empty string if provided`);
+        } else if (
+          event.teamId !== undefined &&
+          isObject(input.match) &&
+          isObject(input.match.homeTeam) &&
+          isObject(input.match.awayTeam) &&
+          event.teamId !== input.match.homeTeam.id &&
+          event.teamId !== input.match.awayTeam.id
+        ) {
+          errors.push(`events[${index}].teamId must reference the embedded home or away team`);
+        }
+        if (typeof event.type !== 'string' || !VALID_EVENT_TYPES.includes(event.type as typeof VALID_EVENT_TYPES[number])) {
+          errors.push(`events[${index}].type must be one of: ${VALID_EVENT_TYPES.join(', ')}`);
+        }
+        if (event.detail !== undefined && event.detail !== null && typeof event.detail !== 'string') {
+          errors.push(`events[${index}].detail must be a string or null if provided`);
+        }
+        if (event.player !== undefined && event.player !== null && typeof event.player !== 'string') {
+          errors.push(`events[${index}].player must be a string or null if provided`);
+        }
+        if (event.assist !== undefined && event.assist !== null && typeof event.assist !== 'string') {
+          errors.push(`events[${index}].assist must be a string or null if provided`);
+        }
+        if (typeof event.label !== 'string' || event.label.trim() === '') {
+          errors.push(`events[${index}].label must be a non-empty string`);
+        }
+      }
+    });
+  }
+
+  // teamStats
+  if (input.teamStats !== undefined) {
+    if (!Array.isArray(input.teamStats)) {
+      errors.push('Field "teamStats" must be an array if provided');
+    } else {
+      if (input.teamStats.length !== 2) {
+        errors.push('Field "teamStats" must contain exactly two canonical team rows if provided');
+      }
+      input.teamStats.forEach((stat, index) => {
+        if (!isObject(stat)) {
+          errors.push(`teamStats[${index}] must be an object`);
+        } else {
+          for (const field of FORBIDDEN_DETAIL_FIELDS) {
+            if (field in stat) {
+              errors.push(`teamStats[${index}]: Forbidden field "${field}" is present`);
+            }
+          }
+          if (typeof stat.teamId !== 'string' || stat.teamId.trim() === '') {
+            errors.push(`teamStats[${index}].teamId must be a non-empty string`);
+          } else if (
+            isObject(input.match) &&
+            isObject(input.match.homeTeam) &&
+            isObject(input.match.awayTeam) &&
+            stat.teamId !== input.match.homeTeam.id &&
+            stat.teamId !== input.match.awayTeam.id
+          ) {
+            errors.push(`teamStats[${index}].teamId must reference the embedded home or away team`);
+          }
+          if (stat.teamName !== undefined && typeof stat.teamName !== 'string') {
+            errors.push(`teamStats[${index}].teamName must be a string if provided`);
+          }
+          const statKeys = ['cornerKicks', 'yellowCards', 'redCards', 'totalShots', 'shotsOnGoal'] as const;
+          for (const key of statKeys) {
+            const val = stat[key];
+            if (val !== null && (typeof val !== 'number' || !Number.isInteger(val) || val < 0)) {
+              errors.push(`teamStats[${index}].${key} must be a non-negative integer or null`);
+            }
+          }
+          const poss = stat.possessionPercentage;
+          if (poss !== null && (typeof poss !== 'number' || Number.isNaN(poss) || poss < 0 || poss > 100)) {
+            errors.push(`teamStats[${index}].possessionPercentage must be a number between 0 and 100 or null`);
+          }
+        }
+      });
+      if (
+        isObject(input.match) &&
+        isObject(input.match.homeTeam) &&
+        isObject(input.match.awayTeam)
+      ) {
+        const teamIds = new Set(input.teamStats
+          .filter(isObject)
+          .map((stat) => stat.teamId)
+          .filter((teamId): teamId is string => typeof teamId === 'string'));
+        if (!teamIds.has(String(input.match.homeTeam.id)) || !teamIds.has(String(input.match.awayTeam.id))) {
+          errors.push('Field "teamStats" must include one row for each embedded team');
+        }
+      }
+    }
+  }
+
+  // warnings
+  if (input.warnings !== undefined) {
+    if (!Array.isArray(input.warnings)) {
+      errors.push('Field "warnings" must be an array if provided');
+    } else {
+      input.warnings.forEach((warn, index) => {
+        if (typeof warn !== 'string') {
+          errors.push(`warnings[${index}] must be a string`);
+        }
+      });
+    }
+  }
+
+  // notes
+  if (input.notes !== undefined) {
+    if (!Array.isArray(input.notes)) {
+      errors.push('Field "notes" must be an array if provided');
+    } else {
+      input.notes.forEach((note, index) => {
+        if (typeof note !== 'string') {
+          errors.push(`notes[${index}] must be a string`);
+        }
+      });
+    }
+  }
+
+  // updatedAt
+  if (!isValidIsoDateTime(input.updatedAt)) {
+    errors.push('Field "updatedAt" must be a valid ISO datetime string');
   }
 
   return errors.length === 0 ? { ok: true } : { ok: false, errors };

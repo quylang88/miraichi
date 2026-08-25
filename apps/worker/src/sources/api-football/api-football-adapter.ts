@@ -5,13 +5,23 @@ import type {
   CanonicalMatchStatus,
   CanonicalTeam,
   FieldProvenance,
+  LocalMatch,
+  LocalMatchDetail,
+  LocalMatchEvent,
+  LocalMatchTeamStats,
+  LocalScoreBreakdown,
   ProviderLink
 } from '@miraichi/shared';
+import { toProviderNeutralLocalMatch } from '@miraichi/shared';
 import {
   API_FOOTBALL_COMPETITION_REGISTRY,
   type ApiFootballCompetitionEntry
 } from '@miraichi/config';
-import type { ApiFootballFixtureItem } from './api-football-client.js';
+import type {
+  ApiFootballFixtureItem,
+  ApiFootballEventItem,
+  ApiFootballStatisticItem
+} from './api-football-client.js';
 
 export interface ApiFootballCanonicalBatch {
   matches: CanonicalMatch[];
@@ -327,5 +337,210 @@ export function adaptApiFootballMatches(input: AdaptApiFootballMatchesInput): Ap
     links,
     provenance,
     issues
+  };
+}
+
+export interface AdaptApiFootballMatchDetailInput {
+  fixtureItem: ApiFootballFixtureItem;
+  canonicalMatch: LocalMatch;
+  observedAt: string;
+}
+
+export function mapApiFootballEventType(
+  rawType: string | undefined | null,
+  rawDetail?: string | undefined | null
+): LocalMatchEvent['type'] {
+  const normalized = (rawType || '').trim().toLowerCase();
+  const normalizedDetail = (rawDetail || '').trim().toLowerCase();
+  if (normalized === 'penalty' || normalizedDetail.includes('penalty')) {
+    return 'penalty';
+  }
+  if (normalized === 'goal') {
+    return 'goal';
+  }
+  if (normalized === 'card') {
+    return 'card';
+  }
+  if (normalized === 'subst' || normalized === 'sub' || normalized === 'substitution') {
+    return 'substitution';
+  }
+  return 'other';
+}
+
+function findStatValue(
+  stats: Array<{ type: string; value: string | number | null }>,
+  typeName: string
+): string | number | null {
+  const target = typeName.toLowerCase().trim();
+  const item = stats.find((s) => s.type?.toLowerCase().trim() === target);
+  return item ? item.value : null;
+}
+
+function parseNullableInt(val: string | number | null | undefined): number | null {
+  if (val === null || val === undefined || val === '') {
+    return null;
+  }
+  if (typeof val === 'number') {
+    return Number.isInteger(val) && val >= 0 ? val : null;
+  }
+  const normalized = String(val).trim();
+  if (!/^\d+$/u.test(normalized)) return null;
+  const parsed = Number(normalized);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+function parseNullablePossession(val: string | number | null | undefined): number | null {
+  if (val === null || val === undefined || val === '') {
+    return null;
+  }
+  if (typeof val === 'number') {
+    if (Number.isNaN(val) || val < 0 || val > 100) return null;
+    return val;
+  }
+  const str = String(val).trim();
+  const match = str.match(/^(\d+(?:\.\d+)?)%?$/u);
+  if (!match) return null;
+  const num = Number(match[1]);
+  if (Number.isNaN(num) || num < 0 || num > 100) {
+    return null;
+  }
+  return num;
+}
+
+export function adaptApiFootballMatchDetail(input: AdaptApiFootballMatchDetailInput): LocalMatchDetail {
+  const { fixtureItem, canonicalMatch, observedAt } = input;
+  const status = canonicalMatch.status;
+  const detailMatch = toProviderNeutralLocalMatch(canonicalMatch);
+  const referee = fixtureItem.fixture?.referee ?? null;
+  const elapsedMinute = fixtureItem.fixture?.status?.elapsed ?? null;
+
+  const scoreBreakdown: LocalScoreBreakdown = {
+    halftime: {
+      home: fixtureItem.score?.halftime?.home ?? null,
+      away: fixtureItem.score?.halftime?.away ?? null
+    },
+    fulltime: {
+      home: fixtureItem.score?.fulltime?.home ?? null,
+      away: fixtureItem.score?.fulltime?.away ?? null
+    },
+    extratime: {
+      home: fixtureItem.score?.extratime?.home ?? null,
+      away: fixtureItem.score?.extratime?.away ?? null
+    },
+    penalty: {
+      home: fixtureItem.score?.penalty?.home ?? null,
+      away: fixtureItem.score?.penalty?.away ?? null
+    }
+  };
+
+  let eventsPartial = false;
+  const events: LocalMatchEvent[] = (fixtureItem.events ?? []).map((event) => {
+    const minute = parseNullableInt(event.time?.elapsed);
+    const extraMinute = parseNullableInt(event.time?.extra);
+    if ((event.time?.elapsed !== null && event.time?.elapsed !== undefined && minute === null) ||
+      (event.time?.extra !== null && event.time?.extra !== undefined && extraMinute === null)) {
+      eventsPartial = true;
+    }
+
+    let teamId: string | undefined;
+    if (fixtureItem.teams?.home?.id !== undefined && event.team?.id === fixtureItem.teams.home.id) {
+      teamId = canonicalMatch.homeTeam.id;
+    } else if (fixtureItem.teams?.away?.id !== undefined && event.team?.id === fixtureItem.teams.away.id) {
+      teamId = canonicalMatch.awayTeam.id;
+    } else {
+      eventsPartial = true;
+    }
+
+    const type = mapApiFootballEventType(event.type, event.detail);
+    const detail = event.detail ?? null;
+    const player = event.player?.name ?? null;
+    const assist = event.assist?.name ?? null;
+
+    const timeStr = minute !== null && minute !== undefined ? `${minute}${extraMinute ? `+${extraMinute}` : ''}'` : '';
+    const desc = detail || type || 'Event';
+    const playerDesc = player || 'Unknown';
+    const assistDesc = assist
+      ? type === 'substitution' ? ` (In: ${assist})` : ` (Assist: ${assist})`
+      : '';
+    const label = timeStr ? `${timeStr} ${desc} - ${playerDesc}${assistDesc}` : `${desc} - ${playerDesc}${assistDesc}`;
+
+    return {
+      minute,
+      ...(extraMinute !== null ? { extraMinute } : {}),
+      ...(teamId !== undefined ? { teamId } : {}),
+      type,
+      detail,
+      player,
+      assist,
+      label
+    };
+  });
+
+  const providerStats = fixtureItem.statistics ?? [];
+  let statisticsPartial = providerStats.length > 0 && providerStats.some((row) => (
+    row.team.id !== fixtureItem.teams.home.id && row.team.id !== fixtureItem.teams.away.id
+  ));
+  const teamStats: LocalMatchTeamStats[] = [
+    {
+      providerTeamId: fixtureItem.teams.home.id,
+      teamId: canonicalMatch.homeTeam.id,
+      teamName: canonicalMatch.homeTeam.name
+    },
+    {
+      providerTeamId: fixtureItem.teams.away.id,
+      teamId: canonicalMatch.awayTeam.id,
+      teamName: canonicalMatch.awayTeam.name
+    }
+  ].map(({ providerTeamId, teamId, teamName }) => {
+      const statItem = providerStats.find((row) => row.team.id === providerTeamId);
+      const stats = statItem?.statistics ?? [];
+      const cornerKicks = parseNullableInt(findStatValue(stats, 'Corner Kicks'));
+      const yellowCards = parseNullableInt(findStatValue(stats, 'Yellow Cards'));
+      const redCards = parseNullableInt(findStatValue(stats, 'Red Cards'));
+      const totalShots = parseNullableInt(findStatValue(stats, 'Total Shots'));
+      const shotsOnGoal = parseNullableInt(findStatValue(stats, 'Shots on Goal'));
+      const possessionPercentage = parseNullablePossession(findStatValue(stats, 'Ball Possession'));
+
+      if (!statItem || [cornerKicks, yellowCards, redCards, totalShots, shotsOnGoal, possessionPercentage].some((value) => value === null)) {
+        statisticsPartial = true;
+      }
+
+      return {
+        teamId,
+        teamName,
+        cornerKicks,
+        yellowCards,
+        redCards,
+        totalShots,
+        shotsOnGoal,
+        possessionPercentage
+      };
+    });
+
+  const warnings: string[] = [];
+  if (status === 'completed') {
+    if (!fixtureItem.statistics || fixtureItem.statistics.length === 0) {
+      warnings.push('statistics_unavailable');
+    } else if (statisticsPartial) {
+      warnings.push('statistics_partial');
+    }
+    if (!fixtureItem.events || fixtureItem.events.length === 0) {
+      warnings.push('events_unavailable');
+    } else if (eventsPartial) {
+      warnings.push('events_partial');
+    }
+  }
+
+  return {
+    match: detailMatch,
+    status,
+    elapsedMinute,
+    referee,
+    scoreBreakdown,
+    events,
+    teamStats,
+    warnings,
+    notes: [],
+    updatedAt: observedAt
   };
 }

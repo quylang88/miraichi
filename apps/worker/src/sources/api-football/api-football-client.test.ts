@@ -308,4 +308,157 @@ describe('ApiFootballClient', () => {
       await rm(tempDirApiErr, { recursive: true, force: true });
     }
   });
+
+  it('correctly receives and returns fixtures with embedded events and statistics via fetchFixturesByIds', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-client-detail-batch-'));
+    const ledgerPath = join(tempDir, 'usage-ledger.json');
+
+    try {
+      const richFixture: ApiFootballFixtureItem = {
+        ...MOCK_FIXTURE,
+        events: [
+          {
+            time: { elapsed: 23, extra: null },
+            team: { id: 33, name: 'Manchester United', logo: 'https://media.api-sports.io/football/teams/33.png' },
+            player: { id: 900, name: 'B. Fernandes' },
+            assist: { id: 901, name: 'M. Rashford' },
+            type: 'Goal',
+            detail: 'Normal Goal',
+            comments: null
+          },
+          {
+            time: { elapsed: 90, extra: 2 },
+            team: { id: 40, name: 'Liverpool' },
+            player: { id: 902, name: 'V. van Dijk' },
+            assist: { id: null, name: null },
+            type: 'Card',
+            detail: 'Yellow Card',
+            comments: 'Foul'
+          }
+        ],
+        statistics: [
+          {
+            team: { id: 33, name: 'Manchester United', logo: 'https://media.api-sports.io/football/teams/33.png' },
+            statistics: [
+              { type: 'Shots on Goal', value: 6 },
+              { type: 'Ball Possession', value: '52%' },
+              { type: 'expected_goals', value: null }
+            ]
+          },
+          {
+            team: { id: 40, name: 'Liverpool' },
+            statistics: [
+              { type: 'Shots on Goal', value: 4 },
+              { type: 'Ball Possession', value: '48%' }
+            ]
+          }
+        ]
+      };
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          'x-ratelimit-requests-limit': '100',
+          'x-ratelimit-requests-remaining': '99'
+        }),
+        json: async () => ({
+          get: 'fixtures',
+          parameters: { ids: '1001' },
+          errors: [],
+          results: 1,
+          response: [richFixture]
+        })
+      });
+
+      const ledger = new ApiFootballUsageLedger({ storagePath: ledgerPath });
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        ledger
+      });
+
+      const result = await client.fetchFixturesByIds([1001]);
+      expect(result.results).toBe(1);
+      expect(result.response).toHaveLength(1);
+      const item = result.response[0]!;
+      expect(item.fixture.id).toBe(1001);
+      expect(item.events).toHaveLength(2);
+      expect(item.events?.[0]).toEqual({
+        time: { elapsed: 23, extra: null },
+        team: { id: 33, name: 'Manchester United', logo: 'https://media.api-sports.io/football/teams/33.png' },
+        player: { id: 900, name: 'B. Fernandes' },
+        assist: { id: 901, name: 'M. Rashford' },
+        type: 'Goal',
+        detail: 'Normal Goal',
+        comments: null
+      });
+      expect(item.events?.[1]?.type).toBe('Card');
+      expect(item.statistics).toHaveLength(2);
+      expect(item.statistics?.[0]?.team.name).toBe('Manchester United');
+      expect(item.statistics?.[0]?.statistics).toEqual([
+        { type: 'Shots on Goal', value: 6 },
+        { type: 'Ball Possession', value: '52%' },
+        { type: 'expected_goals', value: null }
+      ]);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('correctly receives and returns fixtures with embedded events and statistics via fetchSeasonFixtures', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-client-detail-season-'));
+    const ledgerPath = join(tempDir, 'usage-ledger.json');
+
+    try {
+      const richFixture: ApiFootballFixtureItem = {
+        ...MOCK_FIXTURE,
+        events: [
+          {
+            time: { elapsed: 45, extra: null },
+            team: { id: 33, name: 'Manchester United' },
+            player: { id: 900, name: 'B. Fernandes' },
+            assist: { id: null, name: null },
+            type: 'Goal',
+            detail: 'Penalty'
+          }
+        ],
+        statistics: [
+          {
+            team: { id: 33, name: 'Manchester United' },
+            statistics: [{ type: 'Fouls', value: 12 }]
+          }
+        ]
+      };
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({
+          get: 'fixtures',
+          parameters: { league: '39', season: '2026' },
+          errors: [],
+          results: 1,
+          response: [richFixture]
+        })
+      });
+
+      const ledger = new ApiFootballUsageLedger({ storagePath: ledgerPath });
+      const client = new ApiFootballClient({
+        apiKey: 'test-api-key',
+        fetchFn: mockFetch as unknown as typeof fetch,
+        ledger
+      });
+
+      const result = await client.fetchSeasonFixtures(39, 2026);
+      expect(result.results).toBe(1);
+      expect(result.response[0]?.events).toHaveLength(1);
+      expect(result.response[0]?.statistics).toHaveLength(1);
+      expect(result.response[0]?.events?.[0]?.detail).toBe('Penalty');
+      expect(result.response[0]?.statistics?.[0]?.statistics[0]?.value).toBe(12);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
 });

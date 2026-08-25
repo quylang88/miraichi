@@ -51,6 +51,43 @@ export interface ApiFootballFixtureItem {
     extratime: { home: number | null; away: number | null };
     penalty: { home: number | null; away: number | null };
   };
+  events?: ApiFootballEventItem[];
+  statistics?: ApiFootballStatisticItem[];
+}
+
+export interface ApiFootballEventItem {
+  time: {
+    elapsed: number | null;
+    extra: number | null;
+  };
+  team: {
+    id: number;
+    name: string;
+    logo?: string;
+  };
+  player: {
+    id: number | null;
+    name: string | null;
+  };
+  assist: {
+    id: number | null;
+    name: string | null;
+  };
+  type: string;
+  detail: string | null;
+  comments?: string | null;
+}
+
+export interface ApiFootballStatisticItem {
+  team: {
+    id: number;
+    name: string;
+    logo?: string;
+  };
+  statistics: Array<{
+    type: string;
+    value: string | number | null;
+  }>;
 }
 
 export interface ApiFootballApiResponse<T = ApiFootballFixtureItem> {

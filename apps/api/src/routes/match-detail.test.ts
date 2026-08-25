@@ -32,15 +32,13 @@ const mockMatch: LocalMatch = {
   homeTeam: { id: 'team-mexico', name: 'Mexico' },
   awayTeam: { id: 'team-safrica', name: 'South Africa' },
   score: { home: null, away: null },
-  sourceRefs: [],
+  sourceRefs: [{
+    sourceId: 'api-football',
+    sourceMatchId: '123456',
+    sourceUrl: 'https://v3.football.api-sports.io/fixtures?id=123456',
+    importedAt: '2026-07-01T00:00:00.000Z'
+  }],
   updatedAt: '2026-07-01T00:00:00.000Z'
-};
-
-const mockDetail: LocalMatchDetail = {
-  match: mockMatch,
-  referee: undefined,
-  events: [],
-  notes: ['Serving match store detail does not include live event telemetry.']
 };
 
 describe('match detail route', () => {
@@ -62,6 +60,10 @@ describe('match detail route', () => {
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body) as LocalMatchDetail;
     expect(body.match.id).toBe(mockMatch.id);
+    expect(body.match.sourceRefs).toEqual([{
+      sourceId: 'api-football',
+      importedAt: '2026-07-01T00:00:00.000Z'
+    }]);
     expect(body.events).toEqual([]);
     expect(body.notes).toContain('Serving match store detail does not include live event telemetry.');
   });

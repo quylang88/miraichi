@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { ServingMatchStoreRepository } from '../repositories/serving-match-store-repository.js';
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
-import type { LocalMatchDetail } from '@miraichi/shared';
+import { toProviderNeutralLocalMatch, type LocalMatchDetail } from '@miraichi/shared';
 
 const repository = new ServingMatchStoreRepository();
 
@@ -50,12 +50,14 @@ export async function handleMatchDetail(
     }
 
     const payload: LocalMatchDetail = {
-      match,
-      referee: undefined,
+      match: toProviderNeutralLocalMatch(match),
+      status: match.status,
+      elapsedMinute: null,
       events: [],
       notes: [
         'Serving match store detail does not include live event telemetry.'
-      ]
+      ],
+      updatedAt: match.updatedAt
     };
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
