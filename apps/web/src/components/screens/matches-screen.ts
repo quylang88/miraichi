@@ -2,7 +2,7 @@ import type { ProductionNavigationTabId } from '../../config/navigation-tabs.js'
 import { formatDateTime, t, type SupportedLocale, type TranslateFunction } from '../../services/i18n-service.js';
 import type { AppMatch, MatchFeedViewState } from '../../services/match-feed-service.js';
 import { escapeHtml } from '../html.js';
-import { renderSkeletonMatchRows, screenClass, screenHeader } from './screen-shared.js';
+import { renderMonthCalendarPicker, renderSkeletonMatchRows, screenClass, screenHeader } from './screen-shared.js';
 
 const backIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const nextIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -134,8 +134,10 @@ export function renderMatchesScreen(input: {
   readonly filters: MatchFilters;
   readonly searchQuery: string;
   readonly isFilterPanelOpen: boolean;
+  readonly isCalendarOpen?: boolean;
+  readonly calendarMonth?: string;
 }): string {
-  const { activeTabId, translate, locale, matchFeed, timezone, filters, searchQuery, isFilterPanelOpen } = input;
+  const { activeTabId, translate, locale, matchFeed, timezone, filters, searchQuery, isFilterPanelOpen, isCalendarOpen = false, calendarMonth } = input;
   const filtered = filterMatches(matchFeed, filters, searchQuery);
   const ribbon = getRibbonDates(matchFeed.date, translate).map((date) => `<button class="date-chip${date.dateStr === matchFeed.date ? ' active' : ''}" type="button" data-date="${escapeHtml(date.dateStr)}"><span class="date-chip-label">${escapeHtml(date.label)}</span><span class="date-chip-number">${escapeHtml(date.dayNumber)}</span></button>`).join('');
   const leagues = matchFeed.status === 'ready' ? [...new Set(matchFeed.matches.map((match) => match.competition.name))].sort() : [];
@@ -144,9 +146,24 @@ export function renderMatchesScreen(input: {
   const content = matchFeed.status === 'ready'
     ? `${renderSnapshotStatus(matchFeed, translate, locale, timezone)}${renderReadyMatches(filtered, matchFeed.date, filters, translate, timezone)}`
     : renderFeedState(matchFeed, translate, locale, timezone);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const calendarPicker = isCalendarOpen
+    ? renderMonthCalendarPicker({
+        id: 'matches-calendar-picker',
+        extraClass: 'matches-calendar-picker',
+        month: calendarMonth || matchFeed.date.slice(0, 7) || todayStr.slice(0, 7),
+        selectedDate: matchFeed.date,
+        translate,
+        locale,
+        todayStr,
+        navAttr: 'data-matches-cal-nav',
+        dateAttr: 'data-matches-cal-date'
+      })
+    : '';
   return `<section class="${screenClass('matches', activeTabId)}" id="screen-matches" data-shell-tab-panel="matches" aria-labelledby="matches-title">
     ${screenHeader(translate('matches.eyebrow'), translate('matches.title'), 'matches-title', `<button class="primary-button add-inline" type="button" data-open-manual-add>${escapeHtml(translate('matches.manualAdd'))}</button>`)}
-    <div class="date-navigator"><button id="date-prev-btn" class="nav-arrow-btn" type="button" aria-label="${escapeHtml(translate('matches.previousDay'))}">${backIcon}</button><div class="date-ribbon">${ribbon}</div><button id="date-next-btn" class="nav-arrow-btn" type="button" aria-label="${escapeHtml(translate('matches.nextDay'))}">${nextIcon}</button><button id="date-picker-btn" class="calendar-btn" type="button" aria-label="${escapeHtml(translate('matches.pickDate'))}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><input id="date-picker-input" type="date" class="visually-hidden-date" value="${escapeHtml(matchFeed.date)}" aria-label="${escapeHtml(translate('matches.pickDate'))}" tabindex="-1"></div>
+    <div class="date-navigator"><button id="date-prev-btn" class="nav-arrow-btn" type="button" aria-label="${escapeHtml(translate('matches.previousDay'))}">${backIcon}</button><div class="date-ribbon">${ribbon}</div><button id="date-next-btn" class="nav-arrow-btn" type="button" aria-label="${escapeHtml(translate('matches.nextDay'))}">${nextIcon}</button><button id="date-picker-btn" class="calendar-btn${isCalendarOpen ? ' active' : ''}" type="button" aria-label="${escapeHtml(translate('matches.pickDate'))}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button></div>
+    ${calendarPicker}
     <div class="search-row"><input class="search-input" id="match-search" type="search" placeholder="${escapeHtml(translate('matches.search'))}" aria-label="${escapeHtml(translate('matches.search'))}"><button class="filter-button" id="filter-panel-toggle-btn" type="button" aria-label="${escapeHtml(translate('matches.openFilters'))}">${filterIcon}</button></div>
     <div class="filter-panel" id="matches-filter-panel" ${isFilterPanelOpen ? '' : 'hidden'}><div class="filter-group"><span class="filter-group-title">${escapeHtml(translate('matches.sortGroup'))}</span><div class="filter-options">${radio('groupby', 'league', translate('matches.league'), filters.groupby === 'league')}${radio('groupby', 'time', translate('matches.time'), filters.groupby === 'time')}</div></div><div class="filter-group"><span class="filter-group-title">${escapeHtml(translate('matches.competitionType'))}</span><div class="filter-options">${radio('type', 'all', translate('matches.all'), filters.type === 'all')}${radio('type', 'national', translate('matches.national'), filters.type === 'national')}${radio('type', 'club', translate('matches.club'), filters.type === 'club')}</div></div><div class="filter-group"><span class="filter-group-title">${escapeHtml(translate('matches.gender'))}</span><div class="filter-options">${radio('gender', 'all', translate('matches.all'), filters.gender === 'all')}${radio('gender', 'men', translate('matches.men'), filters.gender === 'men')}${radio('gender', 'women', translate('matches.women'), filters.gender === 'women')}</div></div><div class="filter-group full-width"><span class="filter-group-title">${escapeHtml(translate('matches.leagues'))}</span><div id="filter-leagues-list" class="leagues-checklist">${leagueOptions}</div></div></div>
     ${content}<div class="empty-state" id="matches-empty" style="display: ${matchFeed.status === 'ready' && filtered.length === 0 ? 'block' : 'none'};">${escapeHtml(translate('matches.noFilterResults'))}</div>

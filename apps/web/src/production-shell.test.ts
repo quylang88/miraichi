@@ -294,7 +294,7 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('Trên / Dưới');
     expect(html).not.toContain('Over / Under');
     expect(html).not.toContain('2026-08-21T00:00:00.000Z');
-    expect(html).toContain('aria-label="Chọn ngày" tabindex="-1"');
+    expect(html).toContain('id="date-picker-btn" class="calendar-btn" type="button" aria-label="Chọn ngày"');
   });
 
   it('renders persisted Bankroll without formula placeholders', () => {
@@ -492,7 +492,7 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('id="date-prev-btn"');
     expect(html).toContain('id="date-next-btn"');
     expect(html).toContain('id="date-picker-btn"');
-    expect(html).toContain('id="date-picker-input"');
+    expect(html).not.toContain('id="date-picker-input"');
     expect(html).toContain('class="date-ribbon"');
     
     // It should render 5 dates centered around 2026-06-30:
@@ -508,6 +508,38 @@ describe('production PWA shell rendering', () => {
 
     expect(html).not.toContain('id="live-filter-btn"');
     expect(html).not.toContain('>LIVE</button>');
+  });
+
+  it('renders interactive month calendar picker when isMatchesCalendarOpen is true', () => {
+    const html = renderAppShell({
+      activeTabId: 'matches',
+      isMatchesCalendarOpen: true,
+      matchesCalendarMonth: '2026-08',
+      matchFeed: {
+        status: 'ready',
+        date: '2026-08-25',
+        warnings: [],
+        snapshot: {
+          snapshotId: 'test-snapshot',
+          generatedAt: '2026-08-25T00:00:00.000Z',
+          importedAt: '2026-08-25T00:00:00.000Z',
+          matchCount: 0,
+          competitions: [],
+          sources: [],
+          freshness: 'fresh' as const,
+          warnings: []
+        },
+        matches: []
+      }
+    });
+
+    expect(html).toContain('id="matches-calendar-picker"');
+    expect(html).toContain('class="calendar-picker matches-calendar-picker"');
+    expect(html).toContain('data-matches-cal-nav="prev"');
+    expect(html).toContain('data-matches-cal-nav="next"');
+    expect(html).toContain('data-matches-cal-date="2026-08-25"');
+    expect(html).toMatch(/class="[^"]*selected-start[^"]*" data-matches-cal-date="2026-08-25"/);
+    expect(html).toContain('class="calendar-btn active"');
   });
 });
 

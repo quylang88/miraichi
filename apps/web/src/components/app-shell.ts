@@ -56,7 +56,8 @@ export function renderAppShell({
   bankrollState = defaultBankrollState, betRecordFilter = 'ongoing', bankrollView = 'overview',
   disciplineConfigState = defaultDisciplineConfigState, reportState = defaultReportState,
   todayReportState = defaultReportState, reportPeriod = 'week',
-  customCalendarMonth, customRangeStart = null, customRangeEnd = null
+  customCalendarMonth, customRangeStart = null, customRangeEnd = null,
+  isMatchesCalendarOpen = false, matchesCalendarMonth
 }: {
   readonly activeTabId?: string;
   readonly translate?: TranslateFunction;
@@ -77,13 +78,15 @@ export function renderAppShell({
   readonly customCalendarMonth?: string | undefined;
   readonly customRangeStart?: string | null | undefined;
   readonly customRangeEnd?: string | null | undefined;
+  readonly isMatchesCalendarOpen?: boolean | undefined;
+  readonly matchesCalendarMonth?: string | undefined;
 } = {}): string {
   const safeActiveTabId = getSafeNavigationTabId(activeTabId);
   const activeTab = navigationTabs.find((tab: NavigationTab) => tab.id === safeActiveTabId) ?? navigationTabs[0];
   const resolvedTimeZone = timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone;
   const panels = [
     renderTodayScreen({ activeTabId: safeActiveTabId, translate, bets: betRecordsState, bankroll: bankrollState, discipline: disciplineConfigState, report: todayReportState }),
-    renderMatchesScreen({ activeTabId: safeActiveTabId, translate, locale, matchFeed, timezone, filters, searchQuery, isFilterPanelOpen }),
+    renderMatchesScreen({ activeTabId: safeActiveTabId, translate, locale, matchFeed, timezone, filters, searchQuery, isFilterPanelOpen, isCalendarOpen: isMatchesCalendarOpen, calendarMonth: matchesCalendarMonth }),
     renderBetsScreen({ activeTabId: safeActiveTabId, translate, state: betRecordsState, filter: betRecordFilter, bankroll: bankrollState }),
     renderBankrollScreen({ activeTabId: safeActiveTabId, translate, locale, timeZone: resolvedTimeZone, state: bankrollState, view: bankrollView, disciplineConfigState, reportState, reportPeriod, customCalendarMonth, customRangeStart, customRangeEnd })
   ].join('');

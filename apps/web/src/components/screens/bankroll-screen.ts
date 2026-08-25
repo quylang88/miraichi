@@ -3,7 +3,7 @@ import type { BankrollViewState } from '../../services/bankroll-service.js';
 import type { BetReportPeriod, BetReportViewState, DisciplineConfigViewState } from '../../services/core-betting-service.js';
 import { formatDateTime, type SupportedLocale, type TranslateFunction } from '../../services/i18n-service.js';
 import { escapeHtml } from '../html.js';
-import { metricRow, renderSkeletonCard, renderSkeletonLedgerRows, renderSkeletonMetrics, screenClass, screenHeader } from './screen-shared.js';
+import { metricRow, renderMonthCalendarPicker, renderSkeletonCard, renderSkeletonLedgerRows, renderSkeletonMetrics, screenClass, screenHeader } from './screen-shared.js';
 
 export type BankrollSecondaryView = 'overview' | 'analytics' | 'discipline' | 'ledger';
 
@@ -38,52 +38,6 @@ function discipline(state: DisciplineConfigViewState, translate: TranslateFuncti
   </form>`;
 }
 
-function renderSingleRangeCalendar(
-  month: string,
-  rangeStart: string | null,
-  rangeEnd: string | null,
-  translate: TranslateFunction,
-  locale: SupportedLocale,
-  todayStr: string
-): string {
-  const [yearNum, monthNum] = (month || todayStr.slice(0, 7)).split('-').map(Number);
-  const dateObj = new Date(yearNum, monthNum - 1, 1);
-  const rawMonthTitle = new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { month: 'long', year: 'numeric' }).format(dateObj);
-  const monthTitle = rawMonthTitle.charAt(0).toUpperCase() + rawMonthTitle.slice(1);
-
-  const firstDay = new Date(yearNum, monthNum - 1, 1).getDay();
-  const leadDays = (firstDay + 6) % 7;
-  const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
-
-  let cells = '';
-  for (let i = 0; i < leadDays; i++) {
-    cells += '<span class="cal-day empty" aria-hidden="true"></span>';
-  }
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${yearNum}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const classes: string[] = ['cal-day'];
-    if (dateStr === todayStr) classes.push('today');
-    if (rangeStart && dateStr === rangeStart) classes.push('selected-start');
-    if (rangeEnd && dateStr === rangeEnd) classes.push('selected-end');
-    if (rangeStart && rangeEnd && dateStr > rangeStart && dateStr < rangeEnd) classes.push('in-range');
-
-    cells += `<button type="button" class="${classes.join(' ')}" data-cal-date="${dateStr}">${d}</button>`;
-  }
-
-  let statusHint = translate('bankroll.selectStartDate');
-  if (rangeStart && !rangeEnd) {
-    statusHint = `${translate('bankroll.from')} ${rangeStart} (${translate('bankroll.selectEndDate')})`;
-  } else if (rangeStart && rangeEnd) {
-    const startMs = new Date(rangeStart).getTime();
-    const endMs = new Date(rangeEnd).getTime();
-    const diffDays = Math.round((endMs - startMs) / (24 * 60 * 60 * 1000)) + 1;
-    statusHint = `${translate('bankroll.from')} ${rangeStart} ${translate('bankroll.to')} ${rangeEnd} (${diffDays} ${translate('bankroll.days')})`;
-  }
-
-  return `<div class="calendar-picker"><div class="cal-header"><button type="button" class="cal-nav-btn" data-cal-nav="prev" aria-label="${escapeHtml(translate('bankroll.prevMonth'))}">‹</button><span class="cal-month-title">${escapeHtml(monthTitle)}</span><button type="button" class="cal-nav-btn" data-cal-nav="next" aria-label="${escapeHtml(translate('bankroll.nextMonth'))}">›</button></div><div class="cal-weekdays"><span>${escapeHtml(translate('matches.weekday.1'))}</span><span>${escapeHtml(translate('matches.weekday.2'))}</span><span>${escapeHtml(translate('matches.weekday.3'))}</span><span>${escapeHtml(translate('matches.weekday.4'))}</span><span>${escapeHtml(translate('matches.weekday.5'))}</span><span>${escapeHtml(translate('matches.weekday.6'))}</span><span>${escapeHtml(translate('matches.weekday.0'))}</span></div><div class="cal-grid">${cells}</div><div class="cal-actions"><span class="cal-status-hint">${escapeHtml(statusHint)}</span><button type="button" class="primary-button" data-action="apply-custom-range"${!rangeStart ? ' disabled' : ''}>${escapeHtml(translate('bankroll.applyFilter'))}</button></div></div>`;
-}
-
 function analytics(
   state: BetReportViewState,
   selectedPeriod: BetReportPeriod,
@@ -100,8 +54,27 @@ function analytics(
   const controls = `<div class="segmented report-periods" role="tablist">${periodButton('this_week', 'bankroll.thisWeek')}${periodButton('previous_week', 'bankroll.previousWeek')}${periodButton('this_month', 'bankroll.thisMonth')}${periodButton('all', 'bankroll.allTime')}${periodButton('custom', 'bankroll.customRange')}</div>`;
 
   const todayStr = new Date().toISOString().slice(0, 10);
+  let statusHint = translate('bankroll.selectStartDate');
+  if (customRangeStart && !customRangeEnd) {
+    statusHint = `${translate('bankroll.from')} ${customRangeStart} (${translate('bankroll.selectEndDate')})`;
+  } else if (customRangeStart && customRangeEnd) {
+    const startMs = new Date(customRangeStart).getTime();
+    const endMs = new Date(customRangeEnd).getTime();
+    const diffDays = Math.round((endMs - startMs) / (24 * 60 * 60 * 1000)) + 1;
+    statusHint = `${translate('bankroll.from')} ${customRangeStart} ${translate('bankroll.to')} ${customRangeEnd} (${diffDays} ${translate('bankroll.days')})`;
+  }
+  const actionsHtml = `<span class="cal-status-hint">${escapeHtml(statusHint)}</span><button type="button" class="primary-button" data-action="apply-custom-range"${!customRangeStart ? ' disabled' : ''}>${escapeHtml(translate('bankroll.applyFilter'))}</button>`;
+
   const calendarPicker = selectedPeriod === 'custom'
-    ? renderSingleRangeCalendar(customCalendarMonth || todayStr.slice(0, 7), customRangeStart ?? null, customRangeEnd ?? null, translate, locale, todayStr)
+    ? renderMonthCalendarPicker({
+        month: customCalendarMonth || todayStr.slice(0, 7),
+        rangeStart: customRangeStart ?? null,
+        rangeEnd: customRangeEnd ?? null,
+        translate,
+        locale,
+        todayStr,
+        actionsHtml
+      })
     : '';
 
   if (state.status === 'loading') return `${controls}${calendarPicker}${renderSkeletonMetrics(4)}<div class="stack">${renderSkeletonCard()}</div>`;

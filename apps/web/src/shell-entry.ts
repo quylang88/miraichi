@@ -60,6 +60,8 @@ let reportPeriod: BetReportPeriod = 'week';
 let customCalendarMonth = todayLocalDate().slice(0, 7);
 let customRangeStart: string | null = null;
 let customRangeEnd: string | null = null;
+let isMatchesCalendarOpen = false;
+let matchesCalendarMonth = todayLocalDate().slice(0, 7);
 let selectedSettlementBetId = '';
 let selectedSettlementTimeline: readonly BetSettlementEvent[] = [];
 let pendingOngoingInput: CreateOngoingBetInput | null = null;
@@ -124,7 +126,9 @@ function updateMatchesScreenView(): void {
     timezone: settings.timezone,
     filters: activeFilters,
     searchQuery: currentSearchQuery,
-    isFilterPanelOpen
+    isFilterPanelOpen,
+    isCalendarOpen: isMatchesCalendarOpen,
+    calendarMonth: matchesCalendarMonth || matchFeedState.date.slice(0, 7)
   }));
   const searchInput = appRoot.querySelector('#match-search') as HTMLInputElement | null;
   if (searchInput && searchInput.value !== currentSearchQuery) {
@@ -203,7 +207,9 @@ function render(activeTabId: string, fullRebuild = false): void {
       reportPeriod,
       customCalendarMonth,
       customRangeStart,
-      customRangeEnd
+      customRangeEnd,
+      isMatchesCalendarOpen,
+      matchesCalendarMonth: matchesCalendarMonth || matchFeedState.date.slice(0, 7)
     });
     appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settings.locale);
     appRoot.querySelector('.app-shell')?.setAttribute('data-density', settings.displayDensity);
@@ -816,17 +822,32 @@ appRoot.addEventListener('click', (event) => {
   // Handle Date Picker Button Click
   const datePickerBtn = eventTarget.closest<HTMLElement>('#date-picker-btn');
   if (datePickerBtn) {
-    const input = document.getElementById('date-picker-input') as HTMLInputElement | null;
-    if (input) {
-      if (typeof input.showPicker === 'function') {
-        try {
-          input.showPicker();
-        } catch {
-          input.click();
-        }
-      } else {
-        input.click();
-      }
+    isMatchesCalendarOpen = !isMatchesCalendarOpen;
+    matchesCalendarMonth = matchFeedState.date.slice(0, 7);
+    updateMatchesScreenView();
+    return;
+  }
+
+  // Handle Matches Calendar Navigation
+  const matchesCalNav = eventTarget.closest<HTMLElement>('[data-matches-cal-nav]');
+  if (matchesCalNav) {
+    const navDirection = matchesCalNav.dataset.matchesCalNav;
+    const currentM = matchesCalendarMonth || matchFeedState.date.slice(0, 7);
+    const [y, m] = currentM.split('-').map(Number);
+    const nextD = new Date(y, m - 1 + (navDirection === 'next' ? 1 : -1), 1);
+    matchesCalendarMonth = `${nextD.getFullYear()}-${String(nextD.getMonth() + 1).padStart(2, '0')}`;
+    updateMatchesScreenView();
+    return;
+  }
+
+  // Handle Matches Calendar Date Click
+  const matchesCalDate = eventTarget.closest<HTMLElement>('[data-matches-cal-date]');
+  if (matchesCalDate) {
+    const selectedDate = matchesCalDate.dataset.matchesCalDate;
+    if (selectedDate) {
+      matchFeedState.date = selectedDate;
+      isMatchesCalendarOpen = false;
+      void refreshMatchFeed();
     }
     return;
   }
@@ -971,15 +992,6 @@ appRoot.addEventListener('change', (event) => {
       activeFilters.selectedLeagues.delete(target.value);
     }
     updateMatchesScreenView();
-    return;
-  }
-
-  if (target instanceof HTMLInputElement && target.id === 'date-picker-input') {
-    const selectedDate = target.value;
-    if (selectedDate) {
-      matchFeedState.date = selectedDate;
-      void refreshMatchFeed();
-    }
     return;
   }
 
