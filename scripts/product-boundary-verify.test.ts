@@ -61,4 +61,27 @@ describe('product boundary verifier', () => {
       expect.stringContaining('openfootball.example')
     ]));
   });
+
+  it('reports retired API-Football paths, commands, source markers, and environment variables', async () => {
+    const root = await createFixture();
+    await mkdir(join(root, 'apps/worker/src/sources/api-football'), { recursive: true });
+    await mkdir(join(root, 'apps/api/data/api-football'), { recursive: true });
+    await writeFile(
+      join(root, 'apps/worker/src/sources/api-football/client.ts'),
+      "export const sourceId = 'api-football';\n"
+    );
+    await writeFile(
+      join(root, 'package.json'),
+      JSON.stringify({ scripts: { 'api-football:verify': 'vitest run' } })
+    );
+    await writeFile(join(root, '.env.example'), 'API_FOOTBALL_KEY=\n');
+
+    expect(await auditProductBoundary(root)).toEqual(expect.arrayContaining([
+      'Forbidden path exists: apps/worker/src/sources/api-football',
+      'Forbidden path exists: apps/api/data/api-football',
+      'Forbidden package script: api-football:verify',
+      expect.stringContaining('Forbidden retired provider marker in apps/worker/src/sources/api-football/client.ts'),
+      expect.stringContaining('Forbidden retired provider marker in .env.example')
+    ]));
+  });
 });

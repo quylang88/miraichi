@@ -1,6 +1,6 @@
 # ADR-0045: OpenFootball Source And Manual Live Bet Boundary
 
-- **Status**: Accepted
+- **Status**: External-source decision superseded by ADR-0047 and ADR-0048; retained manual context boundary only
 - **Date**: 2026-08-01
 - **Owner approval**: The owner explicitly approved option A+ on 2026-08-01.
 

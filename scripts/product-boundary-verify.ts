@@ -7,12 +7,38 @@ export const FORBIDDEN_PRODUCT_PATHS = [
   'scripts/providers/sportmonks',
   'apps/api/data/providers/sportmonks',
   'apps/worker/src/sources/openfootball',
-  'scripts/capture-openfootball.ts'
+  'scripts/capture-openfootball.ts',
+  'apps/worker/src/sources/api-football',
+  'apps/api/data/api-football',
+  'apps/worker/src/jobs/api-football-hydration-job.ts',
+  'apps/worker/src/jobs/api-football-hydration-job.test.ts',
+  'apps/worker/src/jobs/api-football-ingestion-job.ts',
+  'apps/worker/src/jobs/api-football-ingestion-job.test.ts',
+  'apps/worker/src/jobs/api-football-match-detail-job.ts',
+  'apps/worker/src/jobs/api-football-match-detail-job.test.ts',
+  'packages/config/src/api-football-source-registry.ts',
+  'packages/config/src/api-football-source-registry.test.ts',
+  'scripts/capture-api-football.ts',
+  'scripts/capture-api-football.test.ts',
+  'scripts/quota-status-api-football.ts',
+  'scripts/seed-api-football-history.ts',
+  'scripts/seed-api-football-history.test.ts',
+  'tests/integration/api-football-rapid-match-source.test.ts',
+  'tests/integration/api-football-quota-resume.test.ts',
+  'tests/integration/api-football-match-detail.test.ts'
 ] as const;
 
-const FORBIDDEN_SCRIPT = /(^dev:local-ai$|^phase4:|^phase8:|sportmonks)/i;
+const FORBIDDEN_SCRIPT = /(^dev:local-ai$|^phase4:|^phase8:|sportmonks|api-football)/i;
 const FORBIDDEN_API_ROUTE = /\/api\/v1\/(predictions|chat|mock\/predict|mock\/explain)/g;
 const EXPECTED_NAVIGATION_TABS = ['today', 'matches', 'bets', 'bankroll'] as const;
+const RETIRED_PROVIDER_MARKER = /api[-_ ]football|apifootball/i;
+const RETIRED_PROVIDER_SCAN_ROOTS = ['apps', 'packages', 'scripts'] as const;
+const RETIRED_PROVIDER_SCAN_EXTENSIONS = new Set(['.ts', '.js', '.json', '.md', '.yaml', '.yml']);
+const RETIRED_PROVIDER_SCAN_EXCLUSIONS = new Set([
+  'scripts/product-boundary-verify.ts',
+  'scripts/product-boundary-verify.test.ts'
+]);
+const SKIPPED_SCAN_DIRECTORIES = new Set(['node_modules', '.git', 'dist', 'build', 'coverage', 'data']);
 const FORBIDDEN_WEB_RUNTIME_URLS = [
   /https?:\/\/raw\.githubusercontent\.com\/[^\s"'`]+/gi,
   /https?:\/\/github\.com\/openfootball(?:\/[^\s"'`]*)?/gi,
@@ -47,9 +73,41 @@ async function listFiles(rootDir: string): Promise<string[]> {
   const entries = await readdir(rootDir, { withFileTypes: true });
   const files = await Promise.all(entries.map(async (entry) => {
     const entryPath = path.join(rootDir, entry.name);
-    return entry.isDirectory() ? listFiles(entryPath) : [entryPath];
+    if (entry.isDirectory()) {
+      return SKIPPED_SCAN_DIRECTORIES.has(entry.name) ? [] : listFiles(entryPath);
+    }
+    return [entryPath];
   }));
   return files.flat();
+}
+
+async function reportRetiredProviderMarkers(rootDir: string, errors: string[]): Promise<void> {
+  const scanTargets: string[] = [];
+  for (const relativeRoot of RETIRED_PROVIDER_SCAN_ROOTS) {
+    const absoluteRoot = path.join(rootDir, relativeRoot);
+    if (await exists(absoluteRoot)) {
+      scanTargets.push(...await listFiles(absoluteRoot));
+    }
+  }
+
+  const envExample = path.join(rootDir, '.env.example');
+  if (await exists(envExample)) {
+    scanTargets.push(envExample);
+  }
+
+  for (const filePath of scanTargets) {
+    const relativePath = path.relative(rootDir, filePath).replaceAll('\\', '/');
+    if (
+      RETIRED_PROVIDER_SCAN_EXCLUSIONS.has(relativePath) ||
+      (relativePath !== '.env.example' && !RETIRED_PROVIDER_SCAN_EXTENSIONS.has(path.extname(filePath)))
+    ) {
+      continue;
+    }
+    const source = await readFile(filePath, 'utf8');
+    if (RETIRED_PROVIDER_MARKER.test(source)) {
+      errors.push(`Forbidden retired provider marker in ${relativePath}`);
+    }
+  }
 }
 
 export async function auditProductBoundary(rootDir: string): Promise<string[]> {
@@ -100,6 +158,8 @@ export async function auditProductBoundary(rootDir: string): Promise<string[]> {
       }
     }
   }
+
+  await reportRetiredProviderMarkers(rootDir, errors);
 
   return errors;
 }

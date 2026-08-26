@@ -1,35 +1,11 @@
 import { mkdir, appendFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { API_FOOTBALL_COMPETITION_REGISTRY } from '../../../packages/config/src/api-football-source-registry.js';
 import type {
   ProviderId,
   ProviderCaptureManifestEntry,
   ProviderSourceBindingPolicy
 } from '../../../packages/shared/src/contracts/provider-ingestion-contracts.js';
 import { validateProviderCaptureManifestEntry } from '../../../packages/shared/src/contracts/provider-ingestion-contracts.js';
-
-const API_FOOTBALL_SOURCE_BINDING_POLICY: ProviderSourceBindingPolicy = {
-  resolveSourceBinding(provider, allowlistEntryId) {
-    if (provider !== 'api-football') {
-      return undefined;
-    }
-
-    const source = API_FOOTBALL_COMPETITION_REGISTRY.find((entry) => entry.entryId === allowlistEntryId);
-    if (!source) {
-      return undefined;
-    }
-
-    return {
-      allowlistEntryId: source.entryId,
-      endpointKey: source.entryId,
-      urlPath: `/fixtures`,
-      source: {
-        leagueId: String(source.providerLeagueId),
-        competitionId: source.competitionId
-      }
-    };
-  }
-};
 
 /**
  * Append a manifest entry for a provider capture run to:
@@ -40,9 +16,10 @@ const API_FOOTBALL_SOURCE_BINDING_POLICY: ProviderSourceBindingPolicy = {
 export async function appendProviderManifestEntry(
   root: string,
   provider: ProviderId,
-  entry: ProviderCaptureManifestEntry
+  entry: ProviderCaptureManifestEntry,
+  bindingPolicy?: ProviderSourceBindingPolicy
 ): Promise<void> {
-  assertValidProviderManifestEntry(provider, entry);
+  assertValidProviderManifestEntry(provider, entry, bindingPolicy);
 
   const dir = join(root, 'providers', provider, 'manifests');
   await mkdir(dir, { recursive: true });
@@ -53,7 +30,8 @@ export async function appendProviderManifestEntry(
 export async function readLatestProviderManifestEntry(
   root: string,
   provider: ProviderId,
-  endpointKey: string
+  endpointKey: string,
+  bindingPolicy?: ProviderSourceBindingPolicy
 ): Promise<ProviderCaptureManifestEntry | null> {
   const filePath = join(root, 'providers', provider, 'manifests', 'capture-manifest.jsonl');
   let content: string;
@@ -75,7 +53,7 @@ export async function readLatestProviderManifestEntry(
       continue;
     }
 
-    const entry = parseProviderManifestEntry(line);
+    const entry = parseProviderManifestEntry(line, bindingPolicy);
     if (entry.provider !== provider) {
       throw providerManifestInvalid('Manifest provider does not match its evidence path');
     }
@@ -98,19 +76,23 @@ export async function readLatestProviderManifestEntry(
 
 function assertValidProviderManifestEntry(
   provider: ProviderId,
-  entry: ProviderCaptureManifestEntry
+  entry: ProviderCaptureManifestEntry,
+  bindingPolicy?: ProviderSourceBindingPolicy
 ): void {
   if (entry.provider !== provider) {
     throw providerManifestInvalid('Manifest provider does not match its evidence path');
   }
 
-  const validation = validateProviderCaptureManifestEntry(entry, API_FOOTBALL_SOURCE_BINDING_POLICY);
+  const validation = validateProviderCaptureManifestEntry(entry, bindingPolicy);
   if (!validation.ok) {
     throw providerManifestInvalid(validation.errors.join('; '));
   }
 }
 
-function parseProviderManifestEntry(line: string): ProviderCaptureManifestEntry {
+function parseProviderManifestEntry(
+  line: string,
+  bindingPolicy?: ProviderSourceBindingPolicy
+): ProviderCaptureManifestEntry {
   let parsed: unknown;
   try {
     parsed = JSON.parse(line);
@@ -118,7 +100,11 @@ function parseProviderManifestEntry(line: string): ProviderCaptureManifestEntry 
     throw providerManifestInvalid('Manifest evidence is not valid JSON');
   }
 
-  assertValidProviderManifestEntry((parsed as { provider?: ProviderId }).provider ?? 'manual-snapshot', parsed as ProviderCaptureManifestEntry);
+  assertValidProviderManifestEntry(
+    (parsed as { provider?: ProviderId }).provider ?? 'manual-snapshot',
+    parsed as ProviderCaptureManifestEntry,
+    bindingPolicy
+  );
   return parsed as ProviderCaptureManifestEntry;
 }
 

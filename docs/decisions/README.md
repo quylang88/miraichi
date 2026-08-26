@@ -3,8 +3,13 @@
 ## Current Product Decision
 
 - `ADR-0044-ai-sportmonks-removal-product-reset.md` — Accepted. Defines the owner-only factual match, manual bet/odds, and bankroll product boundary.
-- `ADR-0045-openfootball-source-and-manual-live-bet-boundary.md` — Accepted. Selects OpenFootball for non-live match data and keeps live-bet context owner-entered and immutable.
 - `ADR-0046-core-bet-bankroll-discipline-and-reporting.md` — Accepted. Defines manual settlement, bankroll accounting, discipline warnings, psychology journaling, reports, and EN/VI UI boundaries.
+- `ADR-0048-sportscore-public-api-source-boundary.md` — Accepted. Selects the attributed SportScore public API for 50 equal competitions, terminal-only best-effort 15–30 minute result updates, and lazy basic match detail.
+
+## Superseded Source Decisions
+
+- `ADR-0045-openfootball-source-and-manual-live-bet-boundary.md` — External-source portion superseded; the manual owner-entered context boundary remains historical context.
+- `ADR-0047-api-football-rapid-match-ingestion.md` — Superseded after the Free plan failed current-season entitlement validation.
 
 ## Retained Foundation Decisions
 
@@ -29,4 +34,4 @@
 - `ADR-0039-provider-adapter-contract-and-data-validation-schema.md`
 - `ADR-0043-phase-9-cloud-database-provider.md`
 
-Removed or superseded decisions remain recoverable from Git history. OpenFootball is the only currently approved external match source family; any additional source requires a new accepted ADR.
+Removed or superseded decisions remain in the repository or Git history for audit. SportScore is the only currently approved external match source; any replacement or additional source requires a new accepted ADR.

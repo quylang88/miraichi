@@ -7,14 +7,14 @@ import {
   readLatestProviderManifestEntry
 } from './manifest.js';
 
-const TEST_ENDPOINT = 'api-football-eng-premier-league';
-const TEST_URL_PATH = '/fixtures';
+const TEST_ENDPOINT = 'manual-snapshot-fixtures';
+const TEST_URL_PATH = '/manual/fixtures';
 
 function createTestManifest(fetchedAt: string, status: 'captured' | 'published') {
   return {
     runId: `run-${fetchedAt}`,
     allowlistEntryId: TEST_ENDPOINT,
-    provider: 'api-football' as const,
+    provider: 'manual-snapshot' as const,
     endpointKey: TEST_ENDPOINT,
     urlPath: TEST_URL_PATH,
     query: {},
@@ -26,16 +26,16 @@ function createTestManifest(fetchedAt: string, status: 'captured' | 'published')
 describe('appendProviderManifestEntry', () => {
   it('returns the newest matching provider manifest entry by fetchedAt', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
-    await appendProviderManifestEntry(root, 'api-football', createTestManifest(
+    await appendProviderManifestEntry(root, 'manual-snapshot', createTestManifest(
       '2026-08-25T13:00:00.000Z',
       'published'
     ));
-    await appendProviderManifestEntry(root, 'api-football', createTestManifest(
+    await appendProviderManifestEntry(root, 'manual-snapshot', createTestManifest(
       '2026-08-25T12:00:00.000Z',
       'captured'
     ));
 
-    const manifest = await readLatestProviderManifestEntry(root, 'api-football', TEST_ENDPOINT);
+    const manifest = await readLatestProviderManifestEntry(root, 'manual-snapshot', TEST_ENDPOINT);
 
     expect(manifest).toMatchObject({
       fetchedAt: '2026-08-25T13:00:00.000Z',
@@ -45,17 +45,17 @@ describe('appendProviderManifestEntry', () => {
 
   it('rejects malformed JSONL instead of ignoring evidence corruption', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
-    await appendProviderManifestEntry(root, 'api-football', createTestManifest(
+    await appendProviderManifestEntry(root, 'manual-snapshot', createTestManifest(
       '2026-08-25T12:00:00.000Z',
       'published'
     ));
     await appendFile(
-      join(root, 'providers', 'api-football', 'manifests', 'capture-manifest.jsonl'),
+      join(root, 'providers', 'manual-snapshot', 'manifests', 'capture-manifest.jsonl'),
       '{ malformed json }\n',
       'utf8'
     );
 
-    await expect(readLatestProviderManifestEntry(root, 'api-football', TEST_ENDPOINT))
+    await expect(readLatestProviderManifestEntry(root, 'manual-snapshot', TEST_ENDPOINT))
       .rejects.toMatchObject({ code: 'provider_manifest_invalid' });
   });
 });

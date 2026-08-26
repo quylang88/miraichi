@@ -2,36 +2,12 @@ import { createHash } from 'node:crypto';
 import type { Dirent } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
-import { API_FOOTBALL_COMPETITION_REGISTRY } from '../../../packages/config/src/api-football-source-registry.js';
 import {
   validateRawProviderPayloadEnvelope,
   type ProviderId,
   type ProviderSourceBindingPolicy,
   type RawProviderPayloadEnvelope
 } from '../../../packages/shared/src/contracts/provider-ingestion-contracts.js';
-
-const API_FOOTBALL_SOURCE_BINDING_POLICY: ProviderSourceBindingPolicy = {
-  resolveSourceBinding(provider, allowlistEntryId) {
-    if (provider !== 'api-football') {
-      return undefined;
-    }
-
-    const source = API_FOOTBALL_COMPETITION_REGISTRY.find((entry) => entry.entryId === allowlistEntryId);
-    if (!source) {
-      return undefined;
-    }
-
-    return {
-      allowlistEntryId: source.entryId,
-      endpointKey: source.entryId,
-      urlPath: `/fixtures`,
-      source: {
-        leagueId: String(source.providerLeagueId),
-        competitionId: source.competitionId
-      }
-    };
-  }
-};
 
 /**
  * Produce a stable SHA-256 hex digest of a payload, with canonical key ordering
@@ -54,9 +30,10 @@ export function createTextPayloadHash(text: string): string {
  */
 export async function writeRawProviderPayload(
   root: string,
-  envelope: RawProviderPayloadEnvelope
+  envelope: RawProviderPayloadEnvelope,
+  bindingPolicy?: ProviderSourceBindingPolicy
 ): Promise<string> {
-  assertValidRawProviderPayload(envelope);
+  assertValidRawProviderPayload(envelope, bindingPolicy);
 
   const datePart = envelope.fetchedAt.slice(0, 10); // YYYY-MM-DD
   const providerRawRoot = resolve(root, 'providers', envelope.provider, 'raw');
@@ -72,7 +49,8 @@ export async function writeRawProviderPayload(
 export async function readLatestRawProviderPayload(
   root: string,
   provider: ProviderId,
-  endpointKey: string
+  endpointKey: string,
+  bindingPolicy?: ProviderSourceBindingPolicy
 ): Promise<RawProviderPayloadEnvelope | null> {
   const endpointDir = join(root, 'providers', provider, 'raw', endpointKey);
   let dateDirectories: Dirent<string>[];
@@ -101,7 +79,10 @@ export async function readLatestRawProviderPayload(
         continue;
       }
 
-      const envelope = parseRawProviderPayload(await readFile(join(datedDir, file.name), 'utf8'));
+      const envelope = parseRawProviderPayload(
+        await readFile(join(datedDir, file.name), 'utf8'),
+        bindingPolicy
+      );
       if (envelope.provider !== provider || envelope.endpointKey !== endpointKey) {
         throw providerRawPayloadInvalid('Raw payload identity does not match its evidence path');
       }
@@ -136,14 +117,20 @@ function sortedJson(value: unknown): unknown {
   return value;
 }
 
-function assertValidRawProviderPayload(envelope: RawProviderPayloadEnvelope): void {
-  const validation = validateRawProviderPayloadEnvelope(envelope, API_FOOTBALL_SOURCE_BINDING_POLICY);
+function assertValidRawProviderPayload(
+  envelope: RawProviderPayloadEnvelope,
+  bindingPolicy?: ProviderSourceBindingPolicy
+): void {
+  const validation = validateRawProviderPayloadEnvelope(envelope, bindingPolicy);
   if (!validation.ok) {
     throw providerRawPayloadInvalid(validation.errors.join('; '));
   }
 }
 
-function parseRawProviderPayload(text: string): RawProviderPayloadEnvelope {
+function parseRawProviderPayload(
+  text: string,
+  bindingPolicy?: ProviderSourceBindingPolicy
+): RawProviderPayloadEnvelope {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -151,7 +138,7 @@ function parseRawProviderPayload(text: string): RawProviderPayloadEnvelope {
     throw providerRawPayloadInvalid('Raw payload evidence is not valid JSON');
   }
 
-  assertValidRawProviderPayload(parsed as RawProviderPayloadEnvelope);
+  assertValidRawProviderPayload(parsed as RawProviderPayloadEnvelope, bindingPolicy);
   return parsed as RawProviderPayloadEnvelope;
 }
 

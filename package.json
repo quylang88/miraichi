@@ -14,8 +14,6 @@
     "dev:api": "pnpm --filter api run dev",
     "dev:worker": "pnpm --filter worker run dev",
     "data:build:serving:matches": "tsx scripts/build-serving-match-store.ts",
-    "data:capture:api-football": "tsx scripts/capture-api-football.ts",
-    "data:seed:api-football": "tsx scripts/seed-api-football-history.ts",
     "data:validate:serving:matches": "tsx scripts/build-serving-match-store.ts --validate-only",
     "data:sync:serving:cloud": "tsx scripts/sync-serving-match-store-to-cloud.ts",
     "supabase:local:start": "supabase db start",
@@ -31,7 +29,7 @@
     "test:unit:coverage": "vitest run --coverage",
     "lint": "tsx scripts/check-js-syntax.ts .",
     "verify:lifecycle": "tsx scripts/verify-lifecycle.ts",
-    "test:integration": "pnpm run phase3:verify && pnpm run api-football:integration && pnpm run test:e2e && pnpm run pwa:verify",
+    "test:integration": "pnpm run phase3:verify && pnpm run test:e2e && pnpm run pwa:verify",
     "verify:product-boundary": "tsx scripts/product-boundary-verify.ts",
     "verify:local": "pnpm run verify:product-boundary && pnpm run verify:lifecycle && pnpm run test:unit && pnpm run lint && pnpm run typecheck && pnpm run audit && pnpm run audit:type-safety",
     "verify:release": "pnpm run verify:local && pnpm run test:integration",
@@ -46,9 +44,6 @@
     "phase2:verify": "pnpm run check && pnpm run audit && pnpm run phase2:check-rules && pnpm run test:e2e",
     "phase3:verify": "tsx scripts/phase3-verify.ts",
     "pwa:verify": "tsx scripts/pwa-verify.ts",
-    "api-football:verify": "vitest run packages/config/src/api-football-source-registry.test.ts apps/worker/src/sources/api-football apps/worker/src/jobs/api-football-",
-    "api-football:quota-status": "tsx scripts/quota-status-api-football.ts",
-    "api-football:integration": "vitest run tests/integration/api-football-rapid-match-source.test.ts tests/integration/api-football-quota-resume.test.ts tests/integration/api-football-match-detail.test.ts",
     "typecheck": "tsc -p tsconfig.base.json --noEmit"
   },
   "engines": {

@@ -1,5 +1,4 @@
 export type LocalDataSourceId =
-  | 'api-football'
   | 'openfootball'
   | 'manual-snapshot';
 
@@ -169,7 +168,6 @@ function isObject(val: unknown): val is Record<string, unknown> {
 }
 
 const VALID_DATA_SOURCES: LocalDataSourceId[] = [
-  'api-football',
   'openfootball',
   'manual-snapshot'
 ];

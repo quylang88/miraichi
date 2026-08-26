@@ -2,7 +2,6 @@ import { ValidationResult, type LocalCompetitionType } from './local-match-contr
 export type { ValidationResult };
 
 export type ProviderId =
-  | 'api-football'
   | 'openfootball'
   | 'manual-snapshot';
 
@@ -13,13 +12,6 @@ export type CanonicalMatchStatus =
   | 'cancelled'
   | 'unknown';
 
-export interface ApiFootballRawSourceMetadata {
-  allowlistEntryId: string;
-  leagueId: number;
-  season: number;
-  queryType?: 'season' | 'date' | 'live' | 'batch';
-}
-
 export interface RawProviderPayloadEnvelope {
   schemaVersion: 'miraichi.provider.raw.v1';
   provider: ProviderId;
@@ -29,7 +21,7 @@ export interface RawProviderPayloadEnvelope {
   fetchedAt: string;
   payloadHash: string;
   rateLimit: { requestedEntity?: string; remaining?: number; resetsInSeconds?: number };
-  source?: OpenFootballRawSourceMetadata | ApiFootballRawSourceMetadata;
+  source?: OpenFootballRawSourceMetadata;
   response?: RawProviderResponseMetadata;
   payload: unknown;
 }
@@ -189,7 +181,6 @@ function isObject(val: unknown): val is Record<string, unknown> {
 }
 
 const VALID_PROVIDER_IDS: ProviderId[] = [
-  'api-football',
   'openfootball',
   'manual-snapshot'
 ];
@@ -265,8 +256,6 @@ export function validateRawProviderPayloadEnvelope(
 
   if (input.provider === 'openfootball') {
     validateOpenFootballRawEnvelope(input, errors, bindingPolicy);
-  } else if (input.provider === 'api-football') {
-    validateApiFootballRawEnvelope(input, errors);
   }
 
   // Forbidden canonical top-level fields
@@ -362,27 +351,6 @@ function validateOpenFootballRegistryBinding(
 
   if (input.urlPath !== binding.urlPath) {
     errors.push('Field "urlPath" must match its provider source binding');
-  }
-}
-
-function validateApiFootballRawEnvelope(
-  input: Record<string, unknown>,
-  errors: string[]
-): void {
-  if (input.source !== undefined) {
-    if (!isObject(input.source)) {
-      errors.push('Field "source" must be ApiFootball source metadata object');
-    } else {
-      if (typeof input.source.allowlistEntryId !== 'string' || input.source.allowlistEntryId.trim() === '') {
-        errors.push('Field "source.allowlistEntryId" must be a non-empty string');
-      }
-      if (typeof input.source.leagueId !== 'number' || !Number.isInteger(input.source.leagueId) || input.source.leagueId <= 0) {
-        errors.push('Field "source.leagueId" must be a positive integer');
-      }
-      if (typeof input.source.season !== 'number' || !Number.isInteger(input.source.season) || input.source.season < 1900) {
-        errors.push('Field "source.season" must be a valid year integer');
-      }
-    }
   }
 }
 

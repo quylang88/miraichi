@@ -72,17 +72,6 @@ export async function handleMatchDetail(
     return;
   }
 
-  if (id.startsWith('api-football-fixture-')) {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      error: {
-        code: 'legacy_provider_id_not_supported',
-        message: 'API-Football fixture IDs are no longer supported in Phase 9.'
-      }
-    }));
-    return;
-  }
-
   try {
     const match = await repo.findById(id);
     if (!match) {

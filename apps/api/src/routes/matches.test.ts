@@ -70,7 +70,7 @@ describe('matches route', () => {
     expect(body.matches).toEqual([mockMatch]);
     expect(body.snapshot.snapshotId).toBe('test-snapshot');
 
-    // Assert absence of old API-Football/cache/quota structures
+    // Assert absence of provider-specific cache/quota structures.
     expect(body.quota).toBeUndefined();
     expect(body.cache).toBeUndefined();
     expect(body.sourceProviderId).toBeUndefined();

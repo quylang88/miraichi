@@ -49,9 +49,9 @@ const mockCompletedMatch: LocalMatch = {
   awayTeam: { id: 'team-beta', name: 'Beta United' },
   score: { home: 2, away: 1 },
   sourceRefs: [{
-    sourceId: 'api-football',
+    sourceId: 'manual-snapshot',
     sourceMatchId: '987654',
-    sourceUrl: 'https://v3.football.api-sports.io/fixtures?id=987654',
+    sourceUrl: 'https://provider.invalid/fixtures?id=987654',
     importedAt: '2026-07-01T00:00:00.000Z'
   }],
   updatedAt: '2026-07-01T00:00:00.000Z'
@@ -71,9 +71,9 @@ const mockScheduledMatch: LocalMatch = {
   awayTeam: { id: 'team-delta', name: 'Delta United' },
   score: { home: null, away: null },
   sourceRefs: [{
-    sourceId: 'api-football',
+    sourceId: 'manual-snapshot',
     sourceMatchId: '987655',
-    sourceUrl: 'https://v3.football.api-sports.io/fixtures?id=987655',
+    sourceUrl: 'https://provider.invalid/fixtures?id=987655',
     importedAt: '2026-07-01T00:00:00.000Z'
   }],
   updatedAt: '2026-07-01T00:00:00.000Z'
@@ -156,21 +156,6 @@ describe('match detail route', () => {
       expect(response.statusCode).toBe(400);
       const body = JSON.parse(response.body);
       expect(body.error.code).toBe('match_id_required');
-    });
-
-    it('returns 400 with legacy_provider_id_not_supported for api-football-fixture- prefix', async () => {
-      const response = createMockResponse();
-
-      await handleMatchDetail(
-        { url: '/api/v1/matches/detail?id=api-football-fixture-123456', method: 'GET' } as IncomingMessage,
-        response as unknown as ServerResponse,
-        { repository: mockRepo, detailStore, queue, dataRoot: tempDir }
-      );
-
-      expect(response.statusCode).toBe(400);
-      const body = JSON.parse(response.body);
-      expect(body.error.code).toBe('legacy_provider_id_not_supported');
-      expect(body.error.message).toContain('API-Football fixture IDs are no longer supported');
     });
 
     it('returns 404 if match is not found in the serving match store', async () => {
@@ -271,7 +256,7 @@ describe('match detail route', () => {
 
       // Check provider neutralization on match object
       expect(body.match.sourceRefs).toEqual([{
-        sourceId: 'api-football',
+        sourceId: 'manual-snapshot',
         importedAt: '2026-07-01T00:00:00.000Z'
       }]);
       expect(response.body).not.toContain('https://v3.football.api-sports.io');
@@ -309,7 +294,7 @@ describe('match detail route', () => {
 
       // Provider neutralized
       expect(body.match.sourceRefs).toEqual([{
-        sourceId: 'api-football',
+        sourceId: 'manual-snapshot',
         importedAt: '2026-07-01T00:00:00.000Z'
       }]);
       expect(response.body).not.toContain('https://v3.football.api-sports.io');
@@ -360,7 +345,7 @@ describe('match detail route', () => {
       expect(body.retryAfterSeconds).toBe(150);
       expect(body.match.id).toBe(mockCompletedMatch.id);
       expect(body.match.sourceRefs).toEqual([{
-        sourceId: 'api-football',
+        sourceId: 'manual-snapshot',
         importedAt: '2026-07-01T00:00:00.000Z'
       }]);
 
@@ -453,17 +438,17 @@ describe('match detail route', () => {
   });
 
   describe('Security and provider secret containment', () => {
-    it('never leaks API keys, provider URLs, or raw fixture IDs in 200, 202, or error responses', async () => {
+    it('never leaks provider secrets, URLs, or raw fixture IDs in 200, 202, or error responses', async () => {
       const secretKey = 'secret-api-key-999888';
-      process.env.API_FOOTBALL_KEY = secretKey;
+      process.env.PRIVATE_PROVIDER_TEST_KEY = secretKey;
 
       const matchWithSecrets: LocalMatch = {
         ...mockCompletedMatch,
         id: 'match-generic-containment-check-001',
         sourceRefs: [{
-          sourceId: 'api-football',
+          sourceId: 'manual-snapshot',
           sourceMatchId: 'fixture-secret-999',
-          sourceUrl: `https://v3.football.api-sports.io/fixtures?id=fixture-secret-999&key=${secretKey}`,
+          sourceUrl: `https://provider.invalid/fixtures?id=fixture-secret-999&key=${secretKey}`,
           importedAt: '2026-07-01T00:00:00.000Z'
         }]
       };
@@ -477,7 +462,7 @@ describe('match detail route', () => {
         { repository: mockRepo, detailStore, queue, dataRoot: tempDir }
       );
       expect(response202.body).not.toContain(secretKey);
-      expect(response202.body).not.toContain('https://v3.football.api-sports.io');
+      expect(response202.body).not.toContain('https://provider.invalid');
       expect(response202.body).not.toContain('fixture-secret-999');
 
       // Test 200 cached response
@@ -496,10 +481,10 @@ describe('match detail route', () => {
         { repository: mockRepo, detailStore, queue, dataRoot: tempDir }
       );
       expect(response200.body).not.toContain(secretKey);
-      expect(response200.body).not.toContain('https://v3.football.api-sports.io');
+      expect(response200.body).not.toContain('https://provider.invalid');
       expect(response200.body).not.toContain('fixture-secret-999');
 
-      delete process.env.API_FOOTBALL_KEY;
+      delete process.env.PRIVATE_PROVIDER_TEST_KEY;
     });
   });
 
@@ -507,7 +492,7 @@ describe('match detail route', () => {
     it('returns 500 when repository throws an error', async () => {
       const failingRepo = {
         findById: async () => {
-          throw new Error('https://v3.football.api-sports.io key=secret-api-key-123 fixture=987654');
+          throw new Error('https://provider.invalid key=secret-api-key-123 fixture=987654');
         },
         listMatches: vi.fn(),
         getStatus: vi.fn()

@@ -1,6 +1,6 @@
 # ADR-0047: API-Football Rapid Match Ingestion & Extensible 50-League Multi-Season Hydration
 
-- **Status**: Accepted
+- **Status**: Superseded by ADR-0048 on 2026-08-26
 - **Date**: 2026-08-25
 - **Owner approval**: Explicitly approved by the project owner on 2026-08-25.
 - **Amendment approval**: On 2026-08-25 the owner explicitly approved a best-effort result SLO <= 5 minutes, terminal-only result/detail publication plus lazy completed-history match-detail caching, and continued `club | national-team` configuration support. Provider live responses are used only to decide whether terminal polling must continue; they are not persisted or published.

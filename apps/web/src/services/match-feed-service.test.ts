@@ -122,7 +122,7 @@ describe('web match feed service', () => {
   it('fails normalization when response contains sourceProviderId or providerFixtureId', async () => {
     const invalidMatch = {
       ...validMatch,
-      sourceProviderId: 'api-football'
+      sourceProviderId: 'retired-provider'
     };
 
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
