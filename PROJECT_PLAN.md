@@ -7,8 +7,8 @@
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
 - **Completed phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written.
-- **Active phase**: `phase:code SportScore Public API Source — Slice 1 registry and source contract` — implementation and local exit gate passed on 2026-08-26; transition awaits the next explicit owner command.
-- **Promotion state**: SportScore Slice 1 implementation is complete locally; Slice 2+, integration, staging, owner feedback, and production have not started.
+- **Active phase**: `phase:code SportScore Public API Source — Slice 2 HTTP client, optional key, cache, and failure policy` — implementation and local exit gate passed on 2026-08-26; transition awaits the next explicit owner command.
+- **Promotion state**: SportScore Slices 0–2 are complete locally; Slice 3+, integration, staging, owner feedback, and production have not started.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -32,6 +32,7 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Write the implementation plan at `docs/superpowers/plans/2026-08-26-sportscore-public-api-source.md`.
 - [x] Complete Slice 0: remove API-Football executable code, config, tests, scripts, generated state, and current operational documentation while preserving superseded ADR history.
 - [x] Complete Slice 1: add the validated 50-competition SportScore registry, 51st+ `national-team` extension proof, and provider-neutral SportScore source metadata without enabling network access.
+- [x] Complete Slice 2: add the server-only anonymous/optional-key HTTP client, exact-origin containment, bounded cache/evidence, timeout, concurrency, retry, and sanitized request observations without wiring the worker.
 
 ## Planned TDD Slices
 
@@ -71,8 +72,17 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - `pnpm run verify:local` passed 77 unit-test files / 436 tests, product boundary, lifecycle, syntax, TypeScript, architecture audit, and type-safety audit.
 - Worker remains explicitly idle; no SportScore client, key, scheduler, persistence job, or real provider request exists in Slice 1.
 
+## Slice 2 Local Evidence — 2026-08-26
+
+- RED observed: the focused client suite failed because the SportScore client module did not exist before implementation.
+- Focused verification passed 1 test file / 10 tests for anonymous and optional-key calls, exact-origin secret containment, documented fixture and match paths, full-response timeout, 429/503 bounded backoff, identical-request coalescing, concurrency cap, invalid JSON/envelope rejection, and bounded raw evidence with secret redaction.
+- The complete worker unit suite passed 5 test files / 17 tests; the worker remains explicitly idle and no scheduler, ingestion, live publication, or external provider request is enabled.
+- `pnpm run typecheck`, `pnpm run audit`, and `pnpm run verify:product-boundary` passed.
+- Mock fixture fields were aligned to the current published OpenAPI `MatchSummary` schema using invented teams; no live SportScore payload is committed.
+- Only public developer documentation/OpenAPI was read. No SportScore data endpoint was called, so this is local evidence only and does not resolve the `/api/v1/fixtures/` terms-scope blocker.
+
 ## Next Gate
 
-The recommended next phase is `phase:code SportScore Public API Source — Slice 2 HTTP client, optional key, cache, and failure policy`.
+The recommended next phase is `phase:code SportScore Public API Source — Slice 3 terminal-only adapter and last-good publication`.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

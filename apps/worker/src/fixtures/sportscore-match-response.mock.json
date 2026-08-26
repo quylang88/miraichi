@@ -1,0 +1,28 @@
+{
+  "match": {
+    "id": "invented-match-001",
+    "slug": "northbridge-athletic-vs-rivergate-city",
+    "status": "finished",
+    "startTime": "2026-08-26T18:00:00Z",
+    "homeTeam": {
+      "id": "invented-team-home",
+      "name": "Northbridge Athletic"
+    },
+    "awayTeam": {
+      "id": "invented-team-away",
+      "name": "Rivergate City"
+    },
+    "events": [
+      {
+        "type": "goal",
+        "minute": 27,
+        "participant": "Invented Player One"
+      },
+      {
+        "type": "card",
+        "minute": 64,
+        "participant": "Invented Player Two"
+      }
+    ]
+  }
+}

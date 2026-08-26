@@ -49,6 +49,8 @@
 
 ## Slice 2 — HTTP client, optional key, cache, and failure policy
 
+**Status**: Complete locally on 2026-08-26; no provider data endpoint was called and this is not staging evidence.
+
 **Test first**
 
 - Create `apps/worker/src/sources/sportscore/sportscore-client.test.ts` covering anonymous/keyed requests, exact-host secret containment, timeout, 429/503 backoff, edge-cache coalescing, concurrency cap, and invalid JSON.
