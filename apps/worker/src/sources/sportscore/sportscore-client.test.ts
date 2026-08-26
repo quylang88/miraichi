@@ -183,6 +183,25 @@ describe('SportScoreClient request boundary', () => {
     expect(sleep.mock.calls).toEqual([[100], [200]]);
   });
 
+  it('lets the quota-aware scheduler disable retries for one fixture request', async () => {
+    const fetchFn = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ error: 'busy' }, 429))
+      .mockResolvedValueOnce(jsonResponse(fixturePayload));
+    const sleep = vi.fn<(milliseconds: number) => Promise<void>>().mockResolvedValue(undefined);
+    const client = new SportScoreClient({
+      fetchFn,
+      sleep,
+      maxRetries: 2
+    });
+
+    await expect(client.getFixtures({
+      ...fixturesRequest(),
+      maxRetries: 0
+    })).rejects.toMatchObject({ code: 'http_status', statusCode: 429 });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
   it('coalesces concurrent identical requests and reuses a fresh response cache entry', async () => {
     let releaseFirstRequest: ((response: Response) => void) | undefined;
     let currentTime = Date.parse('2026-08-26T00:00:00Z');

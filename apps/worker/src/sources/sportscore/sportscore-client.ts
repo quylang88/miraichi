@@ -71,6 +71,8 @@ export interface SportScoreFixturesRequest {
   date: string;
   competition: string;
   limit?: number;
+  /** Per-call transport retry ceiling; scheduler jobs use zero to preserve request budgets. */
+  maxRetries?: number;
 }
 
 export interface SportScoreMatchRequest {
@@ -86,6 +88,7 @@ interface RequestDescriptor<T> {
   endpoint: 'fixtures' | 'match';
   url: URL;
   parse: (value: unknown) => T;
+  maxRetries?: number;
 }
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -306,6 +309,8 @@ export class SportScoreClient {
         'SportScore fixture limit must be an integer from 1 to 200.'
       );
     }
+    const maxRetries = request.maxRetries ?? this.maxRetries;
+    requireNonNegativeInteger(maxRetries, 'SportScore fixture maxRetries');
 
     const url = new URL('/api/v1/fixtures/', this.baseUrl);
     url.searchParams.set('sport', 'football');
@@ -316,7 +321,8 @@ export class SportScoreClient {
     return this.request({
       endpoint: 'fixtures',
       url,
-      parse: parseSportScoreFixturesResponse
+      parse: parseSportScoreFixturesResponse,
+      maxRetries
     });
   }
 
@@ -336,7 +342,7 @@ export class SportScoreClient {
 
   private request<T>(descriptor: RequestDescriptor<T>): Promise<T> {
     this.assertApprovedUrl(descriptor.url);
-    const cacheKey = descriptor.url.toString();
+    const cacheKey = `${descriptor.url.toString()}#maxRetries=${descriptor.maxRetries ?? this.maxRetries}`;
     const cached = this.responseCache.get(cacheKey) as ResponseCacheEntry<T> | undefined;
     if (cached && cached.expiresAt > this.now()) {
       return Promise.resolve(cached.payload);
@@ -364,15 +370,16 @@ export class SportScoreClient {
 
   private async fetchAndValidate<T>(descriptor: RequestDescriptor<T>): Promise<T> {
     const requestedAt = new Date(this.now()).toISOString();
+    const maxRetries = descriptor.maxRetries ?? this.maxRetries;
 
-    for (let attempt = 1; attempt <= this.maxRetries + 1; attempt += 1) {
+    for (let attempt = 1; attempt <= maxRetries + 1; attempt += 1) {
       let response: Response;
       let rawText: string | undefined;
       try {
         ({ response, rawText } = await this.fetchWithTimeout(descriptor.url));
       } catch (error) {
         const clientError = this.toTransportError(error);
-        const shouldRetry = attempt <= this.maxRetries
+        const shouldRetry = attempt <= maxRetries
           && (clientError.code === 'timeout' || clientError.code === 'network');
         this.observe({
           descriptor,
@@ -392,7 +399,7 @@ export class SportScoreClient {
         await response.body?.cancel().catch(() => undefined);
         const shouldRetryStatus = response.status === 429
           || (response.status >= 500 && response.status <= 599);
-        const shouldRetry = shouldRetryStatus && attempt <= this.maxRetries;
+        const shouldRetry = shouldRetryStatus && attempt <= maxRetries;
         this.observe({
           descriptor,
           requestedAt,

@@ -7,8 +7,8 @@
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
 - **Completed phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written.
-- **Active phase**: `phase:code SportScore Public API Source — Slice 3 terminal-only adapter and last-good publication` — implementation and local exit gate passed on 2026-08-26; transition awaits the next explicit owner command.
-- **Promotion state**: SportScore Slices 0–3 are complete locally; Slice 4+, integration, staging, owner feedback, and production have not started.
+- **Active phase**: `phase:code SportScore Public API Source — Slice 4 daily per-competition sync and +15/+30 terminal checks` — implementation and local exit gate passed on 2026-08-26; transition awaits the next explicit owner command.
+- **Promotion state**: SportScore Slices 0–4 are complete locally; Slice 5+, integration, staging, owner feedback, and production have not started.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -34,6 +34,7 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Complete Slice 1: add the validated 50-competition SportScore registry, 51st+ `national-team` extension proof, and provider-neutral SportScore source metadata without enabling network access.
 - [x] Complete Slice 2: add the server-only anonymous/optional-key HTTP client, exact-origin containment, bounded cache/evidence, timeout, concurrency, retry, and sanitized request observations without wiring the worker.
 - [x] Complete Slice 3: normalize registry-bound SportScore fixtures into provider-neutral canonical records, exclude in-play records before persistence, merge against last-good state, and atomically publish immutable warehouse/serving snapshots without writing match detail.
+- [x] Complete Slice 4: fetch only competition-scoped fixture days, rotate work fairly with durable checkpoints, share +15/+30 terminal checks per competition window, use bounded recovery/backoff, and keep real network execution disabled by default.
 
 ## Planned TDD Slices
 
@@ -93,8 +94,19 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - The complete worker suite passed 7 test files / 27 tests. `pnpm run phase3:verify`, `pnpm run typecheck`, `pnpm run audit`, `pnpm run verify:product-boundary`, and `pnpm run verify:lifecycle` passed.
 - Worker scheduling remains explicitly idle. Slice 3 made no SportScore network request and did not enable daily sync or terminal rechecks.
 
+## Slice 4 Local Evidence — 2026-08-26
+
+- RED observed: the focused schedule/job suites failed because the source ledger, planner, lease, and daily sync job modules did not exist before implementation.
+- Focused verification passed 2 test files / 14 tests for one competition/date per request, no global query, fair rotation, restart resume, shared simultaneous-match checks, +15/+30 timing, finite recovery/failure backoff, late-start live redaction, provider-query date reuse across timezone offsets, 429/503 deferral, last-good preservation, request cap, concurrency cap, lease exclusion, and non-overlapping timer ticks.
+- SportScore plus the explicit worker-boundary verification passed 6 test files / 37 tests, including per-call retry suppression; the full worker suite passed 9 test files / 43 tests; `pnpm run typecheck` passed.
+- Successful checkpoints advance only after a complete accepted response and publication decision. Failed provider/publication actions retain last-good data, keep the success checkpoint incomplete, and persist a future attempt time.
+- Daily/result actions disable immediate client retries so `maxRequestsPerRun` caps actual HTTP attempts, not merely logical actions; 429/503 recovery occurs through the durable future checkpoint.
+- A terminal window stops after four consecutive provider/coverage failures or two non-terminal recovery checks after +30, preserving an honest stale/exhausted state instead of retrying forever.
+- The job requires an explicit owner-local `targetDate` and a competition-aware current-season resolver. It cannot silently substitute UTC day or invent a season label.
+- The worker entrypoint remains idle by default. SportScore scheduling starts only when an already-configured job is explicitly injected; no real SportScore endpoint was called and the `/api/v1/fixtures/` terms-scope staging blocker remains unresolved.
+
 ## Next Gate
 
-The recommended next phase is `phase:code SportScore Public API Source — Slice 4 daily per-competition sync and +15/+30 terminal checks`.
+The recommended next phase is `phase:code SportScore Public API Source — Slice 5 lazy terminal match detail`.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

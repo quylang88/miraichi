@@ -89,6 +89,8 @@
 
 ## Slice 4 — Daily per-competition sync and +15/+30 terminal checks
 
+**Status**: Complete locally on 2026-08-26; worker remains idle unless a configured job is explicitly injected, and no provider endpoint was called.
+
 **Test first**
 
 - Create scheduler/checkpoint tests proving one request per enabled competition/day, no global 200-item query, fair rotation, shared competition-level terminal rechecks, +15/+30 timing, restart resume, and no tight live loop.
