@@ -172,7 +172,29 @@ describe('Local Match Contracts Validation', () => {
     expect(validateLocalMatch(clubMatch)).toEqual({ ok: true });
   });
 
-  it('rejects stale source identifiers outside OpenFootball and manual snapshots', () => {
+  it('accepts SportScore only inside source-reference evidence', () => {
+    const match = {
+      ...validScheduledMatch,
+      sourceRefs: [{
+        sourceId: 'sportscore' as const,
+        sourceMatchId: 'provider-match-id',
+        sourceUrl: 'https://sportscore.com/football/match/alpha-vs-beta/provider-match-id/',
+        importedAt: '2026-08-26T12:00:00.000Z'
+      }]
+    };
+
+    expect(validateLocalMatch(match)).toEqual({ ok: true });
+    expect(toProviderNeutralLocalMatch(match).sourceRefs).toEqual([{
+      sourceId: 'sportscore',
+      importedAt: '2026-08-26T12:00:00.000Z'
+    }]);
+    expect(validateLocalMatch({ ...match, providerFixtureId: 'provider-match-id' })).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining(['Forbidden field "providerFixtureId" is present'])
+    });
+  });
+
+  it('rejects source identifiers outside the accepted source-reference set', () => {
     const result = validateLocalMatch({
       ...validScheduledMatch,
       sourceRefs: [{

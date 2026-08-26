@@ -2,6 +2,7 @@ import { ValidationResult, type LocalCompetitionType } from './local-match-contr
 export type { ValidationResult };
 
 export type ProviderId =
+  | 'sportscore'
   | 'openfootball'
   | 'manual-snapshot';
 
@@ -21,7 +22,7 @@ export interface RawProviderPayloadEnvelope {
   fetchedAt: string;
   payloadHash: string;
   rateLimit: { requestedEntity?: string; remaining?: number; resetsInSeconds?: number };
-  source?: OpenFootballRawSourceMetadata;
+  source?: OpenFootballRawSourceMetadata | SportScoreRawSourceMetadata;
   response?: RawProviderResponseMetadata;
   payload: unknown;
 }
@@ -31,6 +32,13 @@ export interface OpenFootballRawSourceMetadata {
   repository: string;
   ref: string;
   filePath: string;
+}
+
+export interface SportScoreRawSourceMetadata {
+  allowlistEntryId: string;
+  competitionSlug: string;
+  providerCompetitionId: string;
+  queryType: 'date' | 'match';
 }
 
 export interface RawProviderResponseMetadata {
@@ -181,6 +189,7 @@ function isObject(val: unknown): val is Record<string, unknown> {
 }
 
 const VALID_PROVIDER_IDS: ProviderId[] = [
+  'sportscore',
   'openfootball',
   'manual-snapshot'
 ];
@@ -256,6 +265,8 @@ export function validateRawProviderPayloadEnvelope(
 
   if (input.provider === 'openfootball') {
     validateOpenFootballRawEnvelope(input, errors, bindingPolicy);
+  } else if (input.provider === 'sportscore') {
+    validateSportScoreRawEnvelope(input, errors);
   }
 
   // Forbidden canonical top-level fields
@@ -267,6 +278,35 @@ export function validateRawProviderPayloadEnvelope(
   }
 
   return errors.length === 0 ? { ok: true } : { ok: false, errors };
+}
+
+function validateSportScoreRawEnvelope(
+  input: Record<string, unknown>,
+  errors: string[]
+): void {
+  if (!isObject(input.source)) {
+    errors.push('Field "source" must be SportScore source metadata');
+    return;
+  }
+
+  if (typeof input.source.allowlistEntryId !== 'string' || input.source.allowlistEntryId.trim() === '') {
+    errors.push('Field "source.allowlistEntryId" must be a non-empty string');
+  }
+  if (
+    typeof input.source.competitionSlug !== 'string' ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.source.competitionSlug)
+  ) {
+    errors.push('Field "source.competitionSlug" must be a lowercase slug');
+  }
+  if (
+    typeof input.source.providerCompetitionId !== 'string' ||
+    !/^[a-z0-9]+$/.test(input.source.providerCompetitionId)
+  ) {
+    errors.push('Field "source.providerCompetitionId" must be lowercase alphanumeric');
+  }
+  if (input.source.queryType !== 'date' && input.source.queryType !== 'match') {
+    errors.push('Field "source.queryType" must be date or match');
+  }
 }
 
 function validateOpenFootballRawEnvelope(

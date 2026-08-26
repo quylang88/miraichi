@@ -29,6 +29,8 @@
 
 ## Slice 1 — SportScore registry and source contract
 
+**Status**: Complete locally on 2026-08-26; not staging evidence.
+
 **Test first**
 
 - Create `packages/config/src/sportscore-source-registry.test.ts` for exactly 50 enabled, unique canonical IDs/slugs, all four accepted groups, `club | national-team`, and deterministic 51+ extension.

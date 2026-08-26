@@ -45,6 +45,91 @@ const OPENFOOTBALL_BINDING_POLICY = {
 };
 
 describe('provider-neutral ingestion contracts', () => {
+  it('accepts SportScore only as source evidence and rejects provider identity in canonical fields', () => {
+    expect(validateRawProviderPayloadEnvelope({
+      schemaVersion: 'miraichi.provider.raw.v1',
+      provider: 'sportscore',
+      endpointKey: 'fixtures.by-competition-date',
+      urlPath: '/api/v1/fixtures/',
+      query: {
+        sport: 'football',
+        date: '2026-08-26',
+        competition: 'english-premier-league',
+        limit: '200'
+      },
+      fetchedAt: '2026-08-26T12:00:00.000Z',
+      payloadHash: 'e'.repeat(64),
+      rateLimit: {},
+      source: {
+        allowlistEntryId: 'sportscore-eng-premier-league',
+        competitionSlug: 'english-premier-league',
+        providerCompetitionId: 'jednm9whz0ryox8',
+        queryType: 'date'
+      },
+      response: {
+        contentType: 'application/json; charset=utf-8',
+        byteCount: 128
+      },
+      payload: { matches: [] }
+    })).toEqual({ ok: true });
+
+    expect(validateProviderLink({
+      entityType: 'match',
+      entityId: 'match-eng-premier-league-2026-alpha-beta',
+      provider: 'sportscore',
+      providerEntityType: 'match',
+      providerEntityId: 'alpha-vs-beta/provider-match-id',
+      confidence: 1,
+      linkedBy: 'sportscore-adapter',
+      linkedAt: '2026-08-26T12:00:00.000Z'
+    })).toEqual({ ok: true });
+
+    const canonicalWithProviderIdentity = validateCanonicalMatch({
+      matchId: 'match-eng-premier-league-2026-alpha-beta',
+      competitionId: 'eng-premier-league',
+      season: '2026',
+      kickoffUtc: '2026-08-26T12:00:00.000Z',
+      status: 'scheduled',
+      homeTeamId: 'team-alpha',
+      awayTeamId: 'team-beta',
+      scoreHome: null,
+      scoreAway: null,
+      updatedAt: '2026-08-26T12:00:00.000Z',
+      sourceProviderId: 'sportscore'
+    });
+    expect(canonicalWithProviderIdentity.ok).toBe(false);
+    expect(canonicalWithProviderIdentity.ok ? [] : canonicalWithProviderIdentity.errors)
+      .toContain('Forbidden field "sourceProviderId" is present');
+  });
+
+  it('rejects incomplete SportScore source metadata', () => {
+    const result = validateRawProviderPayloadEnvelope({
+      schemaVersion: 'miraichi.provider.raw.v1',
+      provider: 'sportscore',
+      endpointKey: 'fixtures.by-competition-date',
+      urlPath: '/api/v1/fixtures/',
+      query: {},
+      fetchedAt: '2026-08-26T12:00:00.000Z',
+      payloadHash: 'e'.repeat(64),
+      rateLimit: {},
+      source: {
+        allowlistEntryId: '',
+        competitionSlug: 'Not A Slug',
+        providerCompetitionId: '',
+        queryType: 'live'
+      },
+      payload: {}
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? [] : result.errors).toEqual(expect.arrayContaining([
+      expect.stringContaining('allowlistEntryId'),
+      expect.stringContaining('competitionSlug'),
+      expect.stringContaining('providerCompetitionId'),
+      expect.stringContaining('queryType')
+    ]));
+  });
+
   it('accepts raw provider envelopes without making the provider canonical', () => {
     expect(validateRawProviderPayloadEnvelope({
       schemaVersion: 'miraichi.provider.raw.v1',

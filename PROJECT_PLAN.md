@@ -6,8 +6,9 @@
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
-- **Active phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written; Slice 0 retirement is authorized separately by the owner.
-- **Promotion state**: SportScore implementation, integration, staging, owner feedback, and production have not started.
+- **Completed phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written.
+- **Active phase**: `phase:code SportScore Public API Source — Slice 1 registry and source contract` — implementation and local exit gate passed on 2026-08-26; transition awaits the next explicit owner command.
+- **Promotion state**: SportScore Slice 1 implementation is complete locally; Slice 2+, integration, staging, owner feedback, and production have not started.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -30,6 +31,7 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Write the design at `docs/superpowers/specs/2026-08-26-sportscore-public-api-source-design.md`.
 - [x] Write the implementation plan at `docs/superpowers/plans/2026-08-26-sportscore-public-api-source.md`.
 - [x] Complete Slice 0: remove API-Football executable code, config, tests, scripts, generated state, and current operational documentation while preserving superseded ADR history.
+- [x] Complete Slice 1: add the validated 50-competition SportScore registry, 51st+ `national-team` extension proof, and provider-neutral SportScore source metadata without enabling network access.
 
 ## Planned TDD Slices
 
@@ -60,8 +62,17 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - Executable-source search found no retired API-Football marker outside the boundary verifier itself.
 - Generated API-Football ledger data and stale OpenFootball raw/warehouse artifacts were removed from `apps/api/data`; tracked provider-neutral README and warehouse structure remain.
 
+## Slice 1 Local Evidence — 2026-08-26
+
+- RED observed: the registry module was missing and shared validators rejected `sportscore` before implementation.
+- All 50 configured mappings were matched by exact visible competition name to unique official SportScore directory URLs on 2026-08-26; no fixture or match API request was made.
+- Focused verification passed 6 test files / 63 tests across the registry and shared contracts.
+- Registry checks prove exactly 50 enabled entries, group counts 12/17/13/8, unique canonical IDs/slugs/provider IDs, HTTPS exact-host URLs, no priority/rank fields, and a valid 51st national-team entry.
+- `pnpm run verify:local` passed 77 unit-test files / 436 tests, product boundary, lifecycle, syntax, TypeScript, architecture audit, and type-safety audit.
+- Worker remains explicitly idle; no SportScore client, key, scheduler, persistence job, or real provider request exists in Slice 1.
+
 ## Next Gate
 
-Review and approve the exact implementation slices. The recommended next phase is `phase:code SportScore Public API Source — Slice 1 registry and source contract` after this Slice 0 removal commit.
+The recommended next phase is `phase:code SportScore Public API Source — Slice 2 HTTP client, optional key, cache, and failure policy`.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
