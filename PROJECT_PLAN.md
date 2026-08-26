@@ -7,8 +7,8 @@
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
 - **Completed phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written.
-- **Active phase**: `phase:code SportScore Public API Source — Slice 2 HTTP client, optional key, cache, and failure policy` — implementation and local exit gate passed on 2026-08-26; transition awaits the next explicit owner command.
-- **Promotion state**: SportScore Slices 0–2 are complete locally; Slice 3+, integration, staging, owner feedback, and production have not started.
+- **Active phase**: `phase:code SportScore Public API Source — Slice 3 terminal-only adapter and last-good publication` — implementation and local exit gate passed on 2026-08-26; transition awaits the next explicit owner command.
+- **Promotion state**: SportScore Slices 0–3 are complete locally; Slice 4+, integration, staging, owner feedback, and production have not started.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -33,6 +33,7 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Complete Slice 0: remove API-Football executable code, config, tests, scripts, generated state, and current operational documentation while preserving superseded ADR history.
 - [x] Complete Slice 1: add the validated 50-competition SportScore registry, 51st+ `national-team` extension proof, and provider-neutral SportScore source metadata without enabling network access.
 - [x] Complete Slice 2: add the server-only anonymous/optional-key HTTP client, exact-origin containment, bounded cache/evidence, timeout, concurrency, retry, and sanitized request observations without wiring the worker.
+- [x] Complete Slice 3: normalize registry-bound SportScore fixtures into provider-neutral canonical records, exclude in-play records before persistence, merge against last-good state, and atomically publish immutable warehouse/serving snapshots without writing match detail.
 
 ## Planned TDD Slices
 
@@ -81,8 +82,19 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - Mock fixture fields were aligned to the current published OpenAPI `MatchSummary` schema using invented teams; no live SportScore payload is committed.
 - Only public developer documentation/OpenAPI was read. No SportScore data endpoint was called, so this is local evidence only and does not resolve the `/api/v1/fixtures/` terms-scope blocker.
 
+## Slice 3 Local Evidence — 2026-08-26
+
+- RED observed: the adapter and publication job suites failed because their production modules did not exist before implementation.
+- Focused verification passed 3 test files / 20 tests across the hardened client, the terminal-only adapter, and the publication job.
+- Adapter tests cover scheduled, finished, postponed, cancelled, malformed, club, and national-team fixtures; canonical IDs contain no provider identity and in-play scores/events produce no canonical records, links, or provenance.
+- Publication tests prove mixed live/scheduled responses cannot put live scores/events into canonical, serving, or detail stores; completed matches cannot regress even when kickoff changes; empty, partial, malformed, and all-live responses preserve the last-good manifest.
+- The provider-neutral snapshot merge reuses an existing canonical match ID through private source links after a reschedule and refuses to replace an existing serving snapshot that lacks a resolvable warehouse run.
+- Raw-evidence sanitization returns live records to the in-memory planner path but removes the entire live record, score, and events before bounded evidence is persisted.
+- The complete worker suite passed 7 test files / 27 tests. `pnpm run phase3:verify`, `pnpm run typecheck`, `pnpm run audit`, `pnpm run verify:product-boundary`, and `pnpm run verify:lifecycle` passed.
+- Worker scheduling remains explicitly idle. Slice 3 made no SportScore network request and did not enable daily sync or terminal rechecks.
+
 ## Next Gate
 
-The recommended next phase is `phase:code SportScore Public API Source — Slice 3 terminal-only adapter and last-good publication`.
+The recommended next phase is `phase:code SportScore Public API Source — Slice 4 daily per-competition sync and +15/+30 terminal checks`.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

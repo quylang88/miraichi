@@ -16,6 +16,10 @@ export interface SportScoreEvidenceRequestMetadata {
 export interface SportScoreRawEvidenceRecord {
   request: SportScoreEvidenceRequestMetadata;
   payload: unknown;
+  redactions?: {
+    inPlayMatchesOmitted?: number;
+    inPlayMatchDetailOmitted?: boolean;
+  };
 }
 
 export interface SportScoreRawEvidenceCacheOptions {

@@ -69,6 +69,8 @@
 
 ## Slice 3 — Terminal-only adapter and last-good publication
 
+**Status**: Complete locally on 2026-08-26; worker scheduling and provider network execution remain disabled.
+
 **Test first**
 
 - Create `sportscore-adapter.test.ts` for scheduled, finished, postponed, cancelled, malformed, club, and national-team fixtures.

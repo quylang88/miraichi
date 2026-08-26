@@ -304,4 +304,53 @@ describe('SportScoreClient request boundary', () => {
     expect(observations).toHaveLength(3);
     expect(observations.every((observation) => observation.authenticated)).toBe(true);
   });
+
+  it('returns in-play records to the caller but omits their snapshot from persisted raw evidence', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'miraichi-sportscore-live-evidence-'));
+    temporaryRoots.push(root);
+    const evidenceCache = new SportScoreRawEvidenceCache({ rootDirectory: root });
+    const payload = {
+      sport: 'football',
+      count: 2,
+      matches: [
+        {
+          home: 'Live Home',
+          away: 'Live Away',
+          home_score: 9,
+          away_score: 8,
+          status: 'live',
+          status_text: '82',
+          time: '2026-08-26T18:00:00Z',
+          slug: 'live-match-must-not-persist',
+          events: [{ minute: 82, player: 'Live Player Must Not Persist' }]
+        },
+        {
+          home: 'Scheduled Home',
+          away: 'Scheduled Away',
+          status: 'scheduled',
+          time: '2026-08-26T21:00:00Z',
+          slug: 'scheduled-match-may-persist'
+        }
+      ],
+      updated: '2026-08-26T20:00:00Z'
+    };
+    const client = new SportScoreClient({
+      evidenceCache,
+      fetchFn: vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(payload))
+    });
+
+    const returned = await client.getFixtures(fixturesRequest());
+    const evidenceFiles = (await readdir(root, { recursive: true, withFileTypes: true }))
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.json'));
+    const persisted = await readFile(
+      path.join(evidenceFiles[0]!.parentPath, evidenceFiles[0]!.name),
+      'utf8'
+    );
+
+    expect(returned.matches).toHaveLength(2);
+    expect(persisted).toContain('scheduled-match-may-persist');
+    expect(persisted).toContain('inPlayMatchesOmitted');
+    expect(persisted).not.toContain('live-match-must-not-persist');
+    expect(persisted).not.toContain('Live Player Must Not Persist');
+  });
 });

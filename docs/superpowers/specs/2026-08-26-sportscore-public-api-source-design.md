@@ -1,7 +1,7 @@
 # SportScore Public API Source Design
 
 - **Date**: 2026-08-26
-- **Status**: Owner-approved source boundary; Slices 0–2 complete locally, worker integration not started
+- **Status**: Owner-approved source boundary; Slices 0–3 complete locally, scheduler integration not started
 - **Decision**: ADR-0048
 
 ## Goal

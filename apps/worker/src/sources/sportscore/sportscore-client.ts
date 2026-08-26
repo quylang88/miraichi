@@ -10,6 +10,7 @@ import {
   type SportScoreEvidenceRequestMetadata,
   type SportScoreRawEvidenceCache
 } from './sportscore-raw-evidence-cache.js';
+import { mapSportScoreStatus } from './sportscore-adapter.js';
 
 export type SportScoreClientErrorCode =
   | 'invalid_configuration'
@@ -179,6 +180,53 @@ function redactSecret(value: unknown, secret: string | undefined): unknown {
     ]));
   }
   return value;
+}
+
+function sanitizeEvidencePayload(
+  endpoint: 'fixtures' | 'match',
+  payload: unknown
+): {
+  payload: unknown;
+  redactions?: {
+    inPlayMatchesOmitted?: number;
+    inPlayMatchDetailOmitted?: boolean;
+  };
+} {
+  if (!isRecord(payload)) return { payload };
+
+  if (endpoint === 'fixtures' && Array.isArray(payload.matches)) {
+    let inPlayMatchesOmitted = 0;
+    const matches = payload.matches.filter((match) => {
+      if (!isRecord(match)) return true;
+      const status = mapSportScoreStatus(match.status) ?? mapSportScoreStatus(match.status_text);
+      if (status !== 'in_play') return true;
+      inPlayMatchesOmitted += 1;
+      return false;
+    });
+    return {
+      payload: { ...payload, matches },
+      ...(inPlayMatchesOmitted === 0 ? {} : {
+        redactions: { inPlayMatchesOmitted }
+      })
+    };
+  }
+
+  if (endpoint === 'match') {
+    const match = isRecord(payload.match) ? payload.match : payload;
+    const status = mapSportScoreStatus(match.status) ?? mapSportScoreStatus(match.status_text);
+    if (status === 'in_play') {
+      return {
+        payload: {},
+        redactions: { inPlayMatchDetailOmitted: true }
+      };
+    }
+  }
+
+  return { payload };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export class SportScoreClient {
@@ -424,9 +472,11 @@ export class SportScoreClient {
       });
       if (this.evidenceCache) {
         try {
+          const evidence = sanitizeEvidencePayload(descriptor.endpoint, rawPayload);
           await this.evidenceCache.write({
             request: evidenceMetadata,
-            payload: redactSecret(rawPayload, this.apiKey)
+            payload: redactSecret(evidence.payload, this.apiKey),
+            ...(evidence.redactions === undefined ? {} : { redactions: evidence.redactions })
           });
         } catch {
           // Diagnostic evidence must not turn a valid provider response into data loss.
