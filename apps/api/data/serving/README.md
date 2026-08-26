@@ -72,28 +72,27 @@ Set only `API_FOOTBALL_KEY` in `.env`. The first live call must use an isolated,
 
 ```powershell
 $smokeRoot = Join-Path (Get-Location) '.cache\api-football-smoke'
-pnpm run data:seed:api-football -- --competition=eng-premier-league --season=current --limit=1 --data-root=$smokeRoot
+pnpm run data:seed:api-football -- --competition=eng-premier-league --season=2024 --limit=1 --data-root=$smokeRoot
 pnpm run api-football:quota-status -- --data-root=$smokeRoot
 ```
 
 That smoke consumes one provider request. Do not start active hydration from a fresh ledger on the same provider day; wait for the next UTC provider-day reset so the active ledger and provider quota start aligned.
 
-After smoke evidence and staging approval, hydrate the active root one fair season layer per quiet provider day:
+The explicit `2024` season is intentional for the Free plan. On 2026-08-26, the provider rejected Premier League season 2026 with `Free plans do not have access to this season, try from 2022 to 2024.` Do not use `--season=current`, `previous`, or `older` with a Free key unless every resolved registry season is inside the provider-accessible range: a rejected target still consumes a request. The CLI exits non-zero when any selected target fails.
+
+With a Free key, hydrate only an explicitly accessible historical season, one fair batch per quiet provider day:
 
 ```powershell
 pnpm run api-football:quota-status
-pnpm run data:seed:api-football -- --season=current --limit=50
-
-# Run on a later provider day after quota status confirms reset:
-pnpm run data:seed:api-football -- --season=previous --limit=50
-
-# Run on another later provider day after quota status confirms reset:
-pnpm run data:seed:api-football -- --season=older --limit=50
+pnpm run data:seed:api-football -- --season=2024 --limit=50
 ```
+
+Current fixtures, daily result updates, and the best-effort terminal-result SLO cannot operate from historical-only Free-plan access. Do not pretend that the 100-request allowance solves this: a provider plan with current-season access is required before enabling the active daily worker. Once that access is verified, the `current`, `previous`, and `older` layer commands may be used on separate provider days.
 
 Operational rules:
 
 - Each selected competition-season target normally costs one request. Checkpoints skip completed targets after interruption.
+- Provider errors also cost a request; verify season entitlement with a one-target isolated smoke before any 50-target run.
 - The durable normal ceiling is 85 requests per UTC provider day; the final 15 of the free-plan 100 are not used automatically.
 - Fifty hydration requests leave at most 35 normal requests for the one daily sync, result polling, and lazy detail. On a busy match day, reduce hydration to 20–30 targets or skip it.
 - Do not delete `hydration-checkpoints.json` or `api-football/usage-ledger.json`; doing so destroys resume/quota knowledge.

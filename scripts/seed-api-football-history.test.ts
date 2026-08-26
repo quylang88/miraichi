@@ -3,6 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
+  getSeedHistoryCliExitCode,
   parseSeedHistoryArgs,
   runSeedApiFootballHistoryCli
 } from './seed-api-football-history.js';
@@ -133,6 +134,23 @@ describe('parseSeedHistoryArgs', () => {
 });
 
 describe('runSeedApiFootballHistoryCli', () => {
+  it('returns a failing process code when any hydration target failed', () => {
+    const baseResult = {
+      status: 'completed' as const,
+      runId: 'run-test',
+      seasonsHydrated: 1,
+      matchesHydrated: 1,
+      emptyCount: 0,
+      failedCount: 0,
+      pendingCount: 0,
+      quotaUsedToday: 1
+    };
+
+    expect(getSeedHistoryCliExitCode(baseResult)).toBe(0);
+    expect(getSeedHistoryCliExitCode({ ...baseResult, status: 'failed', failedCount: 1 })).toBe(1);
+    expect(getSeedHistoryCliExitCode({ ...baseResult, status: 'partial', failedCount: 1, pendingCount: 1 })).toBe(1);
+  });
+
   it('executes hydration job and returns structured result without leaking API keys', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-seed-cli-'));
     const dataRoot = join(tempDir, 'data');

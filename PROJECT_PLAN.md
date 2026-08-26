@@ -5,8 +5,8 @@
 - **Status**: Active
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Completed phase**: `phase:integration-test API-Football Correctness, Quota Hardening, And Basic Match Detail` — Slice 9 and the local large-boundary gates passed on 2026-08-26, covering multi-season resume, durable quota, due batching, terminal detail, API serving, endpoint E2E, and PWA verification.
-- **Active phase**: Local integration is closed; `phase:staging` and its one-request contained live-key smoke are blocked until explicit owner approval.
-- **Promotion state**: staging, owner feedback, and production are not started or approved.
+- **Active phase**: `phase:staging API-Football contained live-key smoke` started with explicit owner approval on 2026-08-26. Release/build gates passed, but staging is blocked by provider season entitlement and missing deploy/runtime API configuration.
+- **Promotion state**: staging is started but not passed; owner feedback and production are not started or approved.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -77,12 +77,24 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - `pnpm run test:integration` — passed across phase3 verify, api-football integration, test endpoints E2E, and PWA verify.
 - `git diff --check` — passed with 0 whitespace issues.
 
-The local integration evidence proves the corrected API-Football boundary locally. Live provider key and staging deployment remain subject to owner authorization.
+The local integration evidence proves the corrected API-Football boundary locally. It does not prove current-season provider entitlement or a working deployed staging API.
+
+## Staging Evidence — 2026-08-26
+
+- Owner authorized exactly one API-Football request against isolated root `.cache/api-football-smoke`; no active-root hydration or production promotion was authorized.
+- `pnpm run verify:staging` passed locally, including 93 unit-test files / 600 tests, API-Football integration, endpoint E2E, PWA verification, and static build.
+- `pnpm run build:web-static` passed and generated `apps/web/dist`.
+- The single request targeted Premier League league 39, registry current season 2026. The provider rejected it with `Free plans do not have access to this season, try from 2022 to 2024.`
+- Isolated ledger evidence is exactly 1 reserved / 1 confirmed request. The failed checkpoint is durable; no warehouse run, serving version, or serving manifest was published.
+- Public alias `https://miraichi-staging.pages.dev` is reachable, but it is an older static deployment. The strengthened smoke correctly fails because the root lacks the current import map/runtime environment and Pages fallback HTML is returned for current client modules.
+- Local `.env` has no `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, or `STAGING_URL`; `API_URL` is local-only. This machine cannot redeploy a functional web/API staging pair yet.
+- The seed CLI now returns a non-zero process code when any target fails. The staging smoke rejects stale SPA fallback responses and local-only API configuration, then requires the configured staging API `/api/v1/health` route to return factual JSON health.
 
 ## Later Phases
 
-1. Owner explicitly approves `phase:staging API-Football contained live-key smoke` and the single provider request against the isolated `.cache/api-football-smoke` root.
-2. Run the contained smoke, record quota/serving evidence, then run staging build/deployment/smoke gates.
-3. Final owner feedback and production promotion only after all release gates pass.
+1. Choose provider scope honestly: keep Free plan for historical 2022-2024 only, or obtain a plan with current-season access before enabling current fixtures/results.
+2. Do not make another provider request under the completed one-request approval. If retaining Free plan, authorize a later one-request smoke using explicit season 2024 after quota/approval review.
+3. Configure a remotely reachable staging API URL plus Cloudflare credentials, rebuild, deploy the current Pages artifact, and pass the strengthened staging smoke.
+4. Final owner feedback and production promotion only after all release and staging gates pass.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

@@ -19,6 +19,7 @@ type StagingSmokeCheck = {
   label: string;
   url: string;
   markers?: string[];
+  forbiddenMarkers?: string[];
   json?: Record<string, unknown>;
 };
 
@@ -50,7 +51,8 @@ export function buildStagingSmokeChecks(
     {
       label: 'root shell',
       url: `${baseUrl}/`,
-      markers: ['Miraichi', 'shell-entry', 'app-root']
+      markers: ['Miraichi', 'shell-entry', 'app-root', 'type="importmap"', 'window.MIRAICHI_ENV', 'API_URL'],
+      forbiddenMarkers: ['API_URL: "http://localhost', 'API_URL: "http://127.0.0.1']
     },
     {
       label: 'manifest',
@@ -67,12 +69,26 @@ export function buildStagingSmokeChecks(
     {
       label: 'shell entry',
       url: `${baseUrl}/apps/web/src/shell-entry.js`,
-      markers: ['renderAppShell']
+      markers: ['renderAppShell'],
+      forbiddenMarkers: ['<!DOCTYPE html>']
+    },
+    {
+      label: 'client environment',
+      url: `${baseUrl}/apps/web/src/config/client-env.js`,
+      markers: ['getApiBaseUrl'],
+      forbiddenMarkers: ['<!DOCTYPE html>']
+    },
+    {
+      label: 'match feed service',
+      url: `${baseUrl}/apps/web/src/services/match-feed-service.js`,
+      markers: ['/api/v1/matches'],
+      forbiddenMarkers: ['<!DOCTYPE html>']
     },
     {
       label: 'ui css',
       url: `${baseUrl}/packages/ui/src/index.css`,
-      markers: ['main-scroll']
+      markers: ['main-scroll'],
+      forbiddenMarkers: ['<!DOCTYPE html>']
     }
   ];
 }
@@ -83,6 +99,34 @@ export function resolveCliBaseUrl(
 ) {
   const args = argv.slice(2).filter((arg) => arg !== '--');
   return args[0] || env.STAGING_URL;
+}
+
+export function resolveStagingApiBaseUrl(rootHtml: string, rawPageBaseUrl: string): string {
+  const match = rootHtml.match(/\bAPI_URL\s*:\s*(["'])(.*?)\1/u);
+  if (!match) {
+    throw new Error('root shell does not expose API_URL');
+  }
+
+  const pageBaseUrl = normalizeBaseUrl(rawPageBaseUrl);
+  const rawApiBaseUrl = String(match[2] || '').trim() || pageBaseUrl;
+  let apiUrl: URL;
+
+  try {
+    apiUrl = new URL(rawApiBaseUrl);
+  } catch {
+    throw new Error('API_URL is not an absolute URL');
+  }
+
+  if (apiUrl.protocol !== 'http:' && apiUrl.protocol !== 'https:') {
+    throw new Error('API_URL must use HTTP or HTTPS');
+  }
+
+  const hostname = apiUrl.hostname.toLowerCase();
+  if (hostname === 'localhost' || hostname.endsWith('.localhost') || hostname === '127.0.0.1' || hostname === '::1') {
+    throw new Error('API_URL points to a loopback host');
+  }
+
+  return apiUrl.toString().replace(/\/+$/, '');
 }
 
 function compareJsonField(parsedJson: Record<string, unknown> | null | undefined, key: string, expectedValue: unknown) {
@@ -132,6 +176,18 @@ async function runOneCheck(check: StagingSmokeCheck, fetchImpl: SmokeFetch): Pro
         ok: false,
         status: response.status,
         message: `missing marker: ${marker}`
+      };
+    }
+  }
+
+  for (const marker of check.forbiddenMarkers || []) {
+    if (body.includes(marker)) {
+      return {
+        label: check.label,
+        url: check.url,
+        ok: false,
+        status: response.status,
+        message: `forbidden marker: ${marker}`
       };
     }
   }
@@ -194,6 +250,53 @@ export async function runStagingSmokeCheck({
   for (const check of checks) {
     results.push(await runOneCheck(check, fetchImpl));
   }
+
+  let rootHtml = '';
+  try {
+    const rootResponse = await fetchImpl(`${normalizeBaseUrl(baseUrl)}/`, {
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
+    rootHtml = await rootResponse.text();
+  } catch (error) {
+    results.push({
+      label: 'runtime API config',
+      url: `${normalizeBaseUrl(baseUrl)}/`,
+      ok: false,
+      status: 0,
+      message: error instanceof Error ? error.message : 'request failed'
+    });
+    return { ok: false, results };
+  }
+
+  let apiBaseUrl: string;
+  try {
+    apiBaseUrl = resolveStagingApiBaseUrl(rootHtml, normalizeBaseUrl(baseUrl));
+    results.push({
+      label: 'runtime API config',
+      url: apiBaseUrl,
+      ok: true,
+      status: 200,
+      message: 'ok'
+    });
+  } catch (error) {
+    results.push({
+      label: 'runtime API config',
+      url: `${normalizeBaseUrl(baseUrl)}/`,
+      ok: false,
+      status: 200,
+      message: error instanceof Error ? error.message : 'invalid API_URL'
+    });
+    return { ok: false, results };
+  }
+
+  results.push(await runOneCheck({
+    label: 'API health',
+    url: `${apiBaseUrl}/api/v1/health`,
+    json: { status: 'ok' },
+    forbiddenMarkers: ['<!DOCTYPE html>']
+  }, fetchImpl));
 
   return {
     ok: results.every((result) => result.ok),

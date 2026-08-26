@@ -546,18 +546,16 @@ pnpm run api-football:quota-status
 First contained smoke against a non-serving data root:
 
 ```powershell
-pnpm run data:seed:api-football -- --competition=eng-premier-league --season=current --limit=1 --data-root C:\CODE\miraichi\.local\api-football-smoke
+pnpm run data:seed:api-football -- --competition=eng-premier-league --season=2024 --limit=1 --data-root C:\CODE\miraichi\.cache\api-football-smoke
 ```
 
-After smoke evidence and owner staging approval, hydrate one fair layer per quiet provider day:
+After smoke evidence and owner staging approval, a Free-plan key may hydrate only an explicitly entitled historical season per quiet provider day:
 
 ```powershell
-pnpm run data:seed:api-football -- --season=current --limit=50
-pnpm run data:seed:api-football -- --season=previous --limit=50
-pnpm run data:seed:api-football -- --season=older --limit=50
+pnpm run data:seed:api-football -- --season=2024 --limit=50
 ```
 
-The second and third commands run only on later provider days after quota status confirms reset. Busy match days reduce hydration limit to preserve polling budget. The worker performs the one daily sync and smart-window/detail work through the same durable ledger.
+This correction follows live evidence from 2026-08-26: the Free plan rejected season 2026 and directed use of seasons 2022-2024. A rejected request still consumed quota. Current-season hydration, daily sync, smart-window polling, and detail work therefore require a provider plan with current-season access; the Free-plan 100-request allowance alone is insufficient.
 
 ## Plan Exit Gate
 

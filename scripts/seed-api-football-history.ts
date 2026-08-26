@@ -39,6 +39,10 @@ export interface SeedHistoryCliOptions {
   logFn?: ((message: string) => void) | undefined;
 }
 
+export function getSeedHistoryCliExitCode(result: ApiFootballHydrationRunResult): 0 | 1 {
+  return result.status === 'failed' || result.failedCount > 0 ? 1 : 0;
+}
+
 export function parseSeedHistoryArgs(args: string[], cwd: string = process.cwd()): ParsedSeedHistoryArgs {
   let limit: number | undefined;
   let competition: string | undefined;
@@ -181,8 +185,12 @@ if (process.argv[1] && (
   process.argv[1].endsWith('seed-api-football-history.ts') ||
   process.argv[1].endsWith('seed-api-football-history.js')
 )) {
-  runSeedApiFootballHistoryCli().catch((err) => {
-    console.error('\nHydration failed with error:', err instanceof Error ? err.message : String(err));
-    process.exit(1);
-  });
+  runSeedApiFootballHistoryCli()
+    .then((result) => {
+      process.exitCode = getSeedHistoryCliExitCode(result);
+    })
+    .catch((err) => {
+      console.error('\nHydration failed with error:', err instanceof Error ? err.message : String(err));
+      process.exitCode = 1;
+    });
 }
