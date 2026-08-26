@@ -37,6 +37,20 @@ const TEST_COMPETITIONS: readonly ApiFootballCompetitionEntry[] = [
     historicalSeasons: [2025],
     sourceTimezone: 'Europe/Madrid',
     enabled: true
+  },
+  {
+    entryId: 'api-football-fifa-world-cup',
+    sourceId: 'api-football',
+    competitionId: 'fifa-world-cup',
+    competitionName: 'FIFA World Cup',
+    country: 'World',
+    category: 'international',
+    competitionType: 'national-team',
+    providerLeagueId: 1,
+    currentSeason: 2026,
+    historicalSeasons: [2022],
+    sourceTimezone: 'UTC',
+    enabled: true
   }
 ];
 
@@ -186,6 +200,11 @@ describe('API-Football Rapid Match Source End-to-End Integration', () => {
 
       expect(hydrationResult.status).toBe('completed');
       expect(checkpointManager.isHydrated(39, 2025)).toBe(true);
+      expect(checkpointManager.isHydrated(1, 2022)).toBe(true);
+      const hydratedRepository = new ServingMatchStoreRepository({ servingRoot: join(tempDir, 'serving') });
+      const hydratedSnapshot = await hydratedRepository.listMatches();
+      expect(new Set(hydratedSnapshot.matches.map((match) => match.competition.type)))
+        .toEqual(new Set(['club', 'national-team']));
 
       // 2. Run Daily Sync at 05:00 UTC
       const dailySyncResult = await runApiFootballIngestionJob({

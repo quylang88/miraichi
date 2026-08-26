@@ -209,12 +209,14 @@ describe('runCaptureApiFootballCli', () => {
         };
       });
 
-      const ledger = new ApiFootballUsageLedger({ dataRoot });
+      const simulatedNow = () => new Date(`${targetDate}T08:00:00.000Z`);
+      const ledger = new ApiFootballUsageLedger({ dataRoot, now: simulatedNow });
       const client = new ApiFootballClient({
         apiKey: 'secret-api-key-999',
         fetchFn: mockFetch as unknown as typeof fetch,
         ledger,
-        dataRoot
+        dataRoot,
+        now: simulatedNow
       });
 
       const result = await runCaptureApiFootballCli({
@@ -372,15 +374,16 @@ describe('runCaptureApiFootballCli', () => {
     const mockFetch = vi.fn();
 
     try {
-      // Set hard ceiling of 1 and exhaust it
-      const ledger = new ApiFootballUsageLedger({ dataRoot, hardCeiling: 1 });
+      const simulatedNow = () => new Date('2026-08-25T08:00:00.000Z');
+      const ledger = new ApiFootballUsageLedger({ dataRoot, hardCeiling: 1, now: simulatedNow });
       await ledger.reserveSlot();
 
       const client = new ApiFootballClient({
         apiKey: 'secret-key-quota',
         fetchFn: mockFetch as unknown as typeof fetch,
         ledger,
-        dataRoot
+        dataRoot,
+        now: simulatedNow
       });
 
       const result = await runCaptureApiFootballCli({

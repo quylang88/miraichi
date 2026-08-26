@@ -48,7 +48,7 @@
     "pwa:verify": "tsx scripts/pwa-verify.ts",
     "api-football:verify": "vitest run packages/config/src/api-football-source-registry.test.ts apps/worker/src/sources/api-football apps/worker/src/jobs/api-football-",
     "api-football:quota-status": "tsx scripts/quota-status-api-football.ts",
-    "api-football:integration": "vitest run tests/integration/api-football-rapid-match-source.test.ts",
+    "api-football:integration": "vitest run tests/integration/api-football-rapid-match-source.test.ts tests/integration/api-football-quota-resume.test.ts tests/integration/api-football-match-detail.test.ts",
     "typecheck": "tsc -p tsconfig.base.json --noEmit"
   },
   "engines": {

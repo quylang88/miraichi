@@ -4,8 +4,8 @@
 
 - **Status**: Active
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
-- **Completed phase**: `phase:code-slice API-Football Correctness, Quota Hardening, And Basic Match Detail — Slice 8` — basic factual match detail UI, timeline, two-team stats, missing-data labels, pending/loading states, and i18n catalogs were completed locally on 2026-08-26.
-- **Active phase**: Slice 8 is closed locally; Slice 9 large-boundary integration tests and docs closeout have not been started.
+- **Completed phase**: `phase:integration-test API-Football Correctness, Quota Hardening, And Basic Match Detail` — Slice 9 and the local large-boundary gates passed on 2026-08-26, covering multi-season resume, durable quota, due batching, terminal detail, API serving, endpoint E2E, and PWA verification.
+- **Active phase**: Local integration is closed; `phase:staging` and its one-request contained live-key smoke are blocked until explicit owner approval.
 - **Promotion state**: staging, owner feedback, and production are not started or approved.
 - **Current lifecycle source of truth**: this file.
 
@@ -48,7 +48,7 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Create extensible 50-competition registry in `packages/config` with zero hardcoded tournament biases.
 - [x] Implement API-Football client with Daily Quota Guard (85 req/day ceiling + 15 reserve).
 - [x] Implement multi-season historical hydration job with idempotent checkpoint resume.
-- [x] Implement Smart Window Polling (SLA <= 5 min for FT results) and publication validator.
+- [x] Implement the initial Smart Window Polling boundary, later corrected to the owner-approved best-effort SLO <= 5 minutes with quota/coverage deferrals.
 - [x] Completely eradicate OpenFootball registries, parsers, capture scripts, and fixtures.
 - [x] End-to-end integration test proving hydration, daily sync, fast poll, and API serving across 50 leagues.
 - [x] Review commits `92e7eca` and `b14bdea`; identify snapshot replacement, non-durable quota, repeated daily sync, season/identity drift, fixed hydration order, unbounded ID batches, and empty match-detail blockers.
@@ -62,24 +62,27 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Complete Slice 6: enforce one owner-local daily sync, provider-timezone requests, durable next-due result polling, 20-ID chunks, and terminal-only public-store mutation.
 - [x] Complete Slice 7: queue only completed historical cache misses, lazily refresh detail in 20-ID provider batches, and terminally cache explicit coverage warnings.
 - [x] Complete Slice 8: render basic factual match detail context, score breakdown, events timeline, team statistics, unavailable/pending states, and EN/VI catalogs without betting advice.
-- [ ] Complete Slice 9: prove the corrected large boundary through integration tests, documentation closeout, and local lifecycle verification.
-- [ ] Prove complete-snapshot preservation, durable quota across restarts, one daily sync, 20-ID chunking, fair 50/51+ hydration, extended terminal polling, and cached match detail.
+- [x] Complete Slice 9: prove the corrected large boundary through integration tests, documentation closeout, and local lifecycle verification.
+- [x] Prove complete-snapshot preservation, durable quota across restarts, one daily sync, 20-ID chunking, fair 50/51+ hydration, extended terminal polling, and cached match detail.
 
-## Local Integration Evidence — 2026-08-25
+## Local Integration Evidence — 2026-08-26
 
-- `pnpm run verify:product-boundary` — passed; OpenFootball paths and legacy AI paths strictly forbidden.
-- `pnpm run verify:local` — passed across shared, config, worker, api, and web packages.
-- `pnpm run test:integration` — passed covering API-Football multi-season hydration, daily sync, smart window polling, and serving store publication.
-- Quota guard protects free tier (100 req/day) with 85 req ceiling and 15 reserve.
+- `pnpm run api-football:verify` — passed across 12 test files, 130 tests covering registry, adapter, client, checkpoints, leases, ledger, schedule planner, hydration, snapshot merge, ingestion, and match detail jobs.
+- `pnpm run api-football:integration` — passed all 9 tests across 3 integration suites:
+  - `tests/integration/api-football-rapid-match-source.test.ts` (multi-season hydration, daily sync, window poll, club + national-team).
+  - `tests/integration/api-football-quota-resume.test.ts` (multi-season checkpoint resume across process restarts, durable quota ceiling, 20-ID chunking, rolling rate limiter pacing).
+  - `tests/integration/api-football-match-detail.test.ts` (202 pending -> worker refresh -> 200 cached detail, provider credential/fixture ID leak prevention, scheduled non-enqueueing).
+- `pnpm run verify:product-boundary` — passed; four primary tabs strictly maintained, zero betting advice or AI paths.
+- `pnpm run verify:local` — passed across all 93 test files (596 tests), syntax linting, TypeScript base typecheck, audit rules, and type safety audits.
+- `pnpm run test:integration` — passed across phase3 verify, api-football integration, test endpoints E2E, and PWA verify.
+- `git diff --check` — passed with 0 whitespace issues.
 
-The 2026-08-25 commit review invalidated the API-Football-specific conclusions above as release evidence: the commands passed, but their tests did not cover repeated snapshot preservation, process restarts, real due gating, provider header reconciliation, batches above 20 IDs, or non-empty match detail. The evidence remains historical local command output and is not staging approval.
+The local integration evidence proves the corrected API-Football boundary locally. Live provider key and staging deployment remain subject to owner authorization.
 
 ## Later Phases
 
-1. Start `phase:code-slice API-Football Correctness, Quota Hardening, And Basic Match Detail` with Slice 9 from the approved implementation plan.
-2. Run a fresh `phase:integration-test` as Slice 9's large-boundary gate.
-3. Request staging approval before any live-key smoke or initial historical hydration.
-4. Staging deployment and smoke evidence.
-5. Final owner feedback and production promotion only after all release gates pass.
+1. Owner explicitly approves `phase:staging API-Football contained live-key smoke` and the single provider request against the isolated `.cache/api-football-smoke` root.
+2. Run the contained smoke, record quota/serving evidence, then run staging build/deployment/smoke gates.
+3. Final owner feedback and production promotion only after all release gates pass.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

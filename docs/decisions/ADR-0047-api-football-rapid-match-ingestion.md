@@ -10,7 +10,7 @@
 
 Miraichi requires broad fixture and result coverage across 50 prominent club and cup competitions globally, with a best-effort objective of publishing match results within <= 5 minutes of match conclusion (`FT`) while provider availability, known-fixture state, and normal quota make the attempt eligible.
 
-OpenFootball (ADR-0045) was a structured-text dataset maintained asynchronously by GitHub contributors. While CC0 and credential-free, OpenFootball cannot meet the 5-minute result SLA because upstream file updates occur hours or days after matches finish, and coverage is limited. Furthermore, previous phases contained hardcoded biases toward certain tournaments (e.g. World Cup national-team priority).
+OpenFootball (ADR-0045) was a structured-text dataset maintained asynchronously by GitHub contributors. While CC0 and credential-free, OpenFootball cannot support the originally requested five-minute result target because upstream file updates occur hours or days after matches finish, and coverage is limited. Furthermore, previous phases contained hardcoded biases toward certain tournaments (e.g. World Cup national-team priority).
 
 The project owner requires:
 1. Complete removal of OpenFootball and elimination of all hardcoded competition priorities in core code.
@@ -57,9 +57,15 @@ The project owner requires:
 7. **Legacy Cleanup**:
    - All OpenFootball registries, text parsers, capture scripts, and fixtures are deleted.
 
+8. **Operational Promotion Boundary**:
+   - Passing local unit/integration gates does not authorize a live provider call or production promotion.
+   - The first credentialed request uses a contained non-serving smoke root and a single competition-season target.
+   - Active-root hydration starts only after explicit staging approval and is spread by fair season layer across separate provider days.
+   - The durable quota ledger and hydration checkpoints are operational state and must not be deleted to force progress.
+
 ## Consequences
 
-- Eligible match results target publication on `/api/matches` within <= 5 minutes of final whistle; quota/provider/coverage deferrals are reported honestly and do not constitute a hard SLA.
+- Eligible match results target publication on `/api/v1/matches` within <= 5 minutes of final whistle; quota/provider/coverage deferrals are reported honestly and do not constitute a hard SLA.
 - Free tier quota (100 req/day) reserves the final 15 requests outside automatic normal operation and reconciles provider-reported usage.
 - After successful hydration, the app retains current schedules plus the configured 1–2 historical seasons for 50 competitions.
 - Complete competition-agnostic architecture ensures adding or removing leagues is frictionless.

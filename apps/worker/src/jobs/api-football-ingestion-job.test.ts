@@ -861,7 +861,8 @@ describe('runApiFootballIngestionJob', () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'miraichi-ingest-no-quota-'));
 
     try {
-      const ledger = new ApiFootballUsageLedger({ dataRoot: tempDir, hardCeiling: 1 });
+      const simulatedNow = () => new Date('2026-08-25T05:00:00.000Z');
+      const ledger = new ApiFootballUsageLedger({ dataRoot: tempDir, hardCeiling: 1, now: simulatedNow });
       await ledger.reserveSlot(); // Quota exhausted (1/1)
 
       const mockFetch = vi.fn();

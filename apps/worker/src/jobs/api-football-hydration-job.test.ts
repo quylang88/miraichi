@@ -417,7 +417,8 @@ describe('runApiFootballHydrationJob', () => {
     const { ApiFootballUsageLedger } = await import('../sources/api-football/api-football-usage-ledger.js');
 
     try {
-      const ledger = new ApiFootballUsageLedger({ dataRoot: tempDir, hardCeiling: 1 });
+      const simulatedNow = () => new Date('2026-08-25T12:00:00.000Z');
+      const ledger = new ApiFootballUsageLedger({ dataRoot: tempDir, hardCeiling: 1, now: simulatedNow });
       await ledger.reserveSlot(); // Consume the 1 allowed slot
 
       const mockFetch = vi.fn();
