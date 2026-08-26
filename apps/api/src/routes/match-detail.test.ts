@@ -214,7 +214,9 @@ describe('match detail route', () => {
             redCards: 0,
             totalShots: 12,
             shotsOnGoal: 6,
-            possessionPercentage: 55
+            possessionPercentage: 55,
+            fouls: 9,
+            offsides: 2
           },
           {
             teamId: 'team-beta',
@@ -224,7 +226,25 @@ describe('match detail route', () => {
             redCards: 0,
             totalShots: 8,
             shotsOnGoal: 4,
-            possessionPercentage: 45
+            possessionPercentage: 45,
+            fouls: 12,
+            offsides: 1
+          }
+        ],
+        lineups: [
+          {
+            teamId: 'team-alpha',
+            teamName: 'Alpha FC',
+            formation: '4-3-3',
+            starters: [{ name: 'Alpha Goalkeeper', shirtNumber: 1, position: 'GK' }],
+            substitutes: []
+          },
+          {
+            teamId: 'team-beta',
+            teamName: 'Beta United',
+            formation: null,
+            starters: [],
+            substitutes: []
           }
         ],
         warnings: ['statistics_partial'],
@@ -251,6 +271,11 @@ describe('match detail route', () => {
       expect(body.referee).toBe('Referee Smith');
       expect(body.events).toHaveLength(2);
       expect(body.teamStats).toHaveLength(2);
+      expect(body.teamStats?.[0]).toMatchObject({ fouls: 9, offsides: 2 });
+      expect(body.lineups?.[0]).toMatchObject({
+        teamId: 'team-alpha',
+        formation: '4-3-3'
+      });
       expect(body.warnings).toEqual(['statistics_partial']);
       expect(body.notes).toEqual(['Historical match detail captured']);
 

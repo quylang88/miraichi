@@ -5,6 +5,7 @@ import type {
   LocalMatch,
   LocalMatchDetail,
   LocalMatchEvent,
+  LocalMatchLineup,
   LocalMatchSourceRef,
   LocalMatchTeamStats,
   LocalScoreBreakdown
@@ -230,6 +231,7 @@ export function mergeDetails(existing: LocalMatchDetail, incoming: LocalMatchDet
     // Incoming is newer or equal: use incoming as primary base
     const mergedScoreBreakdown = mergeScoreBreakdown(incoming.scoreBreakdown, existing.scoreBreakdown);
     const mergedTeamStats = mergeTeamStats(incoming.teamStats, existing.teamStats);
+    const mergedLineups = mergeLineups(incoming.lineups, existing.lineups, incoming.warnings);
     const mergedEvents = mergeEvents(incoming.events, existing.events, incoming.warnings);
     const mergedWarnings = mergeWarnings(existing.warnings, incoming.warnings);
     const mergedNotes = mergeStringArrays(existing.notes, incoming.notes);
@@ -248,6 +250,7 @@ export function mergeDetails(existing: LocalMatchDetail, incoming: LocalMatchDet
       ...(mergedScoreBreakdown !== undefined ? { scoreBreakdown: mergedScoreBreakdown } : {}),
       events: mergedEvents,
       ...(mergedTeamStats !== undefined ? { teamStats: mergedTeamStats } : {}),
+      ...(mergedLineups !== undefined ? { lineups: mergedLineups } : {}),
       ...(mergedWarnings !== undefined ? { warnings: mergedWarnings } : {}),
       ...(mergedNotes !== undefined ? { notes: mergedNotes } : {}),
       updatedAt: incoming.updatedAt
@@ -256,6 +259,7 @@ export function mergeDetails(existing: LocalMatchDetail, incoming: LocalMatchDet
     // Incoming is older: keep existing as base and only merge non-conflicting properties
     const mergedScoreBreakdown = mergeScoreBreakdown(existing.scoreBreakdown, incoming.scoreBreakdown);
     const mergedTeamStats = mergeTeamStats(existing.teamStats, incoming.teamStats);
+    const mergedLineups = mergeLineups(existing.lineups, incoming.lineups, existing.warnings);
     const mergedEvents = mergeEvents(existing.events, incoming.events, existing.warnings);
     const mergedWarnings = mergeWarnings(incoming.warnings, existing.warnings);
     const mergedNotes = mergeStringArrays(existing.notes, incoming.notes);
@@ -271,6 +275,7 @@ export function mergeDetails(existing: LocalMatchDetail, incoming: LocalMatchDet
       ...(mergedScoreBreakdown !== undefined ? { scoreBreakdown: mergedScoreBreakdown } : {}),
       events: mergedEvents,
       ...(mergedTeamStats !== undefined ? { teamStats: mergedTeamStats } : {}),
+      ...(mergedLineups !== undefined ? { lineups: mergedLineups } : {}),
       ...(mergedWarnings !== undefined ? { warnings: mergedWarnings } : {}),
       ...(mergedNotes !== undefined ? { notes: mergedNotes } : {}),
       updatedAt: existing.updatedAt
@@ -362,6 +367,8 @@ function mergeTeamStats(
       result.push(pStat);
       continue;
     }
+    const mergedFouls = mergeOptionalNullableNumber(pStat.fouls, fStat.fouls);
+    const mergedOffsides = mergeOptionalNullableNumber(pStat.offsides, fStat.offsides);
     result.push({
       teamId: pStat.teamId,
       ...(pStat.teamName !== undefined
@@ -386,7 +393,9 @@ function mergeTeamStats(
         : (fStat.shotsOnGoal ?? null),
       possessionPercentage: pStat.possessionPercentage !== null && pStat.possessionPercentage !== undefined
         ? pStat.possessionPercentage
-        : (fStat.possessionPercentage ?? null)
+        : (fStat.possessionPercentage ?? null),
+      ...(mergedFouls !== undefined ? { fouls: mergedFouls } : {}),
+      ...(mergedOffsides !== undefined ? { offsides: mergedOffsides } : {})
     });
     fallbackByTeamId.delete(pStat.teamId);
   }
@@ -396,6 +405,46 @@ function mergeTeamStats(
   }
 
   return result;
+}
+
+function mergeOptionalNullableNumber(
+  primary?: number | null,
+  fallback?: number | null
+): number | null | undefined {
+  if (primary !== null && primary !== undefined) return primary;
+  if (fallback !== null && fallback !== undefined) return fallback;
+  if (primary === null || fallback === null) return null;
+  return undefined;
+}
+
+function mergeLineups(
+  primary?: LocalMatchLineup[],
+  fallback?: LocalMatchLineup[],
+  primaryWarnings?: string[]
+): LocalMatchLineup[] | undefined {
+  if (!primary && !fallback) return undefined;
+  if (!primary) return fallback;
+  if (!fallback) return primary;
+  const incomplete = primaryWarnings?.includes('lineups_partial')
+    || primaryWarnings?.includes('lineups_unavailable');
+  if (!incomplete) return primary;
+
+  const fallbackByTeamId = new Map(fallback.map((lineup) => [lineup.teamId, lineup]));
+  return primary.map((lineup) => {
+    const old = fallbackByTeamId.get(lineup.teamId);
+    if (!old) return lineup;
+    return {
+      teamId: lineup.teamId,
+      ...(lineup.teamName !== undefined
+        ? { teamName: lineup.teamName }
+        : old.teamName !== undefined
+          ? { teamName: old.teamName }
+          : {}),
+      formation: lineup.formation ?? old.formation,
+      starters: lineup.starters.length > 0 ? lineup.starters : old.starters,
+      substitutes: lineup.substitutes.length > 0 ? lineup.substitutes : old.substitutes
+    };
+  });
 }
 
 function mergeEvents(
@@ -424,7 +473,9 @@ function mergeEvents(
 function mergeWarnings(fallback?: string[], primary?: string[]): string[] | undefined {
   if (primary === undefined) return mergeStringArrays(fallback, undefined);
   const fallbackWithoutStaleCoverage = fallback?.filter((warning) => (
-    !warning.startsWith('events_') && !warning.startsWith('statistics_')
+    !warning.startsWith('events_') &&
+    !warning.startsWith('statistics_') &&
+    !warning.startsWith('lineups_')
   ));
   return mergeStringArrays(fallbackWithoutStaleCoverage, primary);
 }

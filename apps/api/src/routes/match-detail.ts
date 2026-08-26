@@ -96,6 +96,7 @@ export async function handleMatchDetail(
         ...(cachedDetail.referee !== undefined ? { referee: cachedDetail.referee } : {}),
         ...(cachedDetail.scoreBreakdown !== undefined ? { scoreBreakdown: cachedDetail.scoreBreakdown } : {}),
         ...(cachedDetail.teamStats !== undefined ? { teamStats: cachedDetail.teamStats } : {}),
+        ...(cachedDetail.lineups !== undefined ? { lineups: cachedDetail.lineups } : {}),
         ...(cachedDetail.warnings !== undefined ? { warnings: cachedDetail.warnings } : {}),
         ...(cachedDetail.notes !== undefined ? { notes: cachedDetail.notes } : {})
       };

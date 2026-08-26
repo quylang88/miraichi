@@ -77,6 +77,8 @@ export interface SportScoreFixturesRequest {
 
 export interface SportScoreMatchRequest {
   slug: string;
+  /** Per-call transport retry ceiling; detail jobs use zero to preserve request budgets. */
+  maxRetries?: number;
 }
 
 interface ResponseCacheEntry<T> {
@@ -328,6 +330,8 @@ export class SportScoreClient {
 
   getMatch(request: SportScoreMatchRequest): Promise<SportScoreMatchResponse> {
     validateSlug(request.slug, 'SportScore match');
+    const maxRetries = request.maxRetries ?? this.maxRetries;
+    requireNonNegativeInteger(maxRetries, 'SportScore match maxRetries');
     const url = new URL('/api/widget/match/', this.baseUrl);
     url.searchParams.set('sport', 'football');
     url.searchParams.set('slug', request.slug);
@@ -336,7 +340,8 @@ export class SportScoreClient {
     return this.request({
       endpoint: 'match',
       url,
-      parse: parseSportScoreMatchResponse
+      parse: parseSportScoreMatchResponse,
+      maxRetries
     });
   }
 

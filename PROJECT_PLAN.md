@@ -7,8 +7,8 @@
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
 - **Completed phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written.
-- **Active phase**: `phase:code SportScore Public API Source — Slice 4 daily per-competition sync and +15/+30 terminal checks` — implementation and local exit gate passed on 2026-08-26; transition awaits the next explicit owner command.
-- **Promotion state**: SportScore Slices 0–4 are complete locally; Slice 5+, integration, staging, owner feedback, and production have not started.
+- **Active phase**: `phase:code SportScore Public API Source — Slice 5 lazy terminal match detail` — implementation and local exit gate passed on 2026-08-27; transition awaits the next explicit owner command.
+- **Promotion state**: SportScore Slices 0–5 are complete locally; Slice 6+, integration, staging, owner feedback, and production have not started.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -35,6 +35,7 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Complete Slice 2: add the server-only anonymous/optional-key HTTP client, exact-origin containment, bounded cache/evidence, timeout, concurrency, retry, and sanitized request observations without wiring the worker.
 - [x] Complete Slice 3: normalize registry-bound SportScore fixtures into provider-neutral canonical records, exclude in-play records before persistence, merge against last-good state, and atomically publish immutable warehouse/serving snapshots without writing match detail.
 - [x] Complete Slice 4: fetch only competition-scoped fixture days, rotate work fairly with durable checkpoints, share +15/+30 terminal checks per competition window, use bounded recovery/backoff, and keep real network execution disabled by default.
+- [x] Complete Slice 5: consume the existing lazy detail queue only for canonical completed matches, normalize terminal events/lineups/basic statistics, preserve nullable coverage, bound requests/retries, and negative-cache confirmed unavailable detail.
 
 ## Planned TDD Slices
 
@@ -105,8 +106,17 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - The job requires an explicit owner-local `targetDate` and a competition-aware current-season resolver. It cannot silently substitute UTC day or invent a season label.
 - The worker entrypoint remains idle by default. SportScore scheduling starts only when an already-configured job is explicitly injected; no real SportScore endpoint was called and the `/api/v1/fixtures/` terms-scope staging blocker remains unresolved.
 
+## Slice 5 Local Evidence — 2026-08-27
+
+- RED observed: the focused worker suite could not import the missing SportScore detail adapter/job, while the route suite proved cached lineups were being discarded.
+- Focused verification passed 2 files / 19 tests; the complete local gate passed 83 test files / 477 tests plus product-boundary, lifecycle, syntax, TypeScript, architecture, and type-safety checks.
+- The existing API route returns scheduled/unknown summaries without enqueueing and coalesces repeated completed cache misses. The new worker independently rejects scheduled and in-play queue records before a provider request.
+- Each accepted detail item performs at most one HTTP attempt per run (`maxRetries: 0`), respects a run-level request ceiling, caches terminal normalized output, retries non-terminal/invalid responses with a durable future timestamp, and negative-caches missing source links or confirmed unavailable coverage.
+- The provider-neutral detail contract now supports goals/cards/substitutions, FT/HT/ET/penalty breakdown, formations/lineups, corners, cards, shots, possession, fouls, and offsides. Missing optional values remain null/unavailable; no odds, picks, expected goals, live telemetry, raw provider IDs, or provider URLs enter the public detail payload.
+- SportScore's published OpenAPI still does not provide a field-level response schema for match events, statistics, or lineups. Adapter tests therefore use invented defensive response shapes; real payload compatibility remains a staging-validation item and no SportScore data endpoint was called in this slice.
+
 ## Next Gate
 
-The recommended next phase is `phase:code SportScore Public API Source — Slice 5 lazy terminal match detail`.
+The recommended next phase is `phase:code SportScore Public API Source — Slice 6 required attribution and owner-facing freshness/unavailable states`.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

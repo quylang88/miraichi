@@ -69,6 +69,22 @@ export interface LocalMatchTeamStats {
   totalShots: number | null;
   shotsOnGoal: number | null;
   possessionPercentage: number | null;
+  fouls?: number | null;
+  offsides?: number | null;
+}
+
+export interface LocalMatchLineupPlayer {
+  name: string;
+  shirtNumber?: number | null;
+  position?: string | null;
+}
+
+export interface LocalMatchLineup {
+  teamId: string;
+  teamName?: string;
+  formation: string | null;
+  starters: LocalMatchLineupPlayer[];
+  substitutes: LocalMatchLineupPlayer[];
 }
 
 export interface LocalMatchEvent {
@@ -90,6 +106,7 @@ export interface LocalMatchDetail {
   scoreBreakdown?: LocalScoreBreakdown;
   events: LocalMatchEvent[];
   teamStats?: LocalMatchTeamStats[];
+  lineups?: LocalMatchLineup[];
   warnings?: string[];
   notes?: string[];
   updatedAt: string;
@@ -669,11 +686,19 @@ export function validateLocalMatchDetail(input: unknown): ValidationResult {
           if (stat.teamName !== undefined && typeof stat.teamName !== 'string') {
             errors.push(`teamStats[${index}].teamName must be a string if provided`);
           }
-          const statKeys = ['cornerKicks', 'yellowCards', 'redCards', 'totalShots', 'shotsOnGoal'] as const;
+          const statKeys = [
+            'cornerKicks',
+            'yellowCards',
+            'redCards',
+            'totalShots',
+            'shotsOnGoal',
+            'fouls',
+            'offsides'
+          ] as const;
           for (const key of statKeys) {
             const val = stat[key];
-            if (val !== null && (typeof val !== 'number' || !Number.isInteger(val) || val < 0)) {
-              errors.push(`teamStats[${index}].${key} must be a non-negative integer or null`);
+            if (val !== undefined && val !== null && (typeof val !== 'number' || !Number.isInteger(val) || val < 0)) {
+              errors.push(`teamStats[${index}].${key} must be a non-negative integer, null, or omitted`);
             }
           }
           const poss = stat.possessionPercentage;
@@ -693,6 +718,79 @@ export function validateLocalMatchDetail(input: unknown): ValidationResult {
           .filter((teamId): teamId is string => typeof teamId === 'string'));
         if (!teamIds.has(String(input.match.homeTeam.id)) || !teamIds.has(String(input.match.awayTeam.id))) {
           errors.push('Field "teamStats" must include one row for each embedded team');
+        }
+      }
+    }
+  }
+
+  // lineups
+  if (input.lineups !== undefined) {
+    if (!Array.isArray(input.lineups)) {
+      errors.push('Field "lineups" must be an array if provided');
+    } else {
+      if (input.lineups.length !== 2) {
+        errors.push('Field "lineups" must contain exactly two canonical team rows if provided');
+      }
+      input.lineups.forEach((lineup, index) => {
+        if (!isObject(lineup)) {
+          errors.push(`lineups[${index}] must be an object`);
+          return;
+        }
+        if (typeof lineup.teamId !== 'string' || lineup.teamId.trim() === '') {
+          errors.push(`lineups[${index}].teamId must be a non-empty string`);
+        } else if (
+          isObject(input.match) &&
+          isObject(input.match.homeTeam) &&
+          isObject(input.match.awayTeam) &&
+          lineup.teamId !== input.match.homeTeam.id &&
+          lineup.teamId !== input.match.awayTeam.id
+        ) {
+          errors.push(`lineups[${index}].teamId must reference the embedded home or away team`);
+        }
+        if (lineup.teamName !== undefined && typeof lineup.teamName !== 'string') {
+          errors.push(`lineups[${index}].teamName must be a string if provided`);
+        }
+        if (lineup.formation !== null && typeof lineup.formation !== 'string') {
+          errors.push(`lineups[${index}].formation must be a string or null`);
+        }
+        for (const group of ['starters', 'substitutes'] as const) {
+          const players = lineup[group];
+          if (!Array.isArray(players)) {
+            errors.push(`lineups[${index}].${group} must be an array`);
+            continue;
+          }
+          players.forEach((player, playerIndex) => {
+            if (!isObject(player)) {
+              errors.push(`lineups[${index}].${group}[${playerIndex}] must be an object`);
+              return;
+            }
+            if (typeof player.name !== 'string' || player.name.trim() === '') {
+              errors.push(`lineups[${index}].${group}[${playerIndex}].name must be a non-empty string`);
+            }
+            if (
+              player.shirtNumber !== undefined &&
+              player.shirtNumber !== null &&
+              (typeof player.shirtNumber !== 'number' || !Number.isInteger(player.shirtNumber) || player.shirtNumber < 0)
+            ) {
+              errors.push(`lineups[${index}].${group}[${playerIndex}].shirtNumber must be a non-negative integer or null if provided`);
+            }
+            if (player.position !== undefined && player.position !== null && typeof player.position !== 'string') {
+              errors.push(`lineups[${index}].${group}[${playerIndex}].position must be a string or null if provided`);
+            }
+          });
+        }
+      });
+      if (
+        isObject(input.match) &&
+        isObject(input.match.homeTeam) &&
+        isObject(input.match.awayTeam)
+      ) {
+        const teamIds = new Set(input.lineups
+          .filter(isObject)
+          .map((lineup) => lineup.teamId)
+          .filter((teamId): teamId is string => typeof teamId === 'string'));
+        if (!teamIds.has(String(input.match.homeTeam.id)) || !teamIds.has(String(input.match.awayTeam.id))) {
+          errors.push('Field "lineups" must include one row for each embedded team');
         }
       }
     }
