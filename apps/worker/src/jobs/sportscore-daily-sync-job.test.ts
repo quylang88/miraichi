@@ -139,6 +139,36 @@ describe('SportScore daily per-competition sync job', () => {
     }
   });
 
+  it('records terminal schedules when the provider identifies matches by relative URL', async () => {
+    const dataRoot = await makeRoot();
+    const urlOnly: {
+      sport: string;
+      count: number;
+      matches: Record<string, unknown>[];
+    } = responseFor(0);
+    urlOnly.matches[0] = {
+      ...urlOnly.matches[0],
+      slug: undefined,
+      url: '/football/match/northbridge-athletic-vs-rivergate-city/'
+    };
+
+    await runSportScoreDailySyncJob({
+      dataRoot,
+      client: { getFixtures: vi.fn(async () => urlOnly) },
+      registry: [registry[0]!],
+      targetDate,
+      now: () => new Date('2026-08-26T10:00:00.000Z'),
+      resolveSeason: () => '2026-27'
+    });
+    const ledger = await new SportScoreSourceLedger({ dataRoot }).getState();
+    const schedules = Object.values(ledger.terminalSchedules);
+
+    expect(schedules).toHaveLength(1);
+    expect(schedules[0]?.sourceMatchSlugs).toEqual([
+      'northbridge-athletic-vs-rivergate-city'
+    ]);
+  });
+
   it('uses one competition-level request for simultaneous matches at +15, +30, and bounded recovery', async () => {
     const dataRoot = await makeRoot();
     const entry = registry[0]!;

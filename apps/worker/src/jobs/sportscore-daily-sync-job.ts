@@ -17,7 +17,10 @@ import {
 } from '../sources/sportscore/sportscore-schedule-planner.js';
 import { SportScoreSourceLedger } from '../sources/sportscore/sportscore-source-ledger.js';
 import type { SportScoreFixturesResponse } from '../sources/sportscore/sportscore-response-contract.js';
-import { mapSportScoreStatus } from '../sources/sportscore/sportscore-adapter.js';
+import {
+  mapSportScoreStatus,
+  resolveSportScoreMatchSlug
+} from '../sources/sportscore/sportscore-adapter.js';
 import { runSportScorePublicationJob } from './sportscore-publication-job.js';
 
 export interface SportScoreFixturesClient {
@@ -295,7 +298,8 @@ function extractTerminalSchedules(
     const status = mapSportScoreStatus(fixture.status)
       ?? mapSportScoreStatus(fixture.status_text);
     if (status !== 'scheduled' && status !== 'in_play') continue;
-    if (typeof fixture.slug !== 'string' || typeof fixture.time !== 'string') continue;
+    const sourceMatchSlug = resolveSportScoreMatchSlug(fixture);
+    if (sourceMatchSlug === undefined || typeof fixture.time !== 'string') continue;
     const kickoffMs = Date.parse(fixture.time);
     if (Number.isNaN(kickoffMs)) continue;
     const expectedEndAt = new Date(
@@ -313,7 +317,7 @@ function extractTerminalSchedules(
       sourceMatchSlugs: [],
       matchIds: []
     };
-    schedule.sourceMatchSlugs.push(fixture.slug);
+    schedule.sourceMatchSlugs.push(sourceMatchSlug);
     byWindow.set(windowKey, schedule);
   }
   return [...byWindow].map(([windowKey, schedule]) => ({
@@ -415,9 +419,10 @@ function terminalCoverage(
   window: SportScoreTerminalWindowPlan,
   response: SportScoreFixturesResponse
 ): { complete: boolean; terminal: boolean } {
-  const bySlug = new Map(response.matches.flatMap((match) =>
-    typeof match.slug === 'string' ? [[match.slug, match] as const] : []
-  ));
+  const bySlug = new Map(response.matches.flatMap((match) => {
+    const sourceMatchSlug = resolveSportScoreMatchSlug(match);
+    return sourceMatchSlug === undefined ? [] : [[sourceMatchSlug, match] as const];
+  }));
   const statuses = window.sourceMatchSlugs.map((slug) => {
     const fixture = bySlug.get(slug);
     if (!fixture) return null;

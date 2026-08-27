@@ -84,6 +84,29 @@ describe('SportScore terminal-only adapter', () => {
     ]));
   });
 
+  it('derives the provider slug from the documented SportScore match URL shape only', () => {
+    const relativeUrl = adapt([fixture('upcoming', {
+      slug: undefined,
+      url: '/football/match/northbridge-athletic-vs-rivergate-city/'
+    })]);
+    const foreignUrl = adapt([fixture('upcoming', {
+      slug: undefined,
+      url: 'https://attacker.example/football/match/northbridge-athletic-vs-rivergate-city/'
+    })]);
+
+    expect(relativeUrl.matches).toHaveLength(1);
+    expect(relativeUrl.links).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        entityType: 'match',
+        providerEntityId: 'northbridge-athletic-vs-rivergate-city'
+      })
+    ]));
+    expect(foreignUrl.matches).toEqual([]);
+    expect(foreignUrl.issues).toEqual([
+      expect.objectContaining({ code: 'invalid_match_slug', severity: 'invalid' })
+    ]);
+  });
+
   it('maps finished scores and terminal postponed/cancelled statuses correctly', () => {
     const finished = adapt([fixture('finished')]);
     const postponed = adapt([fixture('postponed')]);

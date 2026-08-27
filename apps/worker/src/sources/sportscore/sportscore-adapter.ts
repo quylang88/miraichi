@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
-import type { SportScoreCompetitionEntry } from '@miraichi/config';
+import {
+  SPORTSCORE_SOURCE_ORIGIN,
+  type SportScoreCompetitionEntry
+} from '@miraichi/config';
 import type {
   CanonicalCompetition,
   CanonicalMatch,
@@ -115,7 +118,7 @@ export function adaptSportScoreFixtures(
 
   for (let recordIndex = 0; recordIndex < input.fixtures.length; recordIndex += 1) {
     const raw = input.fixtures[recordIndex]!;
-    const providerMatchSlug = typeof raw.slug === 'string' ? raw.slug : undefined;
+    const providerMatchSlug = resolveSportScoreMatchSlug(raw);
     const homeName = normalizedDisplayName(raw.home);
     const awayName = normalizedDisplayName(raw.away);
     if (!homeName || !awayName || homeName === awayName) {
@@ -299,6 +302,28 @@ export function adaptSportScoreFixtures(
     issues,
     ignoredInPlayCount
   };
+}
+
+export function resolveSportScoreMatchSlug(
+  raw: Record<string, unknown>
+): string | undefined {
+  if (typeof raw.slug === 'string') return raw.slug;
+  if (typeof raw.url !== 'string') return undefined;
+  let parsed: URL;
+  try {
+    parsed = new URL(raw.url, SPORTSCORE_SOURCE_ORIGIN);
+  } catch {
+    return undefined;
+  }
+  if (
+    parsed.origin !== SPORTSCORE_SOURCE_ORIGIN
+    || parsed.search !== ''
+    || parsed.hash !== ''
+  ) {
+    return undefined;
+  }
+  const match = /^\/football\/match\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/u.exec(parsed.pathname);
+  return match?.[1];
 }
 
 function assertAdapterInput(input: AdaptSportScoreFixturesInput): void {

@@ -141,7 +141,7 @@
 
 ## Slice 7 — Integration and contained staging validation
 
-**Status**: Local integration complete on 2026-08-27; contained real-network staging remains blocked by the `/api/v1` terms-scope mismatch and requires separate owner approval.
+**Status**: Local integration and an owner-approved isolated anonymous one-shot are complete on 2026-08-27; cloud staging remains blocked by the `/api/v1` terms-scope mismatch and requires separate owner approval.
 
 **Test first/local integration**
 

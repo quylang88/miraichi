@@ -7,8 +7,8 @@
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
 - **Completed phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written.
-- **Active phase**: `phase:integration-test SportScore Public API Source — Slice 7 large-boundary integration and contract-drift verification` — local integration exit gate passed on 2026-08-27; real-network staging remains blocked.
-- **Promotion state**: SportScore Slices 0–7 and the large local integration boundary are complete; staging, owner feedback, and production have not started.
+- **Active phase**: `phase:integration-test SportScore Public API Source — Slice 7 large-boundary integration and contract-drift verification` — local integration plus an owner-approved anonymous one-shot passed on 2026-08-27; cloud staging remains blocked.
+- **Promotion state**: SportScore Slices 0–7, large local integration, and the isolated local provider smoke are complete; the active local root has not been bootstrapped, and cloud staging, owner feedback, and production have not started.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -134,12 +134,21 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - The approved offline OpenAPI fixture SHA-256 is `ab6564b124c1a907e3413d559618ebaea6313d6e143fad6189db0e2a584b6363`. Verification checks required fixture/detail paths and performs no network download.
 - Guarded commands now exist for source/terms review, contract verification, sanitized checkpoint/status inspection, isolated empty-root preparation, and non-overwriting active-root bootstrap. Root overlap, invalid source ledgers, existing manifest/version/ledger conflicts, and concurrent file creation fail closed.
 - `pnpm run verify:local` passed 87 test files / 488 tests. `pnpm run test:integration` passed SportScore integration, Phase 3 ingestion, endpoint E2E, and PWA checks. `pnpm run verify:staging` passed the same release gates plus a local static build; it did not deploy or call SportScore.
-- `pnpm run sportscore:status` reported the active root as `freshness: missing`, `matchCount: 0`, and zero checkpoints. No real SportScore data has been downloaded.
+- At Slice 7 closeout, `pnpm run sportscore:status` reported the active root as `freshness: missing`, `matchCount: 0`, and zero checkpoints. The later owner-approved one-shot evidence below remains isolated and did not change that active root.
+
+## Owner-Approved Anonymous Local One-Shot Evidence — 2026-08-27
+
+- The owner explicitly approved adding and executing `sportscore:local:sync-once` without a key before any cloud staging work. The command is limited to one competition/day request, zero transport retries, an exact network confirmation, and a prepared isolated root by default.
+- The first isolated request reached SportScore but correctly rejected publication because the real `/api/v1/fixtures/` payload identifies matches with a relative `/football/match/<slug>/` URL instead of the OpenAPI fixture's `slug` field. No active data was changed.
+- The adapter now derives a private provider slug only from the exact SportScore match URL shape and rejects foreign origins, queries, fragments, or unrelated paths. The scheduler uses the same resolver for +15/+30 terminal coverage.
+- Two subsequent isolated one-request runs succeeded anonymously for UEFA Conference League on 2026-08-27. Each published 24 scheduled matches. The final root reported `freshness: fresh`, one completed daily checkpoint, and eight pending terminal windows.
+- A dedicated local API process served the isolated snapshot with health `ok`, 24 matches, one competition, source `sportscore`, and no `sourceMatchId`, `sourceUrl`, or `in_play` leakage. The active `apps/api/data` root was not bootstrapped or modified.
+- Focused post-smoke verification passed 4 files / 23 tests plus TypeScript. `pnpm run verify:release` passed 88 files / 494 unit tests, 5 files / 16 SportScore integration tests, endpoint E2E, and PWA verification without another provider request. The local runner also has a guarded active mode that accepts only a previously bootstrapped active root and requires a separate `SPORTSCORE_ACTIVE_LOCAL_SYNC` confirmation.
 
 ## Next Gate
 
-Transition to `phase:staging SportScore Public API Source — contained real-network contract smoke` is blocked.
+The next owner decision is whether to bootstrap the validated isolated snapshot into `apps/api/data`. Cloud staging remains blocked and has not started.
 
-Before staging can start, the owner must retain published or written confirmation that attributed free use covers `/api/v1/fixtures/`, then explicitly approve the bounded real-network smoke. Until both conditions are met, no SportScore data endpoint request, deployment, active-root bootstrap, owner-feedback gate, or production promotion is authorized.
+Before cloud staging can start, the owner must retain published or written confirmation that attributed free use covers `/api/v1/fixtures/`, then explicitly approve the deployed smoke. Until both conditions are met, no deployment, owner-feedback gate, or production promotion is authorized. Local bootstrap remains a separate explicit owner decision based on the isolated evidence above.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

@@ -1,7 +1,7 @@
 # SportScore Public API Source Design
 
 - **Date**: 2026-08-26
-- **Status**: Owner-approved source boundary; Slices 0–7 and local integration complete, real provider scheduling remains disabled and staging is blocked
+- **Status**: Owner-approved source boundary; Slices 0–7, local integration, and isolated anonymous one-shot complete; active scheduling remains disabled and cloud staging is blocked
 - **Decision**: ADR-0048
 
 ## Goal

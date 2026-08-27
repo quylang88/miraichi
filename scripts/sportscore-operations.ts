@@ -93,6 +93,22 @@ async function readSmokeRootMarker(dataRoot: string): Promise<SmokeRootMarker> {
   return parsed as SmokeRootMarker;
 }
 
+export async function assertPreparedSportScoreSmokeRoot(options: {
+  dataRoot: string;
+  activeDataRoot?: string;
+}): Promise<string> {
+  const dataRoot = assertNarrowDataRoot(options.dataRoot, 'SportScore smoke data root');
+  const activeDataRoot = assertNarrowDataRoot(
+    options.activeDataRoot ?? defaultActiveDataRoot(),
+    'SportScore active data root'
+  );
+  if (rootsOverlap(dataRoot, activeDataRoot)) {
+    throw new Error('SportScore smoke root must be isolated from the active data root.');
+  }
+  await readSmokeRootMarker(dataRoot);
+  return dataRoot;
+}
+
 export async function inspectSportScoreSourceReview(): Promise<{
   termsScope: 'blocked';
   realNetworkAuthorized: false;
