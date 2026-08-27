@@ -141,6 +141,8 @@
 
 ## Slice 7 — Integration and contained staging validation
 
+**Status**: Local integration complete on 2026-08-27; contained real-network staging remains blocked by the `/api/v1` terms-scope mismatch and requires separate owner approval.
+
 **Test first/local integration**
 
 - Add integration tests for all 50 registry entries using mocked HTTP, restart checkpoints, 503 recovery, terminal-only publication, API serving, lazy detail, and attribution.

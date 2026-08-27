@@ -9,6 +9,7 @@
 - Current match-source decision: `docs/decisions/ADR-0048-sportscore-public-api-source-boundary.md`
 - Current source design: `docs/superpowers/specs/2026-08-26-sportscore-public-api-source-design.md`
 - Current source implementation plan: `docs/superpowers/plans/2026-08-26-sportscore-public-api-source.md`
+- SportScore local operations and blocked staging boundary: `docs/data/sportscore-local-operations.md`
 - Architecture map: `docs/architecture/module-map.md`
 - ADR index: `docs/decisions/README.md`
 - Testing workflow: `docs/workflows/testing-workflow.md`

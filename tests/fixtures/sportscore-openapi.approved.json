@@ -1,0 +1,179 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SportScore approved Miraichi contract excerpt",
+    "version": "reviewed-2026-08-26",
+    "description": "Local reviewed fixture for drift detection. It is not downloaded during verification."
+  },
+  "servers": [
+    {
+      "url": "https://sportscore.com"
+    }
+  ],
+  "paths": {
+    "/api/v1/fixtures/": {
+      "get": {
+        "operationId": "listFootballFixtures",
+        "parameters": [
+          {
+            "name": "sport",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "football"
+              ]
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "competition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Football fixture envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixtureEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/widget/match/": {
+      "get": {
+        "operationId": "getFootballMatch",
+        "parameters": [
+          {
+            "name": "sport",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "football"
+              ]
+            }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Football match detail envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FixtureEnvelope": {
+        "type": "object",
+        "required": [
+          "matches"
+        ],
+        "properties": {
+          "sport": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "matches": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "$ref": "#/components/schemas/MatchSummary"
+            }
+          }
+        }
+      },
+      "MatchSummary": {
+        "type": "object",
+        "required": [
+          "home",
+          "away",
+          "status",
+          "time",
+          "slug"
+        ],
+        "properties": {
+          "home": {
+            "type": "string"
+          },
+          "away": {
+            "type": "string"
+          },
+          "home_score": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "away_score": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "status_text": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

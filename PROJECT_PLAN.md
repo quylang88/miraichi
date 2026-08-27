@@ -7,8 +7,8 @@
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
 - **Completed phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written.
-- **Active phase**: `phase:code SportScore Public API Source — Slice 6 required attribution and owner-facing freshness/unavailable states` — implementation and local exit gate passed on 2026-08-27; transition awaits the next explicit owner command.
-- **Promotion state**: SportScore Slices 0–6 are complete locally; Slice 7 integration, staging, owner feedback, and production have not started.
+- **Active phase**: `phase:integration-test SportScore Public API Source — Slice 7 large-boundary integration and contract-drift verification` — local integration exit gate passed on 2026-08-27; real-network staging remains blocked.
+- **Promotion state**: SportScore Slices 0–7 and the large local integration boundary are complete; staging, owner feedback, and production have not started.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -37,6 +37,7 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Complete Slice 4: fetch only competition-scoped fixture days, rotate work fairly with durable checkpoints, share +15/+30 terminal checks per competition window, use bounded recovery/backoff, and keep real network execution disabled by default.
 - [x] Complete Slice 5: consume the existing lazy detail queue only for canonical completed matches, normalize terminal events/lineups/basic statistics, preserve nullable coverage, bound requests/retries, and negative-cache confirmed unavailable detail.
 - [x] Complete Slice 6: expose sanitized source/freshness metadata, render conditional crawlable SportScore attribution on Today, Matches, and match detail, and show nullable detail statistics/lineups honestly in EN/VI.
+- [x] Complete Slice 7 local integration: exercise all 50 equal competitions through restart checkpoints, 503 recovery, terminal-only publication, sanitized API serving, lazy terminal detail, and attribution; pin an offline contract fixture checksum and add guarded local operations. Real-network staging is not included.
 
 ## Planned TDD Slices
 
@@ -125,10 +126,20 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - EN/VI catalogs remain key-identical for attribution, fresh/stale/unavailable, pending detail, fouls, offsides, and lineup copy. Null or absent metrics render as unavailable while explicit zero remains zero; an empty lineup collection renders as unavailable.
 - A browser smoke against an isolated mock API visually verified Today freshness, Matches attribution, terminal score/timeline/statistics/lineups, and unavailable values. It made no SportScore request, changed no active data root, and is not staging approval.
 
+## Slice 7 Local Integration Evidence — 2026-08-27
+
+- RED observed: the new integration suites could not import the missing contract/operations modules, and the 50-competition boundary exposed 50 duplicate public source entries after private provider IDs were removed.
+- `pnpm run sportscore:integration` passed 4 test files / 12 tests. The boundary runs all 50 registry entries across capped restart runs, proves durable checkpoint completion, excludes an injected live score/event, defers and recovers from HTTP 503, serves 50 sanitized API matches, fulfills lazy terminal detail, and renders required attribution on Today, Matches, and detail.
+- Public snapshot metadata now collapses private per-match source references to the newest safe `{ sourceId, importedAt }` entry per source instead of leaking IDs or returning dozens of indistinguishable duplicates.
+- The approved offline OpenAPI fixture SHA-256 is `ab6564b124c1a907e3413d559618ebaea6313d6e143fad6189db0e2a584b6363`. Verification checks required fixture/detail paths and performs no network download.
+- Guarded commands now exist for source/terms review, contract verification, sanitized checkpoint/status inspection, isolated empty-root preparation, and non-overwriting active-root bootstrap. Root overlap, invalid source ledgers, existing manifest/version/ledger conflicts, and concurrent file creation fail closed.
+- `pnpm run verify:local` passed 87 test files / 488 tests. `pnpm run test:integration` passed SportScore integration, Phase 3 ingestion, endpoint E2E, and PWA checks. `pnpm run verify:staging` passed the same release gates plus a local static build; it did not deploy or call SportScore.
+- `pnpm run sportscore:status` reported the active root as `freshness: missing`, `matchCount: 0`, and zero checkpoints. No real SportScore data has been downloaded.
+
 ## Next Gate
 
-The recommended next phase is `phase:integration-test SportScore Public API Source — Slice 7 large-boundary integration and contract-drift verification`.
+Transition to `phase:staging SportScore Public API Source — contained real-network contract smoke` is blocked.
 
-This next phase is local-only and needs no further owner decision. Any real-network SportScore smoke remains a separate staging gate requiring explicit owner approval plus resolution of the `/api/v1` terms-scope mismatch.
+Before staging can start, the owner must retain published or written confirmation that attributed free use covers `/api/v1/fixtures/`, then explicitly approve the bounded real-network smoke. Until both conditions are met, no SportScore data endpoint request, deployment, active-root bootstrap, owner-feedback gate, or production promotion is authorized.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

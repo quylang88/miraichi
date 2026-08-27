@@ -56,6 +56,11 @@ const mockFeedResponse: LocalMatchFeedResponse = {
       sourceMatchId: 'private-provider-slug',
       sourceUrl: 'https://sportscore.com/private-provider-slug',
       importedAt: '2026-07-01T00:00:00.000Z'
+    }, {
+      sourceId: 'sportscore',
+      sourceMatchId: 'newer-private-provider-slug',
+      sourceUrl: 'https://sportscore.com/newer-private-provider-slug',
+      importedAt: '2026-07-01T01:00:00.000Z'
     }],
     freshness: 'fresh',
     warnings: []
@@ -83,7 +88,7 @@ describe('matches route', () => {
     }]);
     expect(body.snapshot.snapshotId).toBe('test-snapshot');
     expect(body.snapshot.sources).toEqual([
-      { sourceId: 'sportscore', importedAt: '2026-07-01T00:00:00.000Z' }
+      { sourceId: 'sportscore', importedAt: '2026-07-01T01:00:00.000Z' }
     ]);
 
     // Assert absence of provider-specific cache/quota structures.
@@ -92,6 +97,7 @@ describe('matches route', () => {
     expect(body.sourceProviderId).toBeUndefined();
     expect(body.matches[0].providerFixtureId).toBeUndefined();
     expect(response.body).not.toContain('private-provider-slug');
+    expect(response.body).not.toContain('newer-private-provider-slug');
     expect(response.body).not.toContain('sourceUrl');
   });
 
