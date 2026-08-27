@@ -770,7 +770,7 @@ describe('production shell match snapshot rendering', () => {
     expect(html).toContain('Japan vs Vietnam');
     expect(html).toContain('FIFA World Cup');
     expect(html).toContain('data-match-id="match-1"');
-    expect(html).toContain('Data status: Ready');
+    expect(html).toContain('Data status: Fresh');
     expect(html).toContain('Snapshot generated: Jul 1, 2026');
     expect(html).not.toContain('2026-07-01T00:00:00.000Z');
     expect(html).not.toContain('provider fixture context');

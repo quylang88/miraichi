@@ -1,7 +1,14 @@
-import type { LocalMatchDetail, LocalMatchEvent, LocalMatchTeamStats } from '@miraichi/shared';
+import type {
+  LocalMatchDetail,
+  LocalMatchEvent,
+  LocalMatchLineup,
+  LocalMatchSourceRef,
+  LocalMatchTeamStats
+} from '@miraichi/shared';
 import type { MatchDetailViewState } from '../services/match-detail-service.js';
 import { formatDateTime, type SupportedLocale, type TranslateFunction } from '../services/i18n-service.js';
 import { escapeHtml } from './html.js';
+import { renderSportScoreAttribution } from './source-attribution.js';
 
 export type MatchDetailRenderState = MatchDetailViewState | { status: 'loading' };
 
@@ -12,8 +19,10 @@ function renderUnavailable(translate: TranslateFunction, retryable: boolean): st
   </div>`;
 }
 
-function formatNullable(value: number | null, translate: TranslateFunction, suffix = ''): string {
-  return value === null ? escapeHtml(translate('detail.noData')) : `${escapeHtml(value)}${suffix}`;
+function formatNullable(value: number | null | undefined, translate: TranslateFunction, suffix = ''): string {
+  return value === null || value === undefined
+    ? escapeHtml(translate('detail.noData'))
+    : `${escapeHtml(value)}${suffix}`;
 }
 
 function eventOrder(event: LocalMatchEvent): number {
@@ -94,7 +103,12 @@ function renderStatistics(detail: LocalMatchDetail, translate: TranslateFunction
   if (!home || !away) {
     return `<section class="match-detail-section"><h2>${escapeHtml(translate('detail.stats'))}</h2><div class="match-detail-no-stats">${escapeHtml(translate('detail.noStats'))}</div></section>`;
   }
-  const row = (labelKey: string, homeValue: number | null, awayValue: number | null, suffix = '') => (
+  const row = (
+    labelKey: string,
+    homeValue: number | null | undefined,
+    awayValue: number | null | undefined,
+    suffix = ''
+  ) => (
     `<tr><th scope="row">${escapeHtml(translate(labelKey))}</th><td>${formatNullable(homeValue, translate, suffix)}</td><td>${formatNullable(awayValue, translate, suffix)}</td></tr>`
   );
   return `<section class="match-detail-section match-detail-stats"><h2>${escapeHtml(translate('detail.stats'))}</h2>
@@ -107,9 +121,45 @@ function renderStatistics(detail: LocalMatchDetail, translate: TranslateFunction
         ${row('detail.stat.totalShots', home.totalShots, away.totalShots)}
         ${row('detail.stat.shotsOnGoal', home.shotsOnGoal, away.shotsOnGoal)}
         ${row('detail.stat.possession', home.possessionPercentage, away.possessionPercentage, '%')}
+        ${row('detail.stat.fouls', home.fouls, away.fouls)}
+        ${row('detail.stat.offsides', home.offsides, away.offsides)}
       </tbody>
     </table></div>
   </section>`;
+}
+
+function renderLineupPlayers(
+  players: LocalMatchLineup['starters'],
+  translate: TranslateFunction
+): string {
+  if (players.length === 0) {
+    return `<p class="match-detail-no-lineup">${escapeHtml(translate('detail.noData'))}</p>`;
+  }
+  return `<ul class="match-detail-lineup-players">${players.map((player) => {
+    const number = player.shirtNumber === null || player.shirtNumber === undefined
+      ? ''
+      : `<span class="match-lineup-number">${escapeHtml(player.shirtNumber)}</span>`;
+    const position = player.position
+      ? `<span class="match-lineup-position">${escapeHtml(player.position)}</span>`
+      : '';
+    return `<li>${number}<span>${escapeHtml(player.name)}</span>${position}</li>`;
+  }).join('')}</ul>`;
+}
+
+function renderLineupTeam(lineup: LocalMatchLineup, translate: TranslateFunction): string {
+  return `<section class="match-detail-lineup-team">
+    <h3>${escapeHtml(lineup.teamName ?? lineup.teamId)}</h3>
+    <p class="match-detail-formation">${escapeHtml(translate('detail.formation'))}: ${lineup.formation ? escapeHtml(lineup.formation) : escapeHtml(translate('detail.noData'))}</p>
+    <h4>${escapeHtml(translate('detail.starters'))}</h4>${renderLineupPlayers(lineup.starters, translate)}
+    <h4>${escapeHtml(translate('detail.substitutes'))}</h4>${renderLineupPlayers(lineup.substitutes, translate)}
+  </section>`;
+}
+
+function renderLineups(detail: LocalMatchDetail, translate: TranslateFunction): string {
+  if (!detail.lineups || detail.lineups.length === 0) {
+    return `<section class="match-detail-section"><h2>${escapeHtml(translate('detail.lineups'))}</h2><div class="match-detail-no-lineup">${escapeHtml(translate('detail.lineupsUnavailable'))}</div></section>`;
+  }
+  return `<section class="match-detail-section"><h2>${escapeHtml(translate('detail.lineups'))}</h2><div class="match-detail-lineups">${detail.lineups.map((lineup) => renderLineupTeam(lineup, translate)).join('')}</div></section>`;
 }
 
 function renderScoreBreakdown(detail: LocalMatchDetail, translate: TranslateFunction): string {
@@ -151,7 +201,15 @@ function renderReadyDetail(
     ${detail.warnings?.length ? `<p class="match-detail-coverage-warning">${escapeHtml(translate('detail.partialData'))}</p>` : ''}
     ${renderTimeline(detail, translate)}
     ${renderStatistics(detail, translate)}
+    ${renderLineups(detail, translate)}
   </div>`;
+}
+
+function sourceRefsForState(state: MatchDetailRenderState): readonly LocalMatchSourceRef[] {
+  if (state.status === 'ready') return state.detail.match.sourceRefs;
+  if (state.status === 'pending') return state.match.sourceRefs;
+  if (state.status === 'unavailable') return state.match?.sourceRefs ?? [];
+  return [];
 }
 
 export function renderMatchDetailView(
@@ -160,14 +218,15 @@ export function renderMatchDetailView(
   locale: SupportedLocale,
   timeZone: string
 ): string {
+  const attribution = renderSportScoreAttribution(sourceRefsForState(state), translate);
   if (state.status === 'loading') {
     return `<div class="match-detail-pending" role="status" data-match-detail-state="loading">${escapeHtml(translate('detail.loading'))}</div>`;
   }
   if (state.status === 'pending') {
-    return `<div class="match-detail-pending" role="status" data-match-detail-state="pending">${escapeHtml(translate('detail.pendingRefresh'))}</div>`;
+    return `<div class="match-detail-pending" role="status" data-match-detail-state="pending">${escapeHtml(translate('detail.pendingRefresh'))}</div>${attribution}`;
   }
   if (state.status === 'unavailable') {
-    return renderUnavailable(translate, !state.warnings.includes('match_not_found'));
+    return `${renderUnavailable(translate, !state.warnings.includes('match_not_found'))}${attribution}`;
   }
-  return renderReadyDetail(state.detail, translate, locale, timeZone);
+  return `${renderReadyDetail(state.detail, translate, locale, timeZone)}${attribution}`;
 }

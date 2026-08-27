@@ -118,7 +118,10 @@ function updateTodayScreenView(): void {
     bets: betRecordsState,
     bankroll: bankrollState,
     discipline: disciplineConfigState,
-    report: todayReportState
+    report: todayReportState,
+    matchFeed: matchFeedState,
+    locale: settings.locale,
+    timezone: settings.timezone
   }));
 }
 
@@ -1200,10 +1203,12 @@ async function refreshMatchFeed(): Promise<void> {
   activeFilters.selectedLeagues.clear();
   const date = matchFeedState.date;
   matchFeedState = { status: 'loading', date };
+  updateTodayScreenView();
   updateMatchesScreenView();
   const result = await getMatchFeed(date);
   if (matchFeedState.date === date) {
     matchFeedState = result;
+    updateTodayScreenView();
     updateMatchesScreenView();
   }
 }

@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { ServingMatchStoreRepository } from '../repositories/serving-match-store-repository.js';
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
+import { toPublicSnapshotStatus } from './public-match-metadata.js';
 
 const repository = new ServingMatchStoreRepository();
 
@@ -12,7 +13,7 @@ export async function handleDataSnapshotStatus(
   const repo = dependencies.repository ?? repository;
 
   try {
-    const status = await repo.getStatus();
+    const status = toPublicSnapshotStatus(await repo.getStatus());
 
     if (status.freshness === 'missing') {
       res.writeHead(503, { 'Content-Type': 'application/json' });

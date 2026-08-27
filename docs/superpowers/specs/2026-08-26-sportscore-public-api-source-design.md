@@ -1,7 +1,7 @@
 # SportScore Public API Source Design
 
 - **Date**: 2026-08-26
-- **Status**: Owner-approved source boundary; Slices 0–4 complete locally, real provider scheduling remains disabled by default
+- **Status**: Owner-approved source boundary; Slices 0–6 complete locally, real provider scheduling remains disabled by default
 - **Decision**: ADR-0048
 
 ## Goal

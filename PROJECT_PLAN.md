@@ -7,8 +7,8 @@
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
 - **Completed phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written.
-- **Active phase**: `phase:code SportScore Public API Source — Slice 5 lazy terminal match detail` — implementation and local exit gate passed on 2026-08-27; transition awaits the next explicit owner command.
-- **Promotion state**: SportScore Slices 0–5 are complete locally; Slice 6+, integration, staging, owner feedback, and production have not started.
+- **Active phase**: `phase:code SportScore Public API Source — Slice 6 required attribution and owner-facing freshness/unavailable states` — implementation and local exit gate passed on 2026-08-27; transition awaits the next explicit owner command.
+- **Promotion state**: SportScore Slices 0–6 are complete locally; Slice 7 integration, staging, owner feedback, and production have not started.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -36,6 +36,7 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Complete Slice 3: normalize registry-bound SportScore fixtures into provider-neutral canonical records, exclude in-play records before persistence, merge against last-good state, and atomically publish immutable warehouse/serving snapshots without writing match detail.
 - [x] Complete Slice 4: fetch only competition-scoped fixture days, rotate work fairly with durable checkpoints, share +15/+30 terminal checks per competition window, use bounded recovery/backoff, and keep real network execution disabled by default.
 - [x] Complete Slice 5: consume the existing lazy detail queue only for canonical completed matches, normalize terminal events/lineups/basic statistics, preserve nullable coverage, bound requests/retries, and negative-cache confirmed unavailable detail.
+- [x] Complete Slice 6: expose sanitized source/freshness metadata, render conditional crawlable SportScore attribution on Today, Matches, and match detail, and show nullable detail statistics/lineups honestly in EN/VI.
 
 ## Planned TDD Slices
 
@@ -115,8 +116,19 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - The provider-neutral detail contract now supports goals/cards/substitutions, FT/HT/ET/penalty breakdown, formations/lineups, corners, cards, shots, possession, fouls, and offsides. Missing optional values remain null/unavailable; no odds, picks, expected goals, live telemetry, raw provider IDs, or provider URLs enter the public detail payload.
 - SportScore's published OpenAPI still does not provide a field-level response schema for match events, statistics, or lineups. Adapter tests therefore use invented defensive response shapes; real payload compatibility remains a staging-validation item and no SportScore data endpoint was called in this slice.
 
+## Slice 6 Local Evidence — 2026-08-27
+
+- RED observed: the web suite could not import the missing reusable attribution component, while API route tests proved private `sourceMatchId` and `sourceUrl` values escaped through the matches and snapshot-status boundaries.
+- Focused verification passed 16 test files / 119 tests. `pnpm run verify:local` passed 84 unit-test files / 482 tests plus product-boundary, lifecycle, syntax, TypeScript, architecture, and type-safety checks. `pnpm run pwa:verify` also passed.
+- The Miraichi matches and snapshot-status routes now retain only public `sourceId` plus `importedAt`; private provider match IDs and URLs remain inside persistence/source-link boundaries.
+- Today, Matches, and ready/pending/unavailable match detail render one visible crawlable dofollow `Powered by SportScore` link only when the displayed feed or match contains SportScore provenance.
+- EN/VI catalogs remain key-identical for attribution, fresh/stale/unavailable, pending detail, fouls, offsides, and lineup copy. Null or absent metrics render as unavailable while explicit zero remains zero; an empty lineup collection renders as unavailable.
+- A browser smoke against an isolated mock API visually verified Today freshness, Matches attribution, terminal score/timeline/statistics/lineups, and unavailable values. It made no SportScore request, changed no active data root, and is not staging approval.
+
 ## Next Gate
 
-The recommended next phase is `phase:code SportScore Public API Source — Slice 6 required attribution and owner-facing freshness/unavailable states`.
+The recommended next phase is `phase:integration-test SportScore Public API Source — Slice 7 large-boundary integration and contract-drift verification`.
+
+This next phase is local-only and needs no further owner decision. Any real-network SportScore smoke remains a separate staging gate requiring explicit owner approval plus resolution of the `/api/v1` terms-scope mismatch.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

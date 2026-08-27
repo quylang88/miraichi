@@ -29,7 +29,12 @@ const mockStatus: LocalDataSnapshotStatus = {
     { id: 'world-cup-2026', name: 'FIFA World Cup', seasons: ['2026'], matchCount: 1 },
     { id: 'euro-2024', name: 'UEFA Euro', seasons: ['2024'], matchCount: 1 }
   ],
-  sources: [],
+  sources: [{
+    sourceId: 'sportscore',
+    sourceMatchId: 'private-provider-slug',
+    sourceUrl: 'https://sportscore.com/private-provider-slug',
+    importedAt: '2026-07-01T00:00:00.000Z'
+  }],
   freshness: 'fresh',
   warnings: []
 };
@@ -52,6 +57,11 @@ describe('data snapshot status route', () => {
     expect(body.snapshotId).toBe('test-snapshot');
     expect(body.matchCount).toBe(2);
     expect(body.competitions).toHaveLength(2);
+    expect(body.sources).toEqual([
+      { sourceId: 'sportscore', importedAt: '2026-07-01T00:00:00.000Z' }
+    ]);
+    expect(response.body).not.toContain('private-provider-slug');
+    expect(response.body).not.toContain('sourceUrl');
   });
 
   it('returns 503 if serving match store is missing', async () => {

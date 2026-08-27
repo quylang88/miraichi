@@ -32,7 +32,12 @@ const mockMatch: LocalMatch = {
   homeTeam: { id: 'team-mexico', name: 'Mexico' },
   awayTeam: { id: 'team-safrica', name: 'South Africa' },
   score: { home: null, away: null },
-  sourceRefs: [],
+  sourceRefs: [{
+    sourceId: 'sportscore',
+    sourceMatchId: 'private-provider-slug',
+    sourceUrl: 'https://sportscore.com/private-provider-slug',
+    importedAt: '2026-07-01T00:00:00.000Z'
+  }],
   updatedAt: '2026-07-01T00:00:00.000Z'
 };
 
@@ -46,7 +51,12 @@ const mockFeedResponse: LocalMatchFeedResponse = {
     competitions: [
       { id: 'world-cup-2026', name: 'FIFA World Cup', seasons: ['2026'], matchCount: 1 }
     ],
-    sources: [],
+    sources: [{
+      sourceId: 'sportscore',
+      sourceMatchId: 'private-provider-slug',
+      sourceUrl: 'https://sportscore.com/private-provider-slug',
+      importedAt: '2026-07-01T00:00:00.000Z'
+    }],
     freshness: 'fresh',
     warnings: []
   }
@@ -67,14 +77,22 @@ describe('matches route', () => {
 
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
-    expect(body.matches).toEqual([mockMatch]);
+    expect(body.matches).toEqual([{
+      ...mockMatch,
+      sourceRefs: [{ sourceId: 'sportscore', importedAt: '2026-07-01T00:00:00.000Z' }]
+    }]);
     expect(body.snapshot.snapshotId).toBe('test-snapshot');
+    expect(body.snapshot.sources).toEqual([
+      { sourceId: 'sportscore', importedAt: '2026-07-01T00:00:00.000Z' }
+    ]);
 
     // Assert absence of provider-specific cache/quota structures.
     expect(body.quota).toBeUndefined();
     expect(body.cache).toBeUndefined();
     expect(body.sourceProviderId).toBeUndefined();
     expect(body.matches[0].providerFixtureId).toBeUndefined();
+    expect(response.body).not.toContain('private-provider-slug');
+    expect(response.body).not.toContain('sourceUrl');
   });
 
   it('filters by date when provided', async () => {

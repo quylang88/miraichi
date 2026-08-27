@@ -836,6 +836,57 @@ svg {
   margin: 0 0 8px;
 }
 
+.source-attribution {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin: 10px 0 0;
+}
+
+.source-attribution a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.match-detail-lineups {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.match-detail-lineup-team h3,
+.match-detail-lineup-team h4,
+.match-detail-formation {
+  margin: 0 0 8px;
+}
+
+.match-detail-lineup-players {
+  display: grid;
+  gap: 5px;
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.match-detail-lineup-players li {
+  align-items: center;
+  display: grid;
+  font-size: 12px;
+  gap: 7px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.match-lineup-number,
+.match-lineup-position {
+  color: var(--text-muted);
+}
+
+@media (max-width: 520px) {
+  .match-detail-lineups {
+    grid-template-columns: 1fr;
+  }
+}
+
 .screen > .note-card + .section-heading {
   margin-top: 16px;
 }

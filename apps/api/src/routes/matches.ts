@@ -1,7 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { ServingMatchStoreRepository } from '../repositories/serving-match-store-repository.js';
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
-import type { LocalMatchFeedResponse, LocalMatchStatus } from '@miraichi/shared';
+import {
+  toProviderNeutralLocalMatch,
+  type LocalMatchFeedResponse,
+  type LocalMatchStatus
+} from '@miraichi/shared';
+import { toPublicSnapshotStatus } from './public-match-metadata.js';
 
 const repository = new ServingMatchStoreRepository();
 
@@ -62,8 +67,12 @@ export async function handleMatches(
       competitionId,
       status: status as LocalMatchStatus
     });
+    const publicPayload: LocalMatchFeedResponse = {
+      matches: payload.matches.map(toProviderNeutralLocalMatch),
+      snapshot: toPublicSnapshotStatus(payload.snapshot)
+    };
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(payload));
+    res.end(JSON.stringify(publicPayload));
   } catch (error) {
     const err = error as { statusCode?: number; code?: string; message?: string };
     const statusCode = err.statusCode || 500;
@@ -77,4 +86,5 @@ export async function handleMatches(
     }));
   }
 }
+
 export type MatchFeedResponse = LocalMatchFeedResponse;

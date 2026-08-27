@@ -85,7 +85,7 @@ export function renderAppShell({
   const activeTab = navigationTabs.find((tab: NavigationTab) => tab.id === safeActiveTabId) ?? navigationTabs[0];
   const resolvedTimeZone = timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone;
   const panels = [
-    renderTodayScreen({ activeTabId: safeActiveTabId, translate, bets: betRecordsState, bankroll: bankrollState, discipline: disciplineConfigState, report: todayReportState }),
+    renderTodayScreen({ activeTabId: safeActiveTabId, translate, bets: betRecordsState, bankroll: bankrollState, discipline: disciplineConfigState, report: todayReportState, matchFeed, locale, timezone }),
     renderMatchesScreen({ activeTabId: safeActiveTabId, translate, locale, matchFeed, timezone, filters, searchQuery, isFilterPanelOpen, isCalendarOpen: isMatchesCalendarOpen, ...(matchesCalendarMonth !== undefined ? { calendarMonth: matchesCalendarMonth } : {}) }),
     renderBetsScreen({ activeTabId: safeActiveTabId, translate, state: betRecordsState, filter: betRecordFilter, bankroll: bankrollState }),
     renderBankrollScreen({ activeTabId: safeActiveTabId, translate, locale, timeZone: resolvedTimeZone, state: bankrollState, view: bankrollView, disciplineConfigState, reportState, reportPeriod, customCalendarMonth, customRangeStart, customRangeEnd })

@@ -4,7 +4,7 @@ This directory is the provider-neutral local data root. Generated raw evidence, 
 
 ## Current state
 
-No external match provider is implemented or active. The worker must remain idle until a SportScore code slice passes its terminal-only publication and scheduler tests.
+The SportScore source, terminal-only publication, bounded scheduler, and lazy terminal-detail code are implemented locally. Real provider network execution remains disabled by default and has not passed the separately approved staging gate.
 
 Tracked files preserve only directory structure and operating guidance. They are not match data.
 
@@ -14,5 +14,6 @@ Tracked files preserve only directory structure and operating guidance. They are
 - `warehouse/` contains immutable provider-neutral canonical versions.
 - `serving/` contains the sanitized materialized snapshot consumed by the Miraichi API.
 - `match-details/` contains terminal factual detail projections only.
+- `match-detail-refresh/` contains the bounded lazy-detail queue and negative-cache state.
 
-Never copy real credentials, provider URLs containing secrets, or provider entity IDs into serving payloads. Unit and integration tests must use temporary roots.
+Never copy real credentials, private provider match IDs, or provider URLs into serving/API payloads. Unit, integration, and local UI smoke tests must use isolated temporary or mock roots.
