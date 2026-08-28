@@ -8,6 +8,7 @@ async function createFixture(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), 'miraichi-product-boundary-'));
   await mkdir(join(root, 'apps/api/src'), { recursive: true });
   await mkdir(join(root, 'apps/web/src/config'), { recursive: true });
+  await mkdir(join(root, 'scripts'), { recursive: true });
   await writeFile(join(root, 'package.json'), JSON.stringify({ scripts: {} }));
   await writeFile(join(root, 'apps/api/src/index.ts'), "const route = '/api/v1/health';\n");
   await writeFile(
@@ -21,9 +22,14 @@ describe('product boundary verifier', () => {
   it('reports forbidden product paths, commands, API routes, and navigation tabs', async () => {
     const root = await createFixture();
     await mkdir(join(root, 'apps/local-ai'), { recursive: true });
+    await writeFile(join(root, 'scripts/sportscore-local-runtime.ts'), 'export {}\n');
     await writeFile(
       join(root, 'package.json'),
-      JSON.stringify({ scripts: { 'dev:local-ai': 'tsx app.ts', 'data:verify:sportmonks': 'tsx verify.ts' } })
+      JSON.stringify({ scripts: {
+        'dev:local-ai': 'tsx app.ts',
+        'data:verify:sportmonks': 'tsx verify.ts',
+        'sportscore:local:schedule': 'tsx scripts/sportscore-local-runtime.ts'
+      } })
     );
     await writeFile(join(root, 'apps/api/src/index.ts'), "const route = '/api/v1/predictions';\n");
     await writeFile(
@@ -33,8 +39,10 @@ describe('product boundary verifier', () => {
 
     expect(await auditProductBoundary(root)).toEqual(expect.arrayContaining([
       'Forbidden path exists: apps/local-ai',
+      'Forbidden path exists: scripts/sportscore-local-runtime.ts',
       'Forbidden package script: dev:local-ai',
       'Forbidden package script: data:verify:sportmonks',
+      'Forbidden package script: sportscore:local:schedule',
       'Forbidden API route: /api/v1/predictions',
       'Navigation tabs must be exactly: today, matches, bets, bankroll'
     ]));

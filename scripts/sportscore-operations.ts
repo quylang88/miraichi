@@ -17,6 +17,7 @@ import {
   readServingMatchStoreSnapshot
 } from '../apps/api/src/repositories/serving-match-store.js';
 import { SportScoreSourceLedger } from '../apps/worker/src/sources/sportscore/sportscore-source-ledger.js';
+import { SeasonHydrationLedger } from '../apps/worker/src/sources/hydration/season-hydration-ledger.js';
 import { readCanonicalWarehouseRun } from './providers/shared/canonical-warehouse.js';
 import { verifySportScoreOpenApiContract } from './sportscore-contract-drift.js';
 
@@ -109,6 +110,44 @@ export async function assertPreparedSportScoreSmokeRoot(options: {
   return dataRoot;
 }
 
+export async function assertBootstrappedSportScoreActiveRoot(options: {
+  dataRoot: string;
+  activeDataRoot?: string;
+}): Promise<string> {
+  const dataRoot = await assertBootstrappedActiveDataRoot(options);
+  const snapshot = await readServingMatchStoreSnapshot(path.join(dataRoot, 'serving'));
+  if (!snapshot.sources.some((source) => source.sourceId === 'sportscore')) {
+    throw new Error('Active SportScore root must contain a validated bootstrapped snapshot.');
+  }
+  return dataRoot;
+}
+
+export async function assertBootstrappedActiveDataRoot(options: {
+  dataRoot: string;
+  activeDataRoot?: string;
+}): Promise<string> {
+  const dataRoot = assertNarrowDataRoot(options.dataRoot, 'SportScore active data root');
+  const activeDataRoot = assertNarrowDataRoot(
+    options.activeDataRoot ?? defaultActiveDataRoot(),
+    'Configured SportScore active data root'
+  );
+  if (dataRoot !== activeDataRoot) {
+    throw new Error('SportScore local runtime may target only the configured apps/api/data root.');
+  }
+  let snapshot;
+  try {
+    snapshot = await readServingMatchStoreSnapshot(path.join(dataRoot, 'serving'));
+  } catch {
+    throw new Error('Active SportScore root must contain a validated bootstrapped snapshot.');
+  }
+  if (
+    snapshot.matches.length === 0
+  ) {
+    throw new Error('Active data root must contain a validated bootstrapped snapshot.');
+  }
+  return dataRoot;
+}
+
 export async function inspectSportScoreSourceReview(): Promise<{
   termsScope: 'blocked';
   realNetworkAuthorized: false;
@@ -185,6 +224,10 @@ export async function inspectSportScoreRuntimeStatus(options: {
     terminalCompleted: number;
     terminalExhausted: number;
   };
+  hydration: {
+    completedTargets: number;
+    deferredTargets: number;
+  };
 }> {
   const dataRoot = assertNarrowDataRoot(options.dataRoot, 'SportScore status data root');
   const now = options.now ?? (() => new Date());
@@ -192,9 +235,10 @@ export async function inspectSportScoreRuntimeStatus(options: {
     servingRoot: path.join(dataRoot, 'serving'),
     now
   });
-  const [serving, ledger] = await Promise.all([
+  const [serving, ledger, hydration] = await Promise.all([
     repository.getStatus(),
-    new SportScoreSourceLedger({ dataRoot, now }).getState()
+    new SportScoreSourceLedger({ dataRoot, now }).getState(),
+    new SeasonHydrationLedger({ dataRoot, now }).getState()
   ]);
   const dailyCheckpoints = Object.values(ledger.daily);
   const terminalCheckpoints = Object.values(ledger.terminalWindows);
@@ -214,6 +258,10 @@ export async function inspectSportScoreRuntimeStatus(options: {
       terminalPending: Object.keys(ledger.terminalSchedules).length,
       terminalCompleted: terminalCheckpoints.filter((item) => item.terminalAt !== undefined).length,
       terminalExhausted: terminalCheckpoints.filter((item) => item.exhaustedAt !== undefined).length
+    },
+    hydration: {
+      completedTargets: Object.keys(hydration.checkpoints).length,
+      deferredTargets: Object.keys(hydration.failures).length
     }
   };
 }

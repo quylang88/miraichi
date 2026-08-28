@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  SPORTSCORE_WORKER_PROVIDER_STATUS,
   startWorker,
   WORKER_PROVIDER_STATUS
 } from './index.js';
@@ -19,11 +18,10 @@ describe('explicit worker provider boundary', () => {
     expect(() => worker.stop()).not.toThrow();
   });
 
-  it('enables SportScore only through an explicitly injected schedule', () => {
+  it('does not expose the retired SportScore schedule injection path', () => {
     const log = vi.fn();
     const run = vi.fn();
     const setIntervalFn = vi.fn(() => 42 as unknown as ReturnType<typeof setInterval>);
-    const clearIntervalFn = vi.fn();
 
     const worker = startWorker({
       log,
@@ -31,17 +29,16 @@ describe('explicit worker provider boundary', () => {
         run,
         intervalMs: 60_000,
         setIntervalFn: setIntervalFn as unknown as typeof setInterval,
-        clearIntervalFn: clearIntervalFn as typeof clearInterval
+        clearIntervalFn: vi.fn() as typeof clearInterval
       }
-    });
+    } as never);
 
-    expect(worker.status).toBe(SPORTSCORE_WORKER_PROVIDER_STATUS);
-    expect(setIntervalFn).toHaveBeenCalledTimes(1);
+    expect(worker.status).toBe(WORKER_PROVIDER_STATUS);
+    expect(setIntervalFn).not.toHaveBeenCalled();
     expect(run).not.toHaveBeenCalled();
     expect(log).toHaveBeenCalledWith(
-      '[Worker Daemon] SportScore schedule enabled with explicit injected configuration.'
+      '[Worker Daemon] No external match provider is configured; worker is idle.'
     );
     worker.stop();
-    expect(clearIntervalFn).toHaveBeenCalledTimes(1);
   });
 });

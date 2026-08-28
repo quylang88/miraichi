@@ -7,8 +7,10 @@
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
 - **Completed phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written.
-- **Active phase**: `phase:integration-test SportScore Public API Source — Slice 7 large-boundary integration and contract-drift verification` — local integration plus an owner-approved anonymous one-shot passed on 2026-08-27; cloud staging remains blocked.
-- **Promotion state**: SportScore Slices 0–7, large local integration, and the isolated local provider smoke are complete; the active local root has not been bootstrapped, and cloud staging, owner feedback, and production have not started.
+- **Superseded operational path**: SportScore date hydration, local scheduling, worker injection, and all new `/api/v1` requests are retired because the free terms cover only `/api/widget/*` and the date scan is not viable.
+- **Completed phase**: `phase:integration-test Season-oriented provider-neutral hydration and coverage refactoring` — provider-neutral current-before-past planning, OpenFootball season-file ingestion, isolated checkpoints, and the complete local release gate passed on 2026-08-29.
+- **Active phase**: `phase:plan Current-season source execution and daily-result boundary` — implementation is owner-gated on the competition scope and source choice below; no provider-network batch is approved yet.
+- **Promotion state**: The active `apps/api/data` root remains bootstrapped with 41 matches. No season batch, football-data.org request, cloud staging, owner feedback, or production promotion has run in this phase.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -19,7 +21,10 @@ The application may store and display factual fixtures, schedules, terminal resu
 
 Competitions are configured through an allowlist and may be either `club` or `national-team`. Neither type has priority in core code. The 50 target competitions are equal; competition 51+ must be a registry-only addition.
 
-## Accepted SportScore Boundary
+## Historical SportScore Implementation Record — Network Operation Superseded
+
+The checklist below records prior work; it is not current permission to call SportScore
+`/api/v1`. Existing SportScore-sourced records retain required attribution.
 
 - [x] Accept ADR-0048 and supersede ADR-0047 plus the external-source portion of ADR-0045.
 - [x] Accept visible crawlable dofollow `Powered by SportScore` attribution on Today, Matches, and match detail when SportScore data is rendered.
@@ -39,7 +44,7 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - [x] Complete Slice 6: expose sanitized source/freshness metadata, render conditional crawlable SportScore attribution on Today, Matches, and match detail, and show nullable detail statistics/lineups honestly in EN/VI.
 - [x] Complete Slice 7 local integration: exercise all 50 equal competitions through restart checkpoints, 503 recovery, terminal-only publication, sanitized API serving, lazy terminal detail, and attribution; pin an offline contract fixture checksum and add guarded local operations. Real-network staging is not included.
 
-## Planned TDD Slices
+## Historical SportScore TDD Slices
 
 1. SportScore 50-competition registry and provider-neutral source contract.
 2. HTTP client with anonymous/optional-key modes, exact-host containment, coalescing, timeout, and 429/503 backoff.
@@ -134,21 +139,47 @@ Competitions are configured through an allowlist and may be either `club` or `na
 - The approved offline OpenAPI fixture SHA-256 is `ab6564b124c1a907e3413d559618ebaea6313d6e143fad6189db0e2a584b6363`. Verification checks required fixture/detail paths and performs no network download.
 - Guarded commands now exist for source/terms review, contract verification, sanitized checkpoint/status inspection, isolated empty-root preparation, and non-overwriting active-root bootstrap. Root overlap, invalid source ledgers, existing manifest/version/ledger conflicts, and concurrent file creation fail closed.
 - `pnpm run verify:local` passed 87 test files / 488 tests. `pnpm run test:integration` passed SportScore integration, Phase 3 ingestion, endpoint E2E, and PWA checks. `pnpm run verify:staging` passed the same release gates plus a local static build; it did not deploy or call SportScore.
-- At Slice 7 closeout, `pnpm run sportscore:status` reported the active root as `freshness: missing`, `matchCount: 0`, and zero checkpoints. The later owner-approved one-shot evidence below remains isolated and did not change that active root.
+- At Slice 7 closeout, `pnpm run sportscore:status` reported the active root as `freshness: missing`, `matchCount: 0`, and zero checkpoints. The later owner-approved isolated evidence was explicitly bootstrapped only after validation.
 
-## Owner-Approved Anonymous Local One-Shot Evidence — 2026-08-27
+## Season-Oriented Hydration Review And Remediation Evidence — 2026-08-28
 
-- The owner explicitly approved adding and executing `sportscore:local:sync-once` without a key before any cloud staging work. The command is limited to one competition/day request, zero transport retries, an exact network confirmation, and a prepared isolated root by default.
-- The first isolated request reached SportScore but correctly rejected publication because the real `/api/v1/fixtures/` payload identifies matches with a relative `/football/match/<slug>/` URL instead of the OpenAPI fixture's `slug` field. No active data was changed.
-- The adapter now derives a private provider slug only from the exact SportScore match URL shape and rejects foreign origins, queries, fragments, or unrelated paths. The scheduler uses the same resolver for +15/+30 terminal coverage.
-- Two subsequent isolated one-request runs succeeded anonymously for UEFA Conference League on 2026-08-27. Each published 24 scheduled matches. The final root reported `freshness: fresh`, one completed daily checkpoint, and eight pending terminal windows.
-- A dedicated local API process served the isolated snapshot with health `ok`, 24 matches, one competition, source `sportscore`, and no `sourceMatchId`, `sourceUrl`, or `in_play` leakage. The active `apps/api/data` root was not bootstrapped or modified.
-- Focused post-smoke verification passed 4 files / 23 tests plus TypeScript. `pnpm run verify:release` passed 88 files / 494 unit tests, 5 files / 16 SportScore integration tests, endpoint E2E, and PWA verification without another provider request. The local runner also has a guarded active mode that accepts only a previously bootstrapped active root and requires a separate `SPORTSCORE_ACTIVE_LOCAL_SYNC` confirmation.
+- Review rejected the uncommitted claim of 25 supported free competitions. At verified
+  OpenFootball tree `4e4146c901b62bcafa1b6deabb7e4a3fccdc9b1f`, current JSON exists for 9/50,
+  past-1 for 24/50, and past-2 for 17/50.
+- Only Premier League has exact kickoff times on every current row. The strict coverage result is
+  1 supported, 24 partial, and 25 unsupported. football-data.org covers 10/50 on its free tier but
+  needs a token; it is mapped as `pending-owner` and has no executable client in this phase.
+- The provider-neutral registry at `packages/config/src/season-source-registry.ts` owns
+  `fixtureSource`, `resultSource`, `detailSource`, `externalCompetitionId`, `endpointKind`,
+  `seasonCycle`, exact source URLs, source IDs, available seasons, and verification metadata.
+- The planner enforces a hard current-before-past barrier. A deferred current target blocks older
+  seasons, and a newly enabled competition current target is selected before past work resumes.
+- The provider-neutral checkpoint is isolated at
+  `providers/season-hydration/state/ledger.json` and stores provider + competition + season plus
+  optional ETag/cursor. It does not reinterpret the legacy SportScore date ledger.
+- OpenFootball responses are bounded, full-response timed, ETag-aware, strict about partial
+  envelopes, and stored as raw public-domain evidence. Date-only rows are retained raw but not
+  published with an invented timestamp; exact local kickoff times are converted through the
+  registry IANA timezone.
+- One batch performs at most one merged warehouse/serving publication, regardless of fetched
+  season count. This removes repeated full-snapshot I/O from the rejected implementation.
+- SportScore local sync/schedule commands and worker schedule injection were removed. Product
+  boundary verification prevents the retired date-hydration files and commands from returning.
+- Focused evidence: 7 season integration files / 26 tests passed; worker idle-boundary tests,
+  product-boundary verification, and TypeScript checks passed. No provider data request was made
+  by tests.
+- `pnpm run verify:release` passed on 2026-08-29: 94 unit files / 516 tests, 4 SportScore
+  integration files / 12 tests, 7 season integration files / 26 tests, Phase 3 verification,
+  endpoint E2E, PWA verification, lint, TypeScript, architecture, lifecycle, and type-safety gates.
+- Active `apps/api/data` remained at 41 matches during review. Local checks are not staging or
+  production approval.
 
 ## Next Gate
 
-The next owner decision is whether to bootstrap the validated isolated snapshot into `apps/api/data`. Cloud staging remains blocked and has not started.
-
-Before cloud staging can start, the owner must retain published or written confirmation that attributed free use covers `/api/v1/fixtures/`, then explicitly approve the deployed smoke. Until both conditions are met, no deployment, owner-feedback gate, or production promotion is authorized. Local bootstrap remains a separate explicit owner decision based on the isolated evidence above.
+Stop before any provider-network batch. The next source decision is owner-gated: approve a free
+football-data.org token for 10 mapped current/delayed-result competitions, accept the 9-file
+OpenFootball partial MVP, or change the 50-competition scope/source budget. After that decision,
+the next safe lifecycle phase is `phase:plan` for the selected current-season and separate daily
+result pipeline. Cloud staging remains blocked.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

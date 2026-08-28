@@ -6,8 +6,6 @@ export const FORBIDDEN_PRODUCT_PATHS = [
   'apps/local-ai',
   'scripts/providers/sportmonks',
   'apps/api/data/providers/sportmonks',
-  'apps/worker/src/sources/openfootball',
-  'scripts/capture-openfootball.ts',
   'apps/worker/src/sources/api-football',
   'apps/api/data/api-football',
   'apps/worker/src/jobs/api-football-hydration-job.ts',
@@ -25,10 +23,15 @@ export const FORBIDDEN_PRODUCT_PATHS = [
   'scripts/seed-api-football-history.test.ts',
   'tests/integration/api-football-rapid-match-source.test.ts',
   'tests/integration/api-football-quota-resume.test.ts',
-  'tests/integration/api-football-match-detail.test.ts'
+  'tests/integration/api-football-match-detail.test.ts',
+  'scripts/sportscore-local-sync.ts',
+  'scripts/sportscore-local-runtime.ts',
+  'apps/worker/src/jobs/sportscore-hydration-job.ts',
+  'apps/worker/src/sources/sportscore/sportscore-hydration-plan.ts',
+  'apps/worker/src/sources/sportscore/sportscore-hydration-ledger.ts'
 ] as const;
 
-const FORBIDDEN_SCRIPT = /(^dev:local-ai$|^phase4:|^phase8:|sportmonks|api-football)/i;
+const FORBIDDEN_SCRIPT = /(^dev:local-ai$|^phase4:|^phase8:|^sportscore:local:|sportmonks|api-football)/i;
 const FORBIDDEN_API_ROUTE = /\/api\/v1\/(predictions|chat|mock\/predict|mock\/explain)/g;
 const EXPECTED_NAVIGATION_TABS = ['today', 'matches', 'bets', 'bankroll'] as const;
 const RETIRED_PROVIDER_MARKER = /api[-_ ]football|apifootball/i;
