@@ -157,8 +157,11 @@ pnpm run data:results:terminal:watch -- --timezone Asia/Tokyo --owner-country JP
 ```
 
 Stop it with `Ctrl+C`. The loop wakes every 30 seconds, but the durable ledger makes zero provider
-requests until a known match is due and prevents overlapping runs. Once the first check window is
-open, the objective is best-effort 0–2 minutes after FotMob marks FT; this is not an SLA.
+requests until a known match is due and prevents overlapping runs. Season revalidation and terminal
+updates also share one canonical-publication lease, so concurrent commands cannot publish from the
+same stale base. A one-shot `lease_busy` result exits non-zero; retry later instead of forcing it.
+Once the first check window is open, the objective is best-effort 0–2 minutes after FotMob marks FT;
+this is not an SLA.
 
 Stop immediately on `partial`, `circuitOpen: true`, HTTP 403/429, a non-zero exit, a lower serving
 match count, or a new validation warning. Do not launch a second watcher, proxy requests, change

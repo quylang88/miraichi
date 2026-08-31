@@ -245,7 +245,9 @@ async function main(args = process.argv.slice(2)): Promise<void> {
     mode: parsed.mode
   });
   console.log(JSON.stringify(result, null, 2));
-  if (result.status === 'partial' || result.requestsFailed > 0) process.exitCode = 1;
+  if (result.status === 'partial'
+    || result.status === 'lease_busy'
+    || result.requestsFailed > 0) process.exitCode = 1;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {

@@ -253,6 +253,9 @@ remains a separate, unapproved implementation plan. Cloud staging and production
 - Large-boundary integration proves terminal-only publication through Miraichi
   `GET /api/v1/matches`, live-score exclusion, restart timing, last-good preservation on 429, and
   nine-at-a-time current revalidation without historical eligibility.
+- Season revalidation and terminal-result jobs share one canonical-publication lease. Concurrent
+  runs return `lease_busy` before reading/publishing, preventing a stale-base last-writer-wins data
+  loss between the two otherwise separate pipelines.
 - Active-root revalidation was replayed on 2026-08-31 only after read-only ledger inspection proved
   all 45 checkpoints were younger than 24 hours. It returned `idle`, zero requests, zero
   publications, 10,899 matches, and fresh serving data.
@@ -260,9 +263,9 @@ remains a separate, unapproved implementation plan. Cloud staging and production
   one unintended **current-season** FotMob request against a temporary data root. No historical
   endpoint was requested; the test was immediately isolated and the job boundary now rejects before
   provider execution. This does not change ADR-0049 risk or authorize further test network calls.
-- Final local gate on 2026-08-31: `pnpm run verify:release` passed 102 unit files / 575 tests,
-  4 SportScore integration files / 12 tests, 9 season integration files / 52 tests, and 7 FotMob
-  terminal integration files / 34 tests, plus Phase 3, endpoint E2E, PWA, lint, TypeScript,
+- Final local gate on 2026-08-31: `pnpm run verify:release` passed 103 unit files / 576 tests,
+  4 SportScore integration files / 12 tests, 9 season integration files / 52 tests, and 8 FotMob
+  terminal integration files / 35 tests, plus Phase 3, endpoint E2E, PWA, lint, TypeScript,
   architecture, lifecycle, product-boundary, and type-safety verification.
 - No SportScore `/api/v1` request, staging deployment, production promotion, or push occurred.
   FotMob terms/robots risk remains owner-accepted and the implementation contains no bypass.

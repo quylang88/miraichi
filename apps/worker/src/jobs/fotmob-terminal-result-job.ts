@@ -35,6 +35,7 @@ import {
   loadLastGoodWarehouseSnapshot,
   mergeCanonicalWarehouseSnapshots
 } from '../sources/shared/canonical-snapshot-merge.js';
+import { CanonicalPublicationJobLease } from '../sources/shared/canonical-publication-job-lease.js';
 
 const PROVIDER_FAILURE_DELAY_MINUTES = 15;
 const NON_TERMINAL_DELAY_MINUTES = 2;
@@ -115,11 +116,21 @@ export async function runFotMobTerminalResultJob(
       ? {}
       : { staleAfterMs: options.leaseStaleAfterMs })
   });
-  const leased = await lease.tryWithLease(() => execute({
-    ...options,
-    observedAt,
-    maxRequests
-  }));
+  const leased = await lease.tryWithLease(async () => {
+    const publicationLease = new CanonicalPublicationJobLease({
+      dataRoot: options.dataRoot,
+      now: () => observedAt,
+      ...(options.leaseStaleAfterMs === undefined
+        ? {}
+        : { staleAfterMs: options.leaseStaleAfterMs })
+    });
+    const publicationLeased = await publicationLease.tryWithLease(() => execute({
+      ...options,
+      observedAt,
+      maxRequests
+    }));
+    return publicationLeased.acquired ? publicationLeased.value : emptyResult('lease_busy');
+  });
   return leased.acquired ? leased.value : emptyResult('lease_busy');
 }
 

@@ -37,6 +37,7 @@ import {
   loadLastGoodWarehouseSnapshot,
   mergeCanonicalWarehouseSnapshots
 } from '../sources/shared/canonical-snapshot-merge.js';
+import { CanonicalPublicationJobLease } from '../sources/shared/canonical-publication-job-lease.js';
 import { SeasonHydrationJobLease } from '../sources/hydration/season-hydration-job-lease.js';
 import { SeasonHydrationLedger } from '../sources/hydration/season-hydration-ledger.js';
 import {
@@ -106,12 +107,22 @@ export async function runSeasonHydrationJob(
       ? {}
       : { staleAfterMs: options.leaseStaleAfterMs })
   });
-  const leased = await lease.tryWithLease(() => execute({
-    ...options,
-    observedAt,
-    maxRequests,
-    requestIntervalMs
-  }));
+  const leased = await lease.tryWithLease(async () => {
+    const publicationLease = new CanonicalPublicationJobLease({
+      dataRoot: options.dataRoot,
+      now: () => observedAt,
+      ...(options.leaseStaleAfterMs === undefined
+        ? {}
+        : { staleAfterMs: options.leaseStaleAfterMs })
+    });
+    const publicationLeased = await publicationLease.tryWithLease(() => execute({
+      ...options,
+      observedAt,
+      maxRequests,
+      requestIntervalMs
+    }));
+    return publicationLeased.acquired ? publicationLeased.value : emptyResult('lease_busy');
+  });
   return leased.acquired ? leased.value : emptyResult('lease_busy');
 }
 

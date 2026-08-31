@@ -10,10 +10,10 @@ scope.
 Every code slice follows RED -> minimal GREEN -> focused verification -> local commit before the
 next slice starts.
 
-Completion: all eight slices were implemented and locally committed on 2026-08-31. The final
-release gate passed 102 unit files / 575 tests, 9 season integration files / 52 tests, and 7 FotMob
-terminal integration files / 34 tests. Historical hydration, lazy detail, staging, production, and
-push remain outside this completed plan.
+Completion: all eight planned slices plus one corrective shared-publication-lease slice were
+implemented and locally committed on 2026-08-31. The final release gate passed 103 unit files / 576
+tests, 9 season integration files / 52 tests, and 8 FotMob terminal integration files / 35 tests.
+Historical hydration, lazy detail, staging, production, and push remain outside this completed plan.
 
 ## TDD slices
 
