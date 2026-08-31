@@ -1,85 +1,129 @@
-# Season Hydration Local Operations
+# Current-Season Hydration Local Operations
 
 ## Boundary
 
-Season hydration is provider-neutral and owner-local. The only executable full-season source in
-this slice is OpenFootball's public-domain `football.json` season file. The runtime does not
-import SportScore's client, does not call SportScore `/api/v1`, and does not poll live matches.
+Season hydration is provider-neutral and owner-local. FotMob unofficial is the primary executable
+current-season source under the owner-accepted ADR-0049 risk boundary. ESPN remains disabled and
+OpenFootball remains a provider-neutral fallback where an exact season file is registered.
 
-The active data root remains `apps/api/data`. Existing serving and warehouse snapshots are
-merged, not deleted or replaced with an empty dataset. Raw OpenFootball season files are stored
-under `providers/openfootball/raw`; provider-neutral checkpoints are stored separately under
-`providers/season-hydration/state`. The old SportScore date-hydration ledger is preserved but is
-never interpreted as a season checkpoint.
+The runtime does not import the SportScore client, does not call SportScore `/api/v1`, does not poll
+live matches, and does not implement anti-bot circumvention. A FotMob `403` or `429` opens the
+circuit breaker; stop the run instead of changing identity, proxying, or simulating a browser.
 
-Coverage evidence and all 50 mappings are in
-[`season-source-coverage-matrix.md`](./season-source-coverage-matrix.md).
+The active data root is `apps/api/data`. Existing serving and warehouse snapshots are merged, never
+deleted or replaced with an empty dataset. Provider-neutral checkpoints live under
+`providers/season-hydration/state` and are keyed by provider, competition, and canonical season.
 
-## Coverage that can actually run
+Coverage evidence and all exact mappings are in
+[`fotmob-unofficial-coverage-matrix.md`](./fotmob-unofficial-coverage-matrix.md).
 
-As verified on 2026-08-28:
+## Current verified state
 
-- 9/50 competitions have a current OpenFootball JSON season file.
-- Only Premier League has an exact kickoff time for every current row.
-- 24/50 have a verified OpenFootball past-1 file; 17/50 have past-2.
-- football-data.org covers 10/50 on its free tier but requires an owner token and is not
-  implemented or enabled in this slice.
-- Valid free match-detail coverage is 0/50.
+Verified locally on 2026-08-31:
 
-The registry therefore reports 1 supported, 24 partial, and 25 unsupported competitions. A
-date-only raw row is retained but is not published with an invented `00:00Z` kickoff.
+- Exact FotMob mappings: 50/50.
+- Executable current editions: 45/50.
+- Current checkpoints: 45.
+- Serving snapshot: 10,899 valid matches across 45 competition partitions.
+- Historical checkpoints: 0.
+- Five current editions are unavailable or unpublished: Club World Cup, FA Cup, Copa del Rey,
+  Coupe de France, and KNVB Beker.
+- Two in-play provider rows were excluded from canonical and serving data.
+- Three old mismatch failures remain as forensic ledger evidence; they are no longer executable
+  targets and do not authorize deletion.
+- The exact Step 3 command was replayed after completion and returned `status: idle`, zero requests,
+  zero publications, 45 completed targets, 10,899 matches, and `fresh` serving state.
 
-## Inspect active data
+This is all data currently published by the provider for the verified editions. It is not a
+guarantee that staged cup competitions have published every future round.
+
+## Historical-season hard stop
+
+Historical-season hydration is **PENDING by owner decision on 2026-08-31**.
+
+- The command-line runtime defaults to `--past-seasons 0`.
+- Any value above zero is rejected.
+- Do not edit the ledger, registry, or runtime to bypass this stop.
+- Reopening past-1 or past-2 requires a new `phase:plan` with exact provider-season evidence.
+
+## Standard current-season runbook
+
+Run every command from PowerShell. Stop immediately when a command exits non-zero.
+
+### Step 1 — enter the workspace and confirm the code revision
 
 ```powershell
+Set-Location C:\CODE\miraichi
+git status --short
+git branch --show-current
+git log -1 --oneline
+```
+
+`git status --short` must be empty. Generated data under `apps/api/data` is gitignored and does not
+make the tracked worktree dirty.
+
+### Step 2 — verify the executable boundary before network access
+
+```powershell
+pnpm run verify:release
+pnpm run data:validate:serving:matches
 pnpm run sportscore:status
 ```
 
-This command is read-only. It reports the current 41-match active snapshot, the legacy SportScore
-daily ledger, and the separate provider-neutral season checkpoint totals.
+For the verified 2026-08-31 root, expect `fresh`, 10,899 matches, and 45 completed hydration
+targets. Local verification is not staging or production approval.
 
-## Run one bounded season batch
-
-Use the owner's IANA timezone. If `--date` is omitted, the runtime derives the current local date.
+### Step 3 — run exactly one bounded current-season batch
 
 ```powershell
-pnpm run data:hydrate:season:batch -- --timezone Asia/Tokyo --confirm-network SEASON_HYDRATION_NETWORK
+pnpm run data:hydrate:season:batch -- --timezone Asia/Tokyo --past-seasons 0 --max-requests 9 --request-interval-ms 2000 --confirm-network SEASON_HYDRATION_NETWORK
 ```
 
-A deterministic reference date:
+Important behavior:
+
+- The omitted `--date` is derived in `Asia/Tokyo`; do not reuse an old fixed date for routine runs.
+- One invocation attempts at most nine provider requests and performs at most one atomic publication.
+- The exact registry order is preserved.
+- On the already-complete active root, the expected result is `status: idle`,
+  `requestsAttempted: 0`, and no new publication.
+- On an incomplete but valid root, repeat Steps 3 and 4 until 45 current targets are checkpointed.
+- If `requestsFailed` is above zero, stop. Respect the persisted backoff; do not immediately loop.
+
+### Step 4 — validate after every batch
 
 ```powershell
-pnpm run data:hydrate:season:batch -- --date 2026-08-28 --timezone Asia/Tokyo --max-requests 9 --request-interval-ms 2000 --confirm-network SEASON_HYDRATION_NETWORK
+pnpm run data:validate:serving:matches
+pnpm run sportscore:status
+git status --short
 ```
 
-The planner enforces a hard season barrier:
+The serving validator must pass, match count must never fall to zero, and the tracked worktree must
+remain clean. A lower match count or new warning is a stop condition requiring review before any
+further provider request.
 
-1. All executable current-season targets in exact registry order.
-2. Only after every current target is checkpointed, all available past-1 targets in registry order.
-3. Only after past-1 completes, all available past-2 targets.
+### Step 5 — serve the local API
 
-A deferred current target blocks past seasons; the planner does not skip the barrier. If a newly
-mapped competition 51/52 gains an executable current source, its current target appears before
-past work resumes.
+In a separate PowerShell terminal:
 
-Each checkpoint key is `provider|competition|season` and stores completion time plus ETag/cursor
-when available. One batch may fetch several season files, but it writes at most one merged
-warehouse/serving snapshot. This avoids the prior repeated full-snapshot I/O pattern.
+```powershell
+Set-Location C:\CODE\miraichi
+pnpm run dev:api
+```
+
+The browser and web app continue to read through Miraichi API routes such as
+`GET /api/v1/matches`; they never call FotMob directly.
 
 ## Daily results and detail
 
-There is intentionally no local scheduler in this slice.
+There is intentionally no daily scheduler in this current-season runbook.
 
-- Full-season hydration is not a live or daily polling loop.
-- Daily result ingestion needs a separate approved source and ledger.
-- football-data.org is the recommended free delayed-result candidate for its 10 covered
-  competitions, but using it requires explicit owner approval for a local token and a new TDD
-  slice.
-- Match detail remains lazy and unavailable until a lawful detail source is approved.
-- Existing SportScore-attributed records remain attributed in the UI; retaining those records
-  does not authorize new SportScore `/api/v1` requests.
+- Full-season hydration is not live polling.
+- FotMob daily results require a separate TDD plan and ledger before implementation.
+- Match detail remains lazy-after-FT work and is not part of the current hydration command.
+- Existing SportScore-attributed records retain attribution, but no new SportScore `/api/v1`
+  request is authorized.
 
-## Verification
+## Verification commands
 
 ```powershell
 pnpm run season:integration
@@ -87,5 +131,4 @@ pnpm run verify:release
 git diff --check
 ```
 
-Local verification is not staging or production approval. No cloud deployment or provider
-promotion is authorized by these commands.
+No command in this document deploys to cloud, staging, or production.

@@ -9,8 +9,10 @@
 - **Completed phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written.
 - **Superseded operational path**: SportScore date hydration, local scheduling, worker injection, and all new `/api/v1` requests are retired because the free terms cover only `/api/widget/*` and the date scan is not viable.
 - **Completed phase**: `phase:integration-test Season-oriented provider-neutral hydration and coverage refactoring` — provider-neutral current-before-past planning, OpenFootball season-file ingestion, isolated checkpoints, and the complete local release gate passed on 2026-08-29.
-- **Active phase**: `phase:plan Current-season source execution and daily-result boundary` — implementation is owner-gated on the competition scope and source choice below; no provider-network batch is approved yet.
-- **Promotion state**: The active `apps/api/data` root remains bootstrapped with 41 matches. No season batch, football-data.org request, cloud staging, owner feedback, or production promotion has run in this phase.
+- **Completed phase**: `phase:code-slice FotMob unofficial current-season hydration` — the owner accepted ADR-0049 risk, all 45 executable current editions were checkpointed, and the final local release gate passed on 2026-08-31.
+- **Active phase**: `phase:maintenance Current-season owner-local hydration` — only bounded current-season execution, validation, and local API serving are in scope.
+- **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
+- **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45 current competition editions. No cloud staging, owner-feedback release gate, or production promotion has run.
 - **Current lifecycle source of truth**: this file.
 
 ## Product Boundary
@@ -192,10 +194,20 @@ Final local evidence on 2026-08-31: `pnpm run verify:release` passed 97 unit fil
 E2E, PWA, lint, TypeScript, architecture, lifecycle, and type-safety gates. Local verification and
 owner-local data are not staging or production approval.
 
-The earliest safe next phase is `phase:plan` for historical-season mapping verification. Only five
-historical targets currently have explicit provider-season evidence; the other 45 are disabled to
-prevent guessed requests. After that mapping gate, run past-1 in registry order, then past-2.
-Daily terminal-result ingestion and lazy FT detail remain separate implementation plans. Cloud
-staging and production remain blocked.
+Historical-season hydration is **PENDING by explicit owner decision on 2026-08-31**. The owner-local
+CLI defaults to `pastSeasons: 0` and rejects every `--past-seasons` value above zero, so the five
+evidence-backed historical targets cannot be executed accidentally. The earliest safe active work
+is therefore `phase:maintenance` for bounded current-season validation and execution only.
+
+The documented current-only command was replayed against the completed active ledger on 2026-08-31
+and returned `status: idle`, zero requests, zero publications, 45 completed targets, 10,899 matches,
+and `fresh` serving state. Serving validation, lifecycle verification, and product-boundary
+verification passed without a provider request.
+
+If the owner later reopens historical work, the earliest safe next phase will be `phase:plan` for
+exact provider-season mapping verification. Only five historical targets currently have explicit
+provider-season evidence; the other 45 remain disabled to prevent guessed requests. Daily terminal-
+result ingestion and lazy FT detail remain separate, unapproved implementation plans. Cloud staging
+and production remain blocked.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
