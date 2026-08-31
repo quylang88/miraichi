@@ -48,7 +48,6 @@ export function alignDeltaMatchIds(
   delta: CanonicalWarehouseSnapshot
 ): CanonicalWarehouseSnapshot {
   const baseMatchById = new Map(base.matches.map((match) => [match.matchId, match]));
-  const deltaMatchById = new Map(delta.matches.map((match) => [match.matchId, match]));
   const baseLinksByProviderId = new Map<string, ProviderLink[]>();
   for (const link of base.links) {
     if (link.entityType !== 'match') continue;
@@ -57,20 +56,35 @@ export function alignDeltaMatchIds(
     current.push(link);
     baseLinksByProviderId.set(sourceKey, current);
   }
-
-  const remappedIds = new Map<string, string>();
+  const baseMatchesByFixture = new Map<string, typeof base.matches>();
+  for (const match of base.matches) {
+    const key = canonicalFixtureKey(match);
+    const current = baseMatchesByFixture.get(key) ?? [];
+    current.push(match);
+    baseMatchesByFixture.set(key, current);
+  }
+  const deltaLinksByMatchId = new Map<string, ProviderLink[]>();
   for (const link of delta.links) {
     if (link.entityType !== 'match') continue;
-    const deltaMatch = deltaMatchById.get(link.entityId);
-    if (!deltaMatch) continue;
+    const current = deltaLinksByMatchId.get(link.entityId) ?? [];
+    current.push(link);
+    deltaLinksByMatchId.set(link.entityId, current);
+  }
 
-    const matchingBase = (baseLinksByProviderId.get(providerEntityKey(link)) ?? [])
+  const remappedIds = new Map<string, string>();
+  for (const deltaMatch of delta.matches) {
+    const sourceLinkedBase = (deltaLinksByMatchId.get(deltaMatch.matchId) ?? [])
+      .flatMap((link) => baseLinksByProviderId.get(providerEntityKey(link)) ?? [])
       .map((baseLink) => baseMatchById.get(baseLink.entityId))
       .find((baseMatch) => baseMatch !== undefined
         && baseMatch.competitionId === deltaMatch.competitionId
         && baseMatch.season === deltaMatch.season
         && baseMatch.homeTeamId === deltaMatch.homeTeamId
         && baseMatch.awayTeamId === deltaMatch.awayTeamId);
+    const fixtureMatches = baseMatchesByFixture.get(canonicalFixtureKey(deltaMatch)) ?? [];
+    const matchingBase = sourceLinkedBase ?? (
+      fixtureMatches.length === 1 ? fixtureMatches[0] : undefined
+    );
     if (matchingBase && matchingBase.matchId !== deltaMatch.matchId) {
       remappedIds.set(deltaMatch.matchId, matchingBase.matchId);
     }
@@ -88,6 +102,22 @@ export function alignDeltaMatchIds(
       ? { ...item, entityId: remap(item.entityId) }
       : item)
   };
+}
+
+function canonicalFixtureKey(match: {
+  competitionId: string;
+  season: string;
+  kickoffUtc: string;
+  homeTeamId: string;
+  awayTeamId: string;
+}): string {
+  return [
+    match.competitionId,
+    match.season,
+    match.kickoffUtc.slice(0, 10),
+    match.homeTeamId,
+    match.awayTeamId
+  ].join('|');
 }
 
 export function mergeCanonicalWarehouseSnapshots(
