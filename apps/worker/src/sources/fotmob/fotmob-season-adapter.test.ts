@@ -8,7 +8,7 @@ const observedAt = '2026-08-31T02:00:00.000Z';
 
 function payload(matches: FotMobSeasonPayload['fixtures']['allMatches']): FotMobSeasonPayload {
   return {
-    details: { id: 47, name: 'Premier League', selectedSeason: '2026/2027' },
+    details: { id: 47, name: 'Competition Alpha', selectedSeason: '2026/2027' },
     fixtures: { allMatches: matches }
   };
 }

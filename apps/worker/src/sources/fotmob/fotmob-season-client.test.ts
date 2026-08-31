@@ -7,7 +7,7 @@ import {
 
 function validPayload() {
   return {
-    details: { id: 47, name: 'Premier League', selectedSeason: '2026/2027' },
+    details: { id: 47, name: 'Competition Alpha', selectedSeason: '2026/2027' },
     fixtures: {
       allMatches: [{
         id: 501,
