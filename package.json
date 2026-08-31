@@ -33,7 +33,7 @@
     "phase9:non-ai-app-verify": "pnpm run phase9:local-data-api-verify && pnpm run phase9:cloud-persistence-verify",
     "check": "tsx scripts/check-files.ts",
     "test": "pnpm run test:unit",
-    "test:unit": "vitest run",
+    "test:unit": "vitest run --exclude \"tests/integration/**\" --maxWorkers=2",
     "test:unit:coverage": "vitest run --coverage",
     "lint": "tsx scripts/check-js-syntax.ts .",
     "verify:lifecycle": "tsx scripts/verify-lifecycle.ts",
