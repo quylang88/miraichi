@@ -110,6 +110,16 @@ export function parseSeasonHydrationRuntimeArgs(
   assertTimeZone(timeZone);
   const date = readArgValue(args, '--date')?.trim();
   if (date !== undefined) assertCalendarDate(date);
+  const pastSeasons = parseInteger(
+    readArgValue(args, '--past-seasons'),
+    0,
+    '--past-seasons',
+    0,
+    10
+  );
+  if (pastSeasons > 0) {
+    throw new Error('Historical-season hydration is pending and cannot be executed.');
+  }
   return {
     dataRoot: path.resolve(readArgValue(args, '--data-root') ?? defaultActiveDataRoot()),
     ...(date === undefined ? {} : { date }),
@@ -122,13 +132,7 @@ export function parseSeasonHydrationRuntimeArgs(
       1,
       100
     ),
-    pastSeasons: parseInteger(
-      readArgValue(args, '--past-seasons'),
-      2,
-      '--past-seasons',
-      0,
-      10
-    ),
+    pastSeasons,
     requestIntervalMs: parseInteger(
       readArgValue(args, '--request-interval-ms'),
       DEFAULT_REQUEST_INTERVAL_MS,
@@ -172,7 +176,7 @@ export async function runLocalSeasonHydrationBatch(
     registry: COMPETITION_SOURCE_REGISTRY,
     referenceDate: options.date,
     now,
-    pastSeasons: options.pastSeasons ?? 2,
+    pastSeasons: options.pastSeasons ?? 0,
     maxRequestsPerRun: options.maxRequestsPerRun ?? DEFAULT_MAX_REQUESTS_PER_RUN,
     requestIntervalMs: options.requestIntervalMs ?? DEFAULT_REQUEST_INTERVAL_MS,
     ...(options.openFootballClient === undefined

@@ -70,8 +70,16 @@ describe('owner-local season hydration runtime', () => {
       date: '2026-08-28',
       maxRequestsPerRun: 9,
       requestIntervalMs: 2_000,
-      pastSeasons: 2
+      pastSeasons: 0
     });
+  });
+
+  it('rejects historical execution while historical-season hydration is pending', () => {
+    expect(() => parseSeasonHydrationRuntimeArgs([
+      '--date', '2026-08-28',
+      '--past-seasons', '1',
+      '--confirm-network', SEASON_HYDRATION_NETWORK_CONFIRMATION
+    ])).toThrow(/historical-season hydration is pending/iu);
   });
 
   it('hydrates the active root without replacing its existing snapshot', async () => {
