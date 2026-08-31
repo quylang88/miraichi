@@ -77,9 +77,13 @@
   not-yet-published cup editions.
 - Daily result capability: one FotMob global-date request per due terminal-check cycle, filtered by
   pinned registry league IDs; no request occurs when no known match is due. Terminal rows only are
-  publishable. This is operationally efficient but contract-risky.
-- Match detail capability: 50 mapped competitions, lazy after FT, but field coverage is partial and
-  nullable. It is not an SLA.
+  publishable. The owner-local once/watch runtime, durable ledger, ETag, retry window, and 403/429
+  circuit breaker are implemented and locally verified. This is operationally efficient but
+  contract-risky.
+- Current revalidation capability: 45 executable current editions, 24-hour TTL, registry order,
+  ETag/304, at most nine requests per batch, and zero historical eligibility.
+- Match detail source mapping: 50 competitions. The FotMob lazy-after-FT detail pipeline is not yet
+  implemented; field coverage remains unknown/partial and must not be presented as available.
 
 ## Verified hydration result — 2026-08-31
 
@@ -96,3 +100,5 @@
   2025/26 editions of FA Cup, Copa del Rey, Coupe de France, and KNVB Beker are enabled. Past-season
   labels for the other 45 competitions are not enabled until each mapping is independently
   verified. Generic year conversion is not treated as evidence.
+- The completed active ledger was replayed through current revalidation on 2026-08-31 and returned
+  `idle`, zero requests, zero publications, 45 checkpoints, 10,899 matches, and fresh serving data.

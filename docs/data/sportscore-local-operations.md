@@ -113,20 +113,69 @@ pnpm run dev:api
 The browser and web app continue to read through Miraichi API routes such as
 `GET /api/v1/matches`; they never call FotMob directly.
 
-## Daily results and detail
+## Current-edition revalidation
 
-There is intentionally no daily scheduler in this current-season runbook.
+Full-season hydration remains separate from result checks. To discover newly published rounds,
+run current-only revalidation after the 24-hour checkpoint TTL. Each invocation is capped at nine
+season requests, preserves registry order, sends the saved ETag, and advances a 304 checkpoint
+without publishing a duplicate snapshot.
 
-- Full-season hydration is not live polling.
-- FotMob daily results require a separate TDD plan and ledger before implementation.
-- Match detail remains lazy-after-FT work and is not part of the current hydration command.
-- Existing SportScore-attributed records retain attribution, but no new SportScore `/api/v1`
-  request is authorized.
+Run up to five bounded batches to cover all 45 executable current editions. The loop stops on the
+first non-zero exit code:
+
+```powershell
+1..5 | ForEach-Object {
+  pnpm run data:revalidate:season:current -- --timezone Asia/Tokyo --past-seasons 0 --max-requests 9 --request-interval-ms 2000 --confirm-network SEASON_HYDRATION_NETWORK
+  if ($LASTEXITCODE -ne 0) { throw "Current revalidation failed at batch $_" }
+}
+pnpm run data:validate:serving:matches
+```
+
+When no checkpoint is due, every invocation returns `status: idle` and makes zero requests. This
+command never makes a historical target eligible. Do not reduce the request interval or increase
+the nine-request batch cap.
+
+## Fast terminal results
+
+The terminal pipeline is implemented separately from season hydration. It reads only known
+canonical matches with private FotMob links, first checks at kickoff +105 minutes, groups all due
+matches by provider date, and retries non-terminal observations every two minutes. Missing rows
+retry after five minutes. It stops after 45 checks or kickoff +240 minutes.
+
+Run one bounded check:
+
+```powershell
+pnpm run data:results:terminal:once -- --timezone Asia/Tokyo --owner-country JPN --max-requests 2 --confirm-network FOTMOB_TERMINAL_RESULTS_NETWORK
+```
+
+For the lowest supported latency, keep one dedicated PowerShell terminal open and run the serial
+watch loop:
+
+```powershell
+Set-Location C:\CODE\miraichi
+pnpm run data:results:terminal:watch -- --timezone Asia/Tokyo --owner-country JPN --max-requests 2 --confirm-network FOTMOB_TERMINAL_RESULTS_NETWORK
+```
+
+Stop it with `Ctrl+C`. The loop wakes every 30 seconds, but the durable ledger makes zero provider
+requests until a known match is due and prevents overlapping runs. Once the first check window is
+open, the objective is best-effort 0–2 minutes after FotMob marks FT; this is not an SLA.
+
+Stop immediately on `partial`, `circuitOpen: true`, HTTP 403/429, a non-zero exit, a lower serving
+match count, or a new validation warning. Do not launch a second watcher, proxy requests, change
+identity, fabricate browser headers, or delete the active ledger/snapshot to force a retry.
+
+Only completed, postponed, and cancelled observations can be published. Live score/time and raw
+daily response bodies are not persisted or returned by Miraichi API. Lazy FotMob match detail is
+still pending and is not implemented by either terminal command.
+
+Existing SportScore-attributed records retain attribution, but no new SportScore `/api/v1`
+request is authorized.
 
 ## Verification commands
 
 ```powershell
 pnpm run season:integration
+pnpm run fotmob:terminal:integration
 pnpm run verify:release
 git diff --check
 ```

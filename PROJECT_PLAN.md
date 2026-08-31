@@ -10,7 +10,8 @@
 - **Superseded operational path**: SportScore date hydration, local scheduling, worker injection, and all new `/api/v1` requests are retired because the free terms cover only `/api/widget/*` and the date scan is not viable.
 - **Completed phase**: `phase:integration-test Season-oriented provider-neutral hydration and coverage refactoring` — provider-neutral current-before-past planning, OpenFootball season-file ingestion, isolated checkpoints, and the complete local release gate passed on 2026-08-29.
 - **Completed phase**: `phase:code-slice FotMob unofficial current-season hydration` — the owner accepted ADR-0049 risk, all 45 executable current editions were checkpointed, and the final local release gate passed on 2026-08-31.
-- **Active phase**: `phase:plan FotMob daily terminal results and current-edition revalidation` — the owner approved implementation on 2026-08-31; exact TDD slices and request boundaries are defined below.
+- **Completed phase**: `phase:integration-test FotMob daily terminal results and current-edition revalidation` — all eight TDD slices and the local release gate passed on 2026-08-31.
+- **Active phase**: `phase:maintenance FotMob owner-local current data operations` — only guarded current hydration, 24-hour current revalidation, and terminal-result once/watch operation are open.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45 current competition editions. No cloud staging, owner-feedback release gate, or production promotion has run.
 - **Current lifecycle source of truth**: this file.
@@ -237,5 +238,45 @@ remains a separate, unapproved implementation plan. Cloud staging and production
   batch. This discovers newly published rounds without reopening historical hydration.
 - **Design**: `docs/superpowers/specs/2026-08-31-fotmob-terminal-results-design.md`.
 - **Implementation plan**: `docs/superpowers/plans/2026-08-31-fotmob-terminal-results.md`.
+
+### Local implementation and integration evidence
+
+- All eight planned slices followed RED -> GREEN -> focused verification -> local commit. Terminal
+  checks use the global daily endpoint, coalesce due matches by provider date, persist a restart-safe
+  provider/match/date ledger, and publish at most one merged canonical/serving snapshot per run.
+- The once/watch runtime requires explicit network confirmation, targets only the validated active
+  data root, allows at most two provider dates per tick, wakes serially every 30 seconds, and makes
+  zero requests until the ledger says a known match is due.
+- Current-edition revalidation uses a 24-hour TTL, saved ETag/304, registry order, and a hard
+  nine-request batch limit. Both the CLI and worker job reject every historical-season execution
+  while historical work is pending.
+- Large-boundary integration proves terminal-only publication through Miraichi
+  `GET /api/v1/matches`, live-score exclusion, restart timing, last-good preservation on 429, and
+  nine-at-a-time current revalidation without historical eligibility.
+- Active-root revalidation was replayed on 2026-08-31 only after read-only ledger inspection proved
+  all 45 checkpoints were younger than 24 hours. It returned `idle`, zero requests, zero
+  publications, 10,899 matches, and fresh serving data.
+- During the RED test for the new job-level historical hard stop, the missing test double allowed
+  one unintended **current-season** FotMob request against a temporary data root. No historical
+  endpoint was requested; the test was immediately isolated and the job boundary now rejects before
+  provider execution. This does not change ADR-0049 risk or authorize further test network calls.
+- Final local gate on 2026-08-31: `pnpm run verify:release` passed 102 unit files / 575 tests,
+  4 SportScore integration files / 12 tests, 9 season integration files / 52 tests, and 7 FotMob
+  terminal integration files / 34 tests, plus Phase 3, endpoint E2E, PWA, lint, TypeScript,
+  architecture, lifecycle, product-boundary, and type-safety verification.
+- No SportScore `/api/v1` request, staging deployment, production promotion, or push occurred.
+  FotMob terms/robots risk remains owner-accepted and the implementation contains no bypass.
+
+### Maintenance boundary and next phase
+
+- Strict registry coverage remains **41 supported, 9 partial, 0 unmapped**. Executable current
+  editions remain **45/50**. The currently unavailable/non-current editions are Club World Cup,
+  FA Cup, Copa del Rey, Coupe de France, and KNVB Beker.
+- Historical-season hydration remains **PENDING**. Reopening it requires a new `phase:plan` and
+  exact provider-season evidence; 45 historical mappings still cannot be guessed.
+- Lazy FotMob match detail is not implemented. If the owner wants events, lineups, or statistics,
+  the earliest safe next development phase is `phase:plan FotMob lazy terminal match detail`.
+- Local release evidence is not staging or production approval. Those gates remain blocked until a
+  separate owner decision explicitly accepts promotion under the unofficial-source risk.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
