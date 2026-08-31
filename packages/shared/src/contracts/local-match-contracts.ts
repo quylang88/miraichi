@@ -1,6 +1,7 @@
 export type LocalDataSourceId =
   | 'sportscore'
   | 'openfootball'
+  | 'fotmob-unofficial'
   | 'manual-snapshot';
 
 export type LocalCompetitionType = 'national-team' | 'club';
@@ -188,6 +189,7 @@ function isObject(val: unknown): val is Record<string, unknown> {
 const VALID_DATA_SOURCES: LocalDataSourceId[] = [
   'sportscore',
   'openfootball',
+  'fotmob-unofficial',
   'manual-snapshot'
 ];
 

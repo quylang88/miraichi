@@ -45,6 +45,18 @@ const OPENFOOTBALL_BINDING_POLICY = {
 };
 
 describe('provider-neutral ingestion contracts', () => {
+  it('accepts the owner-approved FotMob source in private provider links', () => {
+    expect(validateProviderLink({
+      entityType: 'match',
+      entityId: 'match-1',
+      provider: 'fotmob-unofficial',
+      providerEntityType: 'match',
+      providerEntityId: '501',
+      confidence: 1,
+      linkedBy: 'fotmob-season-adapter',
+      linkedAt: '2026-08-31T00:00:00.000Z'
+    })).toEqual({ ok: true });
+  });
   it('accepts SportScore only as source evidence and rejects provider identity in canonical fields', () => {
     expect(validateRawProviderPayloadEnvelope({
       schemaVersion: 'miraichi.provider.raw.v1',

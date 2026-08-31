@@ -4,6 +4,7 @@ export type { ValidationResult };
 export type ProviderId =
   | 'sportscore'
   | 'openfootball'
+  | 'fotmob-unofficial'
   | 'manual-snapshot';
 
 export type CanonicalMatchStatus =
@@ -191,6 +192,7 @@ function isObject(val: unknown): val is Record<string, unknown> {
 const VALID_PROVIDER_IDS: ProviderId[] = [
   'sportscore',
   'openfootball',
+  'fotmob-unofficial',
   'manual-snapshot'
 ];
 
