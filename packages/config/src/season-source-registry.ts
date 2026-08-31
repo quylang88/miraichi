@@ -138,14 +138,14 @@ const FOTMOB_MAPPINGS: Readonly<Record<string, FotMobMapping>> = Object.freeze({
   'tha-league-1': fm(8984, 'THA', 'supported'),
   'vie-v-league-1': fm(9088, 'VIE', 'supported'),
   'fifa-club-world-cup': fm(78, 'INT', 'partial', 'fifa.cwc', '2025', false),
-  'eng-fa-cup': fm(132, 'ENG', 'partial', 'eng.fa'),
+  'eng-fa-cup': fm(132, 'ENG', 'partial', 'eng.fa', undefined, false),
   'eng-efl-cup': fm(133, 'ENG', 'supported', 'eng.league_cup'),
-  'esp-copa-del-rey': fm(138, 'ESP', 'partial', 'esp.copa_del_rey'),
+  'esp-copa-del-rey': fm(138, 'ESP', 'partial', 'esp.copa_del_rey', undefined, false),
   'ger-dfb-pokal': fm(209, 'GER', 'supported', 'ger.dfb_pokal'),
   'ita-coppa-italia': fm(141, 'ITA', 'supported', 'ita.coppa_italia'),
-  'fra-coupe-de-france': fm(134, 'FRA', 'partial', 'fra.coupe_de_france'),
+  'fra-coupe-de-france': fm(134, 'FRA', 'partial', 'fra.coupe_de_france', undefined, false),
   'por-taca-de-portugal': fm(186, 'POR', 'partial', 'por.taca.portugal'),
-  'ned-knvb-beker': fm(235, 'NED', 'partial', 'ned.cup')
+  'ned-knvb-beker': fm(235, 'NED', 'partial', 'ned.cup', undefined, false)
 });
 
 const OPENFOOTBALL_MAPPINGS: Readonly<Record<string, OpenFootballMapping>> = Object.freeze({
@@ -314,8 +314,9 @@ function fotMobBinding(
   capability: 'fixture' | 'result' | 'detail'
 ): CompetitionSourceBinding {
   const providerSeasons = providerSeasonMap(seasonCycle, mapping.currentProviderSeason);
+  const currentCanonicalSeason = seasonCycle === 'calendar-year' ? '2026' : '2026-27';
   const availableCanonicalSeasons = mapping.currentAvailable === false
-    ? Object.keys(providerSeasons).filter((season) => season !== '2026')
+    ? Object.keys(providerSeasons).filter((season) => season !== currentCanonicalSeason)
     : Object.keys(providerSeasons);
   const endpoint = capability === 'fixture'
     ? {

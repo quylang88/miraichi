@@ -26,7 +26,7 @@ describe('provider-neutral season hydration planner', () => {
       blockedKeys: new Set(),
       maxRequests: 50
     });
-    expect(plan.targets).toHaveLength(49);
+    expect(plan.targets).toHaveLength(45);
     expect(plan.targets.every((target) => target.seasonOffset === 0)).toBe(true);
     expect(plan.targets[0]).toMatchObject({
       providerSeason: '2026/2027',

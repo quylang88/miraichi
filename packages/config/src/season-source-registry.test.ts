@@ -84,7 +84,16 @@ describe('provider-neutral season source registry', () => {
     expect(byId.get('col-primera-a')?.sourceBindings.fixture?.providerSeasonByCanonicalSeason)
       .toMatchObject({ '2026': '2026 - Clausura' });
     expect(byId.get('jpn-j1-league')?.seasonCycle).toBe('cross-year');
-    expect(byId.get('fifa-club-world-cup')?.sourceBindings.fixture?.availableCanonicalSeasons)
-      .not.toContain('2026');
+    for (const competitionId of [
+      'fifa-club-world-cup',
+      'eng-fa-cup',
+      'esp-copa-del-rey',
+      'fra-coupe-de-france',
+      'ned-knvb-beker'
+    ]) {
+      const entry = byId.get(competitionId)!;
+      const current = entry.seasonCycle === 'calendar-year' ? '2026' : '2026-27';
+      expect(entry.sourceBindings.fixture?.availableCanonicalSeasons).not.toContain(current);
+    }
   });
 });
