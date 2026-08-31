@@ -7,8 +7,8 @@ import {
 } from './season-source-registry.js';
 
 describe('provider-neutral season source registry', () => {
-  it('reports the verified free coverage without promoting historical-only mappings', () => {
-    expect(SOURCE_REGISTRY_VALIDATED_AT).toBe('2026-08-28');
+  it('pins the owner-approved FotMob mapping for all 50 competitions', () => {
+    expect(SOURCE_REGISTRY_VALIDATED_AT).toBe('2026-08-31');
     expect(OPENFOOTBALL_VERIFIED_TREE_SHA)
       .toBe('4e4146c901b62bcafa1b6deabb7e4a3fccdc9b1f');
     expect(COMPETITION_SOURCE_REGISTRY).toHaveLength(50);
@@ -17,41 +17,44 @@ describe('provider-neutral season source registry', () => {
       status,
       COMPETITION_SOURCE_REGISTRY.filter((entry) => entry.coverageStatus === status).length
     ]));
-    expect(counts).toEqual({ supported: 1, partial: 24, unsupported: 25 });
+    expect(counts).toEqual({ supported: 41, partial: 9, unsupported: 0 });
 
-    const executableCurrent = COMPETITION_SOURCE_REGISTRY.filter((entry) => (
-      entry.sourceBindings.fixture?.executionStatus === 'enabled'
-      && entry.sourceBindings.fixture.availableCanonicalSeasons.includes(
-        entry.seasonCycle === 'calendar-year' ? '2026' : '2026-27'
-      )
-    ));
-    expect(executableCurrent).toHaveLength(9);
-    expect(executableCurrent.map((entry) => entry.competitionId)).toEqual([
-      'eng-premier-league',
-      'esp-la-liga',
-      'ita-serie-a',
-      'ger-bundesliga',
-      'fra-ligue-1',
-      'eng-championship',
-      'ned-eredivisie',
-      'por-primeira-liga',
-      'bra-serie-a'
+    expect(COMPETITION_SOURCE_REGISTRY.every((entry) => (
+      entry.fixtureSource === 'fotmob-unofficial'
+      && entry.resultSource === 'fotmob-unofficial'
+      && entry.detailSource === 'fotmob-unofficial'
+      && entry.sourceBindings.fixture?.externalNumericId !== undefined
+      && entry.sourceBindings.fixture.externalCountryCode !== undefined
+    ))).toBe(true);
+    expect(COMPETITION_SOURCE_REGISTRY.map((entry) => (
+      entry.sourceBindings.fixture!.externalNumericId
+    ))).toEqual([
+      47, 87, 55, 54, 53, 42, 73, 10216, 74, 45,
+      299, 525, 48, 140, 86, 146, 110, 57, 61, 40,
+      64, 71, 69, 38, 46, 135, 67, 59, 196, 536,
+      130, 230, 268, 112, 274, 223, 9080, 113, 120, 8984,
+      9088, 78, 132, 133, 138, 209, 141, 134, 186, 235
     ]);
   });
 
-  it('keeps free authenticated daily results separate and exposes no invented detail source', () => {
-    const footballDataResults = COMPETITION_SOURCE_REGISTRY.filter((entry) => (
-      entry.resultSource === 'football-data-org'
-    ));
-    expect(footballDataResults).toHaveLength(10);
-    expect(footballDataResults.every((entry) => (
-      entry.sourceBindings.result?.requiresCredential === true
-      && entry.sourceBindings.result.executionStatus === 'pending-owner'
-      && entry.sourceBindings.result.endpointKind === 'season-api'
-    ))).toBe(true);
+  it('separates season, daily-result, and lazy-detail capabilities', () => {
     expect(COMPETITION_SOURCE_REGISTRY.every((entry) => (
-      entry.detailSource === 'none' && entry.sourceBindings.detail === undefined
+      entry.sourceBindings.fixture?.endpointKind === 'season-api'
+      && entry.sourceBindings.result?.endpointKind === 'daily-api'
+      && entry.sourceBindings.detail?.endpointKind === 'match-api'
+      && entry.sourceBindings.result.urlTemplate.includes('/api/data/matches?')
+      && entry.sourceBindings.detail.urlTemplate.includes('/api/data/matchDetails?')
     ))).toBe(true);
+  });
+
+  it('keeps ESPN unofficial mappings disabled and never treats missing mappings as enabled', () => {
+    const espnBindings = COMPETITION_SOURCE_REGISTRY.flatMap((entry) => (
+      entry.sourceBindings.fixtureFallbacks?.filter((binding) => (
+        binding.sourceId === 'espn-unofficial'
+      )) ?? []
+    ));
+    expect(espnBindings).toHaveLength(45);
+    expect(espnBindings.every((binding) => binding.executionStatus === 'disabled')).toBe(true);
   });
 
   it('binds every selected source to an external ID, exact URL template, and verification date', () => {
@@ -72,23 +75,16 @@ describe('provider-neutral season source registry', () => {
     expect(validateCompetitionSourceRegistry(COMPETITION_SOURCE_REGISTRY)).toEqual({ ok: true });
   });
 
-  it('marks only the full-kickoff current OpenFootball feed as supported', () => {
-    const supported = COMPETITION_SOURCE_REGISTRY.find((entry) => (
-      entry.coverageStatus === 'supported'
-    ));
-    expect(supported?.competitionId).toBe('eng-premier-league');
-    expect(supported?.sourceBindings.fixture?.currentRecordCoverage).toEqual({
-      total: 380,
-      exactKickoff: 380
-    });
-
-    const laLiga = COMPETITION_SOURCE_REGISTRY.find((entry) => (
-      entry.competitionId === 'esp-la-liga'
-    ));
-    expect(laLiga?.coverageStatus).toBe('partial');
-    expect(laLiga?.sourceBindings.fixture?.currentRecordCoverage).toEqual({
-      total: 380,
-      exactKickoff: 41
-    });
+  it('stores provider-season exceptions in bindings instead of core competition branches', () => {
+    const byId = new Map(COMPETITION_SOURCE_REGISTRY.map((entry) => [entry.competitionId, entry]));
+    expect(byId.get('uefa-super-cup')?.sourceBindings.fixture?.providerSeasonByCanonicalSeason)
+      .toMatchObject({ '2026-27': '2025/2026' });
+    expect(byId.get('mex-liga-mx')?.sourceBindings.fixture?.providerSeasonByCanonicalSeason)
+      .toMatchObject({ '2026-27': '2026/2027 - Apertura' });
+    expect(byId.get('col-primera-a')?.sourceBindings.fixture?.providerSeasonByCanonicalSeason)
+      .toMatchObject({ '2026': '2026 - Clausura' });
+    expect(byId.get('jpn-j1-league')?.seasonCycle).toBe('cross-year');
+    expect(byId.get('fifa-club-world-cup')?.sourceBindings.fixture?.availableCanonicalSeasons)
+      .not.toContain('2026');
   });
 });

@@ -176,10 +176,16 @@ The checklist below records prior work; it is not current permission to call Spo
 
 ## Next Gate
 
-Stop before any provider-network batch. The next source decision is owner-gated: approve a free
-football-data.org token for 10 mapped current/delayed-result competitions, accept the 9-file
-OpenFootball partial MVP, or change the 50-competition scope/source budget. After that decision,
-the next safe lifecycle phase is `phase:plan` for the selected current-season and separate daily
-result pipeline. Cloud staging remains blocked.
+The owner accepted FotMob unofficial contractual and operational risk on 2026-08-31. ADR-0049 is
+the controlling source boundary: FotMob is the primary source, ESPN is a disabled fallback, and no
+anti-bot circumvention is permitted. Verified mapping coverage is 50/50; strict current coverage is
+41 supported, 9 partial, and 0 unmapped. Forty-five provider-selected active editions were
+observed; stale edition fallbacks must be deferred rather than checkpointed.
+
+The active lifecycle phase is `phase:code-slice` for provider-neutral FotMob current-season
+hydration under `docs/superpowers/plans/2026-08-31-fotmob-unofficial-season-source.md`. The local
+exit gate requires focused TDD evidence, `pnpm run verify:release`, preservation of the 41-match
+active baseline, and a guarded current-only batch. Daily terminal results and lazy FT detail are
+separate later slices. Cloud staging and production remain blocked.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

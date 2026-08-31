@@ -19,6 +19,7 @@ export interface SeasonHydrationCheckpointView {
 
 export interface SeasonHydrationTarget extends ResolvedCompetitionSeason {
   key: string;
+  providerSeason: string;
   sourceBinding: CompetitionSourceBinding;
 }
 
@@ -103,15 +104,18 @@ function buildTierTargets(
   for (const entry of registry) {
     const resolved = resolveCompetitionSeason(entry, referenceDate, seasonOffset);
     const sourceBinding = entry.sourceBindings.fixture;
+    const providerSeason = sourceBinding?.providerSeasonByCanonicalSeason?.[resolved.season];
     if (
       !sourceBinding
       || sourceBinding.executionStatus !== 'enabled'
       || !sourceBinding.availableCanonicalSeasons.includes(resolved.season)
+      || !providerSeason
     ) {
       continue;
     }
     targets.push({
       ...resolved,
+      providerSeason,
       sourceBinding,
       key: seasonHydrationTargetKey(
         sourceBinding.sourceId,
