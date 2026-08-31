@@ -79,3 +79,19 @@
   results only. This is operationally efficient but contract-risky.
 - Match detail capability: 50 mapped competitions, lazy after FT, but field coverage is partial and
   nullable. It is not an SLA.
+
+## Verified hydration result — 2026-08-31
+
+- Current edition targets: **45/50 complete** and **5/50 not applicable/unpublished**. The five are
+  Club World Cup (latest edition 2025), FA Cup, Copa del Rey, Coupe de France, and KNVB Beker.
+- The guarded owner-local run made 48 FotMob season requests: 45 final successful targets, six
+  transient adapter failures later recovered, and three factual selected-season mismatches that
+  caused the unavailable cup editions to be removed from current execution. No request was made
+  for KNVB after the earlier registry-order blocker; its unavailable current edition was already
+  verified in the mapping research.
+- Active serving data grew from 41 preserved matches to **10,899** canonical matches. Two in-play
+  rows were ignored and never entered canonical/serving data.
+- Historical execution remains deliberately narrow: only Club World Cup 2025 and the verified
+  2025/26 editions of FA Cup, Copa del Rey, Coupe de France, and KNVB Beker are enabled. Past-season
+  labels for the other 45 competitions are not enabled until each mapping is independently
+  verified. Generic year conversion is not treated as evidence.

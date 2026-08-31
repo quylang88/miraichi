@@ -176,16 +176,26 @@ The checklist below records prior work; it is not current permission to call Spo
 
 ## Next Gate
 
-The owner accepted FotMob unofficial contractual and operational risk on 2026-08-31. ADR-0049 is
-the controlling source boundary: FotMob is the primary source, ESPN is a disabled fallback, and no
-anti-bot circumvention is permitted. Verified mapping coverage is 50/50; strict current coverage is
-41 supported, 9 partial, and 0 unmapped. Forty-five provider-selected active editions were
-observed; stale edition fallbacks must be deferred rather than checkpointed.
+The owner-approved FotMob current-season hydration code slice is complete locally. ADR-0049 remains
+the controlling risk boundary: FotMob is primary, ESPN is disabled, and anti-bot circumvention is
+forbidden. The guarded owner-local run completed all 45 executable current editions and classified
+five editions as non-current/unpublished instead of fabricating data. The active serving store grew
+from 41 preserved matches to 10,899 valid matches. Two live rows were excluded.
 
-The active lifecycle phase is `phase:code-slice` for provider-neutral FotMob current-season
-hydration under `docs/superpowers/plans/2026-08-31-fotmob-unofficial-season-source.md`. The local
-exit gate requires focused TDD evidence, `pnpm run verify:release`, preservation of the 41-match
-active baseline, and a guarded current-only batch. Daily terminal results and lazy FT detail are
-separate later slices. Cloud staging and production remain blocked.
+The real run used 48 requests: 45 final successes, six transient adapter failures recovered after a
+TDD fix for structured status reasons, and three selected-season mismatches for unpublished cups.
+Three failure records remain as forensic ledger evidence but are no longer executable current
+targets. No SportScore `/api/v1` endpoint was called.
+
+Final local evidence on 2026-08-31: `pnpm run verify:release` passed 97 unit files / 536 tests,
+4 SportScore integration files / 12 tests, 9 season integration files / 44 tests, Phase 3, endpoint
+E2E, PWA, lint, TypeScript, architecture, lifecycle, and type-safety gates. Local verification and
+owner-local data are not staging or production approval.
+
+The earliest safe next phase is `phase:plan` for historical-season mapping verification. Only five
+historical targets currently have explicit provider-season evidence; the other 45 are disabled to
+prevent guessed requests. After that mapping gate, run past-1 in registry order, then past-2.
+Daily terminal-result ingestion and lazy FT detail remain separate implementation plans. Cloud
+staging and production remain blocked.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

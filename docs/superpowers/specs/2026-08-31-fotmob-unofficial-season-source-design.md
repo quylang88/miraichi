@@ -17,6 +17,10 @@ Checkpoint identity is provider + canonical competition + canonical season. Opti
 cursor remain values inside the checkpoint. A response whose selected provider season differs from
 the planned label is a deferred failure and cannot become a success checkpoint.
 
+Only canonical/provider season pairs with explicit mapping evidence are eligible. A syntactically
+obvious year conversion is not enough to make a historical target executable; this is especially
+important for split stages, transition seasons, shifted one-match editions, and non-annual cups.
+
 ## Current-first sequencing
 
 1. Plan incomplete current targets in canonical registry order.
@@ -37,4 +41,3 @@ detail is lazy after FT. Neither pipeline is a prerequisite for the first curren
   rejected.
 - Active data is merged and atomically republished; it is never deleted or replaced with an empty
   candidate.
-
