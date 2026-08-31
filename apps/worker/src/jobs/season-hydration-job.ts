@@ -64,6 +64,7 @@ export interface SeasonHydrationJobOptions {
   requestIntervalMs?: number;
   sleep?: (milliseconds: number) => Promise<void>;
   leaseStaleAfterMs?: number;
+  mode?: 'hydrate' | 'revalidate-current';
 }
 
 export interface SeasonHydrationJobResult {
@@ -120,8 +121,15 @@ async function execute(options: SeasonHydrationJobOptions & {
   requestIntervalMs: number;
 }): Promise<SeasonHydrationJobResult> {
   const registry = options.registry ?? COMPETITION_SOURCE_REGISTRY;
-  const pastSeasons = options.pastSeasons ?? 2;
+  const pastSeasons = options.pastSeasons ?? 0;
   assertRange(pastSeasons, 0, 10, 'pastSeasons');
+  if (pastSeasons > 0) {
+    throw new Error('Historical-season hydration is pending and cannot be executed.');
+  }
+  const mode = options.mode ?? 'hydrate';
+  if (mode === 'revalidate-current' && options.maxRequests > 9) {
+    throw new Error('Current season revalidation is limited to nine requests per batch.');
+  }
   const ledger = new SeasonHydrationLedger({
     dataRoot: options.dataRoot,
     now: () => options.observedAt
@@ -136,7 +144,9 @@ async function execute(options: SeasonHydrationJobOptions & {
     pastSeasons,
     checkpoints: new Map(Object.entries(state.checkpoints)),
     blockedKeys,
-    maxRequests: options.maxRequests
+    maxRequests: options.maxRequests,
+    mode,
+    observedAt: options.observedAt
   });
   if (plan.targets.length === 0) {
     return {
@@ -171,10 +181,25 @@ async function execute(options: SeasonHydrationJobOptions & {
       try {
         const response = await openFootballClient.getSeasonMatches({
           season: target.season,
-          file: target.sourceBinding.externalCompetitionId
+          file: target.sourceBinding.externalCompetitionId,
+          ...(target.requestEtag === undefined ? {} : { etag: target.requestEtag })
         });
         if (response.status === 'not_modified') {
-          throw new Error('Unexpected 304 for an incomplete season hydration target.');
+          if (target.intent !== 'revalidate') {
+            throw new Error('Unexpected 304 for an incomplete season hydration target.');
+          }
+          requestsSucceeded += 1;
+          successes.push({
+            target,
+            ...(response.etag ?? target.requestEtag
+              ? { etag: response.etag ?? target.requestEtag }
+              : {}),
+            delta: { matches: [], teams: [], competitions: [], links: [], provenance: [] }
+          });
+          if (index < plan.targets.length - 1 && options.requestIntervalMs > 0) {
+            await sleep(options.requestIntervalMs);
+          }
+          continue;
         }
         await writeRawEvidence({
           dataRoot: options.dataRoot,
@@ -228,10 +253,25 @@ async function execute(options: SeasonHydrationJobOptions & {
           const response = await fotMobClient.getSeasonMatches({
             externalCompetitionId: externalCompetitionId!,
             externalCountryCode: externalCountryCode!,
-            providerSeason: target.providerSeason
+            providerSeason: target.providerSeason,
+            ...(target.requestEtag === undefined ? {} : { etag: target.requestEtag })
           });
           if (response.status === 'not_modified') {
-            throw new Error('Unexpected 304 for an incomplete season hydration target.');
+            if (target.intent !== 'revalidate') {
+              throw new Error('Unexpected 304 for an incomplete season hydration target.');
+            }
+            requestsSucceeded += 1;
+            successes.push({
+              target,
+              ...(response.etag ?? target.requestEtag
+                ? { etag: response.etag ?? target.requestEtag }
+                : {}),
+              delta: { matches: [], teams: [], competitions: [], links: [], provenance: [] }
+            });
+            if (index < plan.targets.length - 1 && options.requestIntervalMs > 0) {
+              await sleep(options.requestIntervalMs);
+            }
+            continue;
           }
           await writeFotMobRawEvidence({
             dataRoot: options.dataRoot,

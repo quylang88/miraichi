@@ -311,4 +311,149 @@ describe('provider-neutral season hydration job', () => {
       requestsFailed: 1
     });
   });
+
+  it('revalidates a completed current season with ETag and advances a 304 checkpoint', async () => {
+    const dataRoot = await mkdtemp(path.join(os.tmpdir(), 'miraichi-season-revalidate-'));
+    roots.push(dataRoot);
+    const initialClient = vi.fn(async (request: {
+      externalCompetitionId: number;
+      providerSeason: string;
+    }) => ({
+      status: 'modified' as const,
+      etag: '"season-etag"',
+      rawText: '{"initial":true}',
+      payload: {
+        details: {
+          id: request.externalCompetitionId,
+          selectedSeason: request.providerSeason
+        },
+        fixtures: { allMatches: [{
+          id: 9101,
+          home: { id: 911, name: 'Revalidate Home' },
+          away: { id: 912, name: 'Revalidate Away' },
+          status: {
+            utcTime: '2026-09-01T12:00:00.000Z',
+            finished: false,
+            started: false,
+            cancelled: false
+          }
+        }] }
+      }
+    }));
+    await runSeasonHydrationJob({
+      dataRoot,
+      registry: COMPETITION_SOURCE_REGISTRY.slice(0, 1),
+      fotMobClient: { getSeasonMatches: initialClient },
+      referenceDate: '2026-08-31',
+      pastSeasons: 0,
+      maxRequestsPerRun: 1,
+      now: () => new Date('2026-08-30T12:00:00.000Z')
+    });
+    const revalidateClient = vi.fn(async () => ({
+      status: 'not_modified' as const
+    }));
+
+    const result = await runSeasonHydrationJob({
+      dataRoot,
+      registry: COMPETITION_SOURCE_REGISTRY.slice(0, 1),
+      fotMobClient: { getSeasonMatches: revalidateClient },
+      referenceDate: '2026-08-31',
+      pastSeasons: 0,
+      maxRequestsPerRun: 1,
+      mode: 'revalidate-current',
+      now: () => new Date('2026-08-31T12:00:00.000Z')
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      requestsAttempted: 1,
+      requestsSucceeded: 1,
+      publications: 0
+    });
+    expect(revalidateClient).toHaveBeenCalledWith(expect.objectContaining({
+      etag: '"season-etag"'
+    }));
+    const state = await new SeasonHydrationLedger({ dataRoot }).getState();
+    expect(Object.values(state.checkpoints)[0]).toEqual({
+      completedAt: '2026-08-31T12:00:00.000Z',
+      etag: '"season-etag"'
+    });
+  });
+
+  it('keeps historical season execution disabled at the job boundary', async () => {
+    const dataRoot = await mkdtemp(path.join(os.tmpdir(), 'miraichi-season-past-disabled-'));
+    roots.push(dataRoot);
+    await expect(runSeasonHydrationJob({
+      dataRoot,
+      registry: COMPETITION_SOURCE_REGISTRY.slice(0, 1),
+      fotMobClient: {
+        getSeasonMatches: vi.fn(async () => {
+          throw new Error('Historical test must not make a provider request.');
+        })
+      },
+      referenceDate: '2026-08-31',
+      pastSeasons: 1,
+      maxRequestsPerRun: 1
+    })).rejects.toThrow(/historical-season hydration is pending/iu);
+  });
+
+  it('publishes a newly discovered fixture from a modified current revalidation', async () => {
+    const dataRoot = await mkdtemp(path.join(os.tmpdir(), 'miraichi-season-new-round-'));
+    roots.push(dataRoot);
+    const responseFor = (request: {
+      externalCompetitionId: number;
+      providerSeason: string;
+    }, ids: number[]) => ({
+      status: 'modified' as const,
+      etag: `"season-${ids.length}"`,
+      rawText: JSON.stringify({ ids }),
+      payload: {
+        details: {
+          id: request.externalCompetitionId,
+          selectedSeason: request.providerSeason
+        },
+        fixtures: { allMatches: ids.map((id, index) => ({
+          id,
+          home: { id: id * 10 + 1, name: `Round Home ${id}` },
+          away: { id: id * 10 + 2, name: `Round Away ${id}` },
+          status: {
+            utcTime: `2026-09-${String(index + 1).padStart(2, '0')}T12:00:00.000Z`,
+            finished: false,
+            started: false,
+            cancelled: false
+          }
+        })) }
+      }
+    });
+    await runSeasonHydrationJob({
+      dataRoot,
+      registry: COMPETITION_SOURCE_REGISTRY.slice(0, 1),
+      fotMobClient: {
+        getSeasonMatches: vi.fn(async (request) => responseFor(request, [9201]))
+      },
+      referenceDate: '2026-08-31',
+      pastSeasons: 0,
+      maxRequestsPerRun: 1,
+      now: () => new Date('2026-08-30T12:00:00.000Z')
+    });
+    const revalidateClient = vi.fn(async (request) => responseFor(request, [9201, 9202]));
+
+    const result = await runSeasonHydrationJob({
+      dataRoot,
+      registry: COMPETITION_SOURCE_REGISTRY.slice(0, 1),
+      fotMobClient: { getSeasonMatches: revalidateClient },
+      referenceDate: '2026-08-31',
+      pastSeasons: 0,
+      maxRequestsPerRun: 1,
+      mode: 'revalidate-current',
+      now: () => new Date('2026-08-31T12:00:00.000Z')
+    });
+
+    expect(result).toMatchObject({ status: 'completed', publications: 1 });
+    expect(revalidateClient).toHaveBeenCalledWith(expect.objectContaining({ etag: '"season-1"' }));
+    const snapshot = await readServingMatchStoreSnapshot(path.join(dataRoot, 'serving'));
+    expect(snapshot.matches).toHaveLength(2);
+    expect(snapshot.matches.map((match) => match.sourceRefs[0]?.sourceMatchId).sort())
+      .toEqual(['9201', '9202']);
+  });
 });

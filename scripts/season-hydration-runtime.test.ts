@@ -82,6 +82,17 @@ describe('owner-local season hydration runtime', () => {
     ])).toThrow(/historical-season hydration is pending/iu);
   });
 
+  it('parses an explicit current revalidation mode with the same nine-request cap', () => {
+    expect(parseSeasonHydrationRuntimeArgs([
+      '--mode', 'revalidate-current',
+      '--confirm-network', SEASON_HYDRATION_NETWORK_CONFIRMATION
+    ])).toMatchObject({
+      mode: 'revalidate-current',
+      maxRequestsPerRun: 9,
+      pastSeasons: 0
+    });
+  });
+
   it('hydrates the active root without replacing its existing snapshot', async () => {
     const activeRoot = await makeBootstrappedActiveRoot();
     const getSeasonMatches = vi.fn(async (request: {

@@ -95,10 +95,13 @@ export class SeasonHydrationLedger {
     }
     await this.mutate(observedAt, (state) => {
       for (const success of outcomes.successes) {
+        const current = state.checkpoints[success.key];
+        const etag = success.etag ?? current?.etag;
+        const cursor = success.cursor ?? current?.cursor;
         state.checkpoints[success.key] = {
           completedAt: observedAt.toISOString(),
-          ...(success.etag === undefined ? {} : { etag: success.etag }),
-          ...(success.cursor === undefined ? {} : { cursor: success.cursor })
+          ...(etag === undefined ? {} : { etag }),
+          ...(cursor === undefined ? {} : { cursor })
         };
         delete state.failures[success.key];
       }

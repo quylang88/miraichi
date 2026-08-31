@@ -176,4 +176,82 @@ describe('provider-neutral season hydration planner', () => {
       ['ned-knvb-beker', '2025-26', '2025/2026']
     ]);
   });
+
+  it('revalidates only current checkpoints after 24 hours in registry order', () => {
+    const initial = planSeasonHydrationBatch({
+      registry: COMPETITION_SOURCE_REGISTRY,
+      referenceDate: '2026-08-31',
+      pastSeasons: 0,
+      checkpoints: new Map(),
+      blockedKeys: new Set(),
+      maxRequests: 50
+    }).targets;
+    const checkpoints = new Map(initial.map((target, index) => [
+      target.key,
+      {
+        completedAt: index < 12
+          ? '2026-08-30T12:00:00.000Z'
+          : '2026-08-31T11:59:59.000Z',
+        etag: `"etag-${index}"`
+      }
+    ]));
+
+    const plan = planSeasonHydrationBatch({
+      registry: COMPETITION_SOURCE_REGISTRY,
+      referenceDate: '2026-08-31',
+      pastSeasons: 0,
+      checkpoints,
+      blockedKeys: new Set(),
+      maxRequests: 9,
+      mode: 'revalidate-current',
+      observedAt: new Date('2026-08-31T12:00:00.000Z')
+    });
+
+    expect(plan.targets).toHaveLength(9);
+    expect(plan.targets.map((target) => target.competitionEntry.competitionId))
+      .toEqual(initial.slice(0, 9).map((target) => target.competitionEntry.competitionId));
+    expect(plan.targets.every((target) => (
+      target.seasonOffset === 0 && target.intent === 'revalidate'
+    ))).toBe(true);
+    expect(plan.targets[0]).toMatchObject({ requestEtag: '"etag-0"' });
+  });
+
+  it('does not revalidate current checkpoints before their 24-hour TTL', () => {
+    const initial = planSeasonHydrationBatch({
+      registry: COMPETITION_SOURCE_REGISTRY.slice(0, 2),
+      referenceDate: '2026-08-31',
+      pastSeasons: 0,
+      checkpoints: new Map(),
+      blockedKeys: new Set(),
+      maxRequests: 2
+    }).targets;
+    const checkpoints = new Map(initial.map((target) => [
+      target.key,
+      { completedAt: '2026-08-30T12:00:01.000Z', etag: '"fresh"' }
+    ]));
+
+    expect(planSeasonHydrationBatch({
+      registry: COMPETITION_SOURCE_REGISTRY.slice(0, 2),
+      referenceDate: '2026-08-31',
+      pastSeasons: 0,
+      checkpoints,
+      blockedKeys: new Set(),
+      maxRequests: 2,
+      mode: 'revalidate-current',
+      observedAt: new Date('2026-08-31T12:00:00.000Z')
+    }).targets).toEqual([]);
+  });
+
+  it('rejects historical eligibility in current revalidation mode', () => {
+    expect(() => planSeasonHydrationBatch({
+      registry: COMPETITION_SOURCE_REGISTRY,
+      referenceDate: '2026-08-31',
+      pastSeasons: 1,
+      checkpoints: new Map(),
+      blockedKeys: new Set(),
+      maxRequests: 9,
+      mode: 'revalidate-current',
+      observedAt: new Date('2026-08-31T12:00:00.000Z')
+    })).toThrow(/current revalidation cannot plan historical seasons/iu);
+  });
 });

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { COMPETITION_SOURCE_REGISTRY } from '../packages/config/src/index.js';
 import {
   runSeasonHydrationJob,
@@ -9,7 +9,10 @@ import {
 import { SeasonHydrationLedger } from '../apps/worker/src/sources/hydration/season-hydration-ledger.js';
 import { resolveCompetitionSeason } from '../apps/worker/src/sources/hydration/season-hydration-plan.js';
 import { ServingMatchStoreRepository } from '../apps/api/src/repositories/serving-match-store-repository.js';
-import { assertBootstrappedActiveDataRoot } from './sportscore-operations.js';
+import {
+  assertBootstrappedOwnerActiveDataRoot,
+  defaultOwnerActiveDataRoot
+} from './providers/shared/active-data-root.js';
 
 export const SEASON_HYDRATION_NETWORK_CONFIRMATION =
   'SEASON_HYDRATION_NETWORK' as const;
@@ -28,9 +31,11 @@ export interface LocalSeasonHydrationOptions {
   now?: () => Date;
   pastSeasons?: number;
   requestIntervalMs?: number;
+  mode?: 'hydrate' | 'revalidate-current';
 }
 
 export interface SeasonHydrationRuntimeArgs {
+  mode: 'hydrate' | 'revalidate-current';
   dataRoot: string;
   date?: string;
   timeZone: string;
@@ -38,14 +43,6 @@ export interface SeasonHydrationRuntimeArgs {
   maxRequestsPerRun: number;
   pastSeasons: number;
   requestIntervalMs: number;
-}
-
-function workspaceRoot(): string {
-  return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-}
-
-function defaultActiveDataRoot(): string {
-  return path.join(workspaceRoot(), 'apps', 'api', 'data');
 }
 
 function readArgValue(args: readonly string[], name: string): string | undefined {
@@ -108,6 +105,10 @@ export function parseSeasonHydrationRuntimeArgs(
   }
   const timeZone = readArgValue(args, '--timezone')?.trim() || DEFAULT_OWNER_TIME_ZONE;
   assertTimeZone(timeZone);
+  const mode = readArgValue(args, '--mode')?.trim() || 'hydrate';
+  if (mode !== 'hydrate' && mode !== 'revalidate-current') {
+    throw new Error('--mode must be hydrate or revalidate-current.');
+  }
   const date = readArgValue(args, '--date')?.trim();
   if (date !== undefined) assertCalendarDate(date);
   const pastSeasons = parseInteger(
@@ -121,7 +122,8 @@ export function parseSeasonHydrationRuntimeArgs(
     throw new Error('Historical-season hydration is pending and cannot be executed.');
   }
   return {
-    dataRoot: path.resolve(readArgValue(args, '--data-root') ?? defaultActiveDataRoot()),
+    mode,
+    dataRoot: path.resolve(readArgValue(args, '--data-root') ?? defaultOwnerActiveDataRoot()),
     ...(date === undefined ? {} : { date }),
     timeZone,
     confirmation,
@@ -130,7 +132,7 @@ export function parseSeasonHydrationRuntimeArgs(
       DEFAULT_MAX_REQUESTS_PER_RUN,
       '--max-requests',
       1,
-      100
+      mode === 'revalidate-current' ? 9 : 100
     ),
     pastSeasons,
     requestIntervalMs: parseInteger(
@@ -147,6 +149,7 @@ export async function runLocalSeasonHydrationBatch(
   options: LocalSeasonHydrationOptions
 ): Promise<{
   status: 'completed' | 'partial' | 'idle' | 'lease_busy';
+  mode: 'hydrate' | 'revalidate-current';
   dataRoot: string;
   date: string;
   executableCurrentCompetitionCount: number;
@@ -166,7 +169,7 @@ export async function runLocalSeasonHydrationBatch(
     throw new Error(`Network execution requires confirmation ${SEASON_HYDRATION_NETWORK_CONFIRMATION}.`);
   }
   assertCalendarDate(options.date);
-  const dataRoot = await assertBootstrappedActiveDataRoot({
+  const dataRoot = await assertBootstrappedOwnerActiveDataRoot({
     dataRoot: options.dataRoot,
     ...(options.activeDataRoot === undefined ? {} : { activeDataRoot: options.activeDataRoot })
   });
@@ -179,6 +182,7 @@ export async function runLocalSeasonHydrationBatch(
     pastSeasons: options.pastSeasons ?? 0,
     maxRequestsPerRun: options.maxRequestsPerRun ?? DEFAULT_MAX_REQUESTS_PER_RUN,
     requestIntervalMs: options.requestIntervalMs ?? DEFAULT_REQUEST_INTERVAL_MS,
+    mode: options.mode ?? 'hydrate',
     ...(options.openFootballClient === undefined
       ? {}
       : { openFootballClient: options.openFootballClient }),
@@ -210,6 +214,7 @@ export async function runLocalSeasonHydrationBatch(
   };
   return {
     status: job.status,
+    mode: options.mode ?? 'hydrate',
     dataRoot,
     date: options.date,
     executableCurrentCompetitionCount,
@@ -236,7 +241,8 @@ async function main(args = process.argv.slice(2)): Promise<void> {
     confirmation: parsed.confirmation,
     maxRequestsPerRun: parsed.maxRequestsPerRun,
     pastSeasons: parsed.pastSeasons,
-    requestIntervalMs: parsed.requestIntervalMs
+    requestIntervalMs: parsed.requestIntervalMs,
+    mode: parsed.mode
   });
   console.log(JSON.stringify(result, null, 2));
   if (result.requestsFailed > 0) process.exitCode = 1;

@@ -21,7 +21,13 @@ export interface SeasonHydrationTarget extends ResolvedCompetitionSeason {
   key: string;
   providerSeason: string;
   sourceBinding: CompetitionSourceBinding;
+  intent: 'hydrate' | 'revalidate';
+  requestEtag?: string;
 }
+
+export type SeasonHydrationPlanMode = 'hydrate' | 'revalidate-current';
+
+const CURRENT_REVALIDATION_TTL_MS = 24 * 60 * 60 * 1_000;
 
 export function seasonHydrationTargetKey(
   sourceId: string,
@@ -70,6 +76,8 @@ export function planSeasonHydrationBatch(options: {
   checkpoints: ReadonlyMap<string, SeasonHydrationCheckpointView>;
   blockedKeys: ReadonlySet<string>;
   maxRequests: number;
+  mode?: SeasonHydrationPlanMode;
+  observedAt?: Date;
 }): {
   targets: SeasonHydrationTarget[];
   blockedBySeasonOffset?: number;
@@ -82,22 +90,42 @@ export function planSeasonHydrationBatch(options: {
     throw new Error('Season hydration maxRequests must be a positive integer.');
   }
 
+  const mode = options.mode ?? 'hydrate';
+  if (mode === 'revalidate-current') {
+    if (options.pastSeasons !== 0) {
+      throw new Error('Current revalidation cannot plan historical seasons.');
+    }
+    if (!options.observedAt || Number.isNaN(options.observedAt.valueOf())) {
+      throw new Error('Current revalidation requires a valid observedAt time.');
+    }
+    const current = buildTierTargets(options.registry, options.referenceDate, 0);
+    const due = current.flatMap((target): SeasonHydrationTarget[] => {
+      const checkpoint = options.checkpoints.get(target.key);
+      if (!checkpoint) return [target];
+      const completedAt = Date.parse(checkpoint.completedAt);
+      if (Number.isNaN(completedAt)) {
+        throw new Error(`Current revalidation checkpoint is invalid for ${target.key}.`);
+      }
+      if (completedAt + CURRENT_REVALIDATION_TTL_MS > options.observedAt!.getTime()) return [];
+      return [{
+        ...target,
+        intent: 'revalidate',
+        ...(checkpoint.etag === undefined ? {} : { requestEtag: checkpoint.etag })
+      }];
+    });
+    return selectRunnableTier(due, options.blockedKeys, options.maxRequests, 0);
+  }
+
   for (let seasonOffset = 0; seasonOffset <= options.pastSeasons; seasonOffset += 1) {
     const tier = buildTierTargets(options.registry, options.referenceDate, seasonOffset);
     const incomplete = tier.filter((target) => !options.checkpoints.has(target.key));
     if (incomplete.length === 0) continue;
-    const firstBlockedIndex = incomplete.findIndex((target) => (
-      options.blockedKeys.has(target.key)
-    ));
-    const runnable = firstBlockedIndex < 0
-      ? incomplete
-      : incomplete.slice(0, firstBlockedIndex);
-    return {
-      targets: runnable.slice(0, options.maxRequests),
-      ...(runnable.length === 0 && firstBlockedIndex === 0
-        ? { blockedBySeasonOffset: seasonOffset }
-        : {})
-    };
+    return selectRunnableTier(
+      incomplete,
+      options.blockedKeys,
+      options.maxRequests,
+      seasonOffset
+    );
   }
   return { targets: [] };
 }
@@ -124,6 +152,7 @@ function buildTierTargets(
       ...resolved,
       providerSeason,
       sourceBinding,
+      intent: 'hydrate',
       key: seasonHydrationTargetKey(
         sourceBinding.sourceId,
         entry.competitionId,
@@ -132,6 +161,22 @@ function buildTierTargets(
     });
   }
   return targets;
+}
+
+function selectRunnableTier(
+  targets: readonly SeasonHydrationTarget[],
+  blockedKeys: ReadonlySet<string>,
+  maxRequests: number,
+  seasonOffset: number
+): { targets: SeasonHydrationTarget[]; blockedBySeasonOffset?: number } {
+  const firstBlockedIndex = targets.findIndex((target) => blockedKeys.has(target.key));
+  const runnable = firstBlockedIndex < 0 ? targets : targets.slice(0, firstBlockedIndex);
+  return {
+    targets: runnable.slice(0, maxRequests),
+    ...(runnable.length === 0 && firstBlockedIndex === 0
+      ? { blockedBySeasonOffset: seasonOffset }
+      : {})
+  };
 }
 
 function assertCalendarDate(value: string): void {

@@ -21,6 +21,7 @@
     "sportscore:status": "tsx scripts/sportscore-operations.ts status",
     "sportscore:smoke:prepare": "tsx scripts/sportscore-operations.ts prepare-smoke-root",
     "data:hydrate:season:batch": "tsx scripts/season-hydration-runtime.ts",
+    "data:revalidate:season:current": "tsx scripts/season-hydration-runtime.ts --mode revalidate-current",
     "data:results:terminal:once": "tsx scripts/fotmob-terminal-results-runtime.ts --mode once",
     "data:results:terminal:watch": "tsx scripts/fotmob-terminal-results-runtime.ts --mode watch",
     "fotmob:terminal:integration": "pnpm exec vitest run apps/worker/src/sources/fotmob/fotmob-daily-client.test.ts apps/worker/src/sources/fotmob/fotmob-daily-adapter.test.ts apps/worker/src/sources/fotmob/fotmob-result-ledger.test.ts apps/worker/src/sources/fotmob/fotmob-terminal-plan.test.ts apps/worker/src/jobs/fotmob-terminal-result-job.test.ts scripts/fotmob-terminal-results-runtime.test.ts",
