@@ -327,7 +327,7 @@ function fotMobBinding(
     : capability === 'result'
       ? {
         endpointKind: 'daily-api' as const,
-        urlTemplate: 'https://www.fotmob.com/api/data/matches?date={YYYYMMDD}&timezone={ianaTimezone}&ccode3={externalCountryCode}'
+        urlTemplate: 'https://www.fotmob.com/api/data/matches?date={YYYYMMDD}&timezone={ianaTimezone}&ccode3={ownerCountryCode}'
       }
       : {
         endpointKind: 'match-api' as const,

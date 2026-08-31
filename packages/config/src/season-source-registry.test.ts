@@ -41,8 +41,12 @@ describe('provider-neutral season source registry', () => {
     expect(COMPETITION_SOURCE_REGISTRY.every((entry) => (
       entry.sourceBindings.fixture?.endpointKind === 'season-api'
       && entry.sourceBindings.result?.endpointKind === 'daily-api'
+      && entry.sourceBindings.result.executionStatus === 'enabled'
+      && entry.sourceBindings.result.externalNumericId === entry.sourceBindings.fixture.externalNumericId
       && entry.sourceBindings.detail?.endpointKind === 'match-api'
       && entry.sourceBindings.result.urlTemplate.includes('/api/data/matches?')
+      && entry.sourceBindings.result.urlTemplate.includes('ccode3={ownerCountryCode}')
+      && !entry.sourceBindings.result.urlTemplate.includes('ccode3={externalCountryCode}')
       && entry.sourceBindings.detail.urlTemplate.includes('/api/data/matchDetails?')
     ))).toBe(true);
   });
