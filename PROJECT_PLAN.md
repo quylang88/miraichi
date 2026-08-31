@@ -204,6 +204,13 @@ and returned `status: idle`, zero requests, zero publications, 45 completed targ
 and `fresh` serving state. Serving validation, lifecycle verification, and product-boundary
 verification passed without a provider request.
 
+Maintenance verification on 2026-08-31 corrected the release gate so unit tests exclude the
+separately orchestrated integration directory and filesystem-heavy tests use at most two workers on
+Windows. The first unconstrained run reproduced I/O timeouts; every failed file passed sequentially.
+After the gate correction, `pnpm run verify:release` passed 96 unit files / 536 tests, 4 SportScore
+integration files / 12 tests, 9 season integration files / 45 tests, Phase 3, endpoint E2E, PWA,
+lint, TypeScript, architecture, lifecycle, and type-safety gates.
+
 If the owner later reopens historical work, the earliest safe next phase will be `phase:plan` for
 exact provider-season mapping verification. Only five historical targets currently have explicit
 provider-season evidence; the other 45 remain disabled to prevent guessed requests. Daily terminal-
