@@ -313,11 +313,12 @@ function fotMobBinding(
   seasonCycle: SeasonCycle,
   capability: 'fixture' | 'result' | 'detail'
 ): CompetitionSourceBinding {
-  const providerSeasons = providerSeasonMap(seasonCycle, mapping.currentProviderSeason);
-  const currentCanonicalSeason = seasonCycle === 'calendar-year' ? '2026' : '2026-27';
-  const availableCanonicalSeasons = mapping.currentAvailable === false
-    ? Object.keys(providerSeasons).filter((season) => season !== currentCanonicalSeason)
-    : Object.keys(providerSeasons);
+  const providerSeasons = providerSeasonMap(
+    seasonCycle,
+    mapping.currentProviderSeason,
+    mapping.currentAvailable !== false
+  );
+  const availableCanonicalSeasons = Object.keys(providerSeasons);
   const endpoint = capability === 'fixture'
     ? {
       endpointKind: 'season-api' as const,
@@ -349,36 +350,17 @@ function fotMobBinding(
 
 function providerSeasonMap(
   seasonCycle: SeasonCycle,
-  currentProviderSeason?: string
+  currentProviderSeason: string | undefined,
+  currentAvailable: boolean
 ): Record<string, string> {
-  if (seasonCycle === 'calendar-year') {
-    if (currentProviderSeason === '2025') return { '2025': '2025', '2024': '2024' };
-    const suffix = currentProviderSeason?.match(/ - (Apertura|Clausura)$/u)?.[0] ?? '';
-    return {
-      '2026': currentProviderSeason ?? '2026',
-      '2025': `2025${suffix}`,
-      '2024': `2024${suffix}`
-    };
+  if (!currentAvailable) {
+    return currentProviderSeason === '2025' || seasonCycle === 'calendar-year'
+      ? { '2025': currentProviderSeason ?? '2025' }
+      : { '2025-26': '2025/2026' };
   }
-  if (currentProviderSeason === '2025/2026') {
-    return {
-      '2026-27': '2025/2026',
-      '2025-26': '2024/2025',
-      '2024-25': '2023/2024'
-    };
-  }
-  if (currentProviderSeason === '2026/2027 - Apertura') {
-    return {
-      '2026-27': '2026/2027 - Apertura',
-      '2025-26': '2025/2026 - Apertura',
-      '2024-25': '2024/2025 - Apertura'
-    };
-  }
-  return {
-    '2026-27': currentProviderSeason ?? '2026/2027',
-    '2025-26': '2025/2026',
-    '2024-25': '2024/2025'
-  };
+  return seasonCycle === 'calendar-year'
+    ? { '2026': currentProviderSeason ?? '2026' }
+    : { '2026-27': currentProviderSeason ?? '2026/2027' };
 }
 
 function espnBinding(slug: string): CompetitionSourceBinding {

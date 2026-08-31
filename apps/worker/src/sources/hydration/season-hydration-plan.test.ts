@@ -140,4 +140,40 @@ describe('provider-neutral season hydration planner', () => {
       '2026-27'
     ));
   });
+
+  it('plans only explicitly verified provider seasons after the current tier', () => {
+    const current = planSeasonHydrationBatch({
+      registry: COMPETITION_SOURCE_REGISTRY,
+      referenceDate: '2026-08-28',
+      pastSeasons: 2,
+      checkpoints: new Map(),
+      blockedKeys: new Set(),
+      maxRequests: 50
+    }).targets;
+    const checkpoints = new Map(current.map((target) => [
+      target.key,
+      { completedAt: '2026-08-28T00:00:00.000Z' }
+    ]));
+
+    const past = planSeasonHydrationBatch({
+      registry: COMPETITION_SOURCE_REGISTRY,
+      referenceDate: '2026-08-28',
+      pastSeasons: 2,
+      checkpoints,
+      blockedKeys: new Set(),
+      maxRequests: 50
+    }).targets;
+
+    expect(past.map((target) => [
+      target.competitionEntry.competitionId,
+      target.season,
+      target.providerSeason
+    ])).toEqual([
+      ['fifa-club-world-cup', '2025', '2025'],
+      ['eng-fa-cup', '2025-26', '2025/2026'],
+      ['esp-copa-del-rey', '2025-26', '2025/2026'],
+      ['fra-coupe-de-france', '2025-26', '2025/2026'],
+      ['ned-knvb-beker', '2025-26', '2025/2026']
+    ]);
+  });
 });
