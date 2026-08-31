@@ -76,20 +76,29 @@ describe('owner-local season hydration runtime', () => {
 
   it('hydrates the active root without replacing its existing snapshot', async () => {
     const activeRoot = await makeBootstrappedActiveRoot();
-    const getSeasonMatches = vi.fn(async (request: { season: string; file: string }) => ({
+    const getSeasonMatches = vi.fn(async (request: {
+      externalCompetitionId: number;
+      providerSeason: string;
+    }) => ({
       status: 'modified' as const,
-      season: request.season,
-      file: request.file,
       etag: '"runtime-etag"',
       rawText: '{"runtime":true}',
       payload: {
-        name: request.file,
-        matches: [{
-          date: '2026-08-29',
-          time: '15:00',
-          team1: 'Hydrated Home',
-          team2: 'Hydrated Away'
-        }]
+        details: {
+          id: request.externalCompetitionId,
+          selectedSeason: request.providerSeason
+        },
+        fixtures: { allMatches: [{
+          id: 9001,
+          home: { id: 901, name: 'Hydrated Home' },
+          away: { id: 902, name: 'Hydrated Away' },
+          status: {
+            utcTime: '2026-08-29T15:00:00.000Z',
+            finished: false,
+            started: false,
+            cancelled: false
+          }
+        }] }
       }
     }));
 
@@ -100,7 +109,7 @@ describe('owner-local season hydration runtime', () => {
       confirmation: SEASON_HYDRATION_NETWORK_CONFIRMATION,
       maxRequestsPerRun: 1,
       requestIntervalMs: 0,
-      openFootballClient: { getSeasonMatches },
+      fotMobClient: { getSeasonMatches },
       now: () => new Date('2026-08-28T12:00:00.000Z')
     });
 
@@ -108,7 +117,7 @@ describe('owner-local season hydration runtime', () => {
       requestsAttempted: 1,
       requestsSucceeded: 1,
       hydrationTargetsCompleted: 1,
-      executableCurrentCompetitionCount: 9
+      executableCurrentCompetitionCount: 49
     });
     const snapshot = await readServingMatchStoreSnapshot(path.join(activeRoot, 'serving'));
     expect(snapshot.matches.some((match) => match.homeTeam.name === 'Bootstrap Home')).toBe(true);

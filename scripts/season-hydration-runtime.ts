@@ -3,6 +3,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { COMPETITION_SOURCE_REGISTRY } from '../packages/config/src/index.js';
 import {
   runSeasonHydrationJob,
+  type FotMobSeasonFetcher,
   type OpenFootballSeasonFetcher
 } from '../apps/worker/src/jobs/season-hydration-job.js';
 import { SeasonHydrationLedger } from '../apps/worker/src/sources/hydration/season-hydration-ledger.js';
@@ -23,6 +24,7 @@ export interface LocalSeasonHydrationOptions {
   confirmation: string;
   maxRequestsPerRun?: number;
   openFootballClient?: OpenFootballSeasonFetcher;
+  fotMobClient?: FotMobSeasonFetcher;
   now?: () => Date;
   pastSeasons?: number;
   requestIntervalMs?: number;
@@ -151,6 +153,7 @@ export async function runLocalSeasonHydrationBatch(
   publications: number;
   hydrationTargetsCompleted: number;
   recordsIgnoredWithoutKickoff: number;
+  recordsIgnoredLive: number;
   matchCount: number;
   freshness: 'fresh' | 'stale' | 'missing';
   errors: string[];
@@ -174,7 +177,10 @@ export async function runLocalSeasonHydrationBatch(
     requestIntervalMs: options.requestIntervalMs ?? DEFAULT_REQUEST_INTERVAL_MS,
     ...(options.openFootballClient === undefined
       ? {}
-      : { openFootballClient: options.openFootballClient })
+      : { openFootballClient: options.openFootballClient }),
+    ...(options.fotMobClient === undefined
+      ? {}
+      : { fotMobClient: options.fotMobClient })
   });
   const repository = new ServingMatchStoreRepository({
     servingRoot: path.join(dataRoot, 'serving'),
@@ -210,6 +216,7 @@ export async function runLocalSeasonHydrationBatch(
     publications: job.publications,
     hydrationTargetsCompleted: Object.keys(ledger.checkpoints).length,
     recordsIgnoredWithoutKickoff: job.recordsIgnoredWithoutKickoff,
+    recordsIgnoredLive: job.recordsIgnoredLive,
     matchCount: serving.matchCount,
     freshness: serving.freshness,
     errors: job.errors

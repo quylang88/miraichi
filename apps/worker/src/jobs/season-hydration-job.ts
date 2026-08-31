@@ -27,6 +27,13 @@ import {
 } from '../sources/openfootball/openfootball-client.js';
 import { adaptOpenFootballSeason } from '../sources/openfootball/openfootball-adapter.js';
 import {
+  FotMobAccessBlockedError,
+  FotMobSeasonClient,
+  type FotMobSeasonRequest,
+  type FotMobSeasonResponse
+} from '../sources/fotmob/fotmob-season-client.js';
+import { adaptFotMobSeason } from '../sources/fotmob/fotmob-season-adapter.js';
+import {
   loadLastGoodWarehouseSnapshot,
   mergeCanonicalWarehouseSnapshots
 } from '../sources/shared/canonical-snapshot-merge.js';
@@ -41,9 +48,14 @@ export interface OpenFootballSeasonFetcher {
   getSeasonMatches(request: OpenFootballSeasonRequest): Promise<OpenFootballSeasonResponse>;
 }
 
+export interface FotMobSeasonFetcher {
+  getSeasonMatches(request: FotMobSeasonRequest): Promise<FotMobSeasonResponse>;
+}
+
 export interface SeasonHydrationJobOptions {
   dataRoot: string;
   openFootballClient?: OpenFootballSeasonFetcher;
+  fotMobClient?: FotMobSeasonFetcher;
   referenceDate: string;
   pastSeasons?: number;
   maxRequestsPerRun?: number;
@@ -65,6 +77,7 @@ export interface SeasonHydrationJobResult {
   publications: number;
   targetsCompleted: number;
   recordsIgnoredWithoutKickoff: number;
+  recordsIgnoredLive: number;
   errors: string[];
 }
 
@@ -132,7 +145,8 @@ async function execute(options: SeasonHydrationJobOptions & {
     };
   }
 
-  const client = options.openFootballClient ?? new OpenFootballClient();
+  const openFootballClient = options.openFootballClient ?? new OpenFootballClient();
+  const fotMobClient = options.fotMobClient ?? new FotMobSeasonClient();
   const sleep = options.sleep ?? ((milliseconds: number) => new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   }));
@@ -142,18 +156,20 @@ async function execute(options: SeasonHydrationJobOptions & {
   let requestsSucceeded = 0;
   let requestsFailed = 0;
   let recordsIgnoredWithoutKickoff = 0;
+  let recordsIgnoredLive = 0;
+  let fotMobBlockedMessage: string | undefined;
 
   for (const [index, target] of plan.targets.entries()) {
-    if (target.sourceBinding.sourceId !== 'openfootball') {
+    if (target.sourceBinding.sourceId === 'fotmob-unofficial' && fotMobBlockedMessage) {
       failures.push({
         target,
         requested: false,
-        message: `Season source ${target.sourceBinding.sourceId} is not executable in the free MVP.`
+        message: fotMobBlockedMessage
       });
-    } else {
+    } else if (target.sourceBinding.sourceId === 'openfootball') {
       requestsAttempted += 1;
       try {
-        const response = await client.getSeasonMatches({
+        const response = await openFootballClient.getSeasonMatches({
           season: target.season,
           file: target.sourceBinding.externalCompetitionId
         });
@@ -196,6 +212,74 @@ async function execute(options: SeasonHydrationJobOptions & {
         requestsFailed += 1;
         failures.push({ target, requested: true, message: safeMessage(error) });
       }
+    } else if (target.sourceBinding.sourceId === 'fotmob-unofficial') {
+      const externalCompetitionId = target.sourceBinding.externalNumericId;
+      const externalCountryCode = target.sourceBinding.externalCountryCode;
+      if (!Number.isSafeInteger(externalCompetitionId) || externalCompetitionId! < 1
+        || !/^[A-Z]{3}$/u.test(externalCountryCode ?? '')) {
+        failures.push({
+          target,
+          requested: false,
+          message: 'FotMob season target is missing a validated competition ID or country code.'
+        });
+      } else {
+        requestsAttempted += 1;
+        try {
+          const response = await fotMobClient.getSeasonMatches({
+            externalCompetitionId: externalCompetitionId!,
+            externalCountryCode: externalCountryCode!,
+            providerSeason: target.providerSeason
+          });
+          if (response.status === 'not_modified') {
+            throw new Error('Unexpected 304 for an incomplete season hydration target.');
+          }
+          await writeFotMobRawEvidence({
+            dataRoot: options.dataRoot,
+            season: target.season,
+            competitionId: target.competitionEntry.competitionId,
+            rawText: response.rawText
+          });
+          const adapted = adaptFotMobSeason({
+            competitionEntry: target.competitionEntry,
+            canonicalSeason: target.season,
+            expectedProviderSeason: target.providerSeason,
+            externalCompetitionId: externalCompetitionId!,
+            rawPayload: response.payload,
+            observedAt: options.observedAt.toISOString()
+          });
+          const invalid = adapted.issues.filter((issue) => issue.severity === 'invalid');
+          if (invalid.length > 0) {
+            throw new Error(`FotMob adapter rejected ${invalid.length} invalid record(s).`);
+          }
+          recordsIgnoredLive += adapted.issues.filter((issue) => (
+            issue.code === 'live_record_ignored'
+          )).length;
+          requestsSucceeded += 1;
+          successes.push({
+            target,
+            ...(response.etag === undefined ? {} : { etag: response.etag }),
+            delta: {
+              matches: adapted.matches,
+              teams: adapted.teams,
+              competitions: adapted.matches.length > 0 ? adapted.competitions : [],
+              links: adapted.matches.length > 0 ? adapted.links : [],
+              provenance: adapted.provenance
+            }
+          });
+        } catch (error) {
+          requestsFailed += 1;
+          if (error instanceof FotMobAccessBlockedError) {
+            fotMobBlockedMessage = error.message;
+          }
+          failures.push({ target, requested: true, message: safeMessage(error) });
+        }
+      }
+    } else {
+      failures.push({
+        target,
+        requested: false,
+        message: `Season source ${target.sourceBinding.sourceId} is not executable.`
+      });
     }
     if (index < plan.targets.length - 1 && options.requestIntervalMs > 0) {
       await sleep(options.requestIntervalMs);
@@ -258,6 +342,7 @@ async function execute(options: SeasonHydrationJobOptions & {
     publications,
     targetsCompleted: Object.keys(after.checkpoints).length,
     recordsIgnoredWithoutKickoff,
+    recordsIgnoredLive,
     errors: failures.map((failure) => `${failure.target.key}: ${failure.message}`)
   };
 }
@@ -287,6 +372,41 @@ async function writeRawEvidence(options: {
   const temporary = path.join(directory, `.latest-${process.pid}-${randomUUID()}.tmp`);
   try {
     await writeFile(temporary, options.rawText, { encoding: 'utf8', flag: 'wx' });
+    await rename(temporary, destination);
+  } finally {
+    await unlink(temporary).catch(() => undefined);
+  }
+}
+
+async function writeFotMobRawEvidence(options: {
+  dataRoot: string;
+  season: string;
+  competitionId: string;
+  rawText: string;
+}): Promise<void> {
+  if (!/^\d{4}(?:-\d{2})?$/u.test(options.season)) {
+    throw new Error('FotMob raw evidence season is unsafe.');
+  }
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(options.competitionId)) {
+    throw new Error('FotMob raw evidence competition ID is unsafe.');
+  }
+  const directory = path.resolve(
+    options.dataRoot,
+    'providers',
+    'fotmob-unofficial',
+    'raw',
+    options.season,
+    options.competitionId
+  );
+  await writeRawTextAtomically(directory, options.rawText);
+}
+
+async function writeRawTextAtomically(directory: string, rawText: string): Promise<void> {
+  await mkdir(directory, { recursive: true });
+  const destination = path.join(directory, 'latest.json');
+  const temporary = path.join(directory, `.latest-${process.pid}-${randomUUID()}.tmp`);
+  try {
+    await writeFile(temporary, rawText, { encoding: 'utf8', flag: 'wx' });
     await rename(temporary, destination);
   } finally {
     await unlink(temporary).catch(() => undefined);
@@ -335,6 +455,7 @@ function emptyResult(status: 'idle' | 'lease_busy'): SeasonHydrationJobResult {
     publications: 0,
     targetsCompleted: 0,
     recordsIgnoredWithoutKickoff: 0,
+    recordsIgnoredLive: 0,
     errors: []
   };
 }
