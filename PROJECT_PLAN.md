@@ -10,7 +10,7 @@
 - **Superseded operational path**: SportScore date hydration, local scheduling, worker injection, and all new `/api/v1` requests are retired because the free terms cover only `/api/widget/*` and the date scan is not viable.
 - **Completed phase**: `phase:integration-test Season-oriented provider-neutral hydration and coverage refactoring` — provider-neutral current-before-past planning, OpenFootball season-file ingestion, isolated checkpoints, and the complete local release gate passed on 2026-08-29.
 - **Completed phase**: `phase:code-slice FotMob unofficial current-season hydration` — the owner accepted ADR-0049 risk, all 45 executable current editions were checkpointed, and the final local release gate passed on 2026-08-31.
-- **Active phase**: `phase:maintenance Current-season owner-local hydration` — only bounded current-season execution, validation, and local API serving are in scope.
+- **Active phase**: `phase:plan FotMob daily terminal results and current-edition revalidation` — the owner approved implementation on 2026-08-31; exact TDD slices and request boundaries are defined below.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45 current competition editions. No cloud staging, owner-feedback release gate, or production promotion has run.
 - **Current lifecycle source of truth**: this file.
@@ -213,8 +213,29 @@ lint, TypeScript, architecture, lifecycle, and type-safety gates.
 
 If the owner later reopens historical work, the earliest safe next phase will be `phase:plan` for
 exact provider-season mapping verification. Only five historical targets currently have explicit
-provider-season evidence; the other 45 remain disabled to prevent guessed requests. Daily terminal-
-result ingestion and lazy FT detail remain separate, unapproved implementation plans. Cloud staging
-and production remain blocked.
+provider-season evidence; the other 45 remain disabled to prevent guessed requests. Lazy FT detail
+remains a separate, unapproved implementation plan. Cloud staging and production remain blocked.
+
+## Daily Terminal Result And Current Revalidation Phase — 2026-08-31
+
+- **Owner decision**: approved implementation of fast best-effort terminal-result updates and
+  current-edition revalidation. Historical-season execution remains pending.
+- **Verified daily contract**: direct anonymous `GET /api/data/matches` returned HTTP 200, ETag,
+  `Cache-Control: max-age=10`, a 242,249-byte JSON body, 123 leagues, and 379 matches. Thirty-five
+  matches across 12 currently active registry leagues were selected by pinned external league ID.
+- **Terminal boundary**: only finished, cancelled, or postponed rows may update canonical data.
+  In-play scores may influence the next in-memory check time but are never written to raw evidence,
+  canonical warehouse, serving store, public API, or match detail.
+- **Freshness objective**: first terminal check at scheduled kickoff +105 minutes, then no more than
+  one coalesced global-date request every two minutes while a known match remains non-terminal.
+  This targets a best-effort 0–2 minute delay after FotMob marks FT once the terminal window opens;
+  it is not an SLA.
+- **Request boundary**: no request when no match is due; all due matches on one provider date share
+  one request; 403/429 opens the run circuit breaker; no retry storm or anti-bot workaround.
+- **Current-edition revalidation**: recheck the 45 executable current season endpoints after a
+  24-hour TTL, preserving registry order, ETag/304, current-only scope, and one publication per
+  batch. This discovers newly published rounds without reopening historical hydration.
+- **Design**: `docs/superpowers/specs/2026-08-31-fotmob-terminal-results-design.md`.
+- **Implementation plan**: `docs/superpowers/plans/2026-08-31-fotmob-terminal-results.md`.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.

@@ -75,8 +75,9 @@
 - Strict current coverage: **41 supported, 9 partial, 0 unmapped**. Partial includes split
   stages, the one-off Super Cup, non-annual Club World Cup, early-round-only publication, and four
   not-yet-published cup editions.
-- Daily result capability: one FotMob global date request per day, filtered to registry; terminal
-  results only. This is operationally efficient but contract-risky.
+- Daily result capability: one FotMob global-date request per due terminal-check cycle, filtered by
+  pinned registry league IDs; no request occurs when no known match is due. Terminal rows only are
+  publishable. This is operationally efficient but contract-risky.
 - Match detail capability: 50 mapped competitions, lazy after FT, but field coverage is partial and
   nullable. It is not an SLA.
 
