@@ -48,7 +48,13 @@ describe('FotMob unofficial season adapter', () => {
             finished: true,
             started: true,
             cancelled: false,
-            scoreStr: '2 - 1'
+            scoreStr: '2 - 1',
+            reason: {
+              short: 'FT',
+              shortKey: 'fulltime_short',
+              long: 'Full-Time',
+              longKey: 'finished'
+            }
           }
         }),
         match({

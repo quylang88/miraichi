@@ -218,9 +218,17 @@ export function adaptFotMobSeason(input: AdaptFotMobSeasonInput): FotMobCanonica
 
 function canonicalStatus(raw: FotMobRawMatch): CanonicalMatchStatus {
   if (raw.status?.cancelled === true) return 'cancelled';
-  if (/postponed/u.test(raw.status?.reason?.toLowerCase() ?? '')) return 'postponed';
+  if (/postponed/u.test(reasonText(raw.status?.reason).toLowerCase())) return 'postponed';
   if (raw.status?.finished === true) return 'completed';
   return 'scheduled';
+}
+
+function reasonText(reason: NonNullable<FotMobRawMatch['status']>['reason']): string {
+  if (typeof reason === 'string') return reason;
+  if (!reason || typeof reason !== 'object') return '';
+  return [reason.short, reason.shortKey, reason.long, reason.longKey]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ');
 }
 
 function finalScore(raw: FotMobRawMatch): { home: number; away: number } | null {

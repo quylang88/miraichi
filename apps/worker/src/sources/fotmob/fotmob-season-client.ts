@@ -20,7 +20,12 @@ export interface FotMobRawMatchStatus {
   cancelled?: boolean;
   awarded?: boolean;
   scoreStr?: string;
-  reason?: string;
+  reason?: string | {
+    short?: string;
+    shortKey?: string;
+    long?: string;
+    longKey?: string;
+  };
 }
 
 export interface FotMobRawMatch {
