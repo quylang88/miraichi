@@ -86,10 +86,17 @@ export function planSeasonHydrationBatch(options: {
     const tier = buildTierTargets(options.registry, options.referenceDate, seasonOffset);
     const incomplete = tier.filter((target) => !options.checkpoints.has(target.key));
     if (incomplete.length === 0) continue;
-    const runnable = incomplete.filter((target) => !options.blockedKeys.has(target.key));
+    const firstBlockedIndex = incomplete.findIndex((target) => (
+      options.blockedKeys.has(target.key)
+    ));
+    const runnable = firstBlockedIndex < 0
+      ? incomplete
+      : incomplete.slice(0, firstBlockedIndex);
     return {
       targets: runnable.slice(0, options.maxRequests),
-      ...(runnable.length === 0 ? { blockedBySeasonOffset: seasonOffset } : {})
+      ...(runnable.length === 0 && firstBlockedIndex === 0
+        ? { blockedBySeasonOffset: seasonOffset }
+        : {})
     };
   }
   return { targets: [] };

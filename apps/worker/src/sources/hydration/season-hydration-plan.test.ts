@@ -72,6 +72,29 @@ describe('provider-neutral season hydration planner', () => {
     expect(plan.blockedBySeasonOffset).toBe(0);
   });
 
+  it('does not skip a blocked competition to hydrate later registry entries', () => {
+    const currentTargets = planSeasonHydrationBatch({
+      registry: COMPETITION_SOURCE_REGISTRY,
+      referenceDate: '2026-08-28',
+      pastSeasons: 0,
+      checkpoints: new Map(),
+      blockedKeys: new Set(),
+      maxRequests: 50
+    }).targets;
+
+    const plan = planSeasonHydrationBatch({
+      registry: COMPETITION_SOURCE_REGISTRY,
+      referenceDate: '2026-08-28',
+      pastSeasons: 0,
+      checkpoints: new Map(),
+      blockedKeys: new Set([currentTargets[0]!.key]),
+      maxRequests: 50
+    });
+
+    expect(plan.targets).toEqual([]);
+    expect(plan.blockedBySeasonOffset).toBe(0);
+  });
+
   it('prioritizes a newly enabled current source before past seasons', () => {
     const current = planSeasonHydrationBatch({
       registry: COMPETITION_SOURCE_REGISTRY,
