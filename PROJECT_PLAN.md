@@ -11,8 +11,10 @@
 - **Completed phase**: `phase:integration-test Season-oriented provider-neutral hydration and coverage refactoring` — provider-neutral current-before-past planning, OpenFootball season-file ingestion, isolated checkpoints, and the complete local release gate passed on 2026-08-29.
 - **Completed phase**: `phase:code-slice FotMob unofficial current-season hydration` — the owner accepted ADR-0049 risk, all 45 executable current editions were checkpointed, and the final local release gate passed on 2026-08-31.
 - **Completed phase**: `phase:integration-test FotMob daily terminal results and current-edition revalidation` — all eight TDD slices and the local release gate passed on 2026-08-31.
-- **Active phase**: `phase:maintenance FotMob owner-local current data operations` — only guarded current hydration, 24-hour current revalidation, and terminal-result once/watch operation are open.
+- **Completed phase**: `phase:maintenance FotMob owner-local current data operations` — guarded current hydration, 24-hour current revalidation, and terminal-result once/watch operation remain available, but no provider operation is part of the active product phase.
+- **Active phase**: `phase:implementation-plan Single-bankroll usable owner flow` — the owner approved a single visible bankroll, an internal compatibility account, complete remediation of the reviewed bankroll/bet/psychology gaps, sequential TDD slices, and one local commit after every completed slice on 2026-09-01.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
+- **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45 current competition editions. No cloud staging, owner-feedback release gate, or production promotion has run.
 - **Current lifecycle source of truth**: this file.
 
@@ -283,3 +285,23 @@ remains a separate, unapproved implementation plan. Cloud staging and production
   separate owner decision explicitly accepts promotion under the unofficial-source risk.
 
 All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
+
+## Single-Bankroll Usable Owner Flow — 2026-09-01
+
+- **Owner decision**: replace visible multi-account UX with one visible bankroll while preserving an
+  internal account identity for settlement, ledger, backup, and legacy compatibility.
+- **Approved remediation**: close the reviewed settlement/PATCH invariant hole, reject invalid
+  bankroll signs and balances, make first-run setup actionable, complete the draft-to-ongoing path,
+  warn on overexposure, add explicit friction for chasing/FOMO/impulse motivations, decouple factual
+  reports from configured discipline thresholds, and never render unavailable P&L as zero.
+- **Compatibility boundary**: no account or owner data may be deleted or silently merged. Existing
+  multi-account data remains readable; the normal V1 UI must not create new secondary accounts or
+  require an account choice for each bet.
+- **Product boundary**: the phase adds no picks, stake recommendation, Kelly, ROI, CLV, drawdown,
+  expected-return, or automated risk formula. All thresholds remain owner-entered warning inputs.
+- **Deferred work**: historical-season hydration and lazy match detail are both `PENDING` and outside
+  this phase. No provider request, staging promotion, production schema application, or push is
+  approved.
+- **Decision**: `docs/decisions/ADR-0050-single-bankroll-usable-owner-flow.md`.
+- **Design**: `docs/superpowers/specs/2026-09-01-single-bankroll-usable-owner-flow-design.md`.
+- **Implementation plan**: `docs/superpowers/plans/2026-09-01-single-bankroll-usable-owner-flow.md`.

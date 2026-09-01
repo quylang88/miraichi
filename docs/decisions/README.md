@@ -4,6 +4,7 @@
 
 - `ADR-0044-ai-sportmonks-removal-product-reset.md` — Accepted. Defines the owner-only factual match, manual bet/odds, and bankroll product boundary.
 - `ADR-0046-core-bet-bankroll-discipline-and-reporting.md` — Accepted. Defines manual settlement, bankroll accounting, discipline warnings, psychology journaling, reports, and EN/VI UI boundaries.
+- `ADR-0050-single-bankroll-usable-owner-flow.md` — Accepted. Keeps one visible bankroll, preserves an internal compatibility account, and closes the reviewed bet/bankroll/psychology integrity and usability gaps.
 - `ADR-0048-sportscore-public-api-source-boundary.md` — Accepted. Selects the attributed SportScore public API for 50 equal competitions, terminal-only best-effort 15–30 minute result updates, and lazy basic match detail.
 
 ## Superseded Source Decisions
