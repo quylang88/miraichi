@@ -3,19 +3,27 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import type { CloudRouteDependencies } from './cloud-route-types.js';
 import { mapCloudError, sendError, sendJson } from './cloud-route-types.js';
 import { readJsonObjectRequest } from './json-body.js';
+import { isValidIanaTimeZone } from '@miraichi/shared';
+import { setupSingleBankroll, SingleBankrollError } from '../services/single-bankroll-service.js';
 const text=(value:unknown)=>typeof value==='string'&&value.trim()?value.trim():null;
 const finite=(value:unknown)=>typeof value==='number'&&Number.isFinite(value);
 export async function handleBankroll(req:IncomingMessage,res:ServerResponse,deps:CloudRouteDependencies):Promise<void>{
-  const url=new URL(req.url??'/', 'http://localhost'); const isAccounts=url.pathname.endsWith('/accounts'); const isLedger=url.pathname.endsWith('/ledger'); const isSummary=url.pathname.endsWith('/summary'); const isTransfers=url.pathname.endsWith('/transfers');
+  const url=new URL(req.url??'/', 'http://localhost'); const isSetup=url.pathname.endsWith('/setup'); const isAccounts=url.pathname.endsWith('/accounts'); const isLedger=url.pathname.endsWith('/ledger'); const isSummary=url.pathname.endsWith('/summary'); const isTransfers=url.pathname.endsWith('/transfers');
   try{
     if(isAccounts&&req.method==='GET')return sendJson(res,200,await deps.adapter.listBankrollAccounts(deps.ownerProfileId));
     if(isLedger&&req.method==='GET'){const accountId=url.searchParams.get('accountId');if(!accountId)return sendError(res,400,'invalid_cloud_record','accountId is required.');return sendJson(res,200,await deps.adapter.listBankrollLedgerEntries(deps.ownerProfileId,accountId));}
     if(isSummary&&req.method==='GET'){const selectedId=url.searchParams.get('accountId');const allAccounts=await deps.adapter.listBankrollAccounts(deps.ownerProfileId);const accounts=selectedId?allAccounts.filter((account)=>account.accountId===selectedId):allAccounts;const pending=(await deps.adapter.listBetRecords(deps.ownerProfileId)).filter((bet)=>bet.status==='pending');const summaries=accounts.map((account)=>{const openExposure=pending.filter((bet)=>bet.bankrollAccountId===account.accountId).reduce((sum,bet)=>sum+bet.stakePoints,0);return{...account,realizedBalance:account.currentBalancePoints,openExposure,availableBalance:account.currentBalancePoints-openExposure};});const realizedBalance=summaries.reduce((sum,item)=>sum+item.realizedBalance,0);const openExposure=summaries.reduce((sum,item)=>sum+item.openExposure,0);return sendJson(res,200,{realizedBalance,openExposure,availableBalance:realizedBalance-openExposure,accounts:summaries});}
     let payload;try{payload=await readJsonObjectRequest(req);}catch{return sendError(res,400,'invalid_json_body','Invalid JSON request body.');}
     if(payload.ownerProfileId!==undefined&&payload.ownerProfileId!==deps.ownerProfileId)return sendError(res,400,'invalid_cloud_record','Owner profile is server-controlled.');
+    if(isSetup&&req.method==='POST'){
+      const openingBalancePoints=Number(payload.openingBalancePoints);const timeZone=String(payload.timeZone??'');const weekStartDay=payload.weekStartDay===undefined?'monday':String(payload.weekStartDay);
+      if(!Number.isFinite(openingBalancePoints)||openingBalancePoints<=0||!isValidIanaTimeZone(timeZone)||!['monday','sunday'].includes(weekStartDay))return sendError(res,400,'invalid_bankroll_setup','Positive opening points, a valid timezone, and a valid week start are required.');
+      try{const result=await setupSingleBankroll({adapter:deps.adapter,ownerProfileId:deps.ownerProfileId,openingBalancePoints,timeZone,weekStartDay:weekStartDay as 'monday'|'sunday',now:(deps.now??(()=>new Date()))().toISOString()});return sendJson(res,result.created?201:200,result);}catch(error){if(error instanceof SingleBankrollError)return sendError(res,409,error.code,error.message);throw error;}
+    }
     if(isAccounts&&req.method==='POST'){
       if(payload.unit!==undefined&&payload.unit!=='points')return sendError(res,400,'invalid_cloud_record','Only points accounts are supported.');
       if(!text(payload.accountId)||!text(payload.label)||!finite(payload.openingBalancePoints)||Number(payload.openingBalancePoints)<=0)return sendError(res,400,'invalid_cloud_record','Opening bankroll must be positive.');
+      if((await deps.adapter.listBankrollAccounts(deps.ownerProfileId)).length>0)return sendError(res,409,'single_bankroll_only','V1 supports one active bankroll.');
       const input:CreateBankrollAccountInput={accountId:text(payload.accountId)!,ownerProfileId:deps.ownerProfileId,label:text(payload.label)!,openingBalancePoints:payload.openingBalancePoints as number};
       return sendJson(res,201,await deps.adapter.createBankrollAccount(input));
     }

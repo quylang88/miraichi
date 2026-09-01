@@ -36,9 +36,11 @@ describe('core betting contracts', () => {
     expect(validateDisciplineConfig({ ...config, weekStartDay: null as never }).ok).toBe(false);
   });
 
-  it('requires complete manual bet, account, psychology and precise numeric input', () => {
+  it('requires complete manual bet psychology and precise numeric input while account binding stays server-side', () => {
     expect(validateCreateOngoingBetInput(bet)).toEqual({ ok: true });
-    expect(validateCreateOngoingBetInput({ ...bet, bankrollAccountId: '' }).ok).toBe(false);
+    const { bankrollAccountId: _account, ...withoutAccount } = bet;
+    expect(validateCreateOngoingBetInput(withoutAccount)).toEqual({ ok: true });
+    expect(validateCreateOngoingBetInput({ ...bet, bankrollAccountId: '' })).toEqual({ ok: true });
     expect(validateCreateOngoingBetInput({ ...bet, stakePoints: 10.123 }).ok).toBe(false);
     expect(validateCreateOngoingBetInput({ ...bet, oddsValue: 0.12345 }).ok).toBe(false);
     expect(validateCreateOngoingBetInput({ ...bet, preBetMotivation: 'winning_system' }).ok).toBe(false);

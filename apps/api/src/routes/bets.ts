@@ -4,6 +4,7 @@ import type { CloudRouteDependencies } from './cloud-route-types.js';
 import { mapCloudError, sendError, sendJson } from './cloud-route-types.js';
 import { readJsonObjectRequest } from './json-body.js';
 import { evaluateDisciplineAttempt, hashBetAttemptPayload } from '../services/discipline-service.js';
+import { resolveSingleActiveBankroll, SingleBankrollError } from '../services/single-bankroll-service.js';
 
 const PATCH_FIELDS=new Set(['notes','tags']);
 export async function handleBets(req:IncomingMessage,res:ServerResponse,deps:CloudRouteDependencies):Promise<void>{
@@ -15,7 +16,8 @@ export async function handleBets(req:IncomingMessage,res:ServerResponse,deps:Clo
     if(payload.ownerProfileId!==undefined&&payload.ownerProfileId!==deps.ownerProfileId)return sendError(res,400,'invalid_cloud_record','Owner profile is server-controlled.');
     if(req.method==='POST'){
       const inputValidation=validateCreateOngoingBetInput(payload);if(!inputValidation.ok)return sendError(res,400,'invalid_cloud_record',inputValidation.errors.join('; '));
-      const accounts=await deps.adapter.listBankrollAccounts(deps.ownerProfileId);const account=accounts.find((item)=>item.accountId===payload.bankrollAccountId&&!item.archived);if(!account)return sendError(res,400,'invalid_cloud_record','A valid active bankroll account is required.');
+      let account;try{account=await resolveSingleActiveBankroll(deps.adapter,deps.ownerProfileId);}catch(error){if(error instanceof SingleBankrollError)return sendError(res,409,error.code,error.message);throw error;}
+      if(typeof payload.bankrollAccountId==='string'&&payload.bankrollAccountId.trim()&&payload.bankrollAccountId!==account.accountId)return sendError(res,400,'invalid_cloud_record','Browser bankroll selection does not match the primary bankroll.');
       const currentTime=(deps.now??(()=>new Date()))().toISOString();const config=await deps.adapter.getDisciplineConfig(deps.ownerProfileId);
       const evaluation=evaluateDisciplineAttempt({config,stakePoints:Number(payload.stakePoints),settlementEvents:await deps.adapter.listBetSettlementEvents(deps.ownerProfileId),at:currentTime});
       let acknowledgedAt:string|undefined;
@@ -26,7 +28,7 @@ export async function handleBets(req:IncomingMessage,res:ServerResponse,deps:Clo
         const consumed=await deps.adapter.consumeDisciplineChallenge(deps.ownerProfileId,challengeId,currentTime);if(!consumed)return sendError(res,409,'discipline_ack_required','The discipline acknowledgement was already used.');acknowledgedAt=currentTime;
       }
       const disciplineSnapshot:DisciplineSnapshot|undefined=config?{ruleVersion:config.version,triggeredRules:[...evaluation.triggeredRules],dailyProfitLossPoints:evaluation.dailyProfitLossPoints,weeklyProfitLossPoints:evaluation.weeklyProfitLossPoints,thresholds:{dailyStopLossPoints:config.dailyStopLossPoints,weeklyStopLossPoints:config.weeklyStopLossPoints,bigBetThresholdPoints:config.bigBetThresholdPoints},...(acknowledgedAt?{acknowledgedAt}:{})}:undefined;
-      const record={...payload,ownerProfileId:deps.ownerProfileId,status:'pending',updatedAt:currentTime,...(disciplineSnapshot?{disciplineSnapshot}:{}),disciplineChallengeId:undefined} as unknown as CloudBetRecord;
+      const record={...payload,bankrollAccountId:account.accountId,ownerProfileId:deps.ownerProfileId,status:'pending',updatedAt:currentTime,...(disciplineSnapshot?{disciplineSnapshot}:{}),disciplineChallengeId:undefined} as unknown as CloudBetRecord;
       const validation=validateCloudBetRecord(record);if(!validation.ok)return sendError(res,400,'invalid_cloud_record',validation.errors.join('; '));
       return sendJson(res,201,await deps.adapter.createBetRecord(record));
     }

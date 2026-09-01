@@ -106,7 +106,7 @@ const server = http.createServer((req, res) => {
     void handleBetDrafts(req, res, cloudDependencies);
   } else if (pathname === '/api/v1/cloud-persistence/status') {
     void handleCloudPersistenceStatus(req, res, cloudDependencies);
-  } else if (pathname === '/api/v1/bankroll/accounts' || pathname === '/api/v1/bankroll/ledger' || pathname === '/api/v1/bankroll/summary' || pathname === '/api/v1/bankroll/transfers') {
+  } else if (pathname === '/api/v1/bankroll/setup' || pathname === '/api/v1/bankroll/accounts' || pathname === '/api/v1/bankroll/ledger' || pathname === '/api/v1/bankroll/summary' || pathname === '/api/v1/bankroll/transfers') {
     void handleBankroll(req, res, cloudDependencies);
   } else if (pathname === '/api/v1/backups/export' || pathname === '/api/v1/backups/import' || pathname === '/api/v1/backups/log') {
     void handleBackups(req, res, cloudDependencies);

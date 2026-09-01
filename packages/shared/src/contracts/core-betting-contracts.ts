@@ -27,7 +27,7 @@ export interface DisciplineConfig {
 export interface CreateOngoingBetInput {
   readonly betId: string;
   readonly matchGroupId: string;
-  readonly bankrollAccountId: string;
+  readonly bankrollAccountId?: string;
   readonly matchId?: string | null;
   readonly homeTeamName: string;
   readonly awayTeamName: string;
@@ -125,9 +125,10 @@ export function validateCreateOngoingBetInput(input: unknown): ContractValidatio
   if (typeof input !== 'object' || input === null || Array.isArray(input)) return { ok: false, errors: ['Input must be an object'] };
   const value = input as Partial<CreateOngoingBetInput>;
   const errors: string[] = [];
-  for (const key of ['betId', 'matchGroupId', 'bankrollAccountId', 'homeTeamName', 'awayTeamName', 'selectionLabel'] as const) {
+  for (const key of ['betId', 'matchGroupId', 'homeTeamName', 'awayTeamName', 'selectionLabel'] as const) {
     if (!text(value[key])) errors.push(`${key} is required`);
   }
+  if (value.bankrollAccountId !== undefined && typeof value.bankrollAccountId !== 'string') errors.push('bankrollAccountId is invalid');
   if (!['1X2', 'over_under', 'handicap', 'corners', 'custom'].includes(String(value.marketType))) errors.push('marketType is invalid');
   if (value.oddsFormat !== 'HK') errors.push('oddsFormat must be HK');
   if (!finite(value.oddsValue) || value.oddsValue <= 0 || !decimalsAtMost(value.oddsValue, 4)) errors.push('oddsValue must be positive with at most 4 decimals');
