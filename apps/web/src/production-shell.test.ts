@@ -322,7 +322,7 @@ describe('phase 9 cloud persistence workflows', () => {
 
   it('renders persisted Bankroll without formula placeholders', () => {
     const html = renderAppShell({ activeTabId: 'bankroll', bankrollView: 'ledger', bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], ledger: [{ entryId: 'e', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'withdrawal', amountPoints: -10, occurredAt: '2026-07-02T00:00:00.000Z', createdAt: '2026-07-02T00:00:00.000Z' }], summary: { realizedBalance: 90, openExposure: 0, availableBalance: 90, accounts: [] } } });
-    expect(html).toContain('90 pts');
+    expect(html).toContain('-10 pts');
     expect(html).toContain('data-ledger-type="deposit"');
     expect(html).toContain('data-ledger-type="withdrawal"');
     expect(html).not.toContain('data-open-transfer');

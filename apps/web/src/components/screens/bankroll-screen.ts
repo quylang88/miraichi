@@ -119,7 +119,6 @@ export function renderBankrollScreen(input: {
       ? analytics(reportState, reportPeriod, translate, customCalendarMonth, customRangeStart, customRangeEnd, locale)
       : `<section class="note-card warning" data-bankroll-state="empty"><div class="note-title">${escapeHtml(translate('bankroll.setupRequired'))}</div></section><section class="note-card"><form class="form-grid" id="setup-bankroll-form"><div class="field"><label for="bankroll-opening">${escapeHtml(translate('bankroll.openingPoints'))}</label><input class="field-input" id="bankroll-opening" name="opening" type="number" min="0.01" step="0.01" required></div><button class="primary-button" type="submit">${escapeHtml(translate('bankroll.setupAction'))}</button><div class="sheet-feedback" id="bankroll-setup-feedback" aria-live="polite"></div></form></section>`;
   if (state.status === 'ready') {
-    const selected = state.accounts[0]!;
     const content = view === 'overview'
       ? overview(state, translate)
       : view === 'analytics'
@@ -127,7 +126,7 @@ export function renderBankrollScreen(input: {
         : view === 'discipline'
           ? discipline(disciplineConfigState, translate)
           : ledger(state, translate, locale, timeZone);
-    body = `<div data-bankroll-state="ready"><div class="bankroll-toolbar"><span class="points-state">${selected.currentBalancePoints} pts</span></div>${content}</div>`;
+    body = `<div data-bankroll-state="ready">${content}</div>`;
   }
   return `<section class="${screenClass('bankroll', activeTabId)}" id="screen-bankroll" data-shell-tab-panel="bankroll" aria-labelledby="bankroll-title">${screenHeader(translate('bankroll.eyebrow'), translate('bankroll.title'), 'bankroll-title', `<button class="secondary-button" type="button" data-open-settings>${escapeHtml(translate('bankroll.settings'))}</button>`)}<div class="segmented bankroll-views" role="tablist">${tab('overview', 'bankroll.overview')}${tab('analytics', 'bankroll.analytics')}${tab('discipline', 'bankroll.discipline')}${tab('ledger', 'bankroll.ledger')}</div><div class="points-grid">${body}</div></section>`;
 }
