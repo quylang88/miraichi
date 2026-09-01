@@ -42,18 +42,21 @@ export function renderTodayScreen(input: {
   const ongoing = bets.status === 'ready' ? bets.pending : [];
   const reportTimeZone = report.status === 'ready' ? report.report.period.timeZone : 'UTC';
   const todayKey = dateKey(reportTimeZone);
-  const net = report.status === 'ready' ? report.report.daily.find((item) => item.date === todayKey)?.profitLossPoints ?? 0 : 0;
+  const net = report.status === 'ready' ? report.report.daily.find((item) => item.date === todayKey)?.profitLossPoints ?? 0 : null;
   const exposure = bankroll.status === 'ready' ? bankroll.summary.openExposure : 0;
   const config = discipline.status === 'ready' ? discipline.config : null;
   const ruleState = config && [config.dailyStopLossPoints, config.weeklyStopLossPoints, config.bigBetThresholdPoints].some((value) => value !== null)
     ? `${config.timeZone} · v${config.version}` : translate('today.rulesNotConfigured');
-  const dailyUtilization = config?.dailyStopLossPoints == null ? null : Math.min(100, Math.max(0, (-net / config.dailyStopLossPoints) * 100));
-  const dailyReached = config?.dailyStopLossPoints != null && net <= -config.dailyStopLossPoints;
+  const dailyUtilization = config?.dailyStopLossPoints == null || net === null ? null : Math.min(100, Math.max(0, (-net / config.dailyStopLossPoints) * 100));
+  const dailyReached = config?.dailyStopLossPoints != null && net !== null && net <= -config.dailyStopLossPoints;
   const cards = ongoing.map((bet) => `<article class="bet-row"><div class="row-title">${escapeHtml(bet.homeTeamName)} vs ${escapeHtml(bet.awayTeamName)}</div><div class="row-meta">${escapeHtml(bet.selectionLabel)} · ${bet.stakePoints} pts @ ${bet.oddsValue}</div></article>`).join('');
 
+  const netValue = report.status === 'ready' && net !== null ? `${net > 0 ? '+' : ''}${net} pts` : report.status === 'loading' ? '…' : translate('common.unavailable');
+  const exposureValue = bankroll.status === 'ready' ? `${exposure} pts` : bankroll.status === 'loading' ? '…' : translate('common.unavailable');
+  const ongoingValue = bets.status === 'ready' ? String(ongoing.length) : bets.status === 'loading' ? '…' : translate('common.unavailable');
   const metricsHtml = (bankroll.status === 'loading' && report.status === 'loading')
     ? renderSkeletonMetrics(3)
-    : `<div class="metric-grid">${metricRow(translate('today.netPnl'), `${net > 0 ? '+' : ''}${net} pts`)}${metricRow(translate('today.openExposure'), `${exposure} pts`)}${metricRow(translate('today.ongoingBets'), String(bets.status === 'loading' ? '…' : ongoing.length))}</div>`;
+    : `<div class="metric-grid">${metricRow(translate('today.netPnl'), netValue)}${metricRow(translate('today.openExposure'), exposureValue)}${metricRow(translate('today.ongoingBets'), ongoingValue)}</div>`;
 
   const disciplineHtml = discipline.status === 'loading'
     ? `<section class="note-card" aria-hidden="true"><div class="note-eyebrow">${escapeHtml(translate('today.disciplineStatus'))}</div><div class="skeleton-left"><span class="skeleton-text short"></span><span class="skeleton-text heading"></span></div></section>`

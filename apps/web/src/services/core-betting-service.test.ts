@@ -82,10 +82,11 @@ describe('core betting web service', () => {
       settlementEventId: 'settle-1', settlementType: 'full_win',
       effectiveAt: '2026-08-21T00:00:00.000Z'
     }, fetcher);
-    const report = await loadBetReport({ period: 'week', anchor: '2026-08-21', accountId: 'account-1' }, fetcher);
+    const report = await loadBetReport({ period: 'week', anchor: '2026-08-21', timeZone: 'Asia/Tokyo', accountId: 'account-1' }, fetcher);
     expect(calls[0]).toContain('/bets/bet-1/settlements');
     expect(calls[0]).not.toContain('planAdherence');
     expect(calls[1]).toContain('period=week');
+    expect(calls[1]).toContain('timeZone=Asia%2FTokyo');
     expect(report).not.toHaveProperty('yieldPercent');
   });
 
@@ -106,6 +107,7 @@ describe('core betting web service', () => {
     await loadBetReport({
       period: 'custom',
       anchor: '2026-08-25',
+      timeZone: 'Asia/Tokyo',
       startDate: '2026-08-01',
       endDate: '2026-08-15',
       accountId: 'account-1'
@@ -115,5 +117,6 @@ describe('core betting web service', () => {
     expect(calls[0]).toContain('startDate=2026-08-01');
     expect(calls[0]).toContain('endDate=2026-08-15');
     expect(calls[0]).toContain('accountId=account-1');
+    expect(calls[0]).toContain('timeZone=Asia%2FTokyo');
   });
 });

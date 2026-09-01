@@ -133,13 +133,14 @@ export async function loadBetReport(
   input: {
     readonly period: BetReportPeriod;
     readonly anchor: string;
+    readonly timeZone: string;
     readonly startDate?: string;
     readonly endDate?: string;
     readonly accountId?: string;
   },
   fetcher: FetchLike = fetch
 ): Promise<BetReport> {
-  const query = new URLSearchParams({ period: input.period, anchor: input.anchor });
+  const query = new URLSearchParams({ period: input.period, anchor: input.anchor, timeZone: input.timeZone });
   if (input.startDate) query.set('startDate', input.startDate);
   if (input.endDate) query.set('endDate', input.endDate);
   if (input.accountId) query.set('accountId', input.accountId);

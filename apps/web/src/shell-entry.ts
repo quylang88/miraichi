@@ -503,19 +503,15 @@ function localAnchorDate(): string {
 }
 
 async function refreshReports(customParams?: { period: BetReportPeriod; startDate?: string; endDate?: string }): Promise<void> {
-  if (disciplineConfigState.status !== 'ready' || !disciplineConfigState.config) {
-    const state: BetReportViewState = { status: 'unavailable', code: 'discipline_config_required' };
-    bankrollReportState = state;
-    todayReportState = state;
-    updateBankrollScreenView();
-    updateTodayScreenView();
-    return;
-  }
   bankrollReportState = { status: 'loading' };
   todayReportState = { status: 'loading' };
   updateBankrollScreenView();
   updateTodayScreenView();
   const accountId = bankrollState.status === 'ready' ? bankrollState.selectedAccountId : undefined;
+  const timeZone = disciplineConfigState.status === 'ready' && disciplineConfigState.config
+    ? disciplineConfigState.config.timeZone
+    : getTargetTimezone();
+  const anchor = getLocalDateFromUtc(new Date().toISOString(), timeZone);
   const withAccount = accountId ? { accountId } : {};
   const periodToLoad = customParams?.period ?? reportPeriod;
   const customStart = customParams?.startDate ?? (periodToLoad === 'custom' ? (customRangeStart ?? undefined) : undefined);
@@ -524,12 +520,13 @@ async function refreshReports(customParams?: { period: BetReportPeriod; startDat
   const [bankrollResult, todayResult] = await Promise.allSettled([
     loadBetReport({
       period: periodToLoad,
-      anchor: localAnchorDate(),
+      anchor,
+      timeZone,
       ...(periodToLoad === 'custom' && customStart ? { startDate: customStart } : {}),
       ...(periodToLoad === 'custom' && customEnd ? { endDate: customEnd } : {}),
       ...withAccount
     }),
-    loadBetReport({ period: 'week', anchor: localAnchorDate(), ...withAccount })
+    loadBetReport({ period: 'week', anchor, timeZone, ...withAccount })
   ]);
   bankrollReportState = bankrollResult.status === 'fulfilled'
     ? { status: 'ready', report: bankrollResult.value }
@@ -1134,6 +1131,8 @@ appRoot.addEventListener('submit', (event) => {
         disciplineConfigState = { status: 'ready', config };
         await refreshReports();
       });
+    } else {
+      void refreshReports();
     }
     return;
   }

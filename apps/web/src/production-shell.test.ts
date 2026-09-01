@@ -105,11 +105,14 @@ describe('phase 9 cloud persistence workflows', () => {
       activeTabId: 'bets',
       betRecordFilter: 'ongoing',
       bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 10, availableBalance: 90, accounts: [] } },
-      betRecordsState: { status: 'ready', drafts: [{ draftId: 'd1', matchGroupId: 'm1', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], pending: [{ betId: 'b1', ownerProfileId: 'owner-primary', bankrollAccountId: 'a', matchGroupId: 'm1', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, preBetEmotion: 'calm', preBetMotivation: 'planned_analysis', status: 'pending', createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], settled: [] }
+      betRecordsState: { status: 'ready', drafts: [{ draftId: 'd1', matchGroupId: 'm1', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], pending: [{ betId: 'b1', ownerProfileId: 'owner-primary', bankrollAccountId: 'a', matchGroupId: 'm1', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, preBetEmotion: 'calm', preBetMotivation: 'planned_analysis', status: 'pending', disciplineSnapshot: { ruleVersion: 0, triggeredRules: ['overexposure', 'risky_motivation'], dailyProfitLossPoints: 0, weeklyProfitLossPoints: 0, thresholds: { dailyStopLossPoints: null, weeklyStopLossPoints: null, bigBetThresholdPoints: null }, acknowledgedAt: '2026-08-21T00:00:15.000Z' }, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], settled: [] }
     });
     expect(html).toContain('data-bet-filter="ongoing"');
     expect(html).toContain('Japan vs Vietnam');
     expect(html).toContain('data-open-settlement="b1"');
+    expect(html).toContain('Stake exceeds available bankroll');
+    expect(html).toContain('Risky motivation');
+    expect(html).not.toContain('overexposure');
     expect(html).not.toContain('data-delete-draft-confirm="d1"');
     expect(html).toContain('name="home-team"');
     expect(html).toContain('id="record-ongoing-bet"');
@@ -174,7 +177,22 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('Thắng đủ');
     expect(html).toContain('Phân tích có kế hoạch');
     expect(bankrollPanel).not.toContain('planned_analysis');
+    expect(bankrollPanel).toContain('n=1 · 9 pts');
+    expect(bankrollPanel).toContain('Các nhóm chỉ mô tả dữ liệu đã ghi và luôn kèm cỡ mẫu.');
+    expect(bankrollPanel.toLowerCase()).not.toContain('khuyến nghị');
     expect(css).toMatch(/\.field\[hidden\]\s*\{[^}]*display:\s*none\s*!important/s);
+  });
+
+  it('renders an unavailable Today report as unavailable instead of invented zero P&L', () => {
+    const html = renderAppShell({
+      activeTabId: 'today', translate: createTranslator('vi'),
+      betRecordsState: { status: 'ready', drafts: [], pending: [], settled: [] },
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 10, availableBalance: 90, accounts: [] } },
+      todayReportState: { status: 'unavailable', code: 'request_failed' }
+    });
+    const todayPanel = html.slice(html.indexOf('id="screen-today"'), html.indexOf('id="screen-matches"'));
+    expect(todayPanel).toContain('Lãi/lỗ ròng</div><div class="points-value">Không khả dụng</div>');
+    expect(todayPanel).not.toContain('Lãi/lỗ ròng</div><div class="points-value">0 pts</div>');
   });
 
   it('renders bankroll analytics period presets in EN and VI with correct active highlights', () => {
