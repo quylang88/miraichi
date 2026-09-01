@@ -26,7 +26,7 @@ export interface CloudBetRecord {
   status: 'pending' | 'settled' | 'void'; settlementNote?: string;
   manualResultPoints?: number | null; notes?: string; tags?: readonly string[];
   bankrollAccountId?: string | null;
-  preBetEmotion?: PreBetEmotion; preBetMotivation?: PreBetMotivation; preBetNote?: string;
+  preBetEmotion?: PreBetEmotion; preBetMotivation?: PreBetMotivation; preBetPlanAdherence?: PlanAdherence; preBetNote?: string;
   disciplineSnapshot?: DisciplineSnapshot;
   settlementType?: SettlementType; profitLossPoints?: number | null; settledAt?: string;
   postBetPlanAdherence?: PlanAdherence; postBetLessonNote?: string;
@@ -134,6 +134,7 @@ export function validateCloudBetRecord(input: unknown): CloudValidationResult {
   if (input.oddsFormat !== 'HK') errors.push('oddsFormat must be HK');
   if (!finite(input.oddsValue)) errors.push('oddsValue must be finite');
   if (!finite(input.stakePoints)) errors.push('stakePoints must be finite');
+  if (input.preBetPlanAdherence !== undefined && !['yes', 'partly', 'no'].includes(String(input.preBetPlanAdherence))) errors.push('preBetPlanAdherence is invalid');
   if (!['pending', 'settled', 'void'].includes(String(input.status))) errors.push('status is invalid');
   if (hasText(input.createdAt) && !ISO.test(input.createdAt)) errors.push('createdAt must be ISO datetime');
   if (hasText(input.updatedAt) && !ISO.test(input.updatedAt)) errors.push('updatedAt must be ISO datetime');

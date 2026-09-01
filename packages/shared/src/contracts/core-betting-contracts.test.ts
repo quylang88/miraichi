@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   validateCreateOngoingBetInput,
+  validateBetSettlementEvent,
   validateDisciplineConfig,
   validateSettlementCommand,
   type DisciplineConfig
@@ -17,6 +18,7 @@ const bet = {
   homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2' as const,
   selectionLabel: 'Japan', oddsFormat: 'HK' as const, oddsValue: 0.95, stakePoints: 10.25,
   preBetEmotion: 'calm' as const, preBetMotivation: 'planned_analysis' as const,
+  preBetPlanAdherence: 'yes' as const,
   createdAt: '2026-08-21T00:00:00.000Z'
 };
 
@@ -44,11 +46,12 @@ describe('core betting contracts', () => {
     expect(validateCreateOngoingBetInput({ ...bet, stakePoints: 10.123 }).ok).toBe(false);
     expect(validateCreateOngoingBetInput({ ...bet, oddsValue: 0.12345 }).ok).toBe(false);
     expect(validateCreateOngoingBetInput({ ...bet, preBetMotivation: 'winning_system' }).ok).toBe(false);
+    expect(validateCreateOngoingBetInput({ ...bet, preBetPlanAdherence: undefined }).ok).toBe(false);
   });
 
-  it('requires plan adherence and a reason for manual adjustment', () => {
+  it('captures plan adherence before the bet and only accepts it as an optional legacy settlement fallback', () => {
     expect(validateSettlementCommand({
-      settlementEventId: 'settlement-1', settlementType: 'full_win', planAdherence: 'yes',
+      settlementEventId: 'settlement-1', settlementType: 'full_win',
       effectiveAt: '2026-08-21T01:00:00.000Z'
     })).toEqual({ ok: true });
     expect(validateSettlementCommand({
@@ -59,5 +62,19 @@ describe('core betting contracts', () => {
       settlementEventId: 'settlement-3', settlementType: 'manual_adjustment', planAdherence: 'no',
       profitLossPoints: -2.5, adjustmentReason: 'Operator cashout', effectiveAt: '2026-08-21T01:00:00.000Z'
     })).toEqual({ ok: true });
+    expect(validateSettlementCommand({
+      settlementEventId: 'settlement-4', settlementType: 'full_win', planAdherence: 'later',
+      effectiveAt: '2026-08-21T01:00:00.000Z'
+    }).ok).toBe(false);
+  });
+
+  it('keeps persisted settlement events stricter than incoming settlement commands', () => {
+    const event = {
+      settlementEventId: 'settlement-1', ownerProfileId: 'owner-primary', betId: 'bet-1', bankrollAccountId: 'account-1',
+      settlementType: 'full_win', planAdherence: 'yes', calculatedProfitLossPoints: 9, ledgerDeltaPoints: 9,
+      effectiveAt: '2026-08-21T01:00:00.000Z', occurredAt: '2026-08-21T01:00:00.000Z'
+    };
+    expect(validateBetSettlementEvent(event)).toEqual({ ok: true });
+    expect(validateBetSettlementEvent({ ...event, planAdherence: undefined }).ok).toBe(false);
   });
 });

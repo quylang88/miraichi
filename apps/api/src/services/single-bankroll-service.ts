@@ -16,6 +16,18 @@ export async function resolveSingleActiveBankroll(adapter: CloudPersistenceAdapt
   return active[0]!;
 }
 
+export async function getSingleBankrollAvailability(
+  adapter: CloudPersistenceAdapter,
+  ownerProfileId: string,
+  account: BankrollAccount
+): Promise<{ readonly openExposurePoints: number; readonly availableBalancePoints: number }> {
+  const pending = (await adapter.listBetRecords(ownerProfileId)).filter(
+    (bet) => bet.status === 'pending' && bet.bankrollAccountId === account.accountId
+  );
+  const openExposurePoints = pending.reduce((sum, bet) => sum + bet.stakePoints, 0);
+  return { openExposurePoints, availableBalancePoints: account.currentBalancePoints - openExposurePoints };
+}
+
 export async function setupSingleBankroll(input: {
   readonly adapter: CloudPersistenceAdapter;
   readonly ownerProfileId: string;

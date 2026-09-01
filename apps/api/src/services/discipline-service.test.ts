@@ -6,8 +6,12 @@ const config: DisciplineConfig = { ownerProfileId: 'owner-primary', dailyStopLos
 const event = (id:string,effectiveAt:string,delta:number):BetSettlementEvent => ({ settlementEventId:id,ownerProfileId:'owner-primary',betId:id,bankrollAccountId:'a',settlementType:'manual_adjustment',planAdherence:'no',profitLossPoints:delta,adjustmentReason:'test',calculatedProfitLossPoints:delta,ledgerDeltaPoints:delta,effectiveAt,occurredAt:effectiveAt });
 
 describe('discipline service',()=>{
-  it('returns no rules when the owner has not configured discipline',()=>{
-    expect(evaluateDisciplineAttempt({config:null,stakePoints:1000,settlementEvents:[],at:'2026-08-21T00:00:00.000Z'})).toEqual({triggeredRules:[],dailyProfitLossPoints:0,weeklyProfitLossPoints:0});
+  it('keeps a planned attempt below available balance clear without numeric discipline config',()=>{
+    expect(evaluateDisciplineAttempt({config:null,stakePoints:10,availableBalancePoints:100,preBetMotivation:'planned_analysis',settlementEvents:[],at:'2026-08-21T00:00:00.000Z'})).toEqual({triggeredRules:[],dailyProfitLossPoints:0,weeklyProfitLossPoints:0});
+  });
+
+  it('challenges risky motivation and overexposure even without numeric discipline config',()=>{
+    expect(evaluateDisciplineAttempt({config:null,stakePoints:101,availableBalancePoints:100,preBetMotivation:'chasing_loss',settlementEvents:[],at:'2026-08-21T00:00:00.000Z'})).toEqual({triggeredRules:['overexposure','risky_motivation'],dailyProfitLossPoints:0,weeklyProfitLossPoints:0});
   });
 
   it('triggers on equality and groups daily/ISO-week P&L in configured timezone',()=>{
@@ -34,5 +38,7 @@ describe('discipline service',()=>{
     expect(hashBetAttemptPayload(payload)).toBe(hashBetAttemptPayload({notes:'x',stakePoints:50,betId:'b'}));
     const challenge=buildDisciplineChallenge({challengeId:'c',ownerProfileId:'owner-primary',payload,config,evaluation:{triggeredRules:['big_bet'],dailyProfitLossPoints:0,weeklyProfitLossPoints:0},now:'2026-08-21T00:00:00.000Z'});
     expect(challenge).toMatchObject({challengeId:'c',ruleVersion:2,triggeredRules:['big_bet'],availableAt:'2026-08-21T00:00:15.000Z'});
+    const unconfigured=buildDisciplineChallenge({challengeId:'u',ownerProfileId:'owner-primary',payload,config:null,evaluation:{triggeredRules:['risky_motivation'],dailyProfitLossPoints:0,weeklyProfitLossPoints:0},now:'2026-08-21T00:00:00.000Z'});
+    expect(unconfigured).toMatchObject({challengeId:'u',ruleVersion:0,triggeredRules:['risky_motivation'],availableAt:'2026-08-21T00:00:15.000Z'});
   });
 });

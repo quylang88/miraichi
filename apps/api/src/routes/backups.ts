@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { CloudBackupEnvelope, CloudBackupEnvelopeV2, CloudBetRecord } from '@miraichi/shared';
-import { isAddBetDraftReviewReady, validateBankrollLedgerEntry, validateCloudBetRecord, validateDisciplineConfig, validateSettlementCommand } from '@miraichi/shared';
+import { isAddBetDraftReviewReady, validateBankrollLedgerEntry, validateBetSettlementEvent, validateCloudBetRecord, validateDisciplineConfig } from '@miraichi/shared';
 import type { IncomingMessage, ServerResponse } from 'http';
 import type { CloudRouteDependencies } from './cloud-route-types.js';
 import { mapCloudError, sendError, sendJson } from './cloud-route-types.js';
@@ -13,7 +13,7 @@ function validEnvelope(value:unknown,owner:string):value is CloudBackupEnvelope{
   if(!['miraichi.cloud-backup.v1','miraichi.cloud-backup.v2'].includes(String(item.schemaVersion))||item.ownerProfileId!==owner||typeof item.exportedAt!=='string'||!Array.isArray(item.drafts)||!Array.isArray(item.bets)||!Array.isArray(item.bankrollAccounts)||!Array.isArray(item.bankrollLedgerEntries))return false;
   const common=item.drafts.every(isAddBetDraftReviewReady)&&item.bets.every((bet)=>validateCloudBetRecord(bet).ok)&&item.bankrollAccounts.every((account)=>account&&typeof account.accountId==='string'&&account.ownerProfileId===owner&&account.unit==='points'&&typeof account.currentBalancePoints==='number')&&item.bankrollLedgerEntries.every((entry)=>validateBankrollLedgerEntry(entry).ok);
   if(!common||item.schemaVersion==='miraichi.cloud-backup.v1')return common;
-  const v2=item as Partial<CloudBackupEnvelopeV2>;return Array.isArray(v2.disciplineConfigs)&&v2.disciplineConfigs.every((config)=>validateDisciplineConfig(config).ok)&&Array.isArray(v2.settlementEvents)&&v2.settlementEvents.every((event)=>event.ownerProfileId===owner&&typeof event.betId==='string'&&validateSettlementCommand(event).ok);
+  const v2=item as Partial<CloudBackupEnvelopeV2>;return Array.isArray(v2.disciplineConfigs)&&v2.disciplineConfigs.every((config)=>validateDisciplineConfig(config).ok)&&Array.isArray(v2.settlementEvents)&&v2.settlementEvents.every((event)=>event.ownerProfileId===owner&&validateBetSettlementEvent(event).ok);
 }
 export async function handleBackups(req:IncomingMessage,res:ServerResponse,deps:CloudRouteDependencies):Promise<void>{
   const path=new URL(req.url??'/', 'http://localhost').pathname;

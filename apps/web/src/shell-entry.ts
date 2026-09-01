@@ -574,6 +574,7 @@ function populateAddFormFromDraft(draft: AddBetDraft): void {
   setValue('stake-field', draft.stakePoints);
   setValue('emotion-field', draft.preBetEmotion);
   setValue('motivation-field', draft.preBetMotivation);
+  setValue('pre-bet-plan-adherence', draft.preBetPlanAdherence);
   setValue('note-field', draft.preBetNote ?? draft.notes);
   setText('add-summary-title', draft.homeTeamName && draft.awayTeamName ? `${draft.homeTeamName} vs ${draft.awayTeamName}` : draft.matchGroupId);
   updateAddFormState();
@@ -589,8 +590,9 @@ function readOngoingBetInput(form: HTMLFormElement): CreateOngoingBetInput | nul
   const stakePoints = Number(data.get('stake-field'));
   const preBetEmotion = String(data.get('emotion-field') ?? '');
   const preBetMotivation = String(data.get('motivation-field') ?? '');
+  const preBetPlanAdherence = String(data.get('pre-bet-plan-adherence') ?? '');
   const preBetNote = String(data.get('note-field') ?? '').trim();
-  if (!homeTeamName || !awayTeamName || !marketType || !selectionLabel || !Number.isFinite(oddsValue) || oddsValue <= 0 || !Number.isFinite(stakePoints) || stakePoints <= 0 || !preBetEmotion || !preBetMotivation) return null;
+  if (!homeTeamName || !awayTeamName || !marketType || !selectionLabel || !Number.isFinite(oddsValue) || oddsValue <= 0 || !Number.isFinite(stakePoints) || stakePoints <= 0 || !preBetEmotion || !preBetMotivation || !['yes', 'partly', 'no'].includes(preBetPlanAdherence)) return null;
   if (!/^\d+(?:\.\d{1,2})?$/.test(String(data.get('stake-field')))) return null;
   const timestamp = new Date().toISOString();
   return {
@@ -602,6 +604,7 @@ function readOngoingBetInput(form: HTMLFormElement): CreateOngoingBetInput | nul
     oddsFormat: 'HK', oddsValue, stakePoints,
     preBetEmotion: preBetEmotion as CreateOngoingBetInput['preBetEmotion'],
     preBetMotivation: preBetMotivation as CreateOngoingBetInput['preBetMotivation'],
+    preBetPlanAdherence: preBetPlanAdherence as CreateOngoingBetInput['preBetPlanAdherence'],
     ...(preBetNote ? { preBetNote } : {}), createdAt: timestamp
   };
 }
@@ -746,6 +749,12 @@ appRoot.addEventListener('click', (event) => {
     selectedSettlementBetId = openSettlementTarget.dataset.openSettlement ?? openSettlementTarget.dataset.openSettledDetail ?? '';
     selectedSettlementTimeline = [];
     openSheet('settlement');
+    const record = betRecordsState.status === 'ready' ? [...betRecordsState.pending, ...betRecordsState.settled].find((bet) => bet.betId === selectedSettlementBetId) : undefined;
+    const legacyField = document.getElementById('legacy-plan-adherence-field');
+    const legacySelect = document.getElementById('plan-adherence') as HTMLSelectElement | null;
+    const needsLegacyAdherence = Boolean(record && !record.preBetPlanAdherence && !record.postBetPlanAdherence);
+    if (legacyField) legacyField.hidden = !needsLegacyAdherence;
+    if (legacySelect) { legacySelect.required = needsLegacyAdherence; legacySelect.value = ''; }
     updateSettlementPreview();
     void loadBetSettlementTimeline(selectedSettlementBetId).then((events) => {
       selectedSettlementTimeline = events;
@@ -1137,7 +1146,8 @@ appRoot.addEventListener('submit', (event) => {
     const adjustmentReason = String(form.get('adjustmentReason') ?? '').trim();
     const profitLossPoints = Number(form.get('profitLossPoints'));
     const record = betRecordsState.status === 'ready' ? [...betRecordsState.pending, ...betRecordsState.settled].find((bet) => bet.betId === selectedSettlementBetId) : undefined;
-    if (!record || !settlementType || !['yes', 'partly', 'no'].includes(planAdherence)) return;
+    const needsLegacyAdherence = Boolean(record && !record.preBetPlanAdherence && !record.postBetPlanAdherence);
+    if (!record || !settlementType || (needsLegacyAdherence && !['yes', 'partly', 'no'].includes(planAdherence))) return;
     const correctionEventId = record.status === 'settled' ? selectedSettlementTimeline.at(-1)?.settlementEventId : undefined;
     if (record.status === 'settled' && !correctionEventId) {
       setText('settlement-feedback', createTranslator(settingsService.getSettings().locale)('error.request_failed'));
@@ -1145,7 +1155,7 @@ appRoot.addEventListener('submit', (event) => {
     }
     void settleCloudBet(record.betId, {
       settlementEventId: crypto.randomUUID(), settlementType,
-      planAdherence: planAdherence as 'yes' | 'partly' | 'no',
+      ...(needsLegacyAdherence ? { planAdherence: planAdherence as 'yes' | 'partly' | 'no' } : {}),
       ...(lessonNote ? { lessonNote } : {}),
       ...(settlementType === 'manual_adjustment' ? { profitLossPoints, adjustmentReason } : {}),
       effectiveAt: new Date().toISOString(),
@@ -1169,6 +1179,7 @@ appRoot.addEventListener('submit', (event) => {
   const stakePoints = Number(form.get('stake-field'));
   const preBetEmotion = String(form.get('emotion-field') || '') as AddBetDraft['preBetEmotion'];
   const preBetMotivation = String(form.get('motivation-field') || '') as AddBetDraft['preBetMotivation'];
+  const preBetPlanAdherence = String(form.get('pre-bet-plan-adherence') || '') as AddBetDraft['preBetPlanAdherence'];
   const notes = String(form.get('note-field') || '').trim();
   const translate = createTranslator(settingsService.getSettings().locale);
   if (!homeTeamName || !awayTeamName || !marketType || !Number.isFinite(oddsValue) || !Number.isFinite(stakePoints) || stakePoints <= 0 || !/^\d+(?:\.\d{1,2})?$/.test(String(form.get('stake-field')))) {
@@ -1178,7 +1189,7 @@ appRoot.addEventListener('submit', (event) => {
   const timestamp = new Date().toISOString();
   if (action === 'draft') {
     const existing = findDraft(editingDraftId);
-    const draft: AddBetDraft = { draftId: existing?.draftId ?? crypto.randomUUID(), matchGroupId: existing?.matchGroupId ?? (currentOpenMatchId || manualMatchGroupId(homeTeamName, awayTeamName)), homeTeamName, awayTeamName, ...(selectionLabel ? { selectionLabel } : {}), marketType: marketType as '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom', oddsFormat: 'HK', oddsValue, stakePoints, ...(preBetEmotion ? { preBetEmotion } : {}), ...(preBetMotivation ? { preBetMotivation } : {}), ...(notes ? { preBetNote: notes, notes } : {}), createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp };
+    const draft: AddBetDraft = { draftId: existing?.draftId ?? crypto.randomUUID(), matchGroupId: existing?.matchGroupId ?? (currentOpenMatchId || manualMatchGroupId(homeTeamName, awayTeamName)), homeTeamName, awayTeamName, ...(selectionLabel ? { selectionLabel } : {}), marketType: marketType as '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom', oddsFormat: 'HK', oddsValue, stakePoints, ...(preBetEmotion ? { preBetEmotion } : {}), ...(preBetMotivation ? { preBetMotivation } : {}), ...(preBetPlanAdherence ? { preBetPlanAdherence } : {}), ...(notes ? { preBetNote: notes, notes } : {}), createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp };
     const save = existing ? updateCloudBetDraft(draft) : saveCloudBetDraft(draft);
     void save.then(async () => {
       closeSheets();

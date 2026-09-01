@@ -23,6 +23,7 @@ const ongoingInput = {
   stakePoints: 10,
   preBetEmotion: 'calm' as const,
   preBetMotivation: 'planned_analysis' as const,
+  preBetPlanAdherence: 'yes' as const,
   createdAt: '2026-08-21T00:00:00.000Z',
   updatedAt: '2026-08-21T00:00:00.000Z'
 };
@@ -78,12 +79,12 @@ describe('core betting web service', () => {
       return new Response(JSON.stringify({ period: 'week', netProfitLossPoints: 4.5, winRate: 0.5, dailyBuckets: [] }), { status: 200 });
     };
     await settleCloudBet('bet-1', {
-      settlementEventId: 'settle-1', settlementType: 'full_win', planAdherence: 'yes',
+      settlementEventId: 'settle-1', settlementType: 'full_win',
       effectiveAt: '2026-08-21T00:00:00.000Z'
     }, fetcher);
     const report = await loadBetReport({ period: 'week', anchor: '2026-08-21', accountId: 'account-1' }, fetcher);
     expect(calls[0]).toContain('/bets/bet-1/settlements');
-    expect(calls[0]).toContain('"planAdherence":"yes"');
+    expect(calls[0]).not.toContain('planAdherence');
     expect(calls[1]).toContain('period=week');
     expect(report).not.toHaveProperty('yieldPercent');
   });

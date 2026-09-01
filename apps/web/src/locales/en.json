@@ -132,7 +132,7 @@
   "bets.lessonNote": "Lesson note",
   "bets.manualReason": "Adjustment reason",
   "bets.disciplineBreach": "Discipline check required",
-  "bets.disciplineExplanation": "This bet breaches your configured discipline rules. Wait, review, and acknowledge before recording it.",
+  "bets.disciplineExplanation": "This bet triggers a capital or discipline warning. Wait, review, and acknowledge before recording it.",
   "bets.acknowledge": "I acknowledge this override",
   "bets.availableIn": "Available in {seconds}s",
   "bets.description": "Manual bet journal",

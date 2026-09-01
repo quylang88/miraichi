@@ -2,7 +2,7 @@ export const PRE_BET_EMOTIONS = Object.freeze(['calm', 'excited', 'frustrated', 
 export const PRE_BET_MOTIVATIONS = Object.freeze(['planned_analysis', 'familiar_market', 'chasing_loss', 'fomo', 'impulse', 'other'] as const);
 export const PLAN_ADHERENCE_VALUES = Object.freeze(['yes', 'partly', 'no'] as const);
 export const SETTLEMENT_TYPES = Object.freeze(['full_win', 'half_win', 'push', 'void', 'half_loss', 'full_loss', 'manual_adjustment'] as const);
-export const DISCIPLINE_RULE_TYPES = Object.freeze(['big_bet', 'daily_stop_loss', 'weekly_stop_loss'] as const);
+export const DISCIPLINE_RULE_TYPES = Object.freeze(['big_bet', 'daily_stop_loss', 'weekly_stop_loss', 'overexposure', 'risky_motivation'] as const);
 export const WEEK_START_DAYS = Object.freeze(['monday', 'sunday'] as const);
 
 export type PreBetEmotion = typeof PRE_BET_EMOTIONS[number];
@@ -41,6 +41,7 @@ export interface CreateOngoingBetInput {
   readonly stakePoints: number;
   readonly preBetEmotion: PreBetEmotion;
   readonly preBetMotivation: PreBetMotivation;
+  readonly preBetPlanAdherence: PlanAdherence;
   readonly preBetNote?: string;
   readonly notes?: string;
   readonly createdAt: string;
@@ -59,7 +60,7 @@ export interface DisciplineSnapshot {
 export interface SettlementCommand {
   readonly settlementEventId: string;
   readonly settlementType: SettlementType;
-  readonly planAdherence: PlanAdherence;
+  readonly planAdherence?: PlanAdherence;
   readonly lessonNote?: string;
   readonly profitLossPoints?: number;
   readonly adjustmentReason?: string;
@@ -67,7 +68,8 @@ export interface SettlementCommand {
   readonly correctsSettlementEventId?: string;
 }
 
-export interface BetSettlementEvent extends SettlementCommand {
+export interface BetSettlementEvent extends Omit<SettlementCommand, 'planAdherence'> {
+  readonly planAdherence: PlanAdherence;
   readonly ownerProfileId: string;
   readonly betId: string;
   readonly bankrollAccountId: string;
@@ -135,6 +137,7 @@ export function validateCreateOngoingBetInput(input: unknown): ContractValidatio
   if (!finite(value.stakePoints) || value.stakePoints <= 0 || !decimalsAtMost(value.stakePoints, 2)) errors.push('stakePoints must be positive with at most 2 decimals');
   if (!PRE_BET_EMOTIONS.includes(value.preBetEmotion as PreBetEmotion)) errors.push('preBetEmotion is invalid');
   if (!PRE_BET_MOTIVATIONS.includes(value.preBetMotivation as PreBetMotivation)) errors.push('preBetMotivation is invalid');
+  if (!PLAN_ADHERENCE_VALUES.includes(value.preBetPlanAdherence as PlanAdherence)) errors.push('preBetPlanAdherence is invalid');
   if (!text(value.createdAt) || !ISO.test(value.createdAt)) errors.push('createdAt must be an ISO datetime');
   return errors.length ? { ok: false, errors } : { ok: true };
 }
@@ -145,7 +148,7 @@ export function validateSettlementCommand(input: unknown): ContractValidationRes
   const errors: string[] = [];
   if (!text(value.settlementEventId)) errors.push('settlementEventId is required');
   if (!SETTLEMENT_TYPES.includes(value.settlementType as SettlementType)) errors.push('settlementType is invalid');
-  if (!PLAN_ADHERENCE_VALUES.includes(value.planAdherence as PlanAdherence)) errors.push('planAdherence is invalid');
+  if (value.planAdherence !== undefined && !PLAN_ADHERENCE_VALUES.includes(value.planAdherence as PlanAdherence)) errors.push('planAdherence is invalid');
   if (!text(value.effectiveAt) || !ISO.test(value.effectiveAt)) errors.push('effectiveAt must be an ISO datetime');
   if (value.settlementType === 'manual_adjustment') {
     if (!finite(value.profitLossPoints) || !decimalsAtMost(value.profitLossPoints, 4)) errors.push('profitLossPoints is required with at most 4 decimals');
@@ -153,5 +156,20 @@ export function validateSettlementCommand(input: unknown): ContractValidationRes
   } else if (value.profitLossPoints !== undefined || value.adjustmentReason !== undefined) {
     errors.push('Standard settlement cannot provide a manual result');
   }
+  return errors.length ? { ok: false, errors } : { ok: true };
+}
+
+export function validateBetSettlementEvent(input: unknown): ContractValidationResult {
+  const commandValidation = validateSettlementCommand(input);
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) return commandValidation;
+  const value = input as Partial<BetSettlementEvent>;
+  const errors = commandValidation.ok ? [] : [...commandValidation.errors];
+  for (const key of ['ownerProfileId', 'betId', 'bankrollAccountId'] as const) {
+    if (!text(value[key])) errors.push(`${key} is required`);
+  }
+  if (!PLAN_ADHERENCE_VALUES.includes(value.planAdherence as PlanAdherence)) errors.push('planAdherence is required');
+  if (!finite(value.calculatedProfitLossPoints)) errors.push('calculatedProfitLossPoints must be finite');
+  if (!finite(value.ledgerDeltaPoints)) errors.push('ledgerDeltaPoints must be finite');
+  if (!text(value.occurredAt) || !ISO.test(value.occurredAt)) errors.push('occurredAt must be an ISO datetime');
   return errors.length ? { ok: false, errors } : { ok: true };
 }

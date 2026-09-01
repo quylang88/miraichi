@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { BetSettlementEvent, DisciplineChallenge, DisciplineConfig, DisciplineRuleType } from '@miraichi/shared';
+import type { BetSettlementEvent, DisciplineChallenge, DisciplineConfig, DisciplineRuleType, PreBetMotivation } from '@miraichi/shared';
 
 export interface DisciplineEvaluation {
   readonly triggeredRules: DisciplineRuleType[];
@@ -25,29 +25,36 @@ const weekStart = (key: string, weekStartDay: 'monday' | 'sunday' = 'monday'): s
 };
 const round4 = (value: number): number => Math.round((value + Number.EPSILON) * 10_000) / 10_000;
 
-export function evaluateDisciplineAttempt({ config, stakePoints, settlementEvents, at }: {
+const RISKY_MOTIVATIONS = new Set<PreBetMotivation>(['chasing_loss', 'fomo', 'impulse']);
+
+export function evaluateDisciplineAttempt({ config, stakePoints, availableBalancePoints, preBetMotivation, settlementEvents, at }: {
   readonly config: DisciplineConfig | null;
   readonly stakePoints: number;
+  readonly availableBalancePoints?: number | null;
+  readonly preBetMotivation?: PreBetMotivation;
   readonly settlementEvents: readonly BetSettlementEvent[];
   readonly at: string;
 }): DisciplineEvaluation {
-  if (!config) return { triggeredRules: [], dailyProfitLossPoints: 0, weeklyProfitLossPoints: 0 };
-  const weekStartDay = config.weekStartDay ?? 'monday';
-  const currentDate = dateKey(at, config.timeZone);
-  const currentWeek = weekStart(currentDate, weekStartDay);
   let dailyProfitLossPoints = 0;
   let weeklyProfitLossPoints = 0;
-  for (const event of settlementEvents) {
-    const effectiveDate = dateKey(event.effectiveAt, config.timeZone);
-    if (effectiveDate === currentDate) dailyProfitLossPoints += event.ledgerDeltaPoints;
-    if (weekStart(effectiveDate, weekStartDay) === currentWeek) weeklyProfitLossPoints += event.ledgerDeltaPoints;
+  if (config) {
+    const weekStartDay = config.weekStartDay ?? 'monday';
+    const currentDate = dateKey(at, config.timeZone);
+    const currentWeek = weekStart(currentDate, weekStartDay);
+    for (const event of settlementEvents) {
+      const effectiveDate = dateKey(event.effectiveAt, config.timeZone);
+      if (effectiveDate === currentDate) dailyProfitLossPoints += event.ledgerDeltaPoints;
+      if (weekStart(effectiveDate, weekStartDay) === currentWeek) weeklyProfitLossPoints += event.ledgerDeltaPoints;
+    }
   }
   dailyProfitLossPoints = round4(dailyProfitLossPoints);
   weeklyProfitLossPoints = round4(weeklyProfitLossPoints);
   const triggeredRules: DisciplineRuleType[] = [];
-  if (config.bigBetThresholdPoints !== null && stakePoints >= config.bigBetThresholdPoints) triggeredRules.push('big_bet');
-  if (config.dailyStopLossPoints !== null && dailyProfitLossPoints <= -config.dailyStopLossPoints) triggeredRules.push('daily_stop_loss');
-  if (config.weeklyStopLossPoints !== null && weeklyProfitLossPoints <= -config.weeklyStopLossPoints) triggeredRules.push('weekly_stop_loss');
+  if (config?.bigBetThresholdPoints !== null && config?.bigBetThresholdPoints !== undefined && stakePoints >= config.bigBetThresholdPoints) triggeredRules.push('big_bet');
+  if (config?.dailyStopLossPoints !== null && config?.dailyStopLossPoints !== undefined && dailyProfitLossPoints <= -config.dailyStopLossPoints) triggeredRules.push('daily_stop_loss');
+  if (config?.weeklyStopLossPoints !== null && config?.weeklyStopLossPoints !== undefined && weeklyProfitLossPoints <= -config.weeklyStopLossPoints) triggeredRules.push('weekly_stop_loss');
+  if (availableBalancePoints !== null && availableBalancePoints !== undefined && Number.isFinite(availableBalancePoints) && stakePoints > availableBalancePoints) triggeredRules.push('overexposure');
+  if (preBetMotivation && RISKY_MOTIVATIONS.has(preBetMotivation)) triggeredRules.push('risky_motivation');
   return { triggeredRules, dailyProfitLossPoints, weeklyProfitLossPoints };
 }
 
@@ -65,14 +72,14 @@ export function buildDisciplineChallenge({ challengeId, ownerProfileId, payload,
   readonly challengeId: string;
   readonly ownerProfileId: string;
   readonly payload: unknown;
-  readonly config: DisciplineConfig;
+  readonly config: DisciplineConfig | null;
   readonly evaluation: DisciplineEvaluation;
   readonly now: string;
 }): DisciplineChallenge {
   return {
-    challengeId, ownerProfileId, payloadHash: hashBetAttemptPayload(payload), ruleVersion: config.version,
+    challengeId, ownerProfileId, payloadHash: hashBetAttemptPayload(payload), ruleVersion: config?.version ?? 0,
     triggeredRules: [...evaluation.triggeredRules], dailyProfitLossPoints: evaluation.dailyProfitLossPoints,
     weeklyProfitLossPoints: evaluation.weeklyProfitLossPoints, createdAt: now,
-    availableAt: new Date(new Date(now).getTime() + config.cooldownSeconds * 1000).toISOString()
+    availableAt: new Date(new Date(now).getTime() + (config?.cooldownSeconds ?? 15) * 1000).toISOString()
   };
 }

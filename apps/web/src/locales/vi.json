@@ -132,7 +132,7 @@
   "bets.lessonNote": "Bài học",
   "bets.manualReason": "Lý do điều chỉnh",
   "bets.disciplineBreach": "Cần kiểm tra kỷ luật",
-  "bets.disciplineExplanation": "Cược này vi phạm quy tắc kỷ luật đã cấu hình. Hãy chờ, xem lại và xác nhận trước khi ghi cược.",
+  "bets.disciplineExplanation": "Cược này kích hoạt cảnh báo về vốn hoặc kỷ luật. Hãy chờ, xem lại và xác nhận trước khi ghi cược.",
   "bets.acknowledge": "Tôi xác nhận ghi đè quy tắc này",
   "bets.availableIn": "Có thể tiếp tục sau {seconds} giây",
   "bets.description": "Nhật ký cược thủ công",

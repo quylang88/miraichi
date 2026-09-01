@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { validateCreateOngoingBetInput, validateDisciplineConfig, type DisciplineConfig } from '@miraichi/shared';
+import { validateCreateOngoingBetInput, validateDisciplineConfig, type CreateOngoingBetInput, type DisciplineConfig } from '@miraichi/shared';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { buildDisciplineChallenge, evaluateDisciplineAttempt } from '../services/discipline-service.js';
+import { getSingleBankrollAvailability, resolveSingleActiveBankroll, SingleBankrollError } from '../services/single-bankroll-service.js';
 import type { CloudRouteDependencies } from './cloud-route-types.js';
 import { mapCloudError, sendError, sendJson } from './cloud-route-types.js';
 import { readJsonObjectRequest } from './json-body.js';
@@ -21,9 +22,11 @@ export async function handleDiscipline(req:IncomingMessage,res:ServerResponse,de
     }
     if(path.endsWith('/discipline-challenges')&&req.method==='POST'){
       const validation=validateCreateOngoingBetInput(payload);if(!validation.ok)return sendError(res,400,'invalid_bet_record',validation.errors.join('; '));
+      let account;try{account=await resolveSingleActiveBankroll(deps.adapter,deps.ownerProfileId);}catch(error){if(error instanceof SingleBankrollError)return sendError(res,409,error.code,error.message);throw error;}
+      const availability=await getSingleBankrollAvailability(deps.adapter,deps.ownerProfileId,account);
       const config=await deps.adapter.getDisciplineConfig(deps.ownerProfileId);
-      const evaluation=evaluateDisciplineAttempt({config,stakePoints:Number(payload.stakePoints),settlementEvents:await deps.adapter.listBetSettlementEvents(deps.ownerProfileId),at:now()});
-      if(!config||evaluation.triggeredRules.length===0)return sendJson(res,200,{required:false,evaluation});
+      const evaluation=evaluateDisciplineAttempt({config,stakePoints:Number(payload.stakePoints),availableBalancePoints:availability.availableBalancePoints,preBetMotivation:payload.preBetMotivation as CreateOngoingBetInput['preBetMotivation'],settlementEvents:await deps.adapter.listBetSettlementEvents(deps.ownerProfileId),at:now()});
+      if(evaluation.triggeredRules.length===0)return sendJson(res,200,{required:false,evaluation});
       const challenge=buildDisciplineChallenge({challengeId:randomUUID(),ownerProfileId:deps.ownerProfileId,payload,config,evaluation,now:now()});
       await deps.adapter.createDisciplineChallenge(challenge);return sendJson(res,201,{required:true,challenge});
     }

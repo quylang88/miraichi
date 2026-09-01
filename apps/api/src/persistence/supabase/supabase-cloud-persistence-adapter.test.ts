@@ -37,6 +37,18 @@ describe('supabase cloud persistence adapter', () => {
     expect(client.calls[0]?.values).toEqual(['owner-primary']);
   });
 
+  it('persists pre-bet plan adherence on drafts and ongoing records', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary', now: () => '2026-09-01T00:00:00.000Z' });
+    await adapter.saveBetDraft('owner-primary', { draftId: 'd', matchGroupId: 'm', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, preBetPlanAdherence: 'partly', createdAt: '2026-09-01T00:00:00.000Z', updatedAt: '2026-09-01T00:00:00.000Z' });
+    await adapter.createBetRecord({ betId: 'b', ownerProfileId: 'owner-primary', matchGroupId: 'm', homeTeamName: 'A', awayTeamName: 'B', marketType: '1X2', selectionLabel: 'A', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, status: 'pending', preBetPlanAdherence: 'yes', createdAt: '2026-09-01T00:00:00.000Z', updatedAt: '2026-09-01T00:00:00.000Z' });
+    const writes = client.calls.filter((call) => call.text.includes('insert into miraichi_app.bet_'));
+    expect(writes).toHaveLength(2);
+    expect(writes.every((call) => call.text.includes('pre_bet_plan_adherence'))).toBe(true);
+    expect(writes[0]?.values).toContain('partly');
+    expect(writes[1]?.values).toContain('yes');
+  });
+
   it('rejects owner mismatch before querying', async () => {
     const client = new FakeClient();
     const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });

@@ -114,7 +114,9 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('name="home-team"');
     expect(html).toContain('id="record-ongoing-bet"');
     expect(html).not.toContain('id="account-field"');
+    expect(html).toContain('id="pre-bet-plan-adherence"');
     expect(html).toContain('id="settlement-form"');
+    expect(html).toContain('id="legacy-plan-adherence-field" hidden');
   });
 
   it('renders real bankroll summaries, discipline nulls, and report analytics without forbidden metrics', () => {
