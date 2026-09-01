@@ -256,7 +256,7 @@
   "detail.penalty": "PEN",
   "detail.stats": "Statistics",
   "detail.timeline": "Timeline",
-  "detail.noData": "Unavailable",
+  "detail.noData": "–",
   "detail.stat.cornerKicks": "Corner Kicks",
   "detail.stat.yellowCards": "Yellow Cards",
   "detail.stat.redCards": "Red Cards",

@@ -137,7 +137,7 @@ describe('SportScore attribution and owner-facing source states', () => {
 
     expect(today).toContain('data-today-match-source-status="fresh"');
     expect(today).toContain('Powered by SportScore');
-    expect(matches).toContain('Data status: Stale');
+    expect(matches).not.toContain('Data status: Stale');
     expect(matches).toContain('Powered by SportScore');
 
     const freshMatches = renderMatchesScreen({
@@ -150,7 +150,8 @@ describe('SportScore attribution and owner-facing source states', () => {
       searchQuery: '',
       isFilterPanelOpen: false
     });
-    expect(freshMatches).toContain('Data status: Fresh');
+    expect(freshMatches).not.toContain('Data status: Fresh');
+    expect(freshMatches).toContain('Powered by SportScore');
 
     const manualOnly = renderTodayScreen({
       activeTabId: 'today',
@@ -215,7 +216,7 @@ describe('SportScore attribution and owner-facing source states', () => {
     expect(html).toContain('Đội hình');
     expect(html).toContain('4-3-3');
     expect(html).toContain('Home Keeper');
-    expect(html).toContain('Không có dữ liệu');
+    expect(html).toContain('<td>–</td>');
     expect(html).toMatch(/<td>0<\/td>/u);
     expect(html).not.toContain('<td>null</td>');
 

@@ -1,5 +1,6 @@
 import type { ProductionNavigationTabId } from '../../config/navigation-tabs.js';
-import { formatDateTime, t, type SupportedLocale, type TranslateFunction } from '../../services/i18n-service.js';
+import { compareCompetitionsByPopularity } from '../../config/competition-popularity.js';
+import { t, type SupportedLocale, type TranslateFunction } from '../../services/i18n-service.js';
 import type { AppMatch, MatchFeedViewState } from '../../services/match-feed-service.js';
 import { escapeHtml } from '../html.js';
 import {
@@ -73,23 +74,10 @@ function matchMeta(match: AppMatch, translate: TranslateFunction, timezone: 'loc
   return `${match.competition.name}${match.round ? ` · ${match.round}` : ''} · ${event} · ${translate(`matches.status.${match.status}`, match.status)}`;
 }
 
-function renderSnapshotStatus(feed: Exclude<MatchFeedViewState, { status: 'loading' }>, translate: TranslateFunction, locale: SupportedLocale, timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
-  const status = feed.status === 'unavailable'
-    ? translate('source.unavailable')
-    : feed.snapshot?.freshness === 'fresh'
-      ? translate('source.fresh')
-      : feed.snapshot?.freshness === 'stale'
-        ? translate('source.stale')
-        : translate('source.unavailable');
-  const generatedAt = !feed.snapshot || feed.snapshot.freshness === 'missing' ? undefined : feed.snapshot.generatedAt;
-  const resolvedTimeZone = timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone;
-  return `<div class="match-data-status"><span>${escapeHtml(translate('matches.dataStatus', { status }))}</span>${generatedAt ? `<span>${escapeHtml(translate('matches.snapshotGenerated', { date: formatDateTime(generatedAt, locale, resolvedTimeZone) }))}</span>` : ''}</div>`;
-}
-
-function renderFeedState(feed: Exclude<MatchFeedViewState, { status: 'ready' }>, translate: TranslateFunction, locale: SupportedLocale, timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
+function renderFeedState(feed: Exclude<MatchFeedViewState, { status: 'ready' }>, translate: TranslateFunction): string {
   if (feed.status === 'loading') return `<div data-match-feed-state="loading" aria-label="${escapeHtml(translate('matches.loadingStore'))}">${renderSkeletonMatchRows(4)}</div>`;
-  if (feed.status === 'unavailable') return `${renderSnapshotStatus(feed, translate, locale, timezone)}<section class="note-card warning" data-match-feed-state="unavailable"><div class="note-eyebrow">${escapeHtml(translate('matches.dataUpdateRequired'))}</div><div class="note-title">${escapeHtml(translate('matches.storeUnavailable'))}</div><p class="note-copy">${escapeHtml(translate('matches.feedUnavailable'))}</p></section>`;
-  return `${renderSnapshotStatus(feed, translate, locale, timezone)}<section class="note-card" data-match-feed-state="empty"><div class="note-eyebrow">${escapeHtml(translate('matches.store'))}</div><div class="note-title">${escapeHtml(translate('matches.noMatchesTitle', { date: feed.date }))}</div><p class="note-copy">${escapeHtml(translate('matches.noMatchesCopy'))}</p></section>`;
+  if (feed.status === 'unavailable') return `<section class="note-card warning" data-match-feed-state="unavailable"><div class="note-eyebrow">${escapeHtml(translate('matches.dataUpdateRequired'))}</div><div class="note-title">${escapeHtml(translate('matches.storeUnavailable'))}</div><p class="note-copy">${escapeHtml(translate('matches.feedUnavailable'))}</p></section>`;
+  return `<section class="note-card" data-match-feed-state="empty"><div class="note-eyebrow">${escapeHtml(translate('matches.store'))}</div><div class="note-title">${escapeHtml(translate('matches.noMatchesTitle', { date: feed.date }))}</div><p class="note-copy">${escapeHtml(translate('matches.noMatchesCopy'))}</p></section>`;
 }
 
 function isWomenMatch(match: AppMatch): boolean {
@@ -126,7 +114,7 @@ function renderReadyMatches(matches: readonly AppMatch[], feedDate: string, filt
   if (filters.groupby === 'time') return `<div class="date-group"><div class="group-label">${escapeHtml(feedDate)}</div>${[...matches].sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc)).map((match) => renderMatchRow(match, translate, timezone)).join('')}</div>`;
   const groups = new Map<string, AppMatch[]>();
   for (const match of matches) groups.set(match.competition.name, [...(groups.get(match.competition.name) ?? []), match]);
-  return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([league, leagueMatches]) => `<div class="date-group"><div class="group-label">${escapeHtml(league)}</div>${leagueMatches.sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc)).map((match) => renderMatchRow(match, translate, timezone)).join('')}</div>`).join('');
+  return [...groups.entries()].sort(([left], [right]) => compareCompetitionsByPopularity(left, right)).map(([league, leagueMatches]) => `<div class="date-group"><div class="group-label">${escapeHtml(league)}</div>${leagueMatches.sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc)).map((match) => renderMatchRow(match, translate, timezone)).join('')}</div>`).join('');
 }
 
 export function renderMatchesScreen(input: {
@@ -144,12 +132,12 @@ export function renderMatchesScreen(input: {
   const { activeTabId, translate, locale, matchFeed, timezone, filters, searchQuery, isFilterPanelOpen, isCalendarOpen = false, calendarMonth } = input;
   const filtered = filterMatches(matchFeed, filters, searchQuery);
   const ribbon = getRibbonDates(matchFeed.date, translate).map((date) => `<button class="date-chip${date.dateStr === matchFeed.date ? ' active' : ''}" type="button" data-date="${escapeHtml(date.dateStr)}"><span class="date-chip-label">${escapeHtml(date.label)}</span><span class="date-chip-number">${escapeHtml(date.dayNumber)}</span></button>`).join('');
-  const leagues = matchFeed.status === 'ready' ? [...new Set(matchFeed.matches.map((match) => match.competition.name))].sort() : [];
+  const leagues = matchFeed.status === 'ready' ? [...new Set(matchFeed.matches.map((match) => match.competition.name))].sort(compareCompetitionsByPopularity) : [];
   const leagueOptions = leagues.map((league) => `<label class="filter-option" for="filter-league-${escapeHtml(league)}"><input type="checkbox" id="filter-league-${escapeHtml(league)}" name="filter-league" value="${escapeHtml(league)}" ${filters.selectedLeagues.has(league) ? 'checked' : ''}><span>${escapeHtml(league)}</span></label>`).join('');
   const radio = (group: string, value: string, label: string, checked: boolean) => `<label class="filter-option" for="filter-${group}-${value}"><input type="radio" id="filter-${group}-${value}" name="filter-${group}" value="${value}" ${checked ? 'checked' : ''}><span>${escapeHtml(label)}</span></label>`;
   const content = matchFeed.status === 'ready'
-    ? `${renderSnapshotStatus(matchFeed, translate, locale, timezone)}${renderReadyMatches(filtered, matchFeed.date, filters, translate, timezone)}`
-    : renderFeedState(matchFeed, translate, locale, timezone);
+    ? renderReadyMatches(filtered, matchFeed.date, filters, translate, timezone)
+    : renderFeedState(matchFeed, translate);
   const attribution = renderSportScoreAttribution(
     sourceEvidenceFromMatchFeed(matchFeed),
     translate
@@ -179,5 +167,5 @@ export function renderMatchesScreen(input: {
 }
 
 export function renderMatchDetailScreen(translate: TranslateFunction): string {
-  return `<section class="screen" id="screen-match-detail" aria-labelledby="match-detail-title"><button class="secondary-button back-button" type="button" id="match-detail-back">${backIcon}${escapeHtml(translate('detail.back'))}</button><div class="screen-header"><div><p class="screen-label">${escapeHtml(translate('detail.title'))}</p><h1 class="screen-title" id="match-detail-title">${escapeHtml(translate('matches.selected'))}</h1><p class="screen-subtitle" id="match-detail-meta">${escapeHtml(translate('matches.chooseDetail'))}</p></div></div><div class="match-context" aria-label="${escapeHtml(translate('matches.groupContext'))}"><div class="context-line"><div class="context-label">${escapeHtml(translate('matches.groupingKey'))}</div><div class="context-value">matchGroupId</div></div><div class="context-line"><div class="context-label">${escapeHtml(translate('matches.entryRule'))}</div><div class="context-value">${escapeHtml(translate('matches.addThrough'))}</div></div></div><div class="segmented two" role="tablist" aria-label="${escapeHtml(translate('matches.detailTabs'))}"><button class="active" type="button" data-detail-tab="bets">${escapeHtml(translate('bets.title'))}</button><button type="button" data-detail-tab="info">${escapeHtml(translate('matches.info'))}</button></div><div class="detail-panel" id="match-detail-panel-bets"><div class="action-row"><button class="primary-button add-inline" type="button" data-open-scoped-add data-add-bet-boundary="planned">${plusIcon}${escapeHtml(translate('bets.add'))}</button></div><div class="stack"><p class="empty-state">${escapeHtml(translate('matches.openBetsHint'))}</p></div></div><div class="detail-panel" id="match-detail-panel-info" hidden><section class="note-card"><div class="note-eyebrow">${escapeHtml(translate('matches.detailBoundary'))}</div><div class="note-title">${escapeHtml(translate('matches.detailContext'))}</div><p class="note-copy">${escapeHtml(translate('matches.detailBoundaryCopy'))}</p></section></div></section>`;
+  return `<section class="screen" id="screen-match-detail" aria-labelledby="match-detail-title"><button class="secondary-button back-button" type="button" id="match-detail-back">${backIcon}${escapeHtml(translate('detail.back'))}</button><div class="screen-header"><div><p class="screen-label">${escapeHtml(translate('detail.title'))}</p><h1 class="screen-title" id="match-detail-title">${escapeHtml(translate('matches.selected'))}</h1><p class="screen-subtitle" id="match-detail-meta">${escapeHtml(translate('matches.chooseDetail'))}</p></div></div><div class="segmented two" role="tablist" aria-label="${escapeHtml(translate('matches.detailTabs'))}"><button class="active" type="button" data-detail-tab="bets">${escapeHtml(translate('bets.title'))}</button><button type="button" data-detail-tab="info">${escapeHtml(translate('matches.info'))}</button></div><div class="detail-panel" id="match-detail-panel-bets"><div class="action-row"><button class="primary-button add-inline" type="button" data-open-scoped-add data-add-bet-boundary="planned">${plusIcon}${escapeHtml(translate('bets.add'))}</button></div><div class="stack"><p class="empty-state">${escapeHtml(translate('matches.openBetsHint'))}</p></div></div><div class="detail-panel" id="match-detail-panel-info" hidden><section class="note-card"><div class="note-eyebrow">${escapeHtml(translate('matches.detailBoundary'))}</div><div class="note-title">${escapeHtml(translate('matches.detailContext'))}</div><p class="note-copy">${escapeHtml(translate('matches.detailBoundaryCopy'))}</p></section></div></section>`;
 }

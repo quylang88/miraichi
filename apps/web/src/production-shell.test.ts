@@ -698,7 +698,7 @@ describe('production shell match snapshot rendering', () => {
       }
     });
     expect(unavailableHtml).toContain('Data update required');
-    expect(unavailableHtml).toContain('Data status: Unavailable');
+    expect(unavailableHtml).not.toContain('Data status:');
     expect(unavailableHtml).toContain('Match feed unavailable. Manual bet entry is still available.');
     expect(unavailableHtml).not.toContain('Build it from canonical warehouse');
 
@@ -722,7 +722,7 @@ describe('production shell match snapshot rendering', () => {
         }
       }
     });
-    expect(missingSnapshotHtml).toContain('Data status: Unavailable');
+    expect(missingSnapshotHtml).not.toContain('Data status:');
     expect(missingSnapshotHtml).not.toContain('No matches found');
     expect(missingSnapshotHtml).not.toContain('Snapshot generated:');
   });
@@ -770,8 +770,8 @@ describe('production shell match snapshot rendering', () => {
     expect(html).toContain('Japan vs Vietnam');
     expect(html).toContain('FIFA World Cup');
     expect(html).toContain('data-match-id="match-1"');
-    expect(html).toContain('Data status: Fresh');
-    expect(html).toContain('Snapshot generated: Jul 1, 2026');
+    expect(html).not.toContain('Data status:');
+    expect(html).not.toContain('Snapshot generated:');
     expect(html).not.toContain('2026-07-01T00:00:00.000Z');
     expect(html).not.toContain('provider fixture context');
     expect(html).not.toContain('No provider matches');
@@ -807,8 +807,8 @@ describe('production shell match snapshot rendering', () => {
         }
       }
     });
-    expect(staleHtml).toContain('Data status: Stale');
-    expect(staleHtml).toContain('Snapshot generated: Jun 28, 2026');
+    expect(staleHtml).not.toContain('Data status:');
+    expect(staleHtml).not.toContain('Snapshot generated:');
     expect(staleHtml).not.toContain('2026-06-28T00:00:00.000Z');
   });
 });
@@ -1306,7 +1306,7 @@ describe('Slice 8 basic match detail UI and guardrails', () => {
     expect(html).not.toContain('<script>');
     expect(html).not.toContain("null'");
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
-    expect(html).toContain('Không có dữ liệu');
+    expect(html).toContain('<td>–</td>');
     expect(html).not.toMatch(/>0<\/td>/);
   });
 

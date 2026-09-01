@@ -181,20 +181,28 @@ function renderReadyDetail(
   timeZone: string
 ): string {
   const match = detail.match;
-  const score = `${formatNullable(match.score.home, translate)} – ${formatNullable(match.score.away, translate)}`;
+  const score = match.score.home !== null && match.score.away !== null
+    ? `${match.score.home} – ${match.score.away}`
+    : (match.status === 'scheduled' ? 'vs' : escapeHtml(translate('detail.noData')));
   const competitionContext = [match.competition.name, match.competition.season, match.round].filter(Boolean).join(' · ');
   const status = translate(`matches.status.${match.status}`, match.status);
   const kickoff = formatDateTime(match.kickoffUtc, locale, timeZone);
+  const elapsed = detail.elapsedMinute !== null && detail.elapsedMinute !== undefined
+    ? `${detail.elapsedMinute}'`
+    : translate('detail.noData');
+  const venue = match.venue ? escapeHtml(match.venue) : escapeHtml(translate('detail.noData'));
+  const referee = detail.referee ? escapeHtml(detail.referee) : escapeHtml(translate('detail.noData'));
+
   return `<div class="match-detail-ready" data-match-detail-state="ready">
     <section class="match-detail-summary">
       <p class="match-detail-competition">${escapeHtml(competitionContext)}</p>
       <div class="match-detail-scoreline"><span>${escapeHtml(match.homeTeam.name)}</span><strong>${score}</strong><span>${escapeHtml(match.awayTeam.name)}</span></div>
       <dl class="match-detail-meta">
         <div><dt>${escapeHtml(translate('detail.status'))}</dt><dd><span class="match-status-badge">${escapeHtml(status)}</span></dd></div>
-        <div><dt>${escapeHtml(translate('detail.elapsed'))}</dt><dd>${formatNullable(detail.elapsedMinute, translate, "'")}</dd></div>
+        <div><dt>${escapeHtml(translate('detail.elapsed'))}</dt><dd>${escapeHtml(elapsed)}</dd></div>
         <div><dt>${escapeHtml(translate('detail.kickoff'))}</dt><dd>${escapeHtml(kickoff)}</dd></div>
-        <div><dt>${escapeHtml(translate('detail.venue'))}</dt><dd>${match.venue ? escapeHtml(match.venue) : escapeHtml(translate('detail.noData'))}</dd></div>
-        <div><dt>${escapeHtml(translate('detail.referee'))}</dt><dd>${detail.referee ? escapeHtml(detail.referee) : escapeHtml(translate('detail.noData'))}</dd></div>
+        <div><dt>${escapeHtml(translate('detail.venue'))}</dt><dd>${venue}</dd></div>
+        <div><dt>${escapeHtml(translate('detail.referee'))}</dt><dd>${referee}</dd></div>
       </dl>
     </section>
     ${renderScoreBreakdown(detail, translate)}
@@ -204,6 +212,8 @@ function renderReadyDetail(
     ${renderLineups(detail, translate)}
   </div>`;
 }
+
+
 
 function sourceRefsForState(state: MatchDetailRenderState): readonly LocalMatchSourceRef[] {
   if (state.status === 'ready') return state.detail.match.sourceRefs;

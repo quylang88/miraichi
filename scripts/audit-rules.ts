@@ -23,6 +23,12 @@ const RULES = [
     allowList: [
       'packages/config/src/competition-registry.mock.ts',
       'packages/config/src/sportscore-source-registry.ts',
+      'packages/config/src/competition-popularity.ts',
+      'packages/shared/src/config/competition-popularity.ts',
+      'packages/shared/src/config/competition-popularity.test.ts',
+      'apps/web/src/config/competition-popularity.ts',
+      'apps/web/src/config/competition-popularity.test.ts',
+      'apps/web/src/components/screens/matches-screen.test.ts',
       'scripts/phase2-verify.ts',
       'apps/api/src/services/cloud-match-snapshot-sync.test.ts',
       'packages/shared/src/contracts/provider-ingestion-contracts.test.ts'
