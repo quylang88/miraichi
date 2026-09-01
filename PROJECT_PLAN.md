@@ -12,7 +12,8 @@
 - **Completed phase**: `phase:code-slice FotMob unofficial current-season hydration` — the owner accepted ADR-0049 risk, all 45 executable current editions were checkpointed, and the final local release gate passed on 2026-08-31.
 - **Completed phase**: `phase:integration-test FotMob daily terminal results and current-edition revalidation` — all eight TDD slices and the local release gate passed on 2026-08-31.
 - **Completed phase**: `phase:maintenance FotMob owner-local current data operations` — guarded current hydration, 24-hour current revalidation, and terminal-result once/watch operation remain available, but no provider operation is part of the active product phase.
-- **Active phase**: `phase:implementation-plan Single-bankroll usable owner flow` — the owner approved a single visible bankroll, an internal compatibility account, complete remediation of the reviewed bankroll/bet/psychology gaps, sequential TDD slices, and one local commit after every completed slice on 2026-09-01.
+- **Completed phase**: `phase:integration-test Single-bankroll usable owner flow` — the single visible bankroll, internal compatibility account, reviewed bankroll/bet/psychology remediations, sequential TDD slices, and complete local release gate all passed on 2026-09-01.
+- **Active phase**: none. The owner must explicitly select the next phase; the earliest safe recommendation is an owner-local database migration and smoke-test maintenance phase for the completed single-bankroll flow.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45 current competition editions. No cloud staging, owner-feedback release gate, or production promotion has run.
@@ -305,3 +306,36 @@ All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
 - **Decision**: `docs/decisions/ADR-0050-single-bankroll-usable-owner-flow.md`.
 - **Design**: `docs/superpowers/specs/2026-09-01-single-bankroll-usable-owner-flow-design.md`.
 - **Implementation plan**: `docs/superpowers/plans/2026-09-01-single-bankroll-usable-owner-flow.md`.
+
+### TDD and commit evidence
+
+- Planning gate: `1b6814d docs: approve single bankroll owner flow`.
+- Slice 1, bankroll and settlement invariants: `9448592 fix: protect bankroll accounting invariants`.
+- Slice 2, deterministic primary-bankroll setup: `b08f614 feat: add single bankroll owner setup`.
+- Slice 3, owner UI and draft conversion: `aacf7f0 feat: simplify single bankroll owner flow`.
+- Slice 4, pre-bet discipline checks: `2b35830 feat: enforce pre-bet discipline checks`.
+- Slice 5, factual bankroll and psychology reports: `e402d58 fix: keep bankroll reports factual`.
+- Slice 6 closes the normal integration chain and endpoint smoke contract in the local closeout
+  commit after the complete release gate passes.
+
+### Local closeout evidence
+
+- The normal integration chain now covers primary-bankroll setup, overexposure and risky-motivation
+  warnings, the 15-second challenge, server-side primary-account binding, immutable pre-bet plan
+  adherence, settlement correction, psychology reporting, and V2 backup round-trip.
+- `pnpm run verify:release` passed on 2026-09-01: product-boundary and lifecycle checks, 615 unit
+  tests across 108 files, lint, typecheck, audit, type-safety checks, phase verification, 12 focused
+  SportScore contract tests, 52 season integration tests, 35 FotMob terminal integration tests,
+  endpoint E2E, and PWA verification.
+- SportScore contract verification reported `networkUsed: false`. This phase made no provider call,
+  did not modify or delete the active `apps/api/data` snapshot, and did not run staging, production
+  schema application, deployment, or push.
+
+### Phase transition recommendation
+
+- This phase is complete locally. The earliest safe next phase is
+  `phase:maintenance Single-bankroll owner-local database migration and smoke`: apply the two tracked
+  schema migrations to a configured owner-local Supabase instance, exercise first-run setup and the
+  draft-to-settlement UI flow, and record evidence without treating it as staging approval.
+- Historical-season hydration and lazy match detail remain explicitly `PENDING`; neither belongs in
+  that maintenance phase.
