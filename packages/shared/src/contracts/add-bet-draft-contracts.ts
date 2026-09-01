@@ -6,6 +6,7 @@ import type {
   MatchGroupId,
   OddsFormat
 } from './betting-domain-contracts.js';
+import type { PreBetEmotion, PreBetMotivation } from './core-betting-contracts.js';
 
 export type { IsoDateTimeString, MatchGroupId } from './betting-domain-contracts.js';
 
@@ -17,12 +18,18 @@ export type AddBetDraftId = string;
 export interface AddBetDraft {
   readonly draftId: AddBetDraftId;
   readonly matchGroupId: MatchGroupId;
+  readonly homeTeamName?: string;
+  readonly awayTeamName?: string;
+  readonly selectionLabel?: string;
   readonly marketType: MarketType;
   readonly customMarketLabel?: string;
   readonly lineValue?: LineValue | null;
   readonly oddsFormat: OddsFormat;
   readonly oddsValue: number;
   readonly stakePoints: number;
+  readonly preBetEmotion?: PreBetEmotion;
+  readonly preBetMotivation?: PreBetMotivation;
+  readonly preBetNote?: string;
   readonly notes?: string;
   readonly tags?: readonly string[];
   readonly createdAt: IsoDateTimeString;

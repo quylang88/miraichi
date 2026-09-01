@@ -17,12 +17,6 @@ export function renderSettlementTimeline(
   return events.map((item) => `<div class="ledger-row"><div><div class="ledger-title">${escapeHtml(translate(`settlement.${item.settlementType}`, item.settlementType))}</div><div class="ledger-meta">${escapeHtml(formatDateTime(item.occurredAt, locale, timeZone))}</div></div><span class="ledger-state">${item.ledgerDeltaPoints > 0 ? '+' : ''}${item.ledgerDeltaPoints} pts</span></div>`).join('');
 }
 
-function accountLabel(record: CloudBetRecord, bankroll: BankrollViewState, translate: TranslateFunction): string {
-  if (!record.bankrollAccountId) return translate('common.unassigned');
-  if (bankroll.status !== 'ready') return record.bankrollAccountId;
-  return bankroll.accounts.find((account) => account.accountId === record.bankrollAccountId)?.label ?? record.bankrollAccountId;
-}
-
 function betCard(record: CloudBetRecord, bankroll: BankrollViewState, translate: TranslateFunction, settled: boolean): string {
   const psychology = [
     record.preBetEmotion ? translate(`emotion.${record.preBetEmotion}`) : '',
@@ -32,7 +26,7 @@ function betCard(record: CloudBetRecord, bankroll: BankrollViewState, translate:
   const pnl = record.profitLossPoints ?? record.manualResultPoints;
   return `<article class="bet-row bet-card" data-bet-id="${escapeHtml(record.betId)}">
     <div class="row-split"><div><div class="row-title">${escapeHtml(record.selectionLabel)}</div><div class="row-meta">${escapeHtml(record.homeTeamName)} vs ${escapeHtml(record.awayTeamName)} · ${escapeHtml(record.marketType)}</div></div>${pnl == null ? '' : `<span class="ledger-state ${pnl < 0 ? 'negative' : 'positive'}">${pnl > 0 ? '+' : ''}${pnl} pts</span>`}</div>
-    <div class="bet-facts"><span>${escapeHtml(accountLabel(record, bankroll, translate))}</span><span>${record.stakePoints} pts @ ${record.oddsValue}</span>${psychology ? `<span>${escapeHtml(psychology)}</span>` : ''}</div>
+    <div class="bet-facts"><span>${record.stakePoints} pts @ ${record.oddsValue}</span>${psychology ? `<span>${escapeHtml(psychology)}</span>` : ''}</div>
     ${warnings.length ? `<div class="discipline-warning">${escapeHtml(translate('bets.warnings'))}: ${escapeHtml(warnings.join(', '))}</div>` : ''}
     <div class="action-row">${settled
       ? `<button class="text-button" type="button" data-open-settled-detail="${escapeHtml(record.betId)}">${escapeHtml(translate('bets.correct'))}</button>`
@@ -45,7 +39,7 @@ function records(state: BetRecordsViewState, filter: BetRecordFilter, bankroll: 
   if (state.status === 'unavailable') return `<section class="note-card warning" data-bet-records-state="unavailable"><div class="note-title">${escapeHtml(translate('common.unavailable'))}</div><p class="note-copy">${escapeHtml(translate('error.request_failed'))}</p></section>`;
   if (state.status === 'empty') return `<section class="note-card" data-bet-records-state="empty"><div class="note-title">${escapeHtml(translate(`bets.empty${filter === 'ongoing' ? 'Ongoing' : filter === 'drafts' ? 'Drafts' : 'Settled'}`))}</div></section>`;
   if (filter === 'drafts') {
-    return `<div data-bet-records-state="ready" data-visible-bet-filter="drafts">${state.drafts.map((draft) => `<article class="bet-row"><div class="row-title">${escapeHtml(translate(`market.${draft.marketType}`, draft.marketType))}</div><div class="row-meta">${escapeHtml(draft.matchGroupId)} · ${draft.stakePoints} pts @ ${draft.oddsValue}</div><div class="action-row"><button class="text-button" type="button" data-delete-draft-confirm="${escapeHtml(draft.draftId)}">${escapeHtml(translate('bets.confirmDelete'))}</button></div></article>`).join('') || `<p class="empty-state">${escapeHtml(translate('bets.emptyDrafts'))}</p>`}</div>`;
+    return `<div data-bet-records-state="ready" data-visible-bet-filter="drafts">${state.drafts.map((draft) => `<article class="bet-row"><div class="row-title">${escapeHtml(translate(`market.${draft.marketType}`, draft.marketType))}</div><div class="row-meta">${escapeHtml(draft.matchGroupId)} · ${draft.stakePoints} pts @ ${draft.oddsValue}</div><div class="action-row"><button class="secondary-button" type="button" data-edit-draft="${escapeHtml(draft.draftId)}">${escapeHtml(translate('bets.editDraft'))}</button><button class="text-button" type="button" data-delete-draft-confirm="${escapeHtml(draft.draftId)}">${escapeHtml(translate('bets.confirmDelete'))}</button></div></article>`).join('') || `<p class="empty-state">${escapeHtml(translate('bets.emptyDrafts'))}</p>`}</div>`;
   }
   const selected = filter === 'ongoing' ? state.pending : state.settled;
   const emptyKey = filter === 'ongoing' ? 'bets.emptyOngoing' : 'bets.emptySettled';

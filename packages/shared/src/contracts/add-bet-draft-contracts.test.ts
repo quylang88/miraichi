@@ -56,12 +56,13 @@ describe('add bet draft contracts', () => {
   });
 
   it('clones draft arrays so adapter callers cannot mutate stored tags', () => {
-    const draft = createCompleteDraft();
+    const draft = createCompleteDraft({ homeTeamName: 'Japan', awayTeamName: 'Vietnam', selectionLabel: 'Japan', preBetEmotion: 'calm', preBetMotivation: 'planned_analysis' });
     const cloned = cloneAddBetDraft(draft);
 
     expect(cloned).toEqual(draft);
     expect(cloned.tags).toEqual(['watchlist']);
     expect(cloned.tags).not.toBe(draft.tags);
+    expect(cloned).toMatchObject({ homeTeamName: 'Japan', awayTeamName: 'Vietnam', selectionLabel: 'Japan', preBetEmotion: 'calm', preBetMotivation: 'planned_analysis' });
   });
 
   it('uses one explicit backup schema version for Phase 5.11', () => {

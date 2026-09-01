@@ -96,6 +96,7 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(unavailable).not.toContain('Setup required');
     const html = renderAppShell({ activeTabId: 'bets', betRecordFilter: 'drafts', betRecordsState: { status: 'ready', drafts: [{ draftId: 'd1', matchGroupId: 'm1', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], pending: [{ betId: 'b1', ownerProfileId: 'owner-primary', matchGroupId: 'm1', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, status: 'pending', createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], settled: [] } });
     expect(html).toContain('data-delete-draft-confirm="d1"');
+    expect(html).toContain('data-edit-draft="d1"');
     expect(html).not.toContain('data-bet-id="b1"');
   });
 
@@ -112,6 +113,7 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).not.toContain('data-delete-draft-confirm="d1"');
     expect(html).toContain('name="home-team"');
     expect(html).toContain('id="record-ongoing-bet"');
+    expect(html).not.toContain('id="account-field"');
     expect(html).toContain('id="settlement-form"');
   });
 
@@ -303,7 +305,8 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('90 pts');
     expect(html).toContain('data-ledger-type="deposit"');
     expect(html).toContain('data-ledger-type="withdrawal"');
-    expect(html).toContain('data-open-transfer');
+    expect(html).not.toContain('data-open-transfer');
+    expect(html).not.toContain('data-bankroll-account-select');
     expect(html).toContain('data-ledger-type="correction"');
     expect(html).not.toContain('24,500 pts');
     expect(html).not.toContain('Formula status');
@@ -315,12 +318,15 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(shellEntry).toContain('settingsService.getSettings()');
   });
 
-  it('renders separate warning note card and create account form when bankroll is empty', () => {
+  it('renders one opening-capital setup and an actionable Add Bet guard when bankroll is empty', () => {
     const html = renderAppShell({ activeTabId: 'bankroll', bankrollView: 'overview', bankrollState: { status: 'empty' } });
     expect(html).toContain('class="note-card warning" data-bankroll-state="empty"');
-    expect(html).toContain('id="create-bankroll-form"');
-    expect(html).toMatch(/<section class="note-card warning" data-bankroll-state="empty">[\s\S]*?<\/section><section class="note-card"><form[^>]*id="create-bankroll-form"/);
+    expect(html).toContain('id="setup-bankroll-form"');
+    expect(html).not.toContain('name="label"');
+    expect(html).toContain('data-bankroll-setup-required');
   });
+
+  it('renders an honest compatibility stop for legacy multiple-account data',()=>{const account=(accountId:string)=>({accountId,ownerProfileId:'owner-primary',label:accountId,unit:'points' as const,openingBalancePoints:10,currentBalancePoints:10,archived:false,createdAt:'2026-07-02T00:00:00.000Z',updatedAt:'2026-07-02T00:00:00.000Z'});const html=renderAppShell({activeTabId:'bankroll',bankrollState:{status:'compatibility',accounts:[account('a'),account('b')],reason:'multiple_bankroll_accounts'}});expect(html).toContain('data-bankroll-state="compatibility"');expect(html).not.toContain('data-bankroll-account-select');expect(html).not.toContain('data-open-transfer');});
 });
 
 describe('production PWA shell rendering', () => {

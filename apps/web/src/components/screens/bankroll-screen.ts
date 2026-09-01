@@ -13,7 +13,7 @@ function overview(state: Extract<BankrollViewState, { status: 'ready' }>, transl
 
 function ledger(state: Extract<BankrollViewState, { status: 'ready' }>, translate: TranslateFunction, locale: SupportedLocale, timeZone: string): string {
   const entries = state.ledger.map((entry) => `<div class="ledger-row"><div><div class="ledger-title">${escapeHtml(translate(`ledger.${entry.entryType}`, entry.entryType))}</div><div class="ledger-meta">${escapeHtml(formatDateTime(entry.occurredAt, locale, timeZone))}${entry.note ? ` · ${escapeHtml(entry.note)}` : ''}</div></div><span class="ledger-state">${entry.amountPoints > 0 ? '+' : ''}${entry.amountPoints} pts</span></div>`).join('');
-  return `<div class="action-row" aria-label="${escapeHtml(translate('bankroll.ledger'))}"><button type="button" class="secondary-button" data-ledger-type="deposit">${escapeHtml(translate('bankroll.deposit'))}</button><button type="button" class="secondary-button" data-ledger-type="withdrawal">${escapeHtml(translate('bankroll.withdrawal'))}</button><button type="button" class="secondary-button" data-open-transfer>${escapeHtml(translate('bankroll.transfer'))}</button><button type="button" class="secondary-button" data-ledger-type="correction">${escapeHtml(translate('bankroll.correction'))}</button></div><div class="stack">${entries || `<p class="empty-state">${escapeHtml(translate('bankroll.noLedger'))}</p>`}</div>`;
+  return `<div class="action-row" aria-label="${escapeHtml(translate('bankroll.ledger'))}"><button type="button" class="secondary-button" data-ledger-type="deposit">${escapeHtml(translate('bankroll.deposit'))}</button><button type="button" class="secondary-button" data-ledger-type="withdrawal">${escapeHtml(translate('bankroll.withdrawal'))}</button><button type="button" class="secondary-button" data-ledger-type="correction">${escapeHtml(translate('bankroll.correction'))}</button></div><div class="stack">${entries || `<p class="empty-state">${escapeHtml(translate('bankroll.noLedger'))}</p>`}</div>`;
 }
 
 function discipline(state: DisciplineConfigViewState, translate: TranslateFunction): string {
@@ -112,14 +112,14 @@ export function renderBankrollScreen(input: {
   const tab = (value: BankrollSecondaryView, key: string) => `<button class="${view === value ? 'active' : ''}" type="button" data-bankroll-view="${value}">${escapeHtml(translate(key))}</button>`;
   let body = `<div data-bankroll-state="loading" aria-label="${escapeHtml(translate('common.loading'))}">${view === 'ledger' ? renderSkeletonLedgerRows(4) : view === 'discipline' ? renderSkeletonCard() : renderSkeletonMetrics(3)}</div>`;
   if (state.status === 'unavailable') body = `<section class="note-card warning" data-bankroll-state="unavailable"><div class="note-title">${escapeHtml(translate('common.unavailable'))}</div><p class="note-copy">${escapeHtml(translate('error.request_failed'))}</p></section>`;
+  if (state.status === 'compatibility') body = `<section class="note-card warning" data-bankroll-state="compatibility"><div class="note-title">${escapeHtml(translate('bankroll.compatibilityRequired'))}</div><p class="note-copy">${escapeHtml(translate('bankroll.compatibilityCopy', { count: state.accounts.length }))}</p></section>`;
   if (state.status === 'empty') body = view === 'discipline'
     ? discipline(disciplineConfigState, translate)
     : view === 'analytics'
       ? analytics(reportState, reportPeriod, translate, customCalendarMonth, customRangeStart, customRangeEnd, locale)
-      : `<section class="note-card warning" data-bankroll-state="empty"><div class="note-title">${escapeHtml(translate('bankroll.noAccounts'))}</div></section><section class="note-card"><form class="form-grid" id="create-bankroll-form"><div class="field"><label for="bankroll-label">${escapeHtml(translate('bankroll.account'))}</label><input class="field-input" id="bankroll-label" name="label" required></div><div class="field"><label for="bankroll-opening">${escapeHtml(translate('bankroll.openingPoints'))}</label><input class="field-input" id="bankroll-opening" name="opening" type="number" step="0.01" required></div><button class="primary-button" type="submit">${escapeHtml(translate('common.save'))}</button></form></section>`;
+      : `<section class="note-card warning" data-bankroll-state="empty"><div class="note-title">${escapeHtml(translate('bankroll.setupRequired'))}</div></section><section class="note-card"><form class="form-grid" id="setup-bankroll-form"><div class="field"><label for="bankroll-opening">${escapeHtml(translate('bankroll.openingPoints'))}</label><input class="field-input" id="bankroll-opening" name="opening" type="number" min="0.01" step="0.01" required></div><button class="primary-button" type="submit">${escapeHtml(translate('bankroll.setupAction'))}</button><div class="sheet-feedback" id="bankroll-setup-feedback" aria-live="polite"></div></form></section>`;
   if (state.status === 'ready') {
-    const selected = state.accounts.find((account) => account.accountId === state.selectedAccountId) ?? state.accounts[0]!;
-    const options = state.accounts.map((account) => `<option value="${escapeHtml(account.accountId)}" ${account.accountId === selected.accountId ? 'selected' : ''}>${escapeHtml(account.label)}</option>`).join('');
+    const selected = state.accounts[0]!;
     const content = view === 'overview'
       ? overview(state, translate)
       : view === 'analytics'
@@ -127,7 +127,7 @@ export function renderBankrollScreen(input: {
         : view === 'discipline'
           ? discipline(disciplineConfigState, translate)
           : ledger(state, translate, locale, timeZone);
-    body = `<div data-bankroll-state="ready"><div class="bankroll-toolbar"><label for="bankroll-account-select">${escapeHtml(translate('bankroll.account'))}</label><select id="bankroll-account-select" data-bankroll-account-select>${options}</select><span class="points-state">${selected.currentBalancePoints} pts</span></div>${content}</div>`;
+    body = `<div data-bankroll-state="ready"><div class="bankroll-toolbar"><span class="points-state">${selected.currentBalancePoints} pts</span></div>${content}</div>`;
   }
   return `<section class="${screenClass('bankroll', activeTabId)}" id="screen-bankroll" data-shell-tab-panel="bankroll" aria-labelledby="bankroll-title">${screenHeader(translate('bankroll.eyebrow'), translate('bankroll.title'), 'bankroll-title', `<button class="secondary-button" type="button" data-open-settings>${escapeHtml(translate('bankroll.settings'))}</button>`)}<div class="segmented bankroll-views" role="tablist">${tab('overview', 'bankroll.overview')}${tab('analytics', 'bankroll.analytics')}${tab('discipline', 'bankroll.discipline')}${tab('ledger', 'bankroll.ledger')}</div><div class="points-grid">${body}</div></section>`;
 }
