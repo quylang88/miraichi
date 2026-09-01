@@ -146,8 +146,27 @@ export function toProviderNeutralLocalMatch(match: LocalMatch): LocalMatch {
 
 export interface LocalMatchSnapshotQuery {
   date?: string | undefined;
+  timezone?: string | undefined;
   competitionId?: string | undefined;
   status?: LocalMatchStatus | undefined;
+}
+
+export function getLocalDateFromUtc(isoUtc: string, timeZone = 'UTC'): string {
+  const date = new Date(isoUtc);
+  if (Number.isNaN(date.getTime())) return isoUtc.slice(0, 10);
+  try {
+    const resolvedTz = timeZone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : timeZone;
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: resolvedTz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(date);
+    const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+    return `${get('year')}-${get('month')}-${get('day')}`;
+  } catch {
+    return isoUtc.slice(0, 10);
+  }
 }
 
 

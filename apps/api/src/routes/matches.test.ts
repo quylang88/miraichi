@@ -101,7 +101,7 @@ describe('matches route', () => {
     expect(response.body).not.toContain('sourceUrl');
   });
 
-  it('filters by date when provided', async () => {
+  it('filters by date and timezone when provided', async () => {
     const response = responseMock();
     let calledQuery: LocalMatchSnapshotQuery | null = null;
     const mockRepo = {
@@ -112,14 +112,15 @@ describe('matches route', () => {
     } as unknown as MatchSnapshotRepository;
 
     await handleMatches(
-      { url: '/api/v1/matches?date=2026-06-11', method: 'GET' } as import('http').IncomingMessage,
+      { url: '/api/v1/matches?date=2026-09-01&timezone=Asia/Ho_Chi_Minh', method: 'GET' } as import('http').IncomingMessage,
       response as unknown as import('http').ServerResponse,
       { repository: mockRepo }
     );
 
     expect(response.statusCode).toBe(200);
     expect(calledQuery).toEqual({
-      date: '2026-06-11',
+      date: '2026-09-01',
+      timezone: 'Asia/Ho_Chi_Minh',
       competitionId: undefined,
       status: undefined
     });

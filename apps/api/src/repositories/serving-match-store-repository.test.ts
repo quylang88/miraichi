@@ -79,6 +79,43 @@ describe('ServingMatchStoreRepository', () => {
     await fs.rm(root, { recursive: true, force: true });
   });
 
+  it('correctly partitions early-morning matches across midnight in user timezone', async () => {
+    // Match at 19:30 UTC on 2026-08-31 is 02:30 AM on 2026-09-01 in Asia/Ho_Chi_Minh (+7)
+    const earlyMorningMatch: LocalMatch = {
+      id: 'match-aston-villa-vs-arsenal',
+      competition: {
+        id: 'eng-league-1',
+        name: 'English League 1',
+        type: 'club',
+        season: '2026-27'
+      },
+      kickoffUtc: '2026-08-31T19:30:00.000Z',
+      status: 'scheduled',
+      homeTeam: { id: 'team-aston-villa', name: 'Aston Villa' },
+      awayTeam: { id: 'team-arsenal', name: 'Arsenal' },
+      score: { home: null, away: null },
+      sourceRefs: [{ sourceId: 'manual-snapshot', sourceMatchId: 'manual-av-ars', importedAt }],
+      updatedAt: importedAt
+    };
+
+    const root = await createStore([earlyMorningMatch]);
+    const repo = new ServingMatchStoreRepository({ servingRoot: root, now: () => new Date(importedAt) });
+
+    // In UTC, it belongs to 2026-08-31
+    const utcAug31 = await repo.listMatches({ date: '2026-08-31', timezone: 'UTC' });
+    expect(utcAug31.matches.map((m) => m.id)).toEqual(['match-aston-villa-vs-arsenal']);
+    const utcSept1 = await repo.listMatches({ date: '2026-09-01', timezone: 'UTC' });
+    expect(utcSept1.matches).toHaveLength(0);
+
+    // In Asia/Ho_Chi_Minh (+7), it belongs to 2026-09-01 (02:30 AM)
+    const vnAug31 = await repo.listMatches({ date: '2026-08-31', timezone: 'Asia/Ho_Chi_Minh' });
+    expect(vnAug31.matches).toHaveLength(0);
+    const vnSept1 = await repo.listMatches({ date: '2026-09-01', timezone: 'Asia/Ho_Chi_Minh' });
+    expect(vnSept1.matches.map((m) => m.id)).toEqual(['match-aston-villa-vs-arsenal']);
+
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
   it('finds a match by id from the serving store', async () => {
     const root = await createStore([scheduledMatch]);
     const repo = new ServingMatchStoreRepository({ servingRoot: root });

@@ -20,7 +20,7 @@ import {
   type BetReportViewState,
   type DisciplineConfigViewState
 } from './services/core-betting-service.js';
-import { calculateHkSettlementProfitLoss, type BetSettlementEvent, type CreateOngoingBetInput, type DisciplineChallenge, type SettlementType } from '@miraichi/shared';
+import { calculateHkSettlementProfitLoss, getLocalDateFromUtc, type BetSettlementEvent, type CreateOngoingBetInput, type DisciplineChallenge, type SettlementType } from '@miraichi/shared';
 import { renderSettlementTimeline, type BetRecordFilter } from './components/screens/bets-screen.js';
 import type { BankrollSecondaryView } from './components/screens/bankroll-screen.js';
 import { renderTodayScreen } from './components/screens/today-screen.js';
@@ -71,12 +71,16 @@ let pendingDisciplineChallenge: DisciplineChallenge | null = null;
 let disciplineCountdownTimer: number | null = null;
 let lastFocusedElement: HTMLElement | null = null;
 
+function getTargetTimezone(): string {
+  const settings = settingsService.getSettings();
+  return settings.timezone === 'local'
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone
+    : settings.timezone;
+}
+
 function todayLocalDate(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const tz = getTargetTimezone();
+  return getLocalDateFromUtc(new Date().toISOString(), tz);
 }
 
 let matchFeedState: MatchFeedViewState = {
@@ -780,12 +784,9 @@ appRoot.addEventListener('click', (event) => {
   const prevBtn = eventTarget.closest<HTMLElement>('#date-prev-btn');
   if (prevBtn) {
     const [year, month, day] = matchFeedState.date.split('-').map(Number);
-    const dateObj = new Date(year, month - 1, day);
-    dateObj.setDate(dateObj.getDate() - 1);
-    const yyyy = dateObj.getFullYear();
-    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const dd = String(dateObj.getDate()).padStart(2, '0');
-    matchFeedState.date = `${yyyy}-${mm}-${dd}`;
+    const dateObj = new Date(Date.UTC(year, month - 1, day));
+    dateObj.setUTCDate(dateObj.getUTCDate() - 1);
+    matchFeedState.date = dateObj.toISOString().slice(0, 10);
     void refreshMatchFeed();
     return;
   }
@@ -794,12 +795,9 @@ appRoot.addEventListener('click', (event) => {
   const nextBtn = eventTarget.closest<HTMLElement>('#date-next-btn');
   if (nextBtn) {
     const [year, month, day] = matchFeedState.date.split('-').map(Number);
-    const dateObj = new Date(year, month - 1, day);
-    dateObj.setDate(dateObj.getDate() + 1);
-    const yyyy = dateObj.getFullYear();
-    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const dd = String(dateObj.getDate()).padStart(2, '0');
-    matchFeedState.date = `${yyyy}-${mm}-${dd}`;
+    const dateObj = new Date(Date.UTC(year, month - 1, day));
+    dateObj.setUTCDate(dateObj.getUTCDate() + 1);
+    matchFeedState.date = dateObj.toISOString().slice(0, 10);
     void refreshMatchFeed();
     return;
   }
@@ -1083,7 +1081,9 @@ appRoot.addEventListener('submit', (event) => {
     settingsService.setSetting('displayDensity', String(form.get('displayDensity') ?? 'standard'));
     settingsService.setSetting('timezone', String(form.get('timezone') ?? 'local'));
     closeSheets();
+    matchFeedState.date = todayLocalDate();
     render(currentScreenName, true);
+    void refreshMatchFeed();
     if (disciplineConfigState.status === 'ready' && disciplineConfigState.config) {
       const activeSettings = settingsService.getSettings();
       const resolvedTimeZone = activeSettings.timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : activeSettings.timezone;
@@ -1202,10 +1202,11 @@ window.addEventListener('popstate', () => {
 async function refreshMatchFeed(): Promise<void> {
   activeFilters.selectedLeagues.clear();
   const date = matchFeedState.date;
+  const tz = getTargetTimezone();
   matchFeedState = { status: 'loading', date };
   updateTodayScreenView();
   updateMatchesScreenView();
-  const result = await getMatchFeed(date);
+  const result = await getMatchFeed(date, tz);
   if (matchFeedState.date === date) {
     matchFeedState = result;
     updateTodayScreenView();

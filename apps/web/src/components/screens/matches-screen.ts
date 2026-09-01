@@ -14,6 +14,8 @@ const nextIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path 
 const filterIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const plusIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
 
+import { getLocalDateFromUtc } from '@miraichi/shared';
+
 export interface MatchFilters {
   readonly groupby: string;
   readonly type: string;
@@ -27,26 +29,33 @@ export interface RibbonDate {
   readonly label: string;
 }
 
-export function getRibbonDates(selectedDateStr: string, translate: TranslateFunction = t): readonly RibbonDate[] {
+export function getRibbonDates(
+  selectedDateStr: string,
+  translate: TranslateFunction = t,
+  timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh' = 'local'
+): readonly RibbonDate[] {
+  const resolvedTz = timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone;
+  const todayDateStr = getLocalDateFromUtc(new Date().toISOString(), resolvedTz);
+  const [tY, tM, tD] = todayDateStr.split('-').map(Number);
+  const todayUtc = new Date(Date.UTC(tY, tM - 1, tD));
+
   const [year, month, day] = selectedDateStr.split('-').map(Number);
-  const centerDate = new Date(year, month - 1, day);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const centerDate = new Date(Date.UTC(year, month - 1, day));
+
   return [-2, -1, 0, 1, 2].map((offset) => {
     const date = new Date(centerDate);
-    date.setDate(centerDate.getDate() + offset);
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const compareDate = new Date(date);
-    compareDate.setHours(0, 0, 0, 0);
-    const diffDays = Math.round((compareDate.getTime() - today.getTime()) / 86_400_000);
+    date.setUTCDate(date.getUTCDate() + offset);
+    const dateStr = date.toISOString().slice(0, 10);
+    const diffDays = Math.round((date.getTime() - todayUtc.getTime()) / 86_400_000);
+    const dayOfWeek = date.getUTCDay();
     const label = diffDays === 0
       ? translate('matches.today')
       : diffDays === -1
         ? translate('matches.yesterday')
         : diffDays === 1
           ? translate('matches.tomorrow')
-          : translate(`matches.weekday.${date.getDay()}`);
-    return { dateStr, dayNumber: String(date.getDate()), label };
+          : translate(`matches.weekday.${dayOfWeek}`);
+    return { dateStr, dayNumber: String(date.getUTCDate()), label };
   });
 }
 
@@ -131,7 +140,7 @@ export function renderMatchesScreen(input: {
 }): string {
   const { activeTabId, translate, locale, matchFeed, timezone, filters, searchQuery, isFilterPanelOpen, isCalendarOpen = false, calendarMonth } = input;
   const filtered = filterMatches(matchFeed, filters, searchQuery);
-  const ribbon = getRibbonDates(matchFeed.date, translate).map((date) => `<button class="date-chip${date.dateStr === matchFeed.date ? ' active' : ''}" type="button" data-date="${escapeHtml(date.dateStr)}"><span class="date-chip-label">${escapeHtml(date.label)}</span><span class="date-chip-number">${escapeHtml(date.dayNumber)}</span></button>`).join('');
+  const ribbon = getRibbonDates(matchFeed.date, translate, timezone).map((date) => `<button class="date-chip${date.dateStr === matchFeed.date ? ' active' : ''}" type="button" data-date="${escapeHtml(date.dateStr)}"><span class="date-chip-label">${escapeHtml(date.label)}</span><span class="date-chip-number">${escapeHtml(date.dayNumber)}</span></button>`).join('');
   const leagues = matchFeed.status === 'ready' ? [...new Set(matchFeed.matches.map((match) => match.competition.name))].sort(compareCompetitionsByPopularity) : [];
   const leagueOptions = leagues.map((league) => `<label class="filter-option" for="filter-league-${escapeHtml(league)}"><input type="checkbox" id="filter-league-${escapeHtml(league)}" name="filter-league" value="${escapeHtml(league)}" ${filters.selectedLeagues.has(league) ? 'checked' : ''}><span>${escapeHtml(league)}</span></label>`).join('');
   const radio = (group: string, value: string, label: string, checked: boolean) => `<label class="filter-option" for="filter-${group}-${value}"><input type="radio" id="filter-${group}-${value}" name="filter-${group}" value="${value}" ${checked ? 'checked' : ''}><span>${escapeHtml(label)}</span></label>`;
@@ -142,7 +151,8 @@ export function renderMatchesScreen(input: {
     sourceEvidenceFromMatchFeed(matchFeed),
     translate
   );
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const resolvedTz = timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone;
+  const todayStr = getLocalDateFromUtc(new Date().toISOString(), resolvedTz);
   const calendarPicker = isCalendarOpen
     ? renderMonthCalendarPicker({
         id: 'matches-calendar-picker',

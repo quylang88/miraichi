@@ -1,10 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import type {
-  LocalDataSnapshotStatus,
-  LocalMatch,
-  LocalMatchFeedResponse,
-  LocalMatchSnapshotQuery
+import {
+  getLocalDateFromUtc,
+  type LocalDataSnapshotStatus,
+  type LocalMatch,
+  type LocalMatchFeedResponse,
+  type LocalMatchSnapshotQuery
 } from '@miraichi/shared';
 import type { MatchSnapshotRepository } from './match-snapshot-repository.js';
 import {
@@ -66,7 +67,8 @@ export class ServingMatchStoreRepository implements MatchSnapshotRepository {
     let matches = [...snapshot.matches];
 
     if (query?.date) {
-      matches = matches.filter((match) => match.kickoffUtc.startsWith(query.date!));
+      const targetTz = query.timezone ?? 'UTC';
+      matches = matches.filter((match) => getLocalDateFromUtc(match.kickoffUtc, targetTz) === query.date);
     }
 
     if (query?.competitionId) {

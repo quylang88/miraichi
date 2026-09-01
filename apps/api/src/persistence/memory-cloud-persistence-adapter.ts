@@ -1,8 +1,9 @@
-import type {
-  AddBetDraft, ApplyBetSettlementInput, BackupExportReceipt, BankrollAccount, BankrollLedgerEntry,
-  BankrollTransferResult, BetSettlementEvent, CloudBackupEnvelope, CloudBetRecord, CloudMatchSnapshot, CreateBankrollAccountInput,
-  CreateBankrollLedgerEntryInput, CreateBankrollTransferInput, DisciplineChallenge, DisciplineConfig, LocalDataSnapshotStatus, LocalMatch,
-  LocalMatchSnapshotQuery, UpdateBankrollAccountInput
+import {
+  getLocalDateFromUtc,
+  type AddBetDraft, type ApplyBetSettlementInput, type BackupExportReceipt, type BankrollAccount, type BankrollLedgerEntry,
+  type BankrollTransferResult, type BetSettlementEvent, type CloudBackupEnvelope, type CloudBetRecord, type CloudMatchSnapshot, type CreateBankrollAccountInput,
+  type CreateBankrollLedgerEntryInput, type CreateBankrollTransferInput, type DisciplineChallenge, type DisciplineConfig, type LocalDataSnapshotStatus, type LocalMatch,
+  type LocalMatchSnapshotQuery, type UpdateBankrollAccountInput
 } from '@miraichi/shared/src/contracts/index.js';
 import type { CloudPersistenceAdapter } from './cloud-persistence-adapter.js';
 import { classifyMatchSnapshotFreshness } from '../match-snapshot-freshness.js';
@@ -144,8 +145,9 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
     listCloudMatches: async (owner, query: LocalMatchSnapshotQuery) => {
       const snapshot = latestSnapshot(owner);
       if (!snapshot) return { matches: [], snapshot: missingSnapshot() };
+      const targetTz = query.timezone ?? 'UTC';
       const matches = snapshot.matches.filter((match) =>
-        (!query.date || match.kickoffUtc.slice(0, 10) === query.date) &&
+        (!query.date || getLocalDateFromUtc(match.kickoffUtc, targetTz) === query.date) &&
         (!query.competitionId || match.competition.id === query.competitionId) &&
         (!query.status || match.status === query.status));
       return { matches: clone(matches), snapshot: statusFor(snapshot) };

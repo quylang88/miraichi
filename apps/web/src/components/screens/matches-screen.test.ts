@@ -194,3 +194,23 @@ describe('match detail view business formatting', () => {
     expect(html).toContain('John Doe');
   });
 });
+
+describe('timezone date partitioning', () => {
+  it('correctly determines match calendar date across 00:00 midnight based on user timezone', async () => {
+    const { getLocalDateFromUtc } = await import('@miraichi/shared');
+    // Match at 19:30 UTC on 2026-08-31
+    const kickoffUtc = '2026-08-31T19:30:00.000Z';
+
+    // In UTC, date is 2026-08-31
+    expect(getLocalDateFromUtc(kickoffUtc, 'UTC')).toBe('2026-08-31');
+
+    // In Asia/Ho_Chi_Minh (UTC+7, 02:30 AM), date is 2026-09-01
+    expect(getLocalDateFromUtc(kickoffUtc, 'Asia/Ho_Chi_Minh')).toBe('2026-09-01');
+
+    // Match at 16:59:59 UTC on 2026-08-31 is 23:59:59 on Aug 31 in Asia/Ho_Chi_Minh
+    expect(getLocalDateFromUtc('2026-08-31T16:59:59.000Z', 'Asia/Ho_Chi_Minh')).toBe('2026-08-31');
+
+    // Match at 17:00:00 UTC on 2026-08-31 is 00:00:00 on Sept 1 in Asia/Ho_Chi_Minh
+    expect(getLocalDateFromUtc('2026-08-31T17:00:00.000Z', 'Asia/Ho_Chi_Minh')).toBe('2026-09-01');
+  });
+});

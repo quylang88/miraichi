@@ -11,9 +11,10 @@ export type MatchFeedViewState =
   | { status: 'empty'; date: string; snapshot: LocalDataSnapshotStatus; warnings: string[] }
   | { status: 'unavailable'; date: string; reason: string; warnings: string[]; snapshot?: LocalDataSnapshotStatus | undefined };
 
-export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
+export async function getMatchFeed(date: string, timezone?: string): Promise<MatchFeedViewState> {
   try {
-    const response = await fetch(buildApiUrl(`/api/v1/matches?date=${encodeURIComponent(date)}`));
+    const tzQuery = timezone ? `&timezone=${encodeURIComponent(timezone)}` : '';
+    const response = await fetch(buildApiUrl(`/api/v1/matches?date=${encodeURIComponent(date)}${tzQuery}`));
 
     if (!response.ok) {
       let message = `Match feed unavailable with HTTP ${response.status}.`;

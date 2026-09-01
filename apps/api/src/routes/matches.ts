@@ -24,6 +24,7 @@ export async function handleMatches(
   const repo = dependencies.repository ?? repository;
   const parsedUrl = new URL(req.url || '/', 'http://localhost');
   const date = parsedUrl.searchParams.get('date');
+  const timezone = parsedUrl.searchParams.get('timezone') || undefined;
   const competitionId = parsedUrl.searchParams.get('competitionId') || undefined;
   const status = parsedUrl.searchParams.get('status') || undefined;
 
@@ -64,6 +65,7 @@ export async function handleMatches(
   try {
     const payload = await repo.listMatches({
       date: date || undefined,
+      timezone,
       competitionId,
       status: status as LocalMatchStatus
     });
