@@ -5,7 +5,7 @@ import { mapCloudError, sendError, sendJson } from './cloud-route-types.js';
 import { readJsonObjectRequest } from './json-body.js';
 import { evaluateDisciplineAttempt, hashBetAttemptPayload } from '../services/discipline-service.js';
 
-const PATCH_FIELDS=new Set(['status','settlementNote','manualResultPoints','notes','tags']);
+const PATCH_FIELDS=new Set(['notes','tags']);
 export async function handleBets(req:IncomingMessage,res:ServerResponse,deps:CloudRouteDependencies):Promise<void>{
   const url=new URL(req.url??'/', 'http://localhost');const id=url.searchParams.get('id');
   try{

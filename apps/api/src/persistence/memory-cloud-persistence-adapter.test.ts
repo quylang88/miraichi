@@ -50,6 +50,15 @@ describe('memory cloud persistence adapter', () => {
     expect(await adapter.listBankrollAccounts('owner-primary')).toMatchObject([{ accountId: 'account-001', currentBalancePoints: 900 }]);
   });
 
+  it('rejects invalid capital signs and insufficient manual balance mutations', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await expect(adapter.createBankrollAccount({ accountId: 'zero', ownerProfileId: 'owner-primary', label: 'Main', openingBalancePoints: 0 })).rejects.toThrow('positive');
+    await adapter.createBankrollAccount({ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', openingBalancePoints: 100 });
+    await expect(adapter.createBankrollLedgerEntry({ entryId: 'bad-deposit', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'deposit', amountPoints: -1, occurredAt: fixedNow() })).rejects.toThrow('sign');
+    await expect(adapter.createBankrollLedgerEntry({ entryId: 'too-much', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'withdrawal', amountPoints: -101, occurredAt: fixedNow() })).rejects.toThrow('Insufficient');
+    expect(await adapter.listBankrollLedgerEntries('owner-primary', 'a')).toEqual([]);
+  });
+
   it('stores versioned discipline config and consumes a challenge once', async () => {
     const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
     const config = { ownerProfileId: 'owner-primary', dailyStopLossPoints: 100, weeklyStopLossPoints: null, bigBetThresholdPoints: 50, timeZone: 'Asia/Tokyo', weekStartDay: 'sunday' as const, cooldownSeconds: 15 as const, version: 1, updatedAt: fixedNow() };
@@ -84,6 +93,15 @@ describe('memory cloud persistence adapter', () => {
     await adapter.createBankrollAccount({ accountId: 'b', ownerProfileId: 'owner-primary', label: 'B', openingBalancePoints: 20 });
     await adapter.createBankrollTransfer({ ownerProfileId: 'owner-primary', transferId: 't', fromAccountId: 'a', toAccountId: 'b', amountPoints: 30, occurredAt: fixedNow() });
     expect(await adapter.listBankrollAccounts('owner-primary')).toMatchObject([{ accountId: 'a', currentBalancePoints: 70 }, { accountId: 'b', currentBalancePoints: 50 }]);
+  });
+
+  it('rejects a transfer above realized balance without partial entries', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await adapter.createBankrollAccount({ accountId: 'a', ownerProfileId: 'owner-primary', label: 'A', openingBalancePoints: 10 });
+    await adapter.createBankrollAccount({ accountId: 'b', ownerProfileId: 'owner-primary', label: 'B', openingBalancePoints: 20 });
+    await expect(adapter.createBankrollTransfer({ ownerProfileId: 'owner-primary', transferId: 'too-much', fromAccountId: 'a', toAccountId: 'b', amountPoints: 11, occurredAt: fixedNow() })).rejects.toThrow('Insufficient');
+    expect(await adapter.listBankrollLedgerEntries('owner-primary', 'a')).toEqual([]);
+    expect(await adapter.listBankrollLedgerEntries('owner-primary', 'b')).toEqual([]);
   });
 
   it('updates only the target account and rejects duplicate ledger identities', async () => {

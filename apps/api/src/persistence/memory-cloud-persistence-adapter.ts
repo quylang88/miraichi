@@ -101,6 +101,7 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
     },
     listBetSettlementEvents: async (owner, betId) => valuesFor(settlementEvents, owner).filter((event) => !betId || event.betId === betId).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)),
     createBankrollAccount: async (input) => {
+      if (!Number.isFinite(input.openingBalancePoints) || input.openingBalancePoints <= 0) throw new Error('Opening bankroll must be positive');
       const id = key(input.ownerProfileId, input.accountId);
       if (accounts.has(id)) throw new Error('Duplicate account ID');
       const created: BankrollAccount = { ...clone(input), unit: 'points', currentBalancePoints: input.openingBalancePoints, archived: false, createdAt: now(), updatedAt: now() };
@@ -114,11 +115,14 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
       accounts.set(id, updated); return clone(updated);
     },
     createBankrollLedgerEntry: async (input: CreateBankrollLedgerEntryInput) => {
+      if ((input.entryType === 'deposit' && input.amountPoints <= 0) || (input.entryType === 'withdrawal' && input.amountPoints >= 0)) throw new Error('Manual ledger entry sign is invalid');
+      if (!Number.isFinite(input.amountPoints) || input.amountPoints === 0) throw new Error('Manual ledger amount is invalid');
       const ledgerId = key(input.ownerProfileId, input.entryId);
       if (ledger.has(ledgerId)) throw new Error('Duplicate ledger entry ID');
       const accountId = key(input.ownerProfileId, input.accountId); const account = accounts.get(accountId);
       if (!account) throw new Error('Bankroll account not found');
       if (account.archived) throw new Error('Bankroll account is archived');
+      if (input.entryType === 'withdrawal' && account.currentBalancePoints + input.amountPoints < 0) throw new Error('Insufficient bankroll balance');
       const entry: BankrollLedgerEntry = { ...clone(input), createdAt: now() };
       ledger.set(ledgerId, entry);
       accounts.set(accountId, { ...account, currentBalancePoints: account.currentBalancePoints + input.amountPoints, updatedAt: now() });
@@ -131,6 +135,7 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
       const from = accounts.get(fromId); const to = accounts.get(toId);
       if (!from || !to) throw new Error('Bankroll account not found');
       if (from.archived || to.archived) throw new Error('Bankroll account is archived');
+      if (from.currentBalancePoints < input.amountPoints) throw new Error('Insufficient bankroll balance');
       const outId = key(input.ownerProfileId, `transfer:${input.transferId}:out`); const inId = key(input.ownerProfileId, `transfer:${input.transferId}:in`);
       if (ledger.has(outId) || ledger.has(inId)) throw new Error('Duplicate transfer ID');
       const common = { ownerProfileId: input.ownerProfileId, transferId: input.transferId, occurredAt: input.occurredAt, createdAt: now(), ...(input.note ? { note: input.note } : {}) };

@@ -53,6 +53,26 @@ describe('supabase cloud persistence adapter', () => {
     expect(client.calls.every((call) => call.text.includes('$1'))).toBe(true);
   });
 
+  it('rejects invalid capital signs before starting a database transaction', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    await expect(adapter.createBankrollAccount({ accountId: 'zero', ownerProfileId: 'owner-primary', label: 'Main', openingBalancePoints: 0 })).rejects.toThrow('positive');
+    await expect(adapter.createBankrollLedgerEntry({ entryId: 'bad', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'withdrawal', amountPoints: 1, occurredAt: '2026-07-02T00:00:00.000Z' })).rejects.toThrow('sign');
+    expect(client.transactions).toBe(0);
+    expect(client.calls).toHaveLength(0);
+  });
+
+  it('guards withdrawal and transfer updates against negative realized balances', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    await adapter.createBankrollLedgerEntry({ entryId: 'withdraw', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'withdrawal', amountPoints: -10, occurredAt: '2026-07-02T00:00:00.000Z' });
+    client.enqueueRows([{}], [{}], [{ account_id: 'a', owner_profile_id: 'owner-primary', label: 'A', opening_balance_points: 10, current_balance_points: 0, archived: false, created_at: '2026-07-02T00:00:00.000Z', updated_at: '2026-07-02T00:00:00.000Z' }], [{ account_id: 'b', owner_profile_id: 'owner-primary', label: 'B', opening_balance_points: 10, current_balance_points: 20, archived: false, created_at: '2026-07-02T00:00:00.000Z', updated_at: '2026-07-02T00:00:00.000Z' }]);
+    await adapter.createBankrollTransfer({ transferId: 'transfer', ownerProfileId: 'owner-primary', fromAccountId: 'a', toAccountId: 'b', amountPoints: 10, occurredAt: '2026-07-02T00:00:00.000Z' });
+    const balanceUpdates = client.calls.filter((call) => call.text.includes('current_balance_points'));
+    expect(balanceUpdates.some((call) => call.text.includes('current_balance_points+$3>=0'))).toBe(true);
+    expect(balanceUpdates.some((call) => call.text.includes('current_balance_points>=$3'))).toBe(true);
+  });
+
   it('exports the canonical V2 backup collections', async () => {
     const client = new FakeClient();
     client.enqueueRows([], [], [], [], [], []);
