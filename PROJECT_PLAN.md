@@ -13,11 +13,29 @@
 - **Completed phase**: `phase:integration-test FotMob daily terminal results and current-edition revalidation` — all eight TDD slices and the local release gate passed on 2026-08-31.
 - **Completed phase**: `phase:maintenance FotMob owner-local current data operations` — guarded current hydration, 24-hour current revalidation, and terminal-result once/watch operation remain available, but no provider operation is part of the active product phase.
 - **Completed phase**: `phase:integration-test Single-bankroll usable owner flow` — the single visible bankroll, internal compatibility account, reviewed bankroll/bet/psychology remediations, sequential TDD slices, and complete local release gate all passed on 2026-09-01.
-- **Active phase**: none. The owner must explicitly select the next phase; the earliest safe recommendation is an owner-local database migration and smoke-test maintenance phase for the completed single-bankroll flow.
+- **Active phase**: `phase:implementation-plan Owner-hosted API and visibility-driven live overlay` — the owner approved Koyeb Free plus Supabase Free, one-origin owner authentication, hourly background refresh, five-minute visible refresh, pull-down refresh without a button, SportScore widget-only live score/status/minute, exact static attribution, and one local commit after every TDD slice on 2026-09-02.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45 current competition editions. No cloud staging, owner-feedback release gate, or production promotion has run.
 - **Current lifecycle source of truth**: this file.
+
+## Owner-Hosted API And Visibility-Driven Live Overlay — 2026-09-02
+
+- **Owner decision**: use Koyeb's generated HTTPS domain for the MVP; Cloudflare is not required.
+- **Persistence**: deploy no generated local snapshot. Apply migrations and sync canonical/current
+  data to Supabase before hosted smoke testing.
+- **Security**: add one-owner password login with signed secure HTTP-only sessions, no registration,
+  same-origin serving, exact local CORS only, and a refresh-only service token for hourly wake-up.
+- **Live boundary**: call only SportScore `/api/widget/*`, resolve only unique known canonical
+  current matches, publish score/status/minute only, and preserve last-good state on gaps/failure.
+- **Refresh boundary**: five minutes while visible, pull-down through the same cooldown, one-hour
+  GitHub Actions wake-up while closed, and one shared durable lease across all callers.
+- **Attribution**: one server-rendered crawler-visible exact SportScore link; no dynamic duplicates.
+- **Deferred work**: historical-season hydration and user-visible lazy full match detail remain
+  `PENDING`. No SportScore date hydration or `/api/v1` request is reintroduced.
+- **Decision**: `docs/decisions/ADR-0051-owner-hosted-api-and-live-overlay.md`.
+- **Design**: `docs/superpowers/specs/2026-09-02-owner-hosted-api-live-overlay-design.md`.
+- **Implementation plan**: `docs/superpowers/plans/2026-09-02-owner-hosted-api-live-overlay.md`.
 
 ## Product Boundary
 
