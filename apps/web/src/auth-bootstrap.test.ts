@@ -40,6 +40,9 @@ describe('owner auth PWA bootstrap', () => {
     const html = getIndexHtml();
     expect(html).toContain('src="/apps/web/src/auth-bootstrap.js"');
     expect(html).not.toContain('src="/apps/web/src/shell-entry.js"');
+    const exactAttribution = '<a href="https://sportscore.com/" rel="dofollow" title="Sports data by SportScore">Powered by SportScore</a>';
+    expect(html.split(exactAttribution)).toHaveLength(2);
+    expect(html.indexOf(exactAttribution)).toBeGreaterThan(html.indexOf('<body>'));
 
     const worker = readFileSync(fileURLToPath(new URL('../public/service-worker.ts', import.meta.url)), 'utf8');
     expect(worker).toContain("'/apps/web/src/auth-bootstrap.js'");

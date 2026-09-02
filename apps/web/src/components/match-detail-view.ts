@@ -2,13 +2,11 @@ import type {
   LocalMatchDetail,
   LocalMatchEvent,
   LocalMatchLineup,
-  LocalMatchSourceRef,
   LocalMatchTeamStats
 } from '@miraichi/shared';
 import type { MatchDetailViewState } from '../services/match-detail-service.js';
 import { formatDateTime, type SupportedLocale, type TranslateFunction } from '../services/i18n-service.js';
 import { escapeHtml } from './html.js';
-import { renderSportScoreAttribution } from './source-attribution.js';
 
 export type MatchDetailRenderState = MatchDetailViewState | { status: 'loading' };
 
@@ -215,28 +213,20 @@ function renderReadyDetail(
 
 
 
-function sourceRefsForState(state: MatchDetailRenderState): readonly LocalMatchSourceRef[] {
-  if (state.status === 'ready') return state.detail.match.sourceRefs;
-  if (state.status === 'pending') return state.match.sourceRefs;
-  if (state.status === 'unavailable') return state.match?.sourceRefs ?? [];
-  return [];
-}
-
 export function renderMatchDetailView(
   state: MatchDetailRenderState,
   translate: TranslateFunction,
   locale: SupportedLocale,
   timeZone: string
 ): string {
-  const attribution = renderSportScoreAttribution(sourceRefsForState(state), translate);
   if (state.status === 'loading') {
     return `<div class="match-detail-pending" role="status" data-match-detail-state="loading">${escapeHtml(translate('detail.loading'))}</div>`;
   }
   if (state.status === 'pending') {
-    return `<div class="match-detail-pending" role="status" data-match-detail-state="pending">${escapeHtml(translate('detail.pendingRefresh'))}</div>${attribution}`;
+    return `<div class="match-detail-pending" role="status" data-match-detail-state="pending">${escapeHtml(translate('detail.pendingRefresh'))}</div>`;
   }
   if (state.status === 'unavailable') {
-    return `${renderUnavailable(translate, !state.warnings.includes('match_not_found'))}${attribution}`;
+    return renderUnavailable(translate, !state.warnings.includes('match_not_found'));
   }
-  return `${renderReadyDetail(state.detail, translate, locale, timeZone)}${attribution}`;
+  return renderReadyDetail(state.detail, translate, locale, timeZone);
 }

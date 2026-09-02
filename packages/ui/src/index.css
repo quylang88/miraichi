@@ -667,6 +667,22 @@ svg {
   width: 100%;
 }
 
+.static-provider-attribution {
+  bottom: calc(62px + var(--safe-bottom));
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.72;
+  position: fixed;
+  right: max(8px, calc((100vw - 680px) / 2 + 8px));
+  z-index: 3;
+}
+
+.static-provider-attribution a {
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .app-shell {
   background: var(--bg);
   border-left: 1px solid var(--line);
@@ -855,18 +871,6 @@ svg {
   font-size: 11px;
   gap: 4px 12px;
   margin: 0 0 8px;
-}
-
-.source-attribution {
-  color: var(--text-muted);
-  font-size: 11px;
-  margin: 10px 0 0;
-}
-
-.source-attribution a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
 .live-panel {

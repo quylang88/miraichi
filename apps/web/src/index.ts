@@ -227,6 +227,9 @@ export function getIndexHtml() {
   <div id="app-root" aria-live="polite">
     <div class="shell-loading">Loading Miraichi...</div>
   </div>
+  <footer class="static-provider-attribution" data-static-provider-attribution="sportscore">
+    <a href="https://sportscore.com/" rel="dofollow" title="Sports data by SportScore">Powered by SportScore</a>
+  </footer>
   <script>
     (function() {
       if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;

@@ -4,10 +4,6 @@ import { t, type SupportedLocale, type TranslateFunction } from '../../services/
 import type { AppMatch, MatchFeedViewState } from '../../services/match-feed-service.js';
 import type { LiveMatchViewState } from '../../services/live-match-service.js';
 import { escapeHtml } from '../html.js';
-import {
-  renderSportScoreAttribution,
-  sourceEvidenceFromMatchFeed
-} from '../source-attribution.js';
 import { renderMonthCalendarPicker, renderSkeletonMatchRows, screenClass, screenHeader } from './screen-shared.js';
 
 const backIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -172,10 +168,6 @@ export function renderMatchesScreen(input: {
   const content = matchFeed.status === 'ready'
     ? renderReadyMatches(filtered, matchFeed.date, filters, translate, timezone)
     : renderFeedState(matchFeed, translate);
-  const attribution = renderSportScoreAttribution(
-    sourceEvidenceFromMatchFeed(matchFeed),
-    translate
-  );
   const resolvedTz = timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone;
   const todayStr = getLocalDateFromUtc(new Date().toISOString(), resolvedTz);
   const calendarPicker = isCalendarOpen
@@ -198,7 +190,7 @@ export function renderMatchesScreen(input: {
     ${calendarPicker}
     <div class="search-row"><input class="search-input" id="match-search" type="search" placeholder="${escapeHtml(translate('matches.search'))}" aria-label="${escapeHtml(translate('matches.search'))}"><button class="filter-button" id="filter-panel-toggle-btn" type="button" aria-label="${escapeHtml(translate('matches.openFilters'))}">${filterIcon}</button></div>
     <div class="filter-panel" id="matches-filter-panel" ${isFilterPanelOpen ? '' : 'hidden'}><div class="filter-group"><span class="filter-group-title">${escapeHtml(translate('matches.sortGroup'))}</span><div class="filter-options">${radio('groupby', 'league', translate('matches.league'), filters.groupby === 'league')}${radio('groupby', 'time', translate('matches.time'), filters.groupby === 'time')}</div></div><div class="filter-group"><span class="filter-group-title">${escapeHtml(translate('matches.competitionType'))}</span><div class="filter-options">${radio('type', 'all', translate('matches.all'), filters.type === 'all')}${radio('type', 'national', translate('matches.national'), filters.type === 'national')}${radio('type', 'club', translate('matches.club'), filters.type === 'club')}</div></div><div class="filter-group"><span class="filter-group-title">${escapeHtml(translate('matches.gender'))}</span><div class="filter-options">${radio('gender', 'all', translate('matches.all'), filters.gender === 'all')}${radio('gender', 'men', translate('matches.men'), filters.gender === 'men')}${radio('gender', 'women', translate('matches.women'), filters.gender === 'women')}</div></div><div class="filter-group full-width"><span class="filter-group-title">${escapeHtml(translate('matches.leagues'))}</span><div id="filter-leagues-list" class="leagues-checklist">${leagueOptions}</div></div></div>
-    ${content}<div class="empty-state" id="matches-empty" style="display: ${matchFeed.status === 'ready' && filtered.length === 0 ? 'block' : 'none'};">${escapeHtml(translate('matches.noFilterResults'))}</div>${attribution}
+    ${content}<div class="empty-state" id="matches-empty" style="display: ${matchFeed.status === 'ready' && filtered.length === 0 ? 'block' : 'none'};">${escapeHtml(translate('matches.noFilterResults'))}</div>
   </section>`;
 }
 
