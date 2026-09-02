@@ -16,6 +16,9 @@ export function readCloudPersistenceConfig(env: NodeJS.ProcessEnv = process.env)
   if (mode === 'memory' && !['local', 'test'].includes(appEnv)) {
     throw new Error('memory cloud persistence is test-only');
   }
+  if (env.HOSTED_WEB_MODE?.trim() === 'required' && !['local', 'test'].includes(appEnv) && mode !== 'supabase') {
+    throw new Error('Hosted production requires CLOUD_PERSISTENCE_MODE=supabase');
+  }
   const databaseUrl = env.SUPABASE_DATABASE_URL?.trim();
   if (mode === 'supabase' && !databaseUrl) throw new Error('SUPABASE_DATABASE_URL is required');
   return {

@@ -6,10 +6,9 @@
 - Architecture: `ARCHITECTURE.md`
 - Roadmap: `ROADMAP.md`
 - Product reset decision: `docs/decisions/ADR-0044-ai-sportmonks-removal-product-reset.md`
-- Current match-source decision: `docs/decisions/ADR-0048-sportscore-public-api-source-boundary.md`
-- Current source design: `docs/superpowers/specs/2026-08-26-sportscore-public-api-source-design.md`
-- Current source implementation plan: `docs/superpowers/plans/2026-08-26-sportscore-public-api-source.md`
-- SportScore local operations and blocked staging boundary: `docs/data/sportscore-local-operations.md`
+- Current owner-hosted/live decision: `docs/decisions/ADR-0051-owner-hosted-api-and-live-overlay.md`
+- Current design: `docs/superpowers/specs/2026-09-02-owner-hosted-api-live-overlay-design.md`
+- Current implementation plan: `docs/superpowers/plans/2026-09-02-owner-hosted-api-live-overlay.md`
 - Architecture map: `docs/architecture/module-map.md`
 - ADR index: `docs/decisions/README.md`
 - Testing workflow: `docs/workflows/testing-workflow.md`
@@ -30,6 +29,7 @@
 
 ## Operations
 
+- Owner hosting runbook: `docs/operations/KOYEB-SUPABASE-OWNER-HOSTING.md`
 - Staging plan: `ops/deploy/staging-plan.md`
 - CI plan: `ops/ci/github-actions-plan.md`
 

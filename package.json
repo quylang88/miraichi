@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.18.3",
   "description": "Miraichi monorepo scaffold",
   "scripts": {
     "dev": "pnpm --filter \"./apps/*\" --parallel run dev",
@@ -29,6 +30,7 @@
     "fotmob:terminal:integration": "pnpm exec vitest run apps/worker/src/sources/fotmob/fotmob-daily-client.test.ts apps/worker/src/sources/fotmob/fotmob-daily-adapter.test.ts apps/worker/src/sources/fotmob/fotmob-result-ledger.test.ts apps/worker/src/sources/fotmob/fotmob-terminal-plan.test.ts apps/worker/src/sources/shared/canonical-publication-job-lease.test.ts apps/worker/src/jobs/fotmob-terminal-result-job.test.ts scripts/fotmob-terminal-results-runtime.test.ts tests/integration/fotmob-terminal-results.test.ts",
     "sportscore:active:bootstrap": "tsx scripts/sportscore-operations.ts bootstrap-active-root",
     "sportscore:integration": "pnpm exec vitest run tests/integration/sportscore-source-boundary.test.ts scripts/sportscore-contract-drift.test.ts scripts/sportscore-operations.test.ts apps/api/src/routes/matches.test.ts && pnpm run sportscore:contract:verify",
+    "live:hourly:verify": "tsx scripts/hourly-live-refresh-workflow.ts",
     "season:integration": "pnpm exec vitest run packages/config/src/season-source-registry.test.ts apps/worker/src/sources/hydration/season-hydration-plan.test.ts apps/worker/src/sources/hydration/season-hydration-ledger.test.ts apps/worker/src/sources/openfootball/openfootball-client.test.ts apps/worker/src/sources/openfootball/openfootball-adapter.test.ts apps/worker/src/sources/fotmob/fotmob-season-client.test.ts apps/worker/src/sources/fotmob/fotmob-season-adapter.test.ts apps/worker/src/jobs/season-hydration-job.test.ts scripts/season-hydration-runtime.test.ts",
     "supabase:local:start": "supabase db start",
     "supabase:local:status": "tsx scripts/supabase-local-workflow.ts status",

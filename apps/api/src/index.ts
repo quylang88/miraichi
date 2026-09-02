@@ -27,6 +27,10 @@ import { enforceOwnerSession, handleOwnerAuthRoute, isOwnerAuthRoute } from './a
 import { SportScoreWidgetClient, type SportScoreLiveSource } from './live/sportscore-widget-client.js';
 import { LiveRefreshCoordinator } from './live/live-refresh-coordinator.js';
 import { handleLiveMatches } from './routes/live-matches.js';
+import {
+  isAuthorizedHourlyLiveRefresh,
+  readLiveRefreshServiceAuthConfig
+} from './auth/live-refresh-service-auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,6 +74,7 @@ function loadEnv(rootDir: string) {
 loadEnv(ROOT_DIR);
 const cloudConfig = readCloudPersistenceConfig();
 const ownerAuthConfig = readOwnerAuthConfig();
+const liveRefreshServiceAuthConfig = readLiveRefreshServiceAuthConfig();
 const cloudDependencies = { adapter: createCloudPersistenceAdapter(cloudConfig), ownerProfileId: cloudConfig.ownerProfileId };
 const hostedWebMode = process.env.HOSTED_WEB_MODE?.trim() || 'disabled';
 if (hostedWebMode !== 'disabled' && hostedWebMode !== 'required') {
@@ -109,7 +114,8 @@ const server = http.createServer((req, res) => {
 
   if (isOwnerAuthRoute(pathname)) {
     void handleOwnerAuthRoute(req, res, ownerAuthConfig);
-  } else if (enforceOwnerSession(req, res, ownerAuthConfig) === 'handled') {
+  } else if (!isAuthorizedHourlyLiveRefresh(req, liveRefreshServiceAuthConfig)
+    && enforceOwnerSession(req, res, ownerAuthConfig) === 'handled') {
     return;
   } else if (pathname === '/api/v1/health') {
     handleHealth(req, res);

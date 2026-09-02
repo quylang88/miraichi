@@ -1,0 +1,43 @@
+name: Hourly live refresh
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: hourly-live-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      MIRAICHI_API_URL: ${{ secrets.MIRAICHI_API_URL }}
+      MIRAICHI_REFRESH_TOKEN: ${{ secrets.MIRAICHI_REFRESH_TOKEN }}
+    steps:
+      - name: Validate configuration
+        shell: bash
+        run: |
+          set -eu
+          if [ -z "${MIRAICHI_API_URL:-}" ] || [ -z "${MIRAICHI_REFRESH_TOKEN:-}" ]; then
+            echo "Required hourly refresh configuration is missing." >&2
+            exit 1
+          fi
+      - name: Wake API and refresh live overlay
+        shell: bash
+        run: |
+          set -eu
+          target_url="${MIRAICHI_API_URL%/}/api/v1/live/refresh?reason=hourly"
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 15 \
+            --max-time 90 \
+            --retry 2 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            -X POST \
+            -H "Authorization: Bearer ${MIRAICHI_REFRESH_TOKEN}" \
+            "$target_url" > /dev/null

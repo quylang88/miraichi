@@ -15,7 +15,8 @@
     "@miraichi/agent-protocol": "workspace:*",
     "@miraichi/config": "workspace:*",
     "@miraichi/shared": "workspace:*",
-    "pg": "^8.22.0"
+    "pg": "^8.22.0",
+    "tsx": "^4.22.4"
   },
   "devDependencies": {
     "@types/pg": "^8.20.0"
