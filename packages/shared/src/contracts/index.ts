@@ -6,3 +6,4 @@ export * from './add-bet-draft-contracts.js';
 export * from './cloud-persistence-contracts.js';
 export * from './provider-ingestion-contracts.js';
 export * from './core-betting-contracts.js';
+export * from './live-match-contracts.js';

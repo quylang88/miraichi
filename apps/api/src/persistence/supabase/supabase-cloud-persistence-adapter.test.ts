@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CloudMatchSnapshot } from '@miraichi/shared/src/contracts/index.js';
+import { liveSnapshotFixture } from '../../../../../tests/fixtures/live-match-snapshot.js';
 import type { PostgresQueryClient } from './postgres-query-client.js';
 import { createSupabaseCloudPersistenceAdapter } from './supabase-cloud-persistence-adapter.js';
 
@@ -203,5 +204,51 @@ describe('supabase cloud persistence adapter', () => {
 
     expect((await boundaryAdapter.getCloudMatchSnapshotStatus('owner-primary')).freshness).toBe('fresh');
     expect((await afterAdapter.getCloudMatchSnapshotStatus('owner-primary')).freshness).toBe('stale');
+  });
+
+  it('uses one conditional owner-scoped write to acquire a live refresh lease', async () => {
+    const client = new FakeClient();
+    client.enqueueRows([{ owner_profile_id: 'owner-primary' }], []);
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    expect(await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'lease-1', reason: 'visible', acquiredAt: '2026-09-02T12:00:00.000Z', expiresAt: '2026-09-02T12:02:00.000Z'
+    })).toBe(true);
+    expect(await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'lease-2', reason: 'hourly', acquiredAt: '2026-09-02T12:01:00.000Z', expiresAt: '2026-09-02T12:03:00.000Z'
+    })).toBe(false);
+    const acquireSql = client.calls[0]?.text.toLowerCase() ?? '';
+    expect(acquireSql).toContain('on conflict (owner_profile_id) do update');
+    expect(acquireSql).toContain('lease_expires_at <= excluded.last_attempt_at');
+    expect(client.calls[0]?.values).toEqual([
+      'owner-primary', 'lease-1', 'visible', '2026-09-02T12:00:00.000Z', '2026-09-02T12:02:00.000Z'
+    ]);
+  });
+
+  it('maps live JSONB and completes a successful refresh in one transaction', async () => {
+    const client = new FakeClient();
+    client.enqueueRows(
+      [{ owner_profile_id: 'owner-primary', status: 'succeeded', reason: 'visible', last_attempt_at: '2026-09-02T12:00:00.000Z', last_success_at: '2026-09-02T12:00:05.000Z', last_completed_at: '2026-09-02T12:00:05.000Z', last_error_code: null, lease_id: null, lease_acquired_at: null, lease_expires_at: null }],
+      [],
+      [{ overlay_json: liveSnapshotFixture }]
+    );
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    await adapter.finishLiveRefresh('owner-primary', {
+      leaseId: 'lease-1', outcome: 'succeeded', completedAt: '2026-09-02T12:00:05.000Z', snapshot: liveSnapshotFixture
+    });
+    expect(client.transactions).toBe(1);
+    expect(client.calls.some((call) => call.text.includes('live_match_snapshot'))).toBe(true);
+    expect(await adapter.getLiveMatchSnapshot('owner-primary')).toEqual(liveSnapshotFixture);
+  });
+
+  it('sanitizes a failed refresh and never writes the last-good live snapshot table', async () => {
+    const client = new FakeClient();
+    client.enqueueRows([{ owner_profile_id: 'owner-primary', status: 'failed' }]);
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    await adapter.finishLiveRefresh('owner-primary', {
+      leaseId: 'lease-1', outcome: 'failed', completedAt: '2026-09-02T12:00:05.000Z', errorCode: 'database password leaked' as never
+    });
+    expect(client.calls[0]?.values).toContain('internal_error');
+    expect(client.calls[0]?.text).toContain('lease_expires_at > $4');
+    expect(client.calls.every((call) => !call.text.includes('live_match_snapshot'))).toBe(true);
   });
 });

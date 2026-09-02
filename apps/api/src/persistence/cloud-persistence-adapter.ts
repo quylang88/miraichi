@@ -3,6 +3,7 @@ import type {
   CloudBackupEnvelope, CloudBetRecord, CloudMatchSnapshot, CloudPersistenceStatus,
   ApplyBetSettlementInput, ApplyBetSettlementResult, BankrollTransferResult, BetSettlementEvent,
   CreateBankrollAccountInput, CreateBankrollLedgerEntryInput, CreateBankrollTransferInput, DisciplineChallenge, DisciplineConfig, LocalDataSnapshotStatus,
+  AcquireLiveRefreshLeaseInput, FinishLiveRefreshInput, LiveMatchSnapshot, LiveRefreshState,
   LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery, UpdateBankrollAccountInput
 } from '@miraichi/shared/src/contracts/index.js';
 
@@ -31,6 +32,10 @@ export interface CloudPersistenceAdapter {
   listCloudMatches(ownerProfileId: string, query: LocalMatchSnapshotQuery): Promise<LocalMatchFeedResponse>;
   findCloudMatchById(ownerProfileId: string, matchId: string): Promise<LocalMatch | null>;
   getCloudMatchSnapshotStatus(ownerProfileId: string): Promise<LocalDataSnapshotStatus>;
+  getLiveMatchSnapshot(ownerProfileId: string): Promise<LiveMatchSnapshot | null>;
+  getLiveRefreshState(ownerProfileId: string): Promise<LiveRefreshState | null>;
+  acquireLiveRefreshLease(ownerProfileId: string, input: AcquireLiveRefreshLeaseInput): Promise<boolean>;
+  finishLiveRefresh(ownerProfileId: string, input: FinishLiveRefreshInput): Promise<void>;
   exportOwnerData(ownerProfileId: string, exportedAt: string): Promise<CloudBackupEnvelope>;
   importOwnerData(ownerProfileId: string, envelope: CloudBackupEnvelope): Promise<void>;
   recordBackupExport(receipt: BackupExportReceipt): Promise<void>;

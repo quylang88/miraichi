@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createMemoryCloudPersistenceAdapter } from './memory-cloud-persistence-adapter.js';
 import type { CloudMatchSnapshot } from '@miraichi/shared/src/contracts/index.js';
+import { liveSnapshotFixture } from '../../../../tests/fixtures/live-match-snapshot.js';
 
 const fixedNow = () => '2026-07-02T00:00:00.000Z';
 const snapshot: CloudMatchSnapshot = {
@@ -124,5 +125,49 @@ describe('memory cloud persistence adapter', () => {
 
     expect((await atBoundary.getCloudMatchSnapshotStatus('owner-primary')).freshness).toBe('fresh');
     expect((await afterBoundary.getCloudMatchSnapshotStatus('owner-primary')).freshness).toBe('stale');
+  });
+
+  it('round-trips last-good live data and enforces one unexpired owner refresh lease', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    expect(await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'lease-1', reason: 'visible', acquiredAt: '2026-07-02T00:00:00.000Z', expiresAt: '2026-07-02T00:02:00.000Z'
+    })).toBe(true);
+    expect(await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'lease-2', reason: 'hourly', acquiredAt: '2026-07-02T00:01:00.000Z', expiresAt: '2026-07-02T00:03:00.000Z'
+    })).toBe(false);
+    await adapter.finishLiveRefresh('owner-primary', {
+      leaseId: 'lease-1', outcome: 'succeeded', completedAt: '2026-07-02T00:01:30.000Z', snapshot: liveSnapshotFixture
+    });
+    const stored = await adapter.getLiveMatchSnapshot('owner-primary');
+    expect(stored).toEqual(liveSnapshotFixture);
+    stored!.matches[0]!.homeTeam.name = 'mutated';
+    expect((await adapter.getLiveMatchSnapshot('owner-primary'))?.matches[0]?.homeTeam.name).toBe('Arsenal');
+  });
+
+  it('recovers an expired lease and records a sanitized failure without erasing last-good live data', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'initial', reason: 'visible', acquiredAt: '2026-07-02T00:00:00.000Z', expiresAt: '2026-07-02T00:01:00.000Z'
+    });
+    await adapter.finishLiveRefresh('owner-primary', {
+      leaseId: 'initial', outcome: 'succeeded', completedAt: '2026-07-02T00:00:30.000Z', snapshot: liveSnapshotFixture
+    });
+    await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'expired', reason: 'hourly', acquiredAt: '2026-07-02T00:02:00.000Z', expiresAt: '2026-07-02T00:03:00.000Z'
+    });
+    await expect(adapter.finishLiveRefresh('owner-primary', {
+      leaseId: 'expired', outcome: 'failed', completedAt: '2026-07-02T00:03:00.000Z', errorCode: 'upstream_timeout'
+    })).rejects.toThrow(/expired/i);
+    expect(await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'replacement', reason: 'manual', acquiredAt: '2026-07-02T00:03:00.000Z', expiresAt: '2026-07-02T00:04:00.000Z'
+    })).toBe(true);
+    await adapter.finishLiveRefresh('owner-primary', {
+      leaseId: 'replacement', outcome: 'failed', completedAt: '2026-07-02T00:03:10.000Z', errorCode: 'postgresql://secret@db.example' as never
+    });
+
+    expect(await adapter.getLiveMatchSnapshot('owner-primary')).toEqual(liveSnapshotFixture);
+    expect(await adapter.getLiveRefreshState('owner-primary')).toMatchObject({
+      status: 'failed', reason: 'manual', lastSuccessAt: '2026-07-02T00:00:30.000Z', lastErrorCode: 'internal_error', lease: null
+    });
   });
 });

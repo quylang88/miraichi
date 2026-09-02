@@ -3,8 +3,10 @@ import {
   type AddBetDraft, type ApplyBetSettlementInput, type BackupExportReceipt, type BankrollAccount, type BankrollLedgerEntry,
   type BankrollTransferResult, type BetSettlementEvent, type CloudBackupEnvelope, type CloudBetRecord, type CloudMatchSnapshot, type CreateBankrollAccountInput,
   type CreateBankrollLedgerEntryInput, type CreateBankrollTransferInput, type DisciplineChallenge, type DisciplineConfig, type LocalDataSnapshotStatus, type LocalMatch,
+  type AcquireLiveRefreshLeaseInput, type FinishLiveRefreshInput, type LiveMatchSnapshot, type LiveRefreshState,
   type LocalMatchSnapshotQuery, type UpdateBankrollAccountInput
 } from '@miraichi/shared/src/contracts/index.js';
+import { assertValidLiveMatchSnapshot, sanitizeLiveRefreshErrorCode } from '@miraichi/shared/src/contracts/live-match-contracts.js';
 import type { CloudPersistenceAdapter } from './cloud-persistence-adapter.js';
 import { classifyMatchSnapshotFreshness } from '../match-snapshot-freshness.js';
 
@@ -22,6 +24,8 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
   const settlementEvents = new Map<string, BetSettlementEvent>();
   const snapshots = new Map<string, CloudMatchSnapshot>();
   const receipts = new Map<string, BackupExportReceipt>();
+  const liveSnapshots = new Map<string, LiveMatchSnapshot>();
+  const liveRefreshStates = new Map<string, LiveRefreshState>();
   const key = (owner: string, id: string) => `${owner}:${id}`;
   const valuesFor = <T>(map: Map<string, T>, owner: string): T[] =>
     [...map.entries()].filter(([id]) => id.startsWith(`${owner}:`)).map(([, value]) => clone(value));
@@ -159,6 +163,52 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
     },
     findCloudMatchById: async (owner, matchId) => clone(latestSnapshot(owner)?.matches.find((match) => match.id === matchId) ?? null),
     getCloudMatchSnapshotStatus: async (owner) => latestSnapshot(owner) ? statusFor(latestSnapshot(owner)!) : missingSnapshot(),
+    getLiveMatchSnapshot: async (owner) => clone(liveSnapshots.get(owner) ?? null),
+    getLiveRefreshState: async (owner) => clone(liveRefreshStates.get(owner) ?? null),
+    acquireLiveRefreshLease: async (owner, input: AcquireLiveRefreshLeaseInput) => {
+      const acquiredAt = Date.parse(input.acquiredAt);
+      const expiresAt = Date.parse(input.expiresAt);
+      if (!Number.isFinite(acquiredAt) || !Number.isFinite(expiresAt) || expiresAt <= acquiredAt) {
+        throw new Error('Live refresh lease timestamps are invalid');
+      }
+      const current = liveRefreshStates.get(owner);
+      if (current && Date.parse(current.lastAttemptAt) > acquiredAt) return false;
+      if (current?.lease && Date.parse(current.lease.expiresAt) > acquiredAt) return false;
+      liveRefreshStates.set(owner, {
+        status: 'running',
+        reason: input.reason,
+        lastAttemptAt: input.acquiredAt,
+        lastSuccessAt: current?.lastSuccessAt ?? null,
+        lastCompletedAt: current?.lastCompletedAt ?? null,
+        lastErrorCode: null,
+        lease: { leaseId: input.leaseId, acquiredAt: input.acquiredAt, expiresAt: input.expiresAt }
+      });
+      return true;
+    },
+    finishLiveRefresh: async (owner, input: FinishLiveRefreshInput) => {
+      const current = liveRefreshStates.get(owner);
+      if (current?.status !== 'running' || current.lease?.leaseId !== input.leaseId) {
+        throw new Error('Live refresh lease is no longer owned');
+      }
+      const completedAt = Date.parse(input.completedAt);
+      if (!Number.isFinite(completedAt) || completedAt < Date.parse(current.lastAttemptAt)) {
+        throw new Error('Live refresh completion timestamp is invalid');
+      }
+      if (completedAt >= Date.parse(current.lease.expiresAt)) throw new Error('Live refresh lease expired');
+      if (input.outcome === 'succeeded') {
+        assertValidLiveMatchSnapshot(input.snapshot);
+        liveSnapshots.set(owner, clone(input.snapshot));
+      }
+      liveRefreshStates.set(owner, {
+        status: input.outcome === 'succeeded' ? 'succeeded' : 'failed',
+        reason: current.reason,
+        lastAttemptAt: current.lastAttemptAt,
+        lastSuccessAt: input.outcome === 'succeeded' ? input.completedAt : current.lastSuccessAt,
+        lastCompletedAt: input.completedAt,
+        lastErrorCode: input.outcome === 'failed' ? sanitizeLiveRefreshErrorCode(input.errorCode) : null,
+        lease: null
+      });
+    },
     exportOwnerData: async (owner, exportedAt) => ({
       schemaVersion: 'miraichi.cloud-backup.v2', exportedAt, ownerProfileId: owner,
       drafts: valuesFor(drafts, owner), bets: valuesFor(bets, owner), bankrollAccounts: valuesFor(accounts, owner), bankrollLedgerEntries: valuesFor(ledger, owner),

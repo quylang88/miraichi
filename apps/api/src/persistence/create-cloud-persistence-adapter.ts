@@ -26,7 +26,10 @@ export function createCloudPersistenceAdapter(config: CloudPersistenceConfig): C
     updateBankrollAccount: unavailable, createBankrollLedgerEntry: unavailable,
     listBankrollLedgerEntries: unavailable, createBankrollTransfer: unavailable, upsertMatchSnapshot: unavailable,
     listCloudMatches: unavailable, findCloudMatchById: unavailable,
-    getCloudMatchSnapshotStatus: unavailable, exportOwnerData: unavailable,
+    getCloudMatchSnapshotStatus: unavailable,
+    getLiveMatchSnapshot: unavailable, getLiveRefreshState: unavailable,
+    acquireLiveRefreshLease: unavailable, finishLiveRefresh: unavailable,
+    exportOwnerData: unavailable,
     importOwnerData: unavailable, recordBackupExport: unavailable, listBackupExports: unavailable
   };
 }
