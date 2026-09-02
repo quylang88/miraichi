@@ -20,7 +20,8 @@ import { createCloudPersistenceAdapter } from './persistence/create-cloud-persis
 import { ServingMatchStoreRepository } from './repositories/serving-match-store-repository.js';
 import { CloudMatchSnapshotRepository } from './repositories/cloud-match-snapshot-repository.js';
 import { FallbackMatchSnapshotRepository } from './repositories/fallback-match-snapshot-repository.js';
-
+import { assertHostedWebReady, serveHostedWeb } from './hosted-static-server.js';
+import { enforceOriginBoundary } from './http-origin-boundary.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,6 +65,12 @@ function loadEnv(rootDir: string) {
 loadEnv(ROOT_DIR);
 const cloudConfig = readCloudPersistenceConfig();
 const cloudDependencies = { adapter: createCloudPersistenceAdapter(cloudConfig), ownerProfileId: cloudConfig.ownerProfileId };
+const hostedWebMode = process.env.HOSTED_WEB_MODE?.trim() || 'disabled';
+if (hostedWebMode !== 'disabled' && hostedWebMode !== 'required') {
+  throw new Error('HOSTED_WEB_MODE must be disabled or required');
+}
+const hostedWebRoot = path.resolve(ROOT_DIR, process.env.HOSTED_WEB_ROOT?.trim() || 'apps/web/dist');
+if (hostedWebMode === 'required') assertHostedWebReady(hostedWebRoot);
 const matchRepository = new FallbackMatchSnapshotRepository(
   new ServingMatchStoreRepository(),
   new CloudMatchSnapshotRepository(cloudDependencies.adapter, cloudConfig.ownerProfileId)
@@ -73,16 +80,7 @@ const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url || '/', 'http://localhost');
   const pathname = parsedUrl.pathname;
 
-  // Global CORS headers for dev frontend communication
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
-    return;
-  }
+  if (enforceOriginBoundary(req, res, process.env.CORS_ALLOWED_ORIGIN?.trim()) === 'handled') return;
 
   console.log(`[API Gateway] Received ${req.method} ${req.url}`);
 
@@ -112,21 +110,36 @@ const server = http.createServer((req, res) => {
     void handleBackups(req, res, cloudDependencies);
   } else if (pathname === '/api/v1/ingestion/status') {
     handleIngestionStatus(req, res);
+  } else if (pathname === '/api' || pathname.startsWith('/api/')) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: `Not Found: ${pathname}` }));
+  } else if (hostedWebMode === 'required') {
+    void serveHostedWeb(req, res, hostedWebRoot).then((handled) => {
+      if (handled) return;
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end(`404 Not Found: ${pathname}`);
+    }).catch(() => {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: { code: 'hosted_web_unavailable', message: 'Hosted web artifact is unavailable.' } }));
+    });
   } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: `Not Found: ${pathname}` }));
   }
 });
 
-if (!process.env.API_URL) {
-  throw new Error('API_URL must be defined in .env');
-}
-const apiUrlobj = new URL(process.env.API_URL);
-const PORT = process.env.PORT || apiUrlobj.port;
-if (!PORT) {
+const configuredApiUrl = process.env.API_URL?.trim();
+const configuredApiPort = configuredApiUrl ? new URL(configuredApiUrl).port : '';
+const configuredPort = process.env.PORT?.trim() || configuredApiPort;
+if (!configuredPort) {
   throw new Error('PORT or port in API_URL must be defined in .env');
 }
 
-server.listen(PORT, () => {
-  console.log(`[API Mediation Gateway] Running at ${process.env.API_URL}`);
+const PORT = Number(configuredPort);
+if (!Number.isSafeInteger(PORT) || PORT < 1 || PORT > 65_535) {
+  throw new Error('PORT must be an integer between 1 and 65535');
+}
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`[API Mediation Gateway] Running at ${configuredApiUrl || `http://0.0.0.0:${PORT}`}`);
 });
