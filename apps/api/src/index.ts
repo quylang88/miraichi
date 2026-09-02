@@ -24,6 +24,9 @@ import { assertHostedWebReady, serveHostedWeb } from './hosted-static-server.js'
 import { enforceOriginBoundary } from './http-origin-boundary.js';
 import { readOwnerAuthConfig } from './auth/owner-auth.js';
 import { enforceOwnerSession, handleOwnerAuthRoute, isOwnerAuthRoute } from './auth/owner-auth-boundary.js';
+import { SportScoreWidgetClient, type SportScoreLiveSource } from './live/sportscore-widget-client.js';
+import { LiveRefreshCoordinator } from './live/live-refresh-coordinator.js';
+import { handleLiveMatches } from './routes/live-matches.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,6 +81,23 @@ const matchRepository = new FallbackMatchSnapshotRepository(
   new ServingMatchStoreRepository(),
   new CloudMatchSnapshotRepository(cloudDependencies.adapter, cloudConfig.ownerProfileId)
 );
+const sportScoreLiveMode = process.env.SPORTSCORE_LIVE_MODE?.trim() || 'disabled';
+if (sportScoreLiveMode !== 'disabled' && sportScoreLiveMode !== 'widget') {
+  throw new Error('SPORTSCORE_LIVE_MODE must be disabled or widget');
+}
+const disabledLiveSource: SportScoreLiveSource = {
+  listMatches: async () => { throw new Error('SportScore live widget is disabled'); },
+  getMatch: async () => { throw new Error('SportScore live widget is disabled'); }
+};
+const widgetTimeoutMs = Number(process.env.SPORTSCORE_WIDGET_TIMEOUT_MS?.trim() || 8_000);
+const liveCoordinator = new LiveRefreshCoordinator({
+  ownerProfileId: cloudConfig.ownerProfileId,
+  persistence: cloudDependencies.adapter,
+  repository: matchRepository,
+  source: sportScoreLiveMode === 'widget'
+    ? new SportScoreWidgetClient({ timeoutMs: widgetTimeoutMs })
+    : disabledLiveSource
+});
 
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url || '/', 'http://localhost');
@@ -93,6 +113,8 @@ const server = http.createServer((req, res) => {
     return;
   } else if (pathname === '/api/v1/health') {
     handleHealth(req, res);
+  } else if (pathname === '/api/v1/live' || pathname === '/api/v1/live/refresh') {
+    void handleLiveMatches(req, res, { coordinator: liveCoordinator });
   } else if (pathname === '/api/v1/matches/detail') {
     void handleMatchDetail(req, res, { repository: matchRepository });
   } else if (pathname === '/api/v1/data-snapshot/status') {

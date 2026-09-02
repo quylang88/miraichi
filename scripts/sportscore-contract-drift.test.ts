@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   loadApprovedSportScoreContractManifest,
@@ -25,9 +27,11 @@ describe('SportScore approved local OpenAPI contract drift', () => {
       const manifest = await loadApprovedSportScoreContractManifest();
       const result = await verifySportScoreOpenApiContract();
       expect(result.sha256).toBe(manifest.sha256);
-      expect(result.reviewedAt).toBe('2026-08-26');
+      expect(result.reviewedAt).toBe('2026-09-02');
+      expect(result.requiredPaths).toEqual(['/api/widget/matches/', '/api/widget/match/']);
       expect(result.fixturePath.endsWith('sportscore-openapi.approved.json')).toBe(true);
       expect(fetchCalled).toBe(false);
+      expect(readFileSync(fileURLToPath(new URL('./sportscore-contract-drift.ts', import.meta.url)), 'utf8')).not.toContain('/api/v1');
     } finally {
       globalThis.fetch = fetchBefore;
     }

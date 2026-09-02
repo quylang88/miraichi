@@ -4,7 +4,7 @@ export const liveSnapshotFixture: LiveMatchSnapshot = {
   schemaVersion: 'miraichi.live-match-snapshot.v1',
   snapshotId: 'live-2026-09-02T12:00:00.000Z',
   generatedAt: '2026-09-02T12:00:00.000Z',
-  coverage: { kind: 'global-recent-window', upstreamLimit: 50, upstreamCount: 50, mappedCount: 1 },
+  coverage: { kind: 'global-recent-window', upstreamLimit: 50, upstreamCount: 50, mappedCount: 1, publishedCount: 1, terminalCheckCount: 0, retainedTrackedCount: 0 },
   matches: [{
     matchId: 'match-premier-league-arsenal-liverpool-2026-09-02',
     competition: { id: 'eng-premier-league', name: 'Premier League' },

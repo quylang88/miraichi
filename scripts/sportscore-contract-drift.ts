@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const APPROVAL_SCHEMA_VERSION = 'miraichi.sportscore-openapi-approval.v1' as const;
 const APPROVAL_MANIFEST_PATH = 'tests/fixtures/sportscore-openapi.approval.json';
-const REQUIRED_PATHS = ['/api/v1/fixtures/', '/api/widget/match/'] as const;
+const REQUIRED_PATHS = ['/api/widget/matches/', '/api/widget/match/'] as const;
 
 export interface ApprovedSportScoreContractManifest {
   schemaVersion: typeof APPROVAL_SCHEMA_VERSION;

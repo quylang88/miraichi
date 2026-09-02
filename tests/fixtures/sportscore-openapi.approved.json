@@ -1,67 +1,37 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "SportScore approved Miraichi contract excerpt",
-    "version": "reviewed-2026-08-26",
-    "description": "Local reviewed fixture for drift detection. It is not downloaded during verification."
+    "title": "SportScore approved Miraichi widget contract excerpt",
+    "version": "reviewed-2026-09-02",
+    "description": "Local reviewed fixture for widget-only drift detection. It is not downloaded during verification."
   },
   "servers": [
-    {
-      "url": "https://sportscore.com"
-    }
+    { "url": "https://sportscore.com" }
   ],
   "paths": {
-    "/api/v1/fixtures/": {
+    "/api/widget/matches/": {
       "get": {
-        "operationId": "listFootballFixtures",
+        "operationId": "listWidgetMatches",
         "parameters": [
           {
             "name": "sport",
             "in": "query",
             "required": true,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "football"
-              ]
-            }
-          },
-          {
-            "name": "date",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "date"
-            }
-          },
-          {
-            "name": "competition",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string", "enum": ["football"] }
           },
           {
             "name": "limit",
             "in": "query",
             "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
+            "schema": { "type": "integer", "minimum": 1, "maximum": 50 }
           }
         ],
         "responses": {
           "200": {
-            "description": "Football fixture envelope",
+            "description": "Live and recent football match list",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FixtureEnvelope"
-                }
+                "schema": { "$ref": "#/components/schemas/MatchesEnvelope" }
               }
             }
           }
@@ -70,108 +40,53 @@
     },
     "/api/widget/match/": {
       "get": {
-        "operationId": "getFootballMatch",
+        "operationId": "getWidgetMatch",
         "parameters": [
           {
             "name": "sport",
             "in": "query",
             "required": true,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "football"
-              ]
-            }
+            "schema": { "type": "string", "enum": ["football"] }
           },
           {
             "name": "slug",
             "in": "query",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "200": {
-            "description": "Football match detail envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          }
+          "200": { "description": "Single widget match detail envelope" }
         }
       }
     }
   },
   "components": {
     "schemas": {
-      "FixtureEnvelope": {
+      "MatchesEnvelope": {
         "type": "object",
-        "required": [
-          "matches"
-        ],
         "properties": {
-          "sport": {
-            "type": "string"
-          },
-          "count": {
-            "type": "integer",
-            "minimum": 0
-          },
+          "sport": { "type": "string" },
+          "count": { "type": "integer", "minimum": 0 },
           "matches": {
             "type": "array",
-            "maxItems": 200,
-            "items": {
-              "$ref": "#/components/schemas/MatchSummary"
-            }
-          }
+            "maxItems": 50,
+            "items": { "$ref": "#/components/schemas/MatchSummary" }
+          },
+          "updated": { "type": "string", "format": "date-time" }
         }
       },
       "MatchSummary": {
         "type": "object",
-        "required": [
-          "home",
-          "away",
-          "status",
-          "time",
-          "slug"
-        ],
         "properties": {
-          "home": {
-            "type": "string"
-          },
-          "away": {
-            "type": "string"
-          },
-          "home_score": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "away_score": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "status": {
-            "type": "string"
-          },
-          "status_text": {
-            "type": "string"
-          },
-          "time": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "slug": {
-            "type": "string"
-          }
+          "home": { "type": "string" },
+          "away": { "type": "string" },
+          "home_score": { "type": "integer" },
+          "away_score": { "type": "integer" },
+          "status": { "type": "string" },
+          "status_text": { "type": "string" },
+          "time": { "type": "string", "format": "date-time" },
+          "slug": { "type": "string" }
         }
       }
     }

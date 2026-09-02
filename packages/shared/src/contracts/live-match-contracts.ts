@@ -40,6 +40,9 @@ export interface LiveMatchSnapshot {
     upstreamLimit: number;
     upstreamCount: number;
     mappedCount: number;
+    publishedCount: number;
+    terminalCheckCount: number;
+    retainedTrackedCount: number;
   };
   matches: LiveMatchOverlay[];
   warnings: string[];
@@ -176,10 +179,13 @@ export function validateLiveMatchSnapshot(input: unknown): LiveMatchValidationRe
   if (!isRecord(input.coverage) || input.coverage.kind !== 'global-recent-window') {
     errors.push('coverage is invalid');
   } else {
-    const { upstreamLimit, upstreamCount, mappedCount } = input.coverage;
+    const { upstreamLimit, upstreamCount, mappedCount, publishedCount, terminalCheckCount, retainedTrackedCount } = input.coverage;
     if (!Number.isInteger(upstreamLimit) || Number(upstreamLimit) < 1
       || !Number.isInteger(upstreamCount) || Number(upstreamCount) < 0 || Number(upstreamCount) > Number(upstreamLimit)
-      || !Number.isInteger(mappedCount) || Number(mappedCount) < 0 || Number(mappedCount) > Number(upstreamCount)) {
+      || !Number.isInteger(mappedCount) || Number(mappedCount) < 0 || Number(mappedCount) > Number(upstreamCount)
+      || !Number.isInteger(publishedCount) || Number(publishedCount) < 0
+      || !Number.isInteger(terminalCheckCount) || Number(terminalCheckCount) < 0 || Number(terminalCheckCount) > 5
+      || !Number.isInteger(retainedTrackedCount) || Number(retainedTrackedCount) < 0) {
       errors.push('coverage counts are invalid');
     }
   }
@@ -189,7 +195,7 @@ export function validateLiveMatchSnapshot(input: unknown): LiveMatchValidationRe
     input.matches.forEach((match, index) => validateMatch(match, index, errors));
     const ids = input.matches.filter(isRecord).map((match) => match.matchId).filter(isNonEmptyString);
     if (new Set(ids).size !== ids.length) errors.push('matches must use unique matchId values');
-    if (isRecord(input.coverage) && input.coverage.mappedCount !== input.matches.length) errors.push('coverage.mappedCount must equal matches length');
+    if (isRecord(input.coverage) && input.coverage.publishedCount !== input.matches.length) errors.push('coverage.publishedCount must equal matches length');
   }
   if (!Array.isArray(input.warnings) || input.warnings.some((warning) => !isNonEmptyString(warning))) {
     errors.push('warnings must be non-empty strings');
