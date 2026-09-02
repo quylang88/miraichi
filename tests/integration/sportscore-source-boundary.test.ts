@@ -356,7 +356,8 @@ describe('SportScore large source boundary', () => {
       'en',
       'UTC'
     );
-    for (const html of [todayHtml, matchesHtml, detailHtml]) {
+    expect(todayHtml).not.toContain('Powered by SportScore');
+    for (const html of [matchesHtml, detailHtml]) {
       expect(html).toContain('<a href="https://sportscore.com/">Powered by SportScore</a>');
       expect(html).not.toContain('nofollow');
     }

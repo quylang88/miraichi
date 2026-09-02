@@ -116,7 +116,7 @@ describe('SportScore attribution and owner-facing source states', () => {
     expect(renderSportScoreAttribution([], createTranslator('en'))).toBe('');
   });
 
-  it('shows attribution on Today and Matches only when the rendered snapshot has SportScore evidence', () => {
+  it('shows attribution on Matches only when the rendered snapshot has SportScore evidence, and omits from Today', () => {
     const translate = createTranslator('en');
     const today = renderTodayScreen({
       activeTabId: 'today',
@@ -135,8 +135,8 @@ describe('SportScore attribution and owner-facing source states', () => {
       isFilterPanelOpen: false
     });
 
-    expect(today).toContain('data-today-match-source-status="fresh"');
-    expect(today).toContain('Powered by SportScore');
+    expect(today).not.toContain('data-today-match-source-status');
+    expect(today).not.toContain('Powered by SportScore');
     expect(matches).not.toContain('Data status: Stale');
     expect(matches).toContain('Powered by SportScore');
 
@@ -153,33 +153,21 @@ describe('SportScore attribution and owner-facing source states', () => {
     expect(freshMatches).not.toContain('Data status: Fresh');
     expect(freshMatches).toContain('Powered by SportScore');
 
-    const manualOnly = renderTodayScreen({
-      activeTabId: 'today',
+    const manualOnlyMatches = renderMatchesScreen({
+      activeTabId: 'matches',
       translate,
+      locale: 'en',
       matchFeed: {
         ...feed('fresh'),
         snapshot: { ...(feed('fresh') as Extract<MatchFeedViewState, { status: 'ready' }>).snapshot, sources: [] },
         matches: [{ ...completedMatch, sourceRefs: [{ sourceId: 'manual-snapshot', importedAt: sportScoreRef.importedAt }] }]
       } as MatchFeedViewState,
-      ...inertTodayDependencies
+      timezone: 'UTC',
+      filters: { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set() },
+      searchQuery: '',
+      isFilterPanelOpen: false
     });
-    expect(manualOnly).toContain('data-today-match-source-status="fresh"');
-    expect(manualOnly).not.toContain('Powered by SportScore');
-
-    const unavailableWithoutSource = renderTodayScreen({
-      activeTabId: 'today',
-      translate,
-      matchFeed: {
-        status: 'unavailable',
-        date: '2026-08-27',
-        reason: 'No serving snapshot',
-        warnings: ['serving_match_store_missing']
-      },
-      ...inertTodayDependencies
-    });
-    expect(unavailableWithoutSource).toContain('data-today-match-source-status="unavailable"');
-    expect(unavailableWithoutSource).toContain('Unavailable');
-    expect(unavailableWithoutSource).not.toContain('Powered by SportScore');
+    expect(manualOnlyMatches).not.toContain('Powered by SportScore');
   });
 
   it('shows attribution for ready, pending, and unavailable detail when the displayed match is SportScore-derived', () => {
