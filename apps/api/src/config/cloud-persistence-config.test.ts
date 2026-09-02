@@ -8,6 +8,16 @@ describe('cloud persistence config', () => {
   it('requires a database URL in supabase mode', () => {
     expect(() => readCloudPersistenceConfig({ APP_ENV: 'local', CLOUD_PERSISTENCE_MODE: 'supabase' })).toThrow('SUPABASE_DATABASE_URL is required');
   });
+  it('requires and decodes the project CA for a remote Supabase connection', () => {
+    const databaseUrl = 'postgresql://postgres.example:secret@aws-0-eu-central-1.pooler.supabase.com:5432/postgres';
+    expect(() => readCloudPersistenceConfig({ APP_ENV: 'local', CLOUD_PERSISTENCE_MODE: 'supabase', SUPABASE_DATABASE_URL: databaseUrl }))
+      .toThrow('SUPABASE_DATABASE_CA_BASE64 is required');
+    const certificate = '-----BEGIN CERTIFICATE-----\nfixture-ca\n-----END CERTIFICATE-----';
+    expect(readCloudPersistenceConfig({
+      APP_ENV: 'local', CLOUD_PERSISTENCE_MODE: 'supabase', SUPABASE_DATABASE_URL: databaseUrl,
+      SUPABASE_DATABASE_CA_BASE64: Buffer.from(certificate).toString('base64')
+    })).toMatchObject({ databaseCa: certificate });
+  });
   it('rejects memory mode outside local and test', () => {
     expect(() => readCloudPersistenceConfig({ APP_ENV: 'staging', CLOUD_PERSISTENCE_MODE: 'memory' })).toThrow('memory cloud persistence is test-only');
   });

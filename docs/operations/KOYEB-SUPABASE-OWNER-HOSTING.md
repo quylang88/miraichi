@@ -42,9 +42,9 @@ generated serving data is intentionally gitignored; it must be uploaded to Supab
 1. Sign in to Supabase, create a Free organization/project, choose a region reasonably close to the
    Koyeb region, create a strong database password, and save it in a password manager.
 2. In the project dashboard select **Connect** and copy the **Session pooler** connection string on
-   port `5432`. Use this for the persistent Koyeb Node process and append `?sslmode=require` if the
-   copied URL has no query string. Do not put an anon key, service-role key, or database URL in web
-   code.
+   port `5432`. Use this for the persistent Koyeb Node process. In **Project Settings -> Database ->
+   SSL Configuration**, download the project CA certificate. Do not put an anon key, service-role
+   key, database URL, or certificate in web code.
 3. Copy the project ref from Project Settings. Then run:
 
 ```powershell
@@ -73,11 +73,13 @@ local serving snapshot before deploying:
 ```powershell
 $env:APP_ENV='local'
 $env:CLOUD_PERSISTENCE_MODE='supabase'
-$env:SUPABASE_DATABASE_URL='<SESSION_POOLER_URL_WITH_SSLMODE_REQUIRE>'
+$env:SUPABASE_DATABASE_URL='<SESSION_POOLER_URL>'
+$env:SUPABASE_DATABASE_CA_BASE64=[Convert]::ToBase64String([IO.File]::ReadAllBytes('<DOWNLOADED_CA_FILE>'))
 $env:MIRAICHI_OWNER_PROFILE_ID='owner-primary'
 pnpm run data:validate:serving:matches
 pnpm run data:sync:serving:cloud
 Remove-Item Env:\SUPABASE_DATABASE_URL
+Remove-Item Env:\SUPABASE_DATABASE_CA_BASE64
 Remove-Item Env:\CLOUD_PERSISTENCE_MODE
 Remove-Item Env:\MIRAICHI_OWNER_PROFILE_ID
 Remove-Item Env:\APP_ENV
@@ -133,9 +135,10 @@ from that branch: [scheduled workflow events](https://docs.github.com/en/actions
    Supabase region; do not pretend either is low-latency from Japan.
 7. Expose port `8000` using HTTP, route `/` to that port, and configure an HTTP GET health check at
    `/api/v1/health`.
-8. In Koyeb Secrets create four secrets containing the values from earlier steps:
+8. In Koyeb Secrets create five secrets containing the values from earlier steps:
    `SUPABASE_DATABASE_URL`, `MIRAICHI_OWNER_PASSWORD_HASH`, `MIRAICHI_SESSION_SECRET`, and
-   `MIRAICHI_REFRESH_TOKEN`.
+   `MIRAICHI_REFRESH_TOKEN`, plus `SUPABASE_DATABASE_CA_BASE64` containing the base64 certificate
+   produced in step 2.
 9. Add the following runtime environment configuration. For secret-backed values, select the Koyeb
    secret/reference rather than pasting a literal into a public configuration field.
 
@@ -147,6 +150,7 @@ HOSTED_WEB_MODE=required
 HOSTED_WEB_ROOT=apps/web/dist
 CLOUD_PERSISTENCE_MODE=supabase
 SUPABASE_DATABASE_URL={{ secret.SUPABASE_DATABASE_URL }}
+SUPABASE_DATABASE_CA_BASE64={{ secret.SUPABASE_DATABASE_CA_BASE64 }}
 MIRAICHI_OWNER_PROFILE_ID=owner-primary
 MIRAICHI_OWNER_AUTH_MODE=password
 MIRAICHI_OWNER_PASSWORD_HASH={{ secret.MIRAICHI_OWNER_PASSWORD_HASH }}

@@ -8,7 +8,10 @@ export function createCloudPersistenceAdapter(config: CloudPersistenceConfig): C
   if (config.mode === 'memory') return createMemoryCloudPersistenceAdapter();
   if (config.mode === 'supabase') {
     if (!config.databaseUrl) throw new Error('SUPABASE_DATABASE_URL is required');
-    return createSupabaseCloudPersistenceAdapter({ client: createPostgresQueryClient(config.databaseUrl), ownerProfileId: config.ownerProfileId });
+    return createSupabaseCloudPersistenceAdapter({
+      client: createPostgresQueryClient(config.databaseUrl, config.databaseCa),
+      ownerProfileId: config.ownerProfileId
+    });
   }
   const unavailable = async (): Promise<never> => { throw new CloudPersistenceUnconfiguredError(); };
   return {

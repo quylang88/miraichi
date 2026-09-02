@@ -84,6 +84,21 @@
 - Historical-season hydration and lazy full match detail remain explicitly `PENDING` and are not
   prerequisites for this staging phase.
 
+### Staging preflight maintenance — 2026-09-02
+
+- The first owner-run cloud snapshot sync reached the Supabase session pooler but failed before
+  opening its transaction with `self-signed certificate in certificate chain`; no match row was
+  written by that attempt.
+- RED tests reproduced the configuration hole: URI `sslmode` parameters could override the
+  Node/Postgres SSL object, while the runtime had no project CA input.
+- The client now requires `SUPABASE_DATABASE_CA_BASE64` for every remote Supabase connection,
+  decodes the project PEM CA, verifies certificate and hostname, and strips conflicting URI SSL
+  parameters before constructing the pool. It does not use `rejectUnauthorized: false`.
+- Focused config/client/sync tests passed 14 tests across four files; `pnpm run verify:local` passed
+  645 tests across 124 files plus all lifecycle, product-boundary, lint, TypeScript, architecture,
+  and type-safety gates. A new owner upload attempt still requires the downloaded project CA and
+  is staging evidence, not local approval.
+
 ## Product Boundary
 
 Miraichi has exactly four primary tabs: `Today`, `Matches`, `Bets`, and `Bankroll`.
