@@ -529,10 +529,14 @@ async function refreshReports(customParams?: { period: BetReportPeriod; startDat
     loadBetReport({ period: 'week', anchor, timeZone, ...withAccount })
   ]);
   bankrollReportState = bankrollResult.status === 'fulfilled'
-    ? { status: 'ready', report: bankrollResult.value }
+    ? (bankrollResult.value.totalSettledBets === 0 && bankrollResult.value.daily.length === 0
+        ? { status: 'empty' }
+        : { status: 'ready', report: bankrollResult.value })
     : { status: 'unavailable', code: errorCode(bankrollResult.reason) };
   todayReportState = todayResult.status === 'fulfilled'
-    ? { status: 'ready', report: todayResult.value }
+    ? (todayResult.value.totalSettledBets === 0 && todayResult.value.daily.length === 0
+        ? { status: 'empty' }
+        : { status: 'ready', report: todayResult.value })
     : { status: 'unavailable', code: errorCode(todayResult.reason) };
   updateBankrollScreenView();
   updateTodayScreenView();

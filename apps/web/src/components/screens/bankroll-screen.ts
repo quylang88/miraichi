@@ -77,13 +77,37 @@ function analytics(
       })
     : '';
 
+  const rangeBadge = (state.status === 'ready' && state.report.period.startDate && state.report.period.endDate)
+    ? `<div class="report-range-badge">📅 ${escapeHtml(state.report.period.startDate)} – ${escapeHtml(state.report.period.endDate)}</div>`
+    : '';
+
   if (state.status === 'loading') return `${controls}${calendarPicker}${renderSkeletonMetrics(4)}<div class="stack">${renderSkeletonCard()}</div>`;
   if (state.status === 'unavailable') return `${controls}${calendarPicker}<section class="note-card warning"><div class="note-title">${escapeHtml(translate(`error.${state.code}`, translate('error.request_failed')))}</div></section>`;
-  if (state.status === 'empty') return `${controls}${calendarPicker}<p class="empty-state">${escapeHtml(translate('bets.emptySettled'))}</p>`;
+  if (state.status === 'empty' || (state.status === 'ready' && state.report.totalSettledBets === 0 && state.report.daily.length === 0)) {
+    const emptyHero = `<section class="analytics-empty-hero" data-analytics-empty>
+      <div class="analytics-empty-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3v18h18"/>
+          <path d="M18 17V9"/>
+          <path d="M13 17V5"/>
+          <path d="M8 17v-3"/>
+        </svg>
+      </div>
+      <h3 class="analytics-empty-title">${escapeHtml(translate('reports.noDataTitle'))}</h3>
+      <p class="analytics-empty-desc">${escapeHtml(translate('reports.noDataDesc'))}</p>
+      <div class="analytics-empty-features">
+        <span class="analytics-feature-tag">📈 ${escapeHtml(translate('reports.featurePnl'))}</span>
+        <span class="analytics-feature-tag">🎯 ${escapeHtml(translate('reports.featureMarkets'))}</span>
+        <span class="analytics-feature-tag">🧠 ${escapeHtml(translate('reports.featurePsychology'))}</span>
+      </div>
+      <div class="analytics-empty-actions">
+        <button type="button" class="primary-button" data-open-manual-add>${escapeHtml(translate('reports.recordBet'))}</button>
+        <button type="button" class="secondary-button" data-tab-target="bets">${escapeHtml(translate('reports.viewBets'))}</button>
+      </div>
+    </section>`;
+    return `${controls}${calendarPicker}${rangeBadge}${emptyHero}`;
+  }
   const report = state.report;
-  const rangeBadge = (report.period.startDate && report.period.endDate)
-    ? `<div class="report-range-badge">📅 ${escapeHtml(report.period.startDate)} – ${escapeHtml(report.period.endDate)}</div>`
-    : '';
   const bars = report.daily.map((bucket) => `<div class="report-bar ${bucket.profitLossPoints < 0 ? 'negative' : 'positive'}" title="${escapeHtml(bucket.date)}: ${bucket.profitLossPoints} pts"><span style="height:${Math.max(4, Math.min(100, Math.abs(bucket.profitLossPoints)))}%"></span><small>${escapeHtml(bucket.date.slice(5))}</small></div>`).join('');
   const breakdown = (title: string, prefix: string | null, entries: Readonly<Record<string, { readonly count: number; readonly profitLossPoints: number }>>, explicitSample = false) => `<section class="note-card"><div class="note-eyebrow">${escapeHtml(title)}</div>${Object.entries(entries).map(([key, item]) => `<div class="ledger-row"><span>${escapeHtml(prefix ? translate(`${prefix}.${key}`, key) : key)}</span><span>${explicitSample ? 'n=' : ''}${item.count} · ${item.profitLossPoints} pts</span></div>`).join('') || `<p class="empty-state">—</p>`}</section>`;
   const outcomes = `<section class="note-card"><div class="note-eyebrow">${escapeHtml(translate('reports.outcomes'))}</div>${Object.entries(report.outcomes).map(([key, count]) => `<div class="ledger-row"><span>${escapeHtml(translate(`settlement.${key}`, key))}</span><span>${count}</span></div>`).join('') || `<p class="empty-state">—</p>`}</section>`;
@@ -113,11 +137,26 @@ export function renderBankrollScreen(input: {
   let body = `<div data-bankroll-state="loading" aria-label="${escapeHtml(translate('common.loading'))}">${view === 'ledger' ? renderSkeletonLedgerRows(4) : view === 'discipline' ? renderSkeletonCard() : renderSkeletonMetrics(3)}</div>`;
   if (state.status === 'unavailable') body = `<section class="note-card warning" data-bankroll-state="unavailable"><div class="note-title">${escapeHtml(translate('common.unavailable'))}</div><p class="note-copy">${escapeHtml(translate('error.request_failed'))}</p></section>`;
   if (state.status === 'compatibility') body = `<section class="note-card warning" data-bankroll-state="compatibility"><div class="note-title">${escapeHtml(translate('bankroll.compatibilityRequired'))}</div><p class="note-copy">${escapeHtml(translate('bankroll.compatibilityCopy', { count: state.accounts.length }))}</p></section>`;
-  if (state.status === 'empty') body = view === 'discipline'
-    ? discipline(disciplineConfigState, translate)
-    : view === 'analytics'
-      ? analytics(reportState, reportPeriod, translate, customCalendarMonth, customRangeStart, customRangeEnd, locale)
-      : `<section class="note-card warning" data-bankroll-state="empty"><div class="note-title">${escapeHtml(translate('bankroll.setupRequired'))}</div></section><section class="note-card"><form class="form-grid" id="setup-bankroll-form"><div class="field"><label for="bankroll-opening">${escapeHtml(translate('bankroll.openingPoints'))}</label><input class="field-input" id="bankroll-opening" name="opening" type="number" min="0.01" step="0.01" required></div><button class="primary-button" type="submit">${escapeHtml(translate('bankroll.setupAction'))}</button><div class="sheet-feedback" id="bankroll-setup-feedback" aria-live="polite"></div></form></section>`;
+  if (state.status === 'empty') {
+    if (view === 'discipline') {
+      body = discipline(disciplineConfigState, translate);
+    } else if (view === 'analytics') {
+      body = `<section class="analytics-empty-hero" data-bankroll-state="empty">
+        <div class="analytics-empty-icon warning" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 19V9M10 19V5M15 19v-7M20 19H4"/>
+          </svg>
+        </div>
+        <h3 class="analytics-empty-title">${escapeHtml(translate('bankroll.setupRequired'))}</h3>
+        <p class="analytics-empty-desc">${escapeHtml(translate('today.setupRequiredCopy'))}</p>
+        <div class="analytics-empty-actions">
+          <button type="button" class="primary-button" data-bankroll-view="overview">${escapeHtml(translate('bankroll.setupAction'))}</button>
+        </div>
+      </section>`;
+    } else {
+      body = `<section class="note-card warning" data-bankroll-state="empty"><div class="note-title">${escapeHtml(translate('bankroll.setupRequired'))}</div></section><section class="note-card"><form class="form-grid" id="setup-bankroll-form"><div class="field"><label for="bankroll-opening">${escapeHtml(translate('bankroll.openingPoints'))}</label><input class="field-input" id="bankroll-opening" name="opening" type="number" min="0.01" step="0.01" required></div><button class="primary-button" type="submit">${escapeHtml(translate('bankroll.setupAction'))}</button><div class="sheet-feedback" id="bankroll-setup-feedback" aria-live="polite"></div></form></section>`;
+    }
+  }
   if (state.status === 'ready') {
     const content = view === 'overview'
       ? overview(state, translate)

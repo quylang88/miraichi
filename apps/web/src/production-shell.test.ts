@@ -346,7 +346,58 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('data-bankroll-setup-required');
   });
 
-  it('renders an honest compatibility stop for legacy multiple-account data',()=>{const account=(accountId:string)=>({accountId,ownerProfileId:'owner-primary',label:accountId,unit:'points' as const,openingBalancePoints:10,currentBalancePoints:10,archived:false,createdAt:'2026-07-02T00:00:00.000Z',updatedAt:'2026-07-02T00:00:00.000Z'});const html=renderAppShell({activeTabId:'bankroll',bankrollState:{status:'compatibility',accounts:[account('a'),account('b')],reason:'multiple_bankroll_accounts'}});expect(html).toContain('data-bankroll-state="compatibility"');expect(html).not.toContain('data-bankroll-account-select');expect(html).not.toContain('data-open-transfer');});
+  it('renders a professional analytics empty state when no settled bets exist', () => {
+    const html = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'empty' }
+    });
+    expect(html).toContain('data-report-period="this_week"');
+    expect(html).toContain('data-analytics-empty');
+    expect(html).toContain('No analytics data yet');
+    expect(html).toContain('Performance trends, market win rates, and psychology insights will appear here once settled bets are recorded.');
+    expect(html).toContain('data-open-manual-add');
+    expect(html).toContain('data-tab-target="bets"');
+    expect(html).not.toContain('No settled bets.');
+
+    const viHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      translate: createTranslator('vi'),
+      locale: 'vi',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'ready', report: { period: { kind: 'this_week', startDate: '2026-08-25', endDate: '2026-08-31', timeZone: 'UTC' }, netProfitLossPoints: 0, totalSettledBets: 0, totalStakePoints: 0, averageStakePoints: 0, winRatePercent: 0, outcomes: { full_win: 0, half_win: 0, push: 0, void: 0, half_loss: 0, full_loss: 0, manual_adjustment: 0 }, daily: [], market: {}, psychology: { emotion: {}, motivation: {}, planAdherence: {} }, disciplineOverrideCount: 0 } }
+    });
+    expect(viHtml).toContain('Chưa có dữ liệu phân tích');
+    expect(viHtml).toContain('Ghi vé cược');
+    expect(viHtml).toContain('Xem danh sách cược');
+
+    const emptyBankrollAnalytics = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      bankrollState: { status: 'empty' }
+    });
+    expect(emptyBankrollAnalytics).toContain('data-bankroll-state="empty"');
+    expect(emptyBankrollAnalytics).toContain('Set opening capital before recording an ongoing bet.');
+    expect(emptyBankrollAnalytics).toContain('data-bankroll-view="overview"');
+  });
+
+  it('renders business-friendly default zero metrics and setup prompt on Today screen when bankroll is uninitialized', () => {
+    const html = renderAppShell({
+      activeTabId: 'today',
+      bankrollState: { status: 'empty' },
+      betRecordsState: { status: 'empty' },
+      todayReportState: { status: 'empty' },
+      disciplineConfigState: { status: 'unavailable', code: 'not_configured' }
+    });
+    expect(html).toContain('data-today-setup-prompt');
+    expect(html).toContain('Set up opening capital');
+    expect(html).toContain('data-tab-target="bankroll"');
+    expect(html).toContain('0 pts');
+    expect(html).toContain('0');
+    expect(html).not.toContain('Net P&amp;L: Unavailable');
+  });
 });
 
 describe('production PWA shell rendering', () => {

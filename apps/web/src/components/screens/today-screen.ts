@@ -51,12 +51,39 @@ export function renderTodayScreen(input: {
   const dailyReached = config?.dailyStopLossPoints != null && net !== null && net <= -config.dailyStopLossPoints;
   const cards = ongoing.map((bet) => `<article class="bet-row"><div class="row-title">${escapeHtml(bet.homeTeamName)} vs ${escapeHtml(bet.awayTeamName)}</div><div class="row-meta">${escapeHtml(bet.selectionLabel)} · ${bet.stakePoints} pts @ ${bet.oddsValue}</div></article>`).join('');
 
-  const netValue = report.status === 'ready' && net !== null ? `${net > 0 ? '+' : ''}${net} pts` : report.status === 'loading' ? '…' : translate('common.unavailable');
-  const exposureValue = bankroll.status === 'ready' ? `${exposure} pts` : bankroll.status === 'loading' ? '…' : translate('common.unavailable');
-  const ongoingValue = bets.status === 'ready' ? String(ongoing.length) : bets.status === 'loading' ? '…' : translate('common.unavailable');
+  const netValue = (report.status === 'ready' && net !== null)
+    ? `${net > 0 ? '+' : ''}${net} pts`
+    : (report.status === 'empty' || bankroll.status === 'empty')
+      ? '0 pts'
+      : report.status === 'loading'
+        ? '…'
+        : translate('common.unavailable');
+  const exposureValue = bankroll.status === 'ready'
+    ? `${exposure} pts`
+    : bankroll.status === 'empty'
+      ? '0 pts'
+      : bankroll.status === 'loading'
+        ? '…'
+        : translate('common.unavailable');
+  const ongoingValue = bets.status === 'ready'
+    ? String(ongoing.length)
+    : (bets.status === 'empty' || bankroll.status === 'empty')
+      ? '0'
+      : bets.status === 'loading'
+        ? '…'
+        : translate('common.unavailable');
   const metricsHtml = (bankroll.status === 'loading' && report.status === 'loading')
     ? renderSkeletonMetrics(3)
     : `<div class="metric-grid">${metricRow(translate('today.netPnl'), netValue)}${metricRow(translate('today.openExposure'), exposureValue)}${metricRow(translate('today.ongoingBets'), ongoingValue)}</div>`;
+
+  const setupBannerHtml = bankroll.status === 'empty'
+    ? `<section class="note-card warning" data-today-setup-prompt>
+        <div class="note-eyebrow">${escapeHtml(translate('today.setupRequiredEyebrow'))}</div>
+        <div class="note-title">${escapeHtml(translate('today.setupRequiredTitle'))}</div>
+        <p class="note-copy">${escapeHtml(translate('today.setupRequiredCopy'))}</p>
+        <div style="margin-top: 12px;"><button type="button" class="primary-button" data-tab-target="bankroll">${escapeHtml(translate('today.goToBankroll'))}</button></div>
+      </section>`
+    : '';
 
   const disciplineHtml = discipline.status === 'loading'
     ? `<section class="note-card" aria-hidden="true"><div class="note-eyebrow">${escapeHtml(translate('today.disciplineStatus'))}</div><div class="skeleton-left"><span class="skeleton-text short"></span><span class="skeleton-text heading"></span></div></section>`
@@ -69,6 +96,7 @@ export function renderTodayScreen(input: {
 
   return `<section class="${screenClass('today', activeTabId)}" id="screen-today" data-shell-tab-panel="today" aria-labelledby="today-title">
     ${screenHeader(translate('today.eyebrow'), translate('today.title'), 'today-title', `<button class="primary-button add-inline" type="button" data-open-manual-add>${escapeHtml(translate('today.quickAdd'))}</button>`)}
+    ${setupBannerHtml}
     ${metricsHtml}
     ${matchSourceHtml}
     ${disciplineHtml}
