@@ -45,6 +45,8 @@ generated serving data is intentionally gitignored; it must be uploaded to Supab
    port `5432`. Use this for the persistent Koyeb Node process. In **Project Settings -> Database ->
    SSL Configuration**, download the project CA certificate. Do not put an anon key, service-role
    key, database URL, or certificate in web code.
+   Keep a local copy at `.secrets/supabase-staging-ca.crt`; `.secrets/` is gitignored. Do not place
+   environment-specific certificates under `src/`.
 3. Copy the project ref from Project Settings. Then run:
 
 ```powershell
@@ -69,6 +71,9 @@ Miraichi backup before every schema change.
 The live adapter refuses to guess identities. If Supabase has no canonical current matches, live
 widget records cannot be published even when SportScore returns them. Upload the already-validated
 local serving snapshot before deploying:
+
+The adapter sends match rows in bounded batches of 500 inside one transaction. The 10,899-row
+snapshot therefore uses 22 match batches instead of 10,899 network round trips.
 
 ```powershell
 $env:APP_ENV='local'

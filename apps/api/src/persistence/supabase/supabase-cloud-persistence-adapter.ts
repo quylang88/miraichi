@@ -17,6 +17,70 @@ const text = (value: unknown) => String(value ?? '');
 const optionalText = (value: unknown) => value == null ? undefined : String(value);
 const dateText = (value: unknown) => value instanceof Date ? value.toISOString() : text(value);
 const jsonb = (value: unknown): string => JSON.stringify(value);
+const MATCH_UPSERT_BATCH_SIZE = 500;
+
+function matchUpsertRow(match: LocalMatch): Row {
+  return {
+    id: match.id,
+    competition_id: match.competition.id,
+    competition_name: match.competition.name,
+    competition_type: match.competition.type,
+    season: match.competition.season,
+    kickoff_utc: match.kickoffUtc,
+    status: match.status,
+    home_team_id: match.homeTeam.id,
+    home_team_name: match.homeTeam.name,
+    home_country_code: match.homeTeam.countryCode ?? null,
+    away_team_id: match.awayTeam.id,
+    away_team_name: match.awayTeam.name,
+    away_country_code: match.awayTeam.countryCode ?? null,
+    home_score: match.score.home,
+    away_score: match.score.away,
+    venue: match.venue ?? null,
+    round_label: match.round ?? null,
+    stage: match.stage ?? null,
+    neutral_venue: match.neutralVenue ?? null,
+    source_refs: match.sourceRefs,
+    updated_at: match.updatedAt
+  };
+}
+
+async function upsertMatchBatch(
+  client: PostgresQueryClient,
+  owner: string,
+  snapshotId: string,
+  matches: readonly LocalMatch[]
+): Promise<void> {
+  await client.query(`
+    insert into miraichi_app.match_record (
+      id, owner_profile_id, snapshot_id, competition_id, competition_name, competition_type,
+      season, kickoff_utc, status, home_team_id, home_team_name, home_country_code,
+      away_team_id, away_team_name, away_country_code, home_score, away_score, venue,
+      round_label, stage, neutral_venue, source_refs, updated_at
+    )
+    select
+      row.id, $1, $2, row.competition_id, row.competition_name, row.competition_type,
+      row.season, row.kickoff_utc, row.status, row.home_team_id, row.home_team_name,
+      row.home_country_code, row.away_team_id, row.away_team_name, row.away_country_code,
+      row.home_score, row.away_score, row.venue, row.round_label, row.stage,
+      row.neutral_venue, row.source_refs, row.updated_at
+    from jsonb_to_recordset($3::jsonb) as row (
+      id text, competition_id text, competition_name text, competition_type text,
+      season text, kickoff_utc timestamptz, status text, home_team_id text,
+      home_team_name text, home_country_code text, away_team_id text, away_team_name text,
+      away_country_code text, home_score integer, away_score integer, venue text,
+      round_label text, stage text, neutral_venue boolean, source_refs jsonb, updated_at timestamptz
+    )
+    on conflict (id) do update set
+      snapshot_id=excluded.snapshot_id,
+      competition_type=excluded.competition_type,
+      status=excluded.status,
+      home_score=excluded.home_score,
+      away_score=excluded.away_score,
+      source_refs=excluded.source_refs,
+      updated_at=excluded.updated_at
+  `, [owner, snapshotId, jsonb(matches.map(matchUpsertRow))]);
+}
 
 function mapDraft(row: Row): AddBetDraft {
   return {
@@ -140,7 +204,7 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
     createBankrollLedgerEntry: async (input: CreateBankrollLedgerEntryInput) => { assertOwner(input.ownerProfileId); if((input.entryType==='deposit'&&input.amountPoints<=0)||(input.entryType==='withdrawal'&&input.amountPoints>=0))throw new Error('Manual ledger entry sign is invalid');if(!Number.isFinite(input.amountPoints)||input.amountPoints===0)throw new Error('Manual ledger amount is invalid'); const created=now(); return client.transaction(async (tx) => { const inserted=await tx.query<Row>('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,occurred_at,created_at) values ($1,$2,$3,$4,$5,$6,$7,$8) returning *',[input.entryId,input.ownerProfileId,input.accountId,input.entryType,input.amountPoints,input.note ?? null,input.occurredAt,created]); const balanceGuard=input.entryType==='withdrawal'?' and current_balance_points+$3>=0':'';const updated=await tx.query<Row>(`update miraichi_app.bankroll_account set current_balance_points=current_balance_points+$3,updated_at=$4 where owner_profile_id=$1 and account_id=$2 and archived=false${balanceGuard} returning account_id`,[input.ownerProfileId,input.accountId,input.amountPoints,created]); if(!updated.rowCount) throw new Error(input.entryType==='withdrawal'?'Insufficient bankroll balance or account unavailable':'Bankroll account not found or archived'); return inserted.rows[0] ? mapLedger(inserted.rows[0]) : { ...input, createdAt:created }; }); },
     listBankrollLedgerEntries: async (owner,accountId) => { assertOwner(owner); return (await client.query<Row>('select * from miraichi_app.bankroll_ledger_entry where owner_profile_id=$1 and account_id=$2 order by occurred_at desc',[owner,accountId])).rows.map(mapLedger); },
     createBankrollTransfer: async (input: CreateBankrollTransferInput): Promise<BankrollTransferResult> => { assertOwner(input.ownerProfileId); if(input.fromAccountId===input.toAccountId||!Number.isFinite(input.amountPoints)||input.amountPoints<=0)throw new Error('Transfer payload is invalid'); return client.transaction(async(tx)=>{const created=now();const out=(await tx.query<Row>('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,transfer_id,occurred_at,created_at) values ($1,$2,$3,\'transfer_out\',$4,$5,$6,$7,$8) returning *',[`transfer:${input.transferId}:out`,input.ownerProfileId,input.fromAccountId,-input.amountPoints,input.note??null,input.transferId,input.occurredAt,created])).rows[0];const incoming=(await tx.query<Row>('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,transfer_id,occurred_at,created_at) values ($1,$2,$3,\'transfer_in\',$4,$5,$6,$7,$8) returning *',[`transfer:${input.transferId}:in`,input.ownerProfileId,input.toAccountId,input.amountPoints,input.note??null,input.transferId,input.occurredAt,created])).rows[0];const from=(await tx.query<Row>('update miraichi_app.bankroll_account set current_balance_points=current_balance_points-$3,updated_at=$4 where owner_profile_id=$1 and account_id=$2 and archived=false and current_balance_points>=$3 returning *',[input.ownerProfileId,input.fromAccountId,input.amountPoints,created])).rows[0];if(!from)throw new Error('Insufficient bankroll balance or source account unavailable');const to=(await tx.query<Row>('update miraichi_app.bankroll_account set current_balance_points=current_balance_points+$3,updated_at=$4 where owner_profile_id=$1 and account_id=$2 and archived=false returning *',[input.ownerProfileId,input.toAccountId,input.amountPoints,created])).rows[0];if(!out||!incoming||!to)throw new Error('Transfer transaction failed');return{fromAccount:mapAccount(from),toAccount:mapAccount(to),outEntry:mapLedger(out),inEntry:mapLedger(incoming)};}); },
-    upsertMatchSnapshot: async (owner,snapshot: CloudMatchSnapshot) => { assertOwner(owner); await client.transaction(async (tx) => { await tx.query(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.match_snapshot (snapshot_id,owner_profile_id,generated_at,imported_at,sources) values ($2,$1,$3,$4,$5) on conflict (snapshot_id) do update set generated_at=excluded.generated_at,imported_at=excluded.imported_at,sources=excluded.sources`,[owner,snapshot.snapshotId,snapshot.generatedAt,snapshot.importedAt,jsonb(snapshot.sources)]); for(const match of snapshot.matches) await tx.query(`insert into miraichi_app.match_record (id,owner_profile_id,snapshot_id,competition_id,competition_name,competition_type,season,kickoff_utc,status,home_team_id,home_team_name,home_country_code,away_team_id,away_team_name,away_country_code,home_score,away_score,venue,round_label,stage,neutral_venue,source_refs,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23) on conflict (id) do update set snapshot_id=excluded.snapshot_id,competition_type=excluded.competition_type,status=excluded.status,home_score=excluded.home_score,away_score=excluded.away_score,source_refs=excluded.source_refs,updated_at=excluded.updated_at`,[match.id,owner,snapshot.snapshotId,match.competition.id,match.competition.name,match.competition.type,match.competition.season,match.kickoffUtc,match.status,match.homeTeam.id,match.homeTeam.name,match.homeTeam.countryCode ?? null,match.awayTeam.id,match.awayTeam.name,match.awayTeam.countryCode ?? null,match.score.home,match.score.away,match.venue ?? null,match.round ?? null,match.stage ?? null,match.neutralVenue ?? null,jsonb(match.sourceRefs),match.updatedAt]); }); },
+    upsertMatchSnapshot: async (owner,snapshot: CloudMatchSnapshot) => { assertOwner(owner); await client.transaction(async (tx) => { await tx.query(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.match_snapshot (snapshot_id,owner_profile_id,generated_at,imported_at,sources) values ($2,$1,$3,$4,$5) on conflict (snapshot_id) do update set generated_at=excluded.generated_at,imported_at=excluded.imported_at,sources=excluded.sources`,[owner,snapshot.snapshotId,snapshot.generatedAt,snapshot.importedAt,jsonb(snapshot.sources)]); for(let index=0;index<snapshot.matches.length;index+=MATCH_UPSERT_BATCH_SIZE)await upsertMatchBatch(tx,owner,snapshot.snapshotId,snapshot.matches.slice(index,index+MATCH_UPSERT_BATCH_SIZE)); }); },
     listCloudMatches: async (owner,query: LocalMatchSnapshotQuery): Promise<LocalMatchFeedResponse> => { assertOwner(owner); const values: unknown[]=[owner]; const where=['owner_profile_id=$1']; if(query.date){ if(query.timezone && query.timezone !== 'UTC'){ values.push(query.date, query.timezone); where.push(`timezone($${values.length}, kickoff_utc)::date=$${values.length-1}::date`); } else { values.push(query.date); where.push(`kickoff_utc::date=$${values.length}::date`); } } if(query.competitionId){values.push(query.competitionId);where.push(`competition_id=$${values.length}`);} if(query.status){values.push(query.status);where.push(`status=$${values.length}`);} const rows=await client.query<Row>(`select * from miraichi_app.match_record where ${where.join(' and ')} order by kickoff_utc`,values); return {matches:rows.rows.map(mapMatch),snapshot:await status()}; },
     findCloudMatchById: async (owner,id) => { assertOwner(owner); const row=(await client.query<Row>('select * from miraichi_app.match_record where owner_profile_id=$1 and id=$2',[owner,id])).rows[0]; return row ? mapMatch(row) : null; },
     getCloudMatchSnapshotStatus: async (owner) => { assertOwner(owner); return status(); },

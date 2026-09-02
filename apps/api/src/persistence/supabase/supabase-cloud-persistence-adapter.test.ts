@@ -163,9 +163,36 @@ describe('supabase cloud persistence adapter', () => {
     const snapshotCall = client.calls.find((call) => call.text.includes('miraichi_app.match_snapshot'));
     const matchCall = client.calls.find((call) => call.text.includes('miraichi_app.match_record'));
     expect(snapshotCall?.values[4]).toBe(JSON.stringify(snapshot.sources));
-    expect(matchCall?.text).toContain('$6');
-    expect(matchCall?.values[5]).toBe('club');
-    expect(matchCall?.values[21]).toBe(JSON.stringify(snapshot.matches[0]!.sourceRefs));
+    const rows = JSON.parse(String(matchCall?.values[2])) as Array<Record<string, unknown>>;
+    expect(matchCall?.text).toContain('$3::jsonb');
+    expect(rows[0]?.competition_type).toBe('club');
+    expect(rows[0]?.source_refs).toEqual(snapshot.matches[0]!.sourceRefs);
+  });
+
+  it('upserts large match snapshots in bounded batches inside one transaction', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    const matches = Array.from({ length: 1_201 }, (_, index) => ({
+      id: `match-${index}`,
+      competition: { id: 'fixture-cup', name: 'Fixture Cup', type: 'club' as const, season: '2026' },
+      kickoffUtc: '2026-06-11T19:00:00.000Z',
+      status: 'scheduled' as const,
+      homeTeam: { id: `home-${index}`, name: `Home ${index}` },
+      awayTeam: { id: `away-${index}`, name: `Away ${index}` },
+      score: { home: null, away: null },
+      sourceRefs: [],
+      updatedAt: '2026-07-02T00:00:00.000Z'
+    }));
+
+    await adapter.upsertMatchSnapshot('owner-primary', {
+      snapshotId: 'large-snapshot', generatedAt: '2026-07-02T00:00:00.000Z',
+      importedAt: '2026-07-02T00:01:00.000Z', sources: [], matches
+    });
+
+    const batches = client.calls.filter((call) => call.text.includes('miraichi_app.match_record'));
+    expect(client.transactions).toBe(1);
+    expect(batches).toHaveLength(3);
+    expect(batches.map((call) => (JSON.parse(String(call.values[2])) as unknown[]).length)).toEqual([500, 500, 201]);
   });
 
   it('reads the canonical club competition type from persisted match rows', async () => {

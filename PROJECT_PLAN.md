@@ -98,6 +98,10 @@
   645 tests across 124 files plus all lifecycle, product-boundary, lint, TypeScript, architecture,
   and type-safety gates. A new owner upload attempt still requires the downloaded project CA and
   is staging evidence, not local approval.
+- Pre-upload review then found the snapshot adapter issued one remote INSERT per match. A second
+  RED -> GREEN maintenance slice replaced 10,899 sequential match requests with 22 bounded
+  500-row JSONB batches inside the same atomic transaction. The CA is kept in gitignored
+  `.secrets/`, never under application source.
 
 ## Product Boundary
 

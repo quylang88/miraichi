@@ -41,6 +41,7 @@ python/
 .env.production.local
 *.env
 !.env.example
+.secrets/
 
 # Logs and databases
 logs/
