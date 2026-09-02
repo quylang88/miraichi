@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { LocalMatch, LocalMatchDetail } from '@miraichi/shared';
+import { toProviderNeutralLiveMatchSnapshot, type LocalMatch, type LocalMatchDetail } from '@miraichi/shared';
+import { liveSnapshotFixture } from '../../../../../tests/fixtures/live-match-snapshot.js';
 import { renderMatchesScreen, renderMatchDetailScreen } from './matches-screen.js';
 import { renderMatchDetailView } from '../match-detail-view.js';
 import { createTranslator } from '../../services/i18n-service.js';
@@ -42,6 +43,34 @@ const mockChampionsLeagueMatch: LocalMatch = {
 };
 
 describe('matches screen UI refinements', () => {
+  it('renders factual live score/minute and partial stale states without a refresh button', () => {
+    const translate = createTranslator('en');
+    const html = renderMatchesScreen({
+      activeTabId: 'matches',
+      translate,
+      locale: 'en',
+      matchFeed: { status: 'loading', date: '2026-09-02' },
+      liveMatches: {
+        status: 'ready',
+        snapshot: toProviderNeutralLiveMatchSnapshot(liveSnapshotFixture),
+        stale: true,
+        partial: true,
+        warningCode: 'upstream_timeout'
+      },
+      timezone: 'UTC',
+      filters: { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set() },
+      searchQuery: '',
+      isFilterPanelOpen: false
+    });
+
+    expect(html).toContain('data-live-match-id="match-premier-league-arsenal-liverpool-2026-09-02"');
+    expect(html).toContain('2 – 1');
+    expect(html).toContain("67&#39;");
+    expect(html).toContain('Partial coverage');
+    expect(html).toContain('Last update is stale');
+    expect(html).not.toMatch(/<button[^>]*>[^<]*Refresh/iu);
+  });
+
   it('does not render Data status or Snapshot generated metadata bar on matches screen', () => {
     const translate = createTranslator('en');
     const feed: MatchFeedViewState = {

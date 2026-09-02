@@ -24,7 +24,10 @@ const filesToVerify = [
   'apps/web/src/components/screens/bets-screen.ts',
   'apps/web/src/components/screens/bankroll-screen.ts',
   'apps/web/src/services/settings-service.ts',
-  'apps/web/src/services/i18n-service.ts'
+  'apps/web/src/services/i18n-service.ts',
+  'apps/web/src/services/live-match-service.ts',
+  'apps/web/src/live/live-refresh-lifecycle.ts',
+  'apps/web/src/live/pull-down-refresh.ts'
 ];
 
 let failed = false;
@@ -144,7 +147,7 @@ const serviceWorkerPath = path.join(ROOT_DIR, 'apps/web/public/service-worker.ts
 if (fs.existsSync(serviceWorkerPath)) {
   const content = fs.readFileSync(serviceWorkerPath, 'utf8');
   const requiredCacheMarkers = [
-    "miraichi-shell-v6-owner-auth",
+    "miraichi-shell-v7-live-flow",
     "/apps/web/src/auth-bootstrap.js",
     "/apps/web/src/config/navigation-tabs.js",
     "/apps/web/src/components/app-shell.js"

@@ -1,6 +1,7 @@
 import { getSafeNavigationTabId, navigationTabs, type NavigationTab } from '../config/navigation-tabs.js';
 import { t, type SupportedLocale, type TranslateFunction } from '../services/i18n-service.js';
 import type { MatchFeedViewState } from '../services/match-feed-service.js';
+import type { LiveMatchViewState } from '../services/live-match-service.js';
 import type { BetRecordsViewState } from '../services/bet-record-service.js';
 import type { BankrollViewState } from '../services/bankroll-service.js';
 import type { BetReportPeriod, BetReportViewState, DisciplineConfigViewState } from '../services/core-betting-service.js';
@@ -15,6 +16,7 @@ export { getRibbonDates } from './screens/matches-screen.js';
 
 const closeIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const defaultMatchFeed: MatchFeedViewState = Object.freeze({ status: 'loading', date: new Date().toISOString().slice(0, 10) });
+const defaultLiveMatches: LiveMatchViewState = Object.freeze({ status: 'loading' });
 const defaultBetRecordsState: BetRecordsViewState = Object.freeze({ status: 'loading' });
 const defaultBankrollState: BankrollViewState = Object.freeze({ status: 'loading' });
 const defaultDisciplineConfigState: DisciplineConfigViewState = Object.freeze({ status: 'loading' });
@@ -52,6 +54,7 @@ function renderSheets(bankroll: BankrollViewState, translate: TranslateFunction)
 
 export function renderAppShell({
   activeTabId = 'today', translate = t, locale = 'en', matchFeed = defaultMatchFeed, timezone = 'local',
+  liveMatches = defaultLiveMatches,
   filters = { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set<string>() },
   searchQuery = '', isFilterPanelOpen = false, betRecordsState = defaultBetRecordsState,
   bankrollState = defaultBankrollState, betRecordFilter = 'ongoing', bankrollView = 'overview',
@@ -64,6 +67,7 @@ export function renderAppShell({
   readonly translate?: TranslateFunction;
   readonly locale?: SupportedLocale;
   readonly matchFeed?: MatchFeedViewState;
+  readonly liveMatches?: LiveMatchViewState;
   readonly timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh';
   readonly filters?: MatchFilters;
   readonly searchQuery?: string;
@@ -87,9 +91,9 @@ export function renderAppShell({
   const resolvedTimeZone = timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone;
   const panels = [
     renderTodayScreen({ activeTabId: safeActiveTabId, translate, bets: betRecordsState, bankroll: bankrollState, discipline: disciplineConfigState, report: todayReportState, matchFeed, locale, timezone }),
-    renderMatchesScreen({ activeTabId: safeActiveTabId, translate, locale, matchFeed, timezone, filters, searchQuery, isFilterPanelOpen, isCalendarOpen: isMatchesCalendarOpen, ...(matchesCalendarMonth !== undefined ? { calendarMonth: matchesCalendarMonth } : {}) }),
+    renderMatchesScreen({ activeTabId: safeActiveTabId, translate, locale, matchFeed, liveMatches, timezone, filters, searchQuery, isFilterPanelOpen, isCalendarOpen: isMatchesCalendarOpen, ...(matchesCalendarMonth !== undefined ? { calendarMonth: matchesCalendarMonth } : {}) }),
     renderBetsScreen({ activeTabId: safeActiveTabId, translate, state: betRecordsState, filter: betRecordFilter, bankroll: bankrollState }),
     renderBankrollScreen({ activeTabId: safeActiveTabId, translate, locale, timeZone: resolvedTimeZone, state: bankrollState, view: bankrollView, disciplineConfigState, reportState, reportPeriod, customCalendarMonth, customRangeStart, customRangeEnd })
   ].join('');
-  return `<div class="production-page"><div class="app-shell" data-production-shell="phase-5-9" data-production-baseline="black-apple-ledger" aria-label="${escapeHtml(translate('common.appLabel'))}"><main class="main-scroll" id="main-scroll" data-active-tab="${escapeHtml(safeActiveTabId)}" aria-label="${escapeHtml(translate(activeTab.descriptionKey, activeTab.fallbackDescription))}">${panels}${renderMatchDetailScreen(translate)}</main>${renderBottomNavigation({ activeTabId: safeActiveTabId, tabs: navigationTabs, translate })}${renderSheets(bankrollState, translate)}</div></div>`;
+  return `<div class="production-page"><div class="app-shell" data-production-shell="phase-5-9" data-production-baseline="black-apple-ledger" aria-label="${escapeHtml(translate('common.appLabel'))}"><div class="pull-refresh-indicator" id="pull-refresh-indicator" data-pull-progress="0" aria-live="polite">${escapeHtml(translate('live.pullToRefresh'))}</div><main class="main-scroll" id="main-scroll" data-active-tab="${escapeHtml(safeActiveTabId)}" aria-label="${escapeHtml(translate(activeTab.descriptionKey, activeTab.fallbackDescription))}">${panels}${renderMatchDetailScreen(translate)}</main>${renderBottomNavigation({ activeTabId: safeActiveTabId, tabs: navigationTabs, translate })}${renderSheets(bankrollState, translate)}</div></div>`;
 }

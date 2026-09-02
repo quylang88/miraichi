@@ -27,6 +27,9 @@ import { renderTodayScreen } from './components/screens/today-screen.js';
 import { renderMatchesScreen } from './components/screens/matches-screen.js';
 import { renderBetsScreen } from './components/screens/bets-screen.js';
 import { renderBankrollScreen } from './components/screens/bankroll-screen.js';
+import { refreshLiveMatches, type LiveMatchViewState } from './services/live-match-service.js';
+import { createLiveRefreshLifecycle } from './live/live-refresh-lifecycle.js';
+import { bindPullDownRefresh } from './live/pull-down-refresh.js';
 
 
 const root = document.getElementById('app-root');
@@ -89,6 +92,9 @@ let matchFeedState: MatchFeedViewState = {
   status: 'loading',
   date: todayLocalDate()
 };
+let liveMatchState: LiveMatchViewState = { status: 'loading' };
+let liveMatchRequestVersion = 0;
+let unbindPullDownRefresh: (() => void) | null = null;
 
 let matchDetailRetryTimer: number | null = null;
 let matchDetailAbortController: AbortController | null = null;
@@ -139,6 +145,7 @@ function updateMatchesScreenView(): void {
     translate,
     locale: settings.locale,
     matchFeed: matchFeedState,
+    liveMatches: liveMatchState,
     timezone: settings.timezone,
     filters: activeFilters,
     searchQuery: currentSearchQuery,
@@ -209,6 +216,7 @@ function render(activeTabId: string, fullRebuild = false): void {
       translate,
       locale: settings.locale,
       matchFeed: matchFeedState,
+      liveMatches: liveMatchState,
       timezone: settings.timezone,
       filters: activeFilters,
       searchQuery: currentSearchQuery,
@@ -229,6 +237,7 @@ function render(activeTabId: string, fullRebuild = false): void {
     });
     appRoot.querySelector('.app-shell')?.setAttribute('data-locale', settings.locale);
     appRoot.querySelector('.app-shell')?.setAttribute('data-density', settings.displayDensity);
+    bindCurrentPullDownRefresh();
   } else {
     updateTodayScreenView();
     updateMatchesScreenView();
@@ -1268,7 +1277,38 @@ async function refreshMatchFeed(): Promise<void> {
   }
 }
 
+async function refreshLiveMatchView(reason: 'visible' | 'manual'): Promise<void> {
+  const requestVersion = ++liveMatchRequestVersion;
+  const result = await refreshLiveMatches(reason);
+  if (requestVersion !== liveMatchRequestVersion) return;
+  liveMatchState = result;
+  updateMatchesScreenView();
+}
+
+function bindCurrentPullDownRefresh(): void {
+  unbindPullDownRefresh?.();
+  const scroll = document.getElementById('main-scroll');
+  if (!scroll) return;
+  unbindPullDownRefresh = bindPullDownRefresh(scroll, {
+    onRefresh: () => {
+      void Promise.all([refreshLiveMatchView('manual'), refreshMatchFeed()]);
+    },
+    onProgress: (progress) => {
+      const indicator = document.getElementById('pull-refresh-indicator');
+      if (!indicator) return;
+      indicator.dataset.pullProgress = String(progress);
+      indicator.style.setProperty('--pull-progress', String(progress));
+    }
+  });
+}
+
 render(getInitialTabId());
+const liveRefreshLifecycle = createLiveRefreshLifecycle({
+  documentTarget: document,
+  windowTarget: window,
+  refresh: () => refreshLiveMatchView('visible')
+});
+liveRefreshLifecycle.start();
 void refreshMatchFeed();
 void refreshBetRecords();
 void refreshBankroll();
