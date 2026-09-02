@@ -13,7 +13,7 @@
 - **Completed phase**: `phase:integration-test FotMob daily terminal results and current-edition revalidation` — all eight TDD slices and the local release gate passed on 2026-08-31.
 - **Completed phase**: `phase:maintenance FotMob owner-local current data operations` — guarded current hydration, 24-hour current revalidation, and terminal-result once/watch operation remain available, but no provider operation is part of the active product phase.
 - **Completed phase**: `phase:integration-test Single-bankroll usable owner flow` — the single visible bankroll, internal compatibility account, reviewed bankroll/bet/psychology remediations, sequential TDD slices, and complete local release gate all passed on 2026-09-01.
-- **Active phase**: `phase:implementation-plan Owner-hosted API and visibility-driven live overlay` — the owner approved Koyeb Free plus Supabase Free, one-origin owner authentication, hourly background refresh, five-minute visible refresh, pull-down refresh without a button, SportScore widget-only live score/status/minute, exact static attribution, and one local commit after every TDD slice on 2026-09-02.
+- **Completed phase**: `phase:integration-test Owner-hosted API and visibility-driven live overlay` — all eight sequential TDD slices and the complete local release gate passed on 2026-09-02. No deployment, push, or production promotion occurred.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45 current competition editions. No cloud staging, owner-feedback release gate, or production promotion has run.
@@ -36,6 +36,53 @@
 - **Decision**: `docs/decisions/ADR-0051-owner-hosted-api-and-live-overlay.md`.
 - **Design**: `docs/superpowers/specs/2026-09-02-owner-hosted-api-live-overlay-design.md`.
 - **Implementation plan**: `docs/superpowers/plans/2026-09-02-owner-hosted-api-live-overlay.md`.
+
+### TDD and commit evidence
+
+- Planning gate: `3283027 docs: approve owner hosted live flow`.
+- Slice 1, hosted single-origin runtime: `cd56e94 feat: add hosted single origin runtime`.
+- Slice 2, owner-only session boundary: `4494a49 feat: protect hosted app with owner session`.
+- Slice 3, durable provider-neutral live state and lease: `97dfcc5 feat: persist provider neutral live overlay`.
+- Slice 4, widget-only live client/adapter/coordinator/routes: `dc8f5d1 feat: add widget-only live refresh flow`.
+- Slice 5, hourly wake-up and deployment runbook: `053a555 feat: add hourly hosted live operation`.
+- Slice 6, visible polling, pull-down, and live UI: `ae6e66e feat: add visibility-driven live match UI`.
+- Slice 7, exact static attribution: `0185394 fix: make SportScore attribution static`.
+- Slice 8 closes the cross-module terminal projection and release evidence in the local closeout
+  commit after all release gates pass.
+
+### Local closeout evidence
+
+- The hosted integration chain proves password login, secure owner session enforcement, visible
+  live refresh, bounded terminal recheck after a tracked match disappears, confirmed FT score
+  projection into `GET /api/v1/matches`, provider-locator redaction, and logout.
+- A confirmed terminal overlay is applied only when canonical match ID, competition ID, kickoff,
+  and both canonical team IDs match exactly, and only when its evidence is not older than the
+  canonical record. Live, halftime, suspended, mismatched, and stale overlays cannot mutate the
+  terminal match projection.
+- `pnpm run verify:release` passed on 2026-09-02: product-boundary and lifecycle verification,
+  642 unit tests across 124 files, lint, TypeScript, architecture and type-safety audits, 12 focused
+  SportScore contract tests, 52 season integration tests, 35 FotMob terminal integration tests,
+  the hosted owner/live integration, endpoint E2E, and PWA verification.
+- The SportScore contract verifier used only the pinned offline widget contract and reported
+  `networkUsed: false`. No SportScore `/api/v1` request, provider data request, active-data deletion,
+  staging deployment, production schema application, push, or production promotion occurred.
+- The operational deployment sequence is documented in
+  `docs/operations/KOYEB-SUPABASE-OWNER-HOSTING.md`. Koyeb's generated HTTPS domain is sufficient;
+  Cloudflare remains unnecessary for this MVP.
+
+### Phase transition recommendation
+
+- The implementation and local integration phase is complete. The earliest safe next phase is
+  `phase:staging Owner-hosted API and visibility-driven live overlay`.
+- Staging is blocked until the owner creates/configures the external Supabase and Koyeb projects,
+  stores secrets in their dashboards, links a GitHub repository containing these local commits,
+  and explicitly authorizes the required push/deployment. Secrets must not be pasted into chat or
+  committed.
+- The staging exit gate will require `pnpm run verify:staging`, a real Koyeb deployment, migration
+  and current-serving-snapshot sync to Supabase, authenticated owner-flow smoke, hourly refresh
+  smoke, and fresh recorded evidence. Local verification is not staging approval.
+- Historical-season hydration and lazy full match detail remain explicitly `PENDING` and are not
+  prerequisites for this staging phase.
 
 ## Product Boundary
 
@@ -198,7 +245,7 @@ The checklist below records prior work; it is not current permission to call Spo
 - Active `apps/api/data` remained at 41 matches during review. Local checks are not staging or
   production approval.
 
-## Next Gate
+## Prior FotMob Phase Closeout
 
 The owner-approved FotMob current-season hydration code slice is complete locally. ADR-0049 remains
 the controlling risk boundary: FotMob is primary, ESPN is disabled, and anti-bot circumvention is

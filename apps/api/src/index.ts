@@ -20,6 +20,7 @@ import { createCloudPersistenceAdapter } from './persistence/create-cloud-persis
 import { ServingMatchStoreRepository } from './repositories/serving-match-store-repository.js';
 import { CloudMatchSnapshotRepository } from './repositories/cloud-match-snapshot-repository.js';
 import { FallbackMatchSnapshotRepository } from './repositories/fallback-match-snapshot-repository.js';
+import { TerminalLiveProjectionRepository } from './repositories/terminal-live-projection-repository.js';
 import { assertHostedWebReady, serveHostedWeb } from './hosted-static-server.js';
 import { enforceOriginBoundary } from './http-origin-boundary.js';
 import { readOwnerAuthConfig } from './auth/owner-auth.js';
@@ -82,7 +83,7 @@ if (hostedWebMode !== 'disabled' && hostedWebMode !== 'required') {
 }
 const hostedWebRoot = path.resolve(ROOT_DIR, process.env.HOSTED_WEB_ROOT?.trim() || 'apps/web/dist');
 if (hostedWebMode === 'required') assertHostedWebReady(hostedWebRoot);
-const matchRepository = new FallbackMatchSnapshotRepository(
+const canonicalMatchRepository = new FallbackMatchSnapshotRepository(
   new ServingMatchStoreRepository(),
   new CloudMatchSnapshotRepository(cloudDependencies.adapter, cloudConfig.ownerProfileId)
 );
@@ -98,11 +99,16 @@ const widgetTimeoutMs = Number(process.env.SPORTSCORE_WIDGET_TIMEOUT_MS?.trim() 
 const liveCoordinator = new LiveRefreshCoordinator({
   ownerProfileId: cloudConfig.ownerProfileId,
   persistence: cloudDependencies.adapter,
-  repository: matchRepository,
+  repository: canonicalMatchRepository,
   source: sportScoreLiveMode === 'widget'
     ? new SportScoreWidgetClient({ timeoutMs: widgetTimeoutMs })
     : disabledLiveSource
 });
+const matchRepository = new TerminalLiveProjectionRepository(
+  canonicalMatchRepository,
+  cloudDependencies.adapter,
+  cloudConfig.ownerProfileId
+);
 
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url || '/', 'http://localhost');
