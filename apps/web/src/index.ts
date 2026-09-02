@@ -9,6 +9,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = pathModule.dirname(__filename);
 const ROOT_DIR = pathModule.resolve(__dirname, '../../../');
 
+// Dev live-reload: track connected SSE clients
+const liveReloadClients: Set<http.ServerResponse> = new Set();
+
 function loadEnv(rootDir: string) {
   const envFiles = ['.env'];
   for (const file of envFiles) {
@@ -39,6 +42,19 @@ loadEnv(ROOT_DIR);
 const server = http.createServer((req, res) => {
   const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   const url = requestUrl.pathname;
+
+  // Dev live-reload SSE endpoint
+  if (url === '/dev/live-reload') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+    res.write('data: connected\n\n');
+    liveReloadClients.add(res);
+    req.on('close', () => liveReloadClients.delete(res));
+    return;
+  }
 
   // SPA Entry
   if (url === '/' || url === '/index.html') {
@@ -145,6 +161,29 @@ if (process.argv[1] === __filename) {
   server.listen(PORT, () => {
     console.log(`[Web Server] Running at ${process.env.APP_URL}`);
   });
+
+  // Live-reload: watch source directories and notify browsers via SSE
+  const watchDirs = [
+    pathModule.join(ROOT_DIR, 'apps/web/src'),
+    pathModule.join(ROOT_DIR, 'packages/ui/src'),
+    pathModule.join(ROOT_DIR, 'packages/shared/src'),
+    pathModule.join(ROOT_DIR, 'packages/config/src'),
+  ];
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  for (const dir of watchDirs) {
+    if (fs.existsSync(dir)) {
+      fs.watch(dir, { recursive: true }, (_event, filename) => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          const type = filename && filename.endsWith('.css') ? 'css' : 'reload';
+          console.log(`[Live Reload] ${type}: ${filename}`);
+          for (const client of liveReloadClients) {
+            client.write(`data: ${type}\n\n`);
+          }
+        }, 100);
+      });
+    }
+  }
 }
 
 export function getIndexHtml() {
@@ -188,6 +227,22 @@ export function getIndexHtml() {
   <div id="app-root" aria-live="polite">
     <div class="shell-loading">Loading Miraichi...</div>
   </div>
+  <script>
+    (function() {
+      if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
+      var es = new EventSource('/dev/live-reload');
+      es.onmessage = function(e) {
+        if (e.data === 'css') {
+          document.querySelectorAll('link[rel=stylesheet]').forEach(function(link) {
+            var href = link.getAttribute('href');
+            if (href) link.setAttribute('href', href.split('?')[0] + '?t=' + Date.now());
+          });
+        } else if (e.data === 'reload') {
+          location.reload();
+        }
+      };
+    })();
+  </script>
 </body>
 </html>
 `;
