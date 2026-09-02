@@ -13,6 +13,7 @@
     "build:web-static": "pnpm --filter web run build:static",
     "dev:api": "pnpm --filter api run dev",
     "start:hosted": "pnpm --filter api run start",
+    "auth:hash-password": "tsx scripts/hash-owner-password.ts",
     "dev:worker": "pnpm --filter worker run dev",
     "data:build:serving:matches": "tsx scripts/build-serving-match-store.ts",
     "data:validate:serving:matches": "tsx scripts/build-serving-match-store.ts --validate-only",

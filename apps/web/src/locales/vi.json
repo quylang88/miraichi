@@ -300,5 +300,6 @@
   "detail.noStats": "Thống kê không khả dụng.",
   "detail.partialData": "Nguồn không cung cấp đầy đủ một số dữ kiện.",
   "detail.assist": "Kiến tạo: {name}",
-  "detail.playerIn": "Vào sân: {name}"
+  "detail.playerIn": "Vào sân: {name}",
+  "auth.signOut": "Đăng xuất"
 }

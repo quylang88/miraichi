@@ -300,5 +300,6 @@
   "detail.noStats": "Statistics unavailable.",
   "detail.partialData": "Some factual detail is unavailable from the source.",
   "detail.assist": "Assist: {name}",
-  "detail.playerIn": "In: {name}"
+  "detail.playerIn": "In: {name}",
+  "auth.signOut": "Sign out"
 }

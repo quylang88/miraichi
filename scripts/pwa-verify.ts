@@ -14,6 +14,7 @@ const filesToVerify = [
   'apps/web/public/service-worker.ts',
   'apps/web/public/icons/icon.svg',
   'apps/web/src/pwa/register-service-worker.ts',
+  'apps/web/src/auth-bootstrap.ts',
   'apps/web/src/shell-entry.ts',
   'apps/web/src/config/navigation-tabs.ts',
   'apps/web/src/components/app-shell.ts',
@@ -84,11 +85,17 @@ if (fs.existsSync(webServerPath)) {
     console.log('  ✅ Service worker registration script import found.');
   }
 
-  if (!content.includes('/apps/web/src/shell-entry.js')) {
-    console.error('  ❌ Production shell missing shell-entry.js script import.');
+  if (!content.includes('/apps/web/src/auth-bootstrap.js')) {
+    console.error('  ❌ Production shell missing owner auth bootstrap script import.');
     failed = true;
   } else {
-    console.log('  ✅ Production shell entry script import found.');
+    console.log('  ✅ Owner auth bootstrap script import found.');
+  }
+  if (content.includes('src="/apps/web/src/shell-entry.js"')) {
+    console.error('  ❌ Production shell bypasses owner auth with a direct shell-entry script import.');
+    failed = true;
+  } else {
+    console.log('  ✅ Production shell does not bypass owner auth.');
   }
 
   if (!content.includes('id="app-root"')) {
@@ -104,6 +111,7 @@ if (fs.existsSync(webServerPath)) {
 
 // 2a. Verify production shell is TypeScript-first and uses the accepted four-tab backbone
 const productionShellFiles = [
+  'apps/web/src/auth-bootstrap.ts',
   'apps/web/src/shell-entry.ts',
   'apps/web/src/config/navigation-tabs.ts',
   'apps/web/src/components/app-shell.ts',
@@ -136,8 +144,8 @@ const serviceWorkerPath = path.join(ROOT_DIR, 'apps/web/public/service-worker.ts
 if (fs.existsSync(serviceWorkerPath)) {
   const content = fs.readFileSync(serviceWorkerPath, 'utf8');
   const requiredCacheMarkers = [
-    "miraichi-shell-v5-phase-5-12-quality-up",
-    "/apps/web/src/shell-entry.js",
+    "miraichi-shell-v6-owner-auth",
+    "/apps/web/src/auth-bootstrap.js",
     "/apps/web/src/config/navigation-tabs.js",
     "/apps/web/src/components/app-shell.js"
   ];
@@ -148,6 +156,19 @@ if (fs.existsSync(serviceWorkerPath)) {
       failed = true;
     } else {
       console.log(`  ✅ Service worker Phase 5.12 cache marker found: ${marker}`);
+    }
+  }
+}
+
+const ownerAuthBootstrapPath = path.join(ROOT_DIR, 'apps/web/src/auth-bootstrap.ts');
+if (fs.existsSync(ownerAuthBootstrapPath)) {
+  const content = fs.readFileSync(ownerAuthBootstrapPath, 'utf8');
+  for (const marker of ["/api/v1/auth/session", "import('./shell-entry.js')"]) {
+    if (!content.includes(marker)) {
+      console.error(`  ❌ Owner auth bootstrap missing gated-shell marker: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Owner auth bootstrap marker found: ${marker}`);
     }
   }
 }

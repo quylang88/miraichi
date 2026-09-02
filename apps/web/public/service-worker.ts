@@ -2,12 +2,12 @@
 
 export {};
 
-const CACHE_NAME = 'miraichi-shell-v5-phase-5-12-quality-up';
+const CACHE_NAME = 'miraichi-shell-v6-owner-auth';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/packages/ui/src/index.css',
-  '/apps/web/src/shell-entry.js',
+  '/apps/web/src/auth-bootstrap.js',
   '/apps/web/src/config/navigation-tabs.js',
   '/apps/web/src/components/app-shell.js',
   '/packages/config/src/competition-registry.mock.js',

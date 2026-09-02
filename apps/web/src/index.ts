@@ -221,7 +221,7 @@ export function getIndexHtml() {
     };
   </script>
   <script type="module" src="/apps/web/src/pwa/register-service-worker.js"></script>
-  <script type="module" src="/apps/web/src/shell-entry.js"></script>
+  <script type="module" src="/apps/web/src/auth-bootstrap.js"></script>
 </head>
 <body>
   <div id="app-root" aria-live="polite">

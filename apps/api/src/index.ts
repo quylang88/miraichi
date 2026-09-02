@@ -22,6 +22,8 @@ import { CloudMatchSnapshotRepository } from './repositories/cloud-match-snapsho
 import { FallbackMatchSnapshotRepository } from './repositories/fallback-match-snapshot-repository.js';
 import { assertHostedWebReady, serveHostedWeb } from './hosted-static-server.js';
 import { enforceOriginBoundary } from './http-origin-boundary.js';
+import { readOwnerAuthConfig } from './auth/owner-auth.js';
+import { enforceOwnerSession, handleOwnerAuthRoute, isOwnerAuthRoute } from './auth/owner-auth-boundary.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,6 +66,7 @@ function loadEnv(rootDir: string) {
 
 loadEnv(ROOT_DIR);
 const cloudConfig = readCloudPersistenceConfig();
+const ownerAuthConfig = readOwnerAuthConfig();
 const cloudDependencies = { adapter: createCloudPersistenceAdapter(cloudConfig), ownerProfileId: cloudConfig.ownerProfileId };
 const hostedWebMode = process.env.HOSTED_WEB_MODE?.trim() || 'disabled';
 if (hostedWebMode !== 'disabled' && hostedWebMode !== 'required') {
@@ -84,7 +87,11 @@ const server = http.createServer((req, res) => {
 
   console.log(`[API Gateway] Received ${req.method} ${req.url}`);
 
-  if (pathname === '/api/v1/health') {
+  if (isOwnerAuthRoute(pathname)) {
+    void handleOwnerAuthRoute(req, res, ownerAuthConfig);
+  } else if (enforceOwnerSession(req, res, ownerAuthConfig) === 'handled') {
+    return;
+  } else if (pathname === '/api/v1/health') {
     handleHealth(req, res);
   } else if (pathname === '/api/v1/matches/detail') {
     void handleMatchDetail(req, res, { repository: matchRepository });

@@ -2638,3 +2638,106 @@ svg {
   padding: 16px 0;
   text-align: center;
 }
+
+.owner-auth-page {
+  align-items: center;
+  background: #050505;
+  color: #f5f5f5;
+  display: flex;
+  min-height: 100dvh;
+  padding: 24px;
+}
+
+.owner-auth-card {
+  background: #111;
+  border: 1px solid #262626;
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 45%);
+  margin: 0 auto;
+  max-width: 420px;
+  padding: 28px;
+  width: 100%;
+}
+
+.owner-auth-mark {
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 12px;
+  color: #050505;
+  display: flex;
+  font-size: 20px;
+  font-weight: 900;
+  height: 42px;
+  justify-content: center;
+  margin-bottom: 24px;
+  width: 42px;
+}
+
+.owner-auth-eyebrow {
+  color: #a3a3a3;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.owner-auth-card h1 {
+  font-size: 28px;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.owner-auth-description {
+  color: #a3a3a3;
+  line-height: 1.5;
+  margin: 12px 0 24px;
+}
+
+.owner-auth-form {
+  display: grid;
+  gap: 10px;
+}
+
+.owner-auth-form label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.owner-auth-form input {
+  background: #090909;
+  border: 1px solid #333;
+  border-radius: 10px;
+  color: #fff;
+  font: inherit;
+  min-height: 46px;
+  padding: 0 12px;
+}
+
+.owner-auth-form input:focus {
+  border-color: #d4d4d4;
+  outline: 2px solid rgb(255 255 255 / 15%);
+}
+
+.owner-auth-form button {
+  background: #f5f5f5;
+  border: 0;
+  border-radius: 10px;
+  color: #050505;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-height: 46px;
+}
+
+.owner-auth-form button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.owner-auth-feedback {
+  color: #fca5a5;
+  font-size: 13px;
+  min-height: 20px;
+  margin: 2px 0 0;
+}
