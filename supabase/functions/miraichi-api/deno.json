@@ -1,4 +1,7 @@
 {
+  "imports": {
+    "postgres": "npm:postgres@3.4.7"
+  },
   "compilerOptions": {
     "lib": ["deno.ns", "dom", "dom.iterable"],
     "strict": true

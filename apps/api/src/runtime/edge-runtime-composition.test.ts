@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createEdgeRequestHandler } from './edge-runtime-composition.js';
+import type { PostgresQueryClient } from '../persistence/supabase/postgres-query-client.js';
+import {
+  createEdgeRequestHandler,
+  createPostgresEdgeApiHandler
+} from './edge-runtime-composition.js';
 
 describe('Supabase Edge request composition', () => {
   const token = 'edge-gateway-token-with-at-least-32-bytes';
@@ -62,5 +66,57 @@ describe('Supabase Edge request composition', () => {
     expect((await handle(request())).status).toBe(200);
     expect((await handle(request())).status).toBe(200);
     expect(createHandler).toHaveBeenCalledTimes(1);
+  });
+
+  it('composes cloud persistence from an injected Edge query client', async () => {
+    const query = vi.fn();
+    const client: PostgresQueryClient = {
+      query: async <T extends Record<string, unknown>>() => {
+        query();
+        return { rows: [{ ok: 1 } as unknown as T], rowCount: 1 };
+      },
+      transaction: async (operation) => operation(client)
+    };
+    const handler = createPostgresEdgeApiHandler({
+      APP_ENV: 'local',
+      SUPABASE_DB_URL: 'postgresql://postgres:postgres@db:5432/postgres',
+      SPORTSCORE_LIVE_MODE: 'disabled'
+    }, client);
+
+    const response = await handler(new Request(
+      'http://edge-runtime.internal/api/v1/cloud-persistence/status'
+    ));
+    expect(response?.status).toBe(200);
+    await expect(response?.json()).resolves.toMatchObject({
+      provider: 'supabase-postgres', mode: 'supabase', state: 'ready'
+    });
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the runtime smoke route local, explicit, and behind gateway auth', async () => {
+    const createRuntimeSmokeHandler = vi.fn(() => vi.fn(async () => Response.json({ ok: true })));
+    const baseRequest = (tokenValue: string) => new Request(
+      'http://edge-runtime.internal/miraichi-api/__runtime-smoke/postgres',
+      { method: 'POST', headers: { 'x-miraichi-gateway-token': tokenValue } }
+    );
+    const disabled = createEdgeRequestHandler({
+      env: { APP_ENV: 'staging', MIRAICHI_GATEWAY_TOKEN: token },
+      createRuntimeSmokeHandler
+    });
+    expect((await disabled(baseRequest(token))).status).toBe(404);
+    expect(createRuntimeSmokeHandler).not.toHaveBeenCalled();
+
+    const enabled = createEdgeRequestHandler({
+      env: {
+        APP_ENV: 'local',
+        MIRAICHI_EDGE_RUNTIME_SMOKE: 'enabled',
+        MIRAICHI_GATEWAY_TOKEN: token
+      },
+      createRuntimeSmokeHandler
+    });
+    expect((await enabled(baseRequest('wrong-token'))).status).toBe(401);
+    expect(createRuntimeSmokeHandler).not.toHaveBeenCalled();
+    expect((await enabled(baseRequest(token))).status).toBe(200);
+    expect(createRuntimeSmokeHandler).toHaveBeenCalledTimes(1);
   });
 });

@@ -25,7 +25,7 @@
   owner hosting` — ten sequential TDD slices now name exact files, RED observations, minimal
   implementation, focused verification, and local commit boundaries.
 - **Active phase**: `phase:code-slice Supabase Edge Function and Cloudflare Worker owner hosting —
-  Slice 4 Edge Postgres query and transaction adapter`.
+  Slice 5 Exact owner auth and cookie flow in Edge Runtime`.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45
@@ -211,10 +211,14 @@ deployment path.
 - Slice 3 added the fail-closed gateway, deterministic Edge bundle, forbidden-import audit, and one
   `miraichi-api` function. The actual Supabase CLI Edge Runtime returned the same generic `401` for
   missing/wrong gateway tokens and `200` for the authorized health request.
+- Slice 4 added the version-pinned `postgres` Edge driver with `prepare: false`, one bounded
+  connection, parameter binding, and transaction adaptation. The actual local Edge Runtime proved
+  a bound-value query, forced rollback, committed transaction, cleanup, and a cloud status of
+  `ready`; the probe route is unavailable outside explicit local smoke mode.
 - Windows had reserved the original `54320-54419` local port range. The checked-in local Supabase
   ports now use `15420-15429`; the local database, migration, schema, snapshot, lint, and security
   verification all passed on the replacement ports. This changes no hosted endpoint or database.
-- Slice 4 is now the earliest active code slice. No deployment, push, remote secret mutation,
+- Slice 5 is now the earliest active code slice. No deployment, push, remote secret mutation,
   Tokyo project creation, production promotion, or Frankfurt deletion has occurred.
 
 ## Product Boundary

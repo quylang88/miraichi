@@ -8,6 +8,8 @@ export interface CloudPersistenceConfig {
   databaseCa?: string;
 }
 
+export type EdgeEnvironment = Readonly<Record<string, string | undefined>>;
+
 function isRemoteDatabaseUrl(databaseUrl: string): boolean {
   const hostname = new URL(databaseUrl).hostname;
   return !['localhost', '127.0.0.1', '::1'].includes(hostname);
@@ -47,5 +49,16 @@ export function readCloudPersistenceConfig(env: NodeJS.ProcessEnv = process.env)
     ownerProfileId: env.MIRAICHI_OWNER_PROFILE_ID?.trim() || 'owner-primary',
     ...(databaseUrl ? { databaseUrl } : {}),
     ...(databaseCa ? { databaseCa } : {})
+  };
+}
+
+export function readEdgeCloudPersistenceConfig(env: EdgeEnvironment): CloudPersistenceConfig {
+  const databaseUrl = env.SUPABASE_DB_URL?.trim();
+  if (!databaseUrl) throw new Error('SUPABASE_DB_URL is required in the Edge runtime');
+  return {
+    mode: 'supabase',
+    appEnv: env.APP_ENV?.trim() || 'local',
+    ownerProfileId: env.MIRAICHI_OWNER_PROFILE_ID?.trim() || 'owner-primary',
+    databaseUrl
   };
 }

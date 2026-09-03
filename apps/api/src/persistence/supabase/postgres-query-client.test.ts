@@ -8,8 +8,8 @@ const CA = '-----BEGIN CERTIFICATE-----\nfixture-ca\n-----END CERTIFICATE-----';
 
 describe('postgres query client SSL configuration', () => {
   it('disables SSL for local Supabase database URLs', () => {
-    expect(resolvePostgresSslConfig('postgresql://postgres:postgres@127.0.0.1:54322/postgres')).toBe(false);
-    expect(resolvePostgresSslConfig('postgresql://postgres:postgres@localhost:54322/postgres')).toBe(false);
+    expect(resolvePostgresSslConfig('postgresql://postgres:postgres@127.0.0.1:15422/postgres')).toBe(false);
+    expect(resolvePostgresSslConfig('postgresql://postgres:postgres@localhost:15422/postgres')).toBe(false);
   });
 
   it('honors explicit sslmode=disable', () => {
