@@ -1,5 +1,11 @@
 # Koyeb + Supabase owner hosting runbook
 
+> **Superseded on 2026-09-03. Do not deploy this topology.** Koyeb's
+> [2026 transition](https://www.koyeb.com/blog/koyeb-is-joining-mistral-ai-to-build-the-future-of-ai-infrastructure)
+> requires new users to provide a payment method and subscribe to a paid plan. The owner rejected that path.
+> Use `docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md`; keep this file only as historical
+> evidence for the already-completed Node hosting implementation.
+
 Verified against the official provider documentation on 2026-09-02. This runbook creates one
 HTTPS origin for the Miraichi PWA and API. It does not authorize an automated production deploy:
 review and push the local commits yourself before connecting Koyeb.

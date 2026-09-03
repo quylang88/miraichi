@@ -14,13 +14,28 @@
 - **Completed phase**: `phase:maintenance FotMob owner-local current data operations` — guarded current hydration, 24-hour current revalidation, and terminal-result once/watch operation remain available, but no provider operation is part of the active product phase.
 - **Completed phase**: `phase:integration-test Single-bankroll usable owner flow` — the single visible bankroll, internal compatibility account, reviewed bankroll/bet/psychology remediations, sequential TDD slices, and complete local release gate all passed on 2026-09-01.
 - **Completed phase**: `phase:integration-test Owner-hosted API and visibility-driven live overlay` — all eight sequential TDD slices and the complete local release gate passed on 2026-09-02. No deployment, push, or production promotion occurred.
-- **Active phase**: `phase:staging Owner-hosted API and visibility-driven live overlay` — owner-created Supabase staging is migrated and contains the verified current canonical snapshot; Koyeb deployment and smoke gates remain incomplete.
+- **Superseded hosting path**: Koyeb staging is blocked for this owner. Koyeb still documents a
+  Free Instance for eligible organizations, but its 2026 transition requires new users to provide a
+  payment method and subscribe to a paid plan. The owner rejected that dependency; no Koyeb setup,
+  secret entry, deployment, or smoke is still planned.
+- **Completed phase**: `phase:plan Supabase Edge Function and Cloudflare Worker owner hosting` —
+  the owner approved the replacement topology, ADR-0052 and the runtime/security design are
+  recorded, and the replacement staging runbook identifies the unproven runtime gates.
+- **Active phase**: `phase:implementation-plan Supabase Edge Function and Cloudflare Worker owner
+  hosting` — exact TDD slices must be written before implementation starts.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
-- **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45 current competition editions and its exact snapshot is synced to Supabase staging. Koyeb deployment, owner-feedback release gate, and production promotion have not run.
+- **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45
+  current competition editions and its exact snapshot is synced to the retained Frankfurt Supabase
+  staging project. No Edge Function or Cloudflare Worker implementation/deployment, hosted smoke,
+  owner-feedback release gate, Tokyo project creation, or production promotion has run.
 - **Current lifecycle source of truth**: this file.
 
-## Owner-Hosted API And Visibility-Driven Live Overlay — 2026-09-02
+## Historical Owner-Hosted API And Visibility-Driven Live Overlay — 2026-09-02
+
+The application/auth/live implementation remains current, but ADR-0052 supersedes its Koyeb and
+GitHub Actions hosting topology. The Koyeb instructions below are historical evidence, not an active
+deployment path.
 
 - **Owner decision**: use Koyeb's generated HTTPS domain for the MVP; Cloudflare is not required.
 - **Persistence**: deploy no generated local snapshot. Apply migrations and sync canonical/current
@@ -113,6 +128,61 @@
   and latest snapshot ID `season-hydration-20260831024605687-a7c3b841`, exactly matching local data.
 - This proves only the staging database bootstrap. Koyeb configuration/deployment, authenticated
   application smoke, live widget smoke, hourly workflow smoke, and rollback evidence remain open.
+
+## Supabase Edge Function And Cloudflare Worker Owner Hosting — 2026-09-03
+
+- **Owner decision**: replace the blocked Koyeb path with one Cloudflare Worker using Static Assets
+  and an exact `/api` proxy to one Supabase Edge Function. Use the free `*.workers.dev` URL for
+  staging; do not create a custom domain or paid service.
+- **Runtime boundary**: Web-standard `Request`/`Response` becomes the API core boundary. The current
+  Node HTTP process remains a local adapter, while the Edge Function uses a Deno entrypoint and must
+  not import filesystem-backed serving/detail stores.
+- **Persistence boundary**: keep the hosted Data API disabled. Prefer the Edge runtime's built-in
+  `SUPABASE_DB_URL` with the Supabase-documented `postgres` driver, prepared statements disabled,
+  and explicit transaction handling. The database URL/password never enters Cloudflare or browser
+  configuration.
+- **Security boundary**: configure the Edge Function with platform JWT verification disabled only
+  because Miraichi uses its own owner session cookie, then require a separate constant-time gateway
+  token before routing, body parsing, database work, or provider work. Cloudflare overwrites this
+  header; direct Edge URL calls without it fail closed. Owner session auth and the refresh-only token
+  remain separate controls.
+- **Same-origin boundary**: Cloudflare serves the existing PWA assets and proxies only `/api` plus
+  `/api/*`. It preserves the owner cookie and `Set-Cookie`, streams bodies, follows no upstream
+  redirect, and marks API responses non-cacheable. No database or provider secret is stored there.
+- **Region strategy**: staging proxy and cron invocations force `eu-central-1` so the Edge Function
+  runs with the Frankfurt database. A later, explicitly approved production cutover uses a new Tokyo
+  project and `ap-northeast-1`; Frankfurt remains intact for rollback until backup, smoke, and owner
+  approval are complete.
+- **Background refresh**: replace the GitHub Actions wake-up with one hourly `pg_cron` + `pg_net`
+  call. The function URL, gateway token, and existing refresh-only token are resolved from Supabase
+  Vault at execution time. Full-season hydration never runs in the Edge Function.
+- **Measured static artifact**: `pnpm run build:web-static` produced 63 files totaling 385,801 bytes
+  on 2026-09-03. This is far below Cloudflare Workers Free limits of 20,000 files per version and
+  25 MiB per file.
+- **Quota boundary**: Cloudflare static asset requests are free and unlimited; only `/api` proxy
+  executions consume the 100,000 Worker requests/day quota. Supabase Free includes 500,000 Edge
+  Function invocations/month, while its hosted runtime limits each request to 2 seconds CPU, 256 MB
+  memory, and a 150-second Free wall-clock lifetime. These are ceilings, not availability promises.
+- **Unproven hard gates**: official Deno documentation exposes `node:crypto.scrypt`, and Supabase
+  documents `postgres` plus `SUPABASE_DB_URL`, but Miraichi has not yet run its exact scrypt cost,
+  HMAC/session flow, parameterized query adapter, commit/rollback transaction, cookie round trip, or
+  cron request in the actual Supabase Edge Runtime. Each must be observed locally in the Supabase
+  runtime and then smoked on Frankfurt staging; failure stops the phase rather than weakening auth,
+  enabling the Data API, or silently changing drivers.
+- **Decision**: `docs/decisions/ADR-0052-supabase-edge-cloudflare-owner-hosting.md`.
+- **Design**: `docs/superpowers/specs/2026-09-03-supabase-edge-cloudflare-owner-hosting-design.md`.
+- **Runbook**: `docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md`.
+
+### Phase-plan closeout and transition
+
+- The `phase:plan` exit gate is satisfied by the owner's explicit topology, security, scheduling,
+  and Frankfurt-to-Tokyo decisions in the 2026-09-03 handoff. No new data source, public auth,
+  multi-tenancy, paid service, or production change is approved.
+- The earliest safe next phase is `phase:implementation-plan Supabase Edge Function and Cloudflare
+  Worker owner hosting`. It must name exact files, the RED observation, minimal implementation,
+  focused verification, and a separate local commit for every slice.
+- No owner decision is currently missing for that implementation-plan phase. Implementation itself
+  remains blocked until the exact TDD slice document exists.
 
 ## Product Boundary
 

@@ -29,7 +29,8 @@
 
 ## Operations
 
-- Owner hosting runbook: `docs/operations/KOYEB-SUPABASE-OWNER-HOSTING.md`
+- Active owner hosting runbook: `docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md`
+- Superseded Koyeb history: `docs/operations/KOYEB-SUPABASE-OWNER-HOSTING.md`
 - Staging plan: `ops/deploy/staging-plan.md`
 - CI plan: `ops/ci/github-actions-plan.md`
 

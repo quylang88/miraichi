@@ -1,6 +1,6 @@
 # ADR-0051: Owner-Hosted API And Visibility-Driven Live Overlay
 
-* **Status**: Accepted
+* **Status**: Superseded for hosting/scheduling by ADR-0052; auth and live-data boundaries retained
 * **Date**: 2026-09-02
 * **Owner approval**: Explicitly approved Koyeb Free plus Supabase Free, one-origin hosting,
   owner-only secure HTTP-only sessions, hourly background refresh, five-minute visible refresh,

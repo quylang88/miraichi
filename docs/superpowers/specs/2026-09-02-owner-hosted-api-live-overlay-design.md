@@ -1,5 +1,9 @@
 # Owner-Hosted API And Live Overlay Design
 
+> **Hosting update (2026-09-03):** ADR-0052 supersedes the Koyeb and GitHub Actions deployment
+> topology. The owner auth, session, live overlay, cooldown, and attribution contracts in this
+> document remain current.
+
 - **Date**: 2026-09-02
 - **Decision**: ADR-0051
 - **Target**: owner-only Koyeb Free Web Service backed by Supabase Free
