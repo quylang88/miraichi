@@ -21,8 +21,11 @@
 - **Completed phase**: `phase:plan Supabase Edge Function and Cloudflare Worker owner hosting` —
   the owner approved the replacement topology, ADR-0052 and the runtime/security design are
   recorded, and the replacement staging runbook identifies the unproven runtime gates.
-- **Active phase**: `phase:implementation-plan Supabase Edge Function and Cloudflare Worker owner
-  hosting` — exact TDD slices must be written before implementation starts.
+- **Completed phase**: `phase:implementation-plan Supabase Edge Function and Cloudflare Worker
+  owner hosting` — ten sequential TDD slices now name exact files, RED observations, minimal
+  implementation, focused verification, and local commit boundaries.
+- **Active phase**: `phase:code-slice Supabase Edge Function and Cloudflare Worker owner hosting —
+  Slice 1 Web HTTP primitives`.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45
@@ -172,6 +175,8 @@ deployment path.
 - **Decision**: `docs/decisions/ADR-0052-supabase-edge-cloudflare-owner-hosting.md`.
 - **Design**: `docs/superpowers/specs/2026-09-03-supabase-edge-cloudflare-owner-hosting-design.md`.
 - **Runbook**: `docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md`.
+- **Implementation plan**:
+  `docs/superpowers/plans/2026-09-03-supabase-edge-cloudflare-owner-hosting.md`.
 
 ### Phase-plan closeout and transition
 
@@ -183,6 +188,20 @@ deployment path.
   focused verification, and a separate local commit for every slice.
 - No owner decision is currently missing for that implementation-plan phase. Implementation itself
   remains blocked until the exact TDD slice document exists.
+
+### Implementation-plan closeout and transition
+
+- The `phase:implementation-plan` exit gate is satisfied. The plan fixes ten sequential slices;
+  every slice requires an observed RED, minimal GREEN, focused verification, and one local commit.
+- Direct pnpm-workspace imports are not accepted as the deployment contract. Supabase documents a
+  function-local dependency configuration and shared code below `supabase/functions`, while current
+  CLI evidence leaves external monorepo imports unsafe. The plan therefore requires a deterministic
+  self-contained Edge bundle plus an import-graph audit before the first runtime smoke.
+- The earliest safe next phase is `phase:code-slice Supabase Edge Function and Cloudflare Worker
+  owner hosting — Slice 1 Web HTTP primitives`.
+- No owner decision is missing for Slice 1. Deployment, push, Frankfurt remote migration/secret
+  changes, Tokyo project creation, production promotion, and Frankfurt deletion remain outside the
+  code-slice authority.
 
 ## Product Boundary
 
