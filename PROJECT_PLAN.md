@@ -14,9 +14,10 @@
 - **Completed phase**: `phase:maintenance FotMob owner-local current data operations` — guarded current hydration, 24-hour current revalidation, and terminal-result once/watch operation remain available, but no provider operation is part of the active product phase.
 - **Completed phase**: `phase:integration-test Single-bankroll usable owner flow` — the single visible bankroll, internal compatibility account, reviewed bankroll/bet/psychology remediations, sequential TDD slices, and complete local release gate all passed on 2026-09-01.
 - **Completed phase**: `phase:integration-test Owner-hosted API and visibility-driven live overlay` — all eight sequential TDD slices and the complete local release gate passed on 2026-09-02. No deployment, push, or production promotion occurred.
+- **Active phase**: `phase:staging Owner-hosted API and visibility-driven live overlay` — owner-created Supabase staging is migrated and contains the verified current canonical snapshot; Koyeb deployment and smoke gates remain incomplete.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
-- **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45 current competition editions. No cloud staging, owner-feedback release gate, or production promotion has run.
+- **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45 current competition editions and its exact snapshot is synced to Supabase staging. Koyeb deployment, owner-feedback release gate, and production promotion have not run.
 - **Current lifecycle source of truth**: this file.
 
 ## Owner-Hosted API And Visibility-Driven Live Overlay — 2026-09-02
@@ -102,6 +103,16 @@
   RED -> GREEN maintenance slice replaced 10,899 sequential match requests with 22 bounded
   500-row JSONB batches inside the same atomic transaction. The CA is kept in gitignored
   `.secrets/`, never under application source.
+
+### Supabase staging bootstrap evidence — 2026-09-03
+
+- The owner applied all six tracked migrations after a clean dry run. `supabase migration list`
+  reported identical local/remote versions from `20260702052851` through `20260902120000`.
+- The current canonical snapshot was synced through the CA-verified session pooler connection.
+  A separate read-only query confirmed 10,899 match rows, 45 distinct competitions, one snapshot,
+  and latest snapshot ID `season-hydration-20260831024605687-a7c3b841`, exactly matching local data.
+- This proves only the staging database bootstrap. Koyeb configuration/deployment, authenticated
+  application smoke, live widget smoke, hourly workflow smoke, and rollback evidence remain open.
 
 ## Product Boundary
 
