@@ -26,7 +26,7 @@ const DEFAULT_MAX_JSON_BYTES = 64 * 1024;
 function contentTypeOf(request: Request | LegacyBodyRequest): string | undefined {
   if (request instanceof Request) return request.headers.get('content-type') ?? undefined;
   const value = request.headers?.['content-type'];
-  return Array.isArray(value) ? value[0] : value;
+  return typeof value === 'string' ? value : value?.[0];
 }
 
 function assertJsonContentType(request: Request | LegacyBodyRequest): void {

@@ -1,5 +1,4 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { ServingMatchStoreRepository } from '../repositories/serving-match-store-repository.js';
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
 import {
   toProviderNeutralLocalMatch,
@@ -7,8 +6,6 @@ import {
   type LocalMatchStatus
 } from '@miraichi/shared';
 import { toPublicSnapshotStatus } from './public-match-metadata.js';
-
-const repository = new ServingMatchStoreRepository();
 
 function validDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
@@ -21,7 +18,7 @@ export async function handleMatches(
   res: ServerResponse,
   dependencies: { repository?: MatchSnapshotRepository } = {}
 ): Promise<void> {
-  const repo = dependencies.repository ?? repository;
+  const repo = dependencies.repository;
   const parsedUrl = new URL(req.url || '/', 'http://localhost');
   const date = parsedUrl.searchParams.get('date');
   const timezone = parsedUrl.searchParams.get('timezone') || undefined;
@@ -63,6 +60,7 @@ export async function handleMatches(
   }
 
   try {
+    if (!repo) throw new Error('Match repository is not configured');
     const payload = await repo.listMatches({
       date: date || undefined,
       timezone,

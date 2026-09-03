@@ -1,31 +1,24 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import * as fs from 'fs';
-import * as path from 'path';
-import { ServingMatchStoreRepository } from '../repositories/serving-match-store-repository.js';
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
-import { LocalMatchDetailStore } from '../repositories/local-match-detail-store.js';
-import { MatchDetailRefreshQueue } from '../repositories/match-detail-refresh-queue.js';
 import {
   toProviderNeutralLocalMatch,
   type LocalMatch,
   type LocalMatchDetail
 } from '@miraichi/shared';
 
-function findRootDir(startDir: string): string {
-  let dir = startDir;
-  while (dir !== path.dirname(dir)) {
-    if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) {
-      return dir;
-    }
-    dir = path.dirname(dir);
-  }
-  return startDir;
+export interface MatchDetailStore {
+  getDetail(matchId: string): Promise<LocalMatchDetail | null>;
+}
+
+export interface MatchDetailQueue {
+  enqueue(matchId: string): Promise<{ status: string }>;
 }
 
 export interface MatchDetailRouteDependencies {
   repository?: MatchSnapshotRepository;
-  detailStore?: LocalMatchDetailStore;
-  queue?: MatchDetailRefreshQueue;
+  detailStore?: MatchDetailStore;
+  queue?: MatchDetailQueue;
+  /** Retained temporarily for source-compatible tests; runtime path resolution is Node-only. */
   dataRoot?: string;
 }
 
@@ -46,17 +39,9 @@ export async function handleMatchDetail(
   res: ServerResponse,
   dependencies: MatchDetailRouteDependencies = {}
 ): Promise<void> {
-  const rootDir = findRootDir(process.cwd());
-  const configuredDataRoot = dependencies.dataRoot || process.env.PROVIDER_CAPTURE_ROOT || 'apps/api/data';
-  const dataRoot = path.isAbsolute(configuredDataRoot)
-    ? configuredDataRoot
-    : path.resolve(rootDir, configuredDataRoot);
-
-  const repo = dependencies.repository ?? new ServingMatchStoreRepository({
-    servingRoot: path.resolve(dataRoot, 'serving')
-  });
-  const detailStore = dependencies.detailStore ?? new LocalMatchDetailStore({ dataRoot });
-  const queue = dependencies.queue ?? new MatchDetailRefreshQueue({ dataRoot });
+  const repo = dependencies.repository;
+  const detailStore = dependencies.detailStore;
+  const queue = dependencies.queue;
 
   const parsedUrl = new URL(req.url || '/', 'http://localhost');
   const id = parsedUrl.searchParams.get('id');
@@ -73,6 +58,7 @@ export async function handleMatchDetail(
   }
 
   try {
+    if (!repo) throw new Error('Match repository is not configured');
     const match = await repo.findById(id);
     if (!match) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -85,7 +71,7 @@ export async function handleMatchDetail(
       return;
     }
 
-    const cachedDetail = await detailStore.getDetail(id);
+    const cachedDetail = detailStore ? await detailStore.getDetail(id) : null;
     if (cachedDetail) {
       const sanitizedDetail: LocalMatchDetail = {
         match: toProviderNeutralLocalMatch(cachedDetail.match),
@@ -120,6 +106,17 @@ export async function handleMatchDetail(
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(payload));
+      return;
+    }
+
+    if (!queue) {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        error: {
+          code: 'detail_unavailable',
+          message: 'Match detail is currently unavailable.'
+        }
+      }));
       return;
     }
 

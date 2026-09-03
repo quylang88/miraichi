@@ -1,18 +1,16 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { ServingMatchStoreRepository } from '../repositories/serving-match-store-repository.js';
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
 import { toPublicSnapshotStatus } from './public-match-metadata.js';
-
-const repository = new ServingMatchStoreRepository();
 
 export async function handleDataSnapshotStatus(
   req: IncomingMessage,
   res: ServerResponse,
   dependencies: { repository?: MatchSnapshotRepository } = {}
 ): Promise<void> {
-  const repo = dependencies.repository ?? repository;
+  const repo = dependencies.repository;
 
   try {
+    if (!repo) throw new Error('Match repository is not configured');
     const status = toPublicSnapshotStatus(await repo.getStatus());
 
     if (status.freshness === 'missing') {

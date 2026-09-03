@@ -20,7 +20,7 @@ export function jsonResponse(payload: unknown, options: WebResponseOptions = {})
 }
 
 export function emptyResponse(status = 204, headers?: HeadersInit): Response {
-  return new Response(null, { status, headers });
+  return new Response(null, { status, ...(headers ? { headers } : {}) });
 }
 
 export function errorResponse(
