@@ -25,7 +25,7 @@
   owner hosting` — ten sequential TDD slices now name exact files, RED observations, minimal
   implementation, focused verification, and local commit boundaries.
 - **Active phase**: `phase:code-slice Supabase Edge Function and Cloudflare Worker owner hosting —
-  Slice 6 Cloudflare thin proxy`.
+  Slice 7 Cloudflare Static Assets and deploy artifact gate`.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45
@@ -220,10 +220,15 @@ deployment path.
   hash format, HMAC format, cookie policy, or TTL. The actual runtime then proved scrypt
   `N=16384, r=8, p=1`, random salt generation, HMAC session verification, generic invalid login,
   hardened owner cookie, authenticated cloud route, refresh-token isolation, and logout expiry.
+- Slice 6 added one Cloudflare Worker that delegates non-API requests to Static Assets and sends
+  exact `/api` traffic to the single Edge Function with one upstream subrequest. It overwrites the
+  gateway/Frankfurt headers, preserves cookie/origin/body/query/`Set-Cookie`, removes hop-by-hop
+  headers, disables API caching and redirects, and sanitizes upstream failures. Cloudflare accepts
+  no database, provider, owner-password, session, or refresh credential binding.
 - Windows had reserved the original `54320-54419` local port range. The checked-in local Supabase
   ports now use `15420-15429`; the local database, migration, schema, snapshot, lint, and security
   verification all passed on the replacement ports. This changes no hosted endpoint or database.
-- Slice 6 is now the earliest active code slice. No deployment, push, remote secret mutation,
+- Slice 7 is now the earliest active code slice. No deployment, push, remote secret mutation,
   Tokyo project creation, production promotion, or Frankfurt deletion has occurred.
 
 ## Product Boundary
