@@ -186,7 +186,7 @@ if (process.argv[1] === __filename) {
   }
 }
 
-export function getIndexHtml() {
+export function getIndexHtml(apiUrl = process.env.API_URL || '') {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -217,7 +217,7 @@ export function getIndexHtml() {
   </script>
   <script>
     window.MIRAICHI_ENV = {
-      API_URL: "${process.env.API_URL || ''}"
+      API_URL: "${apiUrl}"
     };
   </script>
   <script type="module" src="/apps/web/src/pwa/register-service-worker.js"></script>

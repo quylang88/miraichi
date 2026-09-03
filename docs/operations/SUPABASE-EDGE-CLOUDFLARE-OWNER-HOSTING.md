@@ -1,8 +1,8 @@
 # Supabase Edge + Cloudflare Worker owner hosting runbook
 
-> **Status: approved design, implementation pending.** Do not deploy from this document until the
-> implementation-plan and all TDD slices exist and `pnpm run verify:staging` passes. Commands marked
-> as planned below are acceptance targets, not claims that the scripts/configuration already exist.
+> **Status: local implementation through Cloudflare artifact packaging.** Edge runtime and
+> Cloudflare dry-run gates exist and pass locally. Do not push or deploy until every remaining TDD
+> slice and `pnpm run verify:staging` pass and the owner explicitly authorizes staging operations.
 
 This runbook replaces the Koyeb deployment path. It retains the Frankfurt Supabase staging project
 and its verified match snapshot. It does not authorize a push, Tokyo project, production promotion,
@@ -34,6 +34,9 @@ pnpm run test:integration
 pnpm run verify:release
 pnpm run verify:staging
 pnpm run data:validate:serving:matches
+pnpm run edge:function:build
+pnpm run edge:function:graph:verify
+pnpm run cloudflare:artifact:verify
 ```
 
 Do not continue on any failure. Local success is only a deployment precondition, not staging
@@ -62,10 +65,30 @@ The same gateway value must be stored independently in:
 Cloudflare must never receive a database URL/password, owner password hash, session secret, or
 refresh token. The browser must receive none of these secrets.
 
-## 2. Local Edge compatibility gate (planned)
+## 2. Local Edge compatibility gate
 
-The implementation must provide one focused command that starts the existing Supabase Docker stack
-and `supabase functions serve` with an ignored local environment file. It must prove:
+Create `.secrets/edge.local.env` from names in `.env.example`; use only disposable local values and
+quote the generated `MIRAICHI_OWNER_PASSWORD_HASH`. Never copy that file into source control. The
+Windows local ports are `15420-15429` because this host reserves the former `54320-54419` range.
+
+Build first, then start the local database/gateway/runtime and serve the function:
+
+```powershell
+pnpm run edge:function:build
+pnpm run edge:function:graph:verify
+pnpm exec supabase start --exclude gotrue,imgproxy,logflare,mailpit,postgres-meta,postgrest,realtime,storage-api,studio,supavisor,vector
+pnpm exec supabase functions serve miraichi-api --env-file .secrets/edge.local.env
+```
+
+In a second terminal run:
+
+```powershell
+pnpm run edge:runtime:smoke -- --scope postgres
+pnpm run edge:runtime:smoke -- --scope auth
+pnpm run supabase:local:verify
+```
+
+These commands prove:
 
 - exact `scrypt-v1` verification and session crypto;
 - parameterized `postgres` reads/writes through `SUPABASE_DB_URL`;
@@ -76,7 +99,7 @@ and `supabase functions serve` with an ignored local environment file. It must p
 Record only status, timings, and sanitized error codes. Stop if the exact Edge runtime fails. Do not
 enable Data API, weaken scrypt, use `rejectUnauthorized: false`, or change drivers as an ad hoc fix.
 
-## 3. Configure and deploy the Frankfurt Edge Function (planned)
+## 3. Configure and deploy the Frankfurt Edge Function (owner staging action)
 
 After implementation and verification:
 
@@ -93,6 +116,7 @@ After implementation and verification:
 Expected provider commands after their configuration exists:
 
 ```powershell
+pnpm exec supabase link --project-ref qpexxwmrnreooxftfucv
 pnpm exec supabase migration list
 pnpm exec supabase db push --dry-run
 pnpm exec supabase db push
@@ -101,14 +125,14 @@ pnpm exec supabase functions deploy miraichi-api --project-ref qpexxwmrnreooxftf
 
 Do not run `supabase db reset --linked` or any remote reset.
 
-## 4. Configure and deploy Cloudflare Worker Static Assets (planned)
+## 4. Configure and deploy Cloudflare Worker Static Assets (owner staging action)
 
 Use a dedicated staging Worker on the owner's existing Cloudflare account and its generated
 `*.workers.dev` URL. Do not purchase or attach a custom domain.
 
 Required non-secret staging configuration:
 
-- exact Supabase Edge Function URL;
+- `MIRAICHI_EDGE_FUNCTION_URL` set to the exact Supabase Edge Function URL;
 - `MIRAICHI_EDGE_REGION=eu-central-1`;
 - exact Cloudflare public origin after the Worker name/subdomain is known.
 
@@ -124,9 +148,10 @@ Expected commands after Wrangler is pinned and the configuration exists:
 
 ```powershell
 pnpm run build:web-static
-pnpm exec wrangler deploy --env staging --dry-run
-pnpm exec wrangler versions secret put MIRAICHI_GATEWAY_TOKEN --env staging
-pnpm exec wrangler deploy --env staging
+pnpm run cloudflare:artifact:verify
+pnpm --filter @miraichi/cloudflare-gateway exec wrangler deploy --env staging --dry-run
+pnpm --filter @miraichi/cloudflare-gateway exec wrangler versions secret put MIRAICHI_GATEWAY_TOKEN --env staging
+pnpm --filter @miraichi/cloudflare-gateway exec wrangler deploy --env staging
 ```
 
 `wrangler versions secret put` is preferred because `wrangler secret put` deploys immediately. Read

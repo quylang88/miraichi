@@ -107,7 +107,7 @@ function exportSourceTree(sourceRoot: string) {
 
 removeDirectory(DIST_DIR);
 ensureDirectory(DIST_DIR);
-fs.writeFileSync(path.join(DIST_DIR, 'index.html'), getIndexHtml());
+fs.writeFileSync(path.join(DIST_DIR, 'index.html'), getIndexHtml(''));
 copyDirectory(PUBLIC_DIR, DIST_DIR);
 
 for (const sourceRoot of SOURCE_ROOTS) {

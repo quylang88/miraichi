@@ -57,18 +57,18 @@ describe('staging smoke check helpers', () => {
     );
   });
 
-  it('resolves a remote runtime API URL and rejects missing or loopback configuration', () => {
+  it('requires the runtime API URL to stay on the Worker origin', () => {
     expect(resolveStagingApiBaseUrl(
-      '<script>window.MIRAICHI_ENV={API_URL:"https://api.example.com/"}</script>',
+      '<script>window.MIRAICHI_ENV={API_URL:""}</script>',
       'https://example.pages.dev'
-    )).toBe('https://api.example.com');
+    )).toBe('https://example.pages.dev');
     expect(() => resolveStagingApiBaseUrl('<div>Miraichi</div>', 'https://example.pages.dev')).toThrow(
       'root shell does not expose API_URL'
     );
     expect(() => resolveStagingApiBaseUrl(
-      '<script>window.MIRAICHI_ENV={API_URL:"http://localhost:3001"}</script>',
+      '<script>window.MIRAICHI_ENV={API_URL:"https://api.example.com"}</script>',
       'https://example.pages.dev'
-    )).toThrow('API_URL points to a loopback host');
+    )).toThrow('API_URL must stay same-origin');
   });
 
   it('builds Phase 5.12 smoke targets from a base URL', () => {
@@ -121,14 +121,14 @@ describe('staging smoke check helpers', () => {
   it('passes when every staging endpoint returns expected markers', async () => {
     const baseUrl = 'https://example.pages.dev';
     const fetchStub = createFetchStub({
-      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:"https://api.example.com"}</script><div id="app-root">Miraichi shell-entry</div>'),
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi shell-entry</div>'),
       [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),
       [`${baseUrl}/service-worker.js`]: createResponse(DEFAULT_PHASE_5_12_CACHE_MARKER),
       [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
       [`${baseUrl}/apps/web/src/config/client-env.js`]: createResponse('export function getApiBaseUrl() {}'),
       [`${baseUrl}/apps/web/src/services/match-feed-service.js`]: createResponse('fetch("/api/v1/matches")'),
       [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }'),
-      'https://api.example.com/api/v1/health': createResponse(JSON.stringify({ status: 'ok' }))
+      [`${baseUrl}/api/v1/health`]: createResponse(JSON.stringify({ status: 'ok' }))
     });
 
     const result = await runStagingSmokeCheck({
@@ -141,21 +141,21 @@ describe('staging smoke check helpers', () => {
     expect(fetchStub.calls).toEqual([
       ...buildStagingSmokeChecks(baseUrl).map((check) => check.url),
       `${baseUrl}/`,
-      'https://api.example.com/api/v1/health'
+      `${baseUrl}/api/v1/health`
     ]);
   });
 
   it('reports missing markers without leaking response bodies', async () => {
     const baseUrl = 'https://example.pages.dev';
     const fetchStub = createFetchStub({
-      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:"https://api.example.com"}</script><div id="app-root">Miraichi shell-entry</div>'),
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi shell-entry</div>'),
       [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),
       [`${baseUrl}/service-worker.js`]: createResponse('old-cache-marker-secret-like-text'),
       [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
       [`${baseUrl}/apps/web/src/config/client-env.js`]: createResponse('export function getApiBaseUrl() {}'),
       [`${baseUrl}/apps/web/src/services/match-feed-service.js`]: createResponse('fetch("/api/v1/matches")'),
       [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }'),
-      'https://api.example.com/api/v1/health': createResponse(JSON.stringify({ status: 'ok' }))
+      [`${baseUrl}/api/v1/health`]: createResponse(JSON.stringify({ status: 'ok' }))
     });
 
     const result = await runStagingSmokeCheck({
@@ -176,14 +176,14 @@ describe('staging smoke check helpers', () => {
   it('reports malformed manifest JSON', async () => {
     const baseUrl = 'https://example.pages.dev';
     const fetchStub = createFetchStub({
-      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:"https://api.example.com"}</script><div id="app-root">Miraichi shell-entry</div>'),
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi shell-entry</div>'),
       [`${baseUrl}/manifest.webmanifest`]: createResponse('{bad-json'),
       [`${baseUrl}/service-worker.js`]: createResponse(DEFAULT_PHASE_5_12_CACHE_MARKER),
       [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
       [`${baseUrl}/apps/web/src/config/client-env.js`]: createResponse('export function getApiBaseUrl() {}'),
       [`${baseUrl}/apps/web/src/services/match-feed-service.js`]: createResponse('fetch("/api/v1/matches")'),
       [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }'),
-      'https://api.example.com/api/v1/health': createResponse(JSON.stringify({ status: 'ok' }))
+      [`${baseUrl}/api/v1/health`]: createResponse(JSON.stringify({ status: 'ok' }))
     });
 
     const result = await runStagingSmokeCheck({
@@ -201,14 +201,14 @@ describe('staging smoke check helpers', () => {
     const baseUrl = 'https://example.pages.dev';
     const shellHtml = '<!DOCTYPE html><div id="app-root">Miraichi shell-entry</div>';
     const fetchStub = createFetchStub({
-      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:"https://api.example.com"}</script><div id="app-root">Miraichi shell-entry</div>'),
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi shell-entry</div>'),
       [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),
       [`${baseUrl}/service-worker.js`]: createResponse(DEFAULT_PHASE_5_12_CACHE_MARKER),
       [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
       [`${baseUrl}/apps/web/src/config/client-env.js`]: createResponse(shellHtml),
       [`${baseUrl}/apps/web/src/services/match-feed-service.js`]: createResponse('fetch("/api/v1/matches")'),
       [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }'),
-      'https://api.example.com/api/v1/health': createResponse(JSON.stringify({ status: 'ok' }))
+      [`${baseUrl}/api/v1/health`]: createResponse(JSON.stringify({ status: 'ok' }))
     });
 
     const result = await runStagingSmokeCheck({ baseUrl, fetchImpl: fetchStub });
@@ -221,7 +221,7 @@ describe('staging smoke check helpers', () => {
 
   it('fails when the configured staging API health route returns Pages fallback HTML', async () => {
     const baseUrl = 'https://example.pages.dev';
-    const rootHtml = '<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:"https://api.example.com"}</script><div id="app-root">Miraichi shell-entry</div>';
+    const rootHtml = '<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi shell-entry</div>';
     const fetchStub = createFetchStub({
       [`${baseUrl}/`]: createResponse(rootHtml),
       [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),
@@ -230,7 +230,7 @@ describe('staging smoke check helpers', () => {
       [`${baseUrl}/apps/web/src/config/client-env.js`]: createResponse('export function getApiBaseUrl() {}'),
       [`${baseUrl}/apps/web/src/services/match-feed-service.js`]: createResponse('fetch("/api/v1/matches")'),
       [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }'),
-      'https://api.example.com/api/v1/health': createResponse('<!DOCTYPE html><div>Miraichi</div>')
+      [`${baseUrl}/api/v1/health`]: createResponse('<!DOCTYPE html><div>Miraichi</div>')
     });
 
     const result = await runStagingSmokeCheck({ baseUrl, fetchImpl: fetchStub });

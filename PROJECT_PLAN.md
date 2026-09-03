@@ -25,7 +25,7 @@
   owner hosting` — ten sequential TDD slices now name exact files, RED observations, minimal
   implementation, focused verification, and local commit boundaries.
 - **Active phase**: `phase:code-slice Supabase Edge Function and Cloudflare Worker owner hosting —
-  Slice 7 Cloudflare Static Assets and deploy artifact gate`.
+  Slice 8 Vault-backed hourly refresh scheduler`.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45
@@ -225,10 +225,13 @@ deployment path.
   gateway/Frankfurt headers, preserves cookie/origin/body/query/`Set-Cookie`, removes hop-by-hop
   headers, disables API caching and redirects, and sanitizes upstream failures. Cloudflare accepts
   no database, provider, owner-password, session, or refresh credential binding.
+- Slice 7 configured `apps/web/dist` as SPA Static Assets with Worker-first routing only for `/api`
+  and `/api/*`. The build contains exactly 63 files, 385,780 total bytes, and a 54,672-byte largest
+  file; same-origin API inspection and Wrangler 4.128.0 dry-run passed without deploying.
 - Windows had reserved the original `54320-54419` local port range. The checked-in local Supabase
   ports now use `15420-15429`; the local database, migration, schema, snapshot, lint, and security
   verification all passed on the replacement ports. This changes no hosted endpoint or database.
-- Slice 7 is now the earliest active code slice. No deployment, push, remote secret mutation,
+- Slice 8 is now the earliest active code slice. No deployment, push, remote secret mutation,
   Tokyo project creation, production promotion, or Frankfurt deletion has occurred.
 
 ## Product Boundary

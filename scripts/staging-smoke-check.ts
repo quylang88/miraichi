@@ -121,12 +121,12 @@ export function resolveStagingApiBaseUrl(rootHtml: string, rawPageBaseUrl: strin
     throw new Error('API_URL must use HTTP or HTTPS');
   }
 
-  const hostname = apiUrl.hostname.toLowerCase();
-  if (hostname === 'localhost' || hostname.endsWith('.localhost') || hostname === '127.0.0.1' || hostname === '::1') {
-    throw new Error('API_URL points to a loopback host');
+  const pageUrl = new URL(pageBaseUrl);
+  if (apiUrl.origin !== pageUrl.origin) {
+    throw new Error('API_URL must stay same-origin with the staging Worker');
   }
 
-  return apiUrl.toString().replace(/\/+$/, '');
+  return pageUrl.toString().replace(/\/+$/, '');
 }
 
 function compareJsonField(parsedJson: Record<string, unknown> | null | undefined, key: string, expectedValue: unknown) {
