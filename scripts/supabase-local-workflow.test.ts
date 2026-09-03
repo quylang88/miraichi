@@ -12,7 +12,7 @@ import type { CommandRunner, QueryClientFactory } from './supabase-local-workflo
 
 describe('supabase local developer workflow', () => {
   it('parses the local DB URL from Supabase status env output', () => {
-    const env = parseSupabaseStatusEnv('DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"\n');
+    const env = parseSupabaseStatusEnv('DB_URL="postgresql://postgres:postgres@127.0.0.1:15422/postgres"\n');
 
     expect(env.DB_URL).toBe(LOCAL_SUPABASE_DATABASE_URL);
   });
@@ -34,7 +34,7 @@ describe('supabase local developer workflow', () => {
   it('documents the exact DBeaver connection fields for the local DB', () => {
     expect(buildDbeaverConnectionInfo()).toEqual({
       host: '127.0.0.1',
-      port: 54322,
+      port: 15422,
       database: 'postgres',
       username: 'postgres',
       password: 'postgres',

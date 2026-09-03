@@ -7,7 +7,7 @@ import { createPostgresQueryClient, type PostgresQueryClient } from '../apps/api
 import { ServingMatchStoreRepository } from '../apps/api/src/repositories/serving-match-store-repository.js';
 import { runServingMatchStoreCloudSync } from './sync-serving-match-store-to-cloud.js';
 
-export const LOCAL_SUPABASE_DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
+export const LOCAL_SUPABASE_DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:15422/postgres';
 export const PHASE9_CLOUD_MIGRATION_VERSION = '20260702052851';
 export const EXPECTED_MIRAICHI_TABLES = [
   'app_profile',
@@ -78,7 +78,7 @@ export function buildLocalSupabaseEnv(baseEnv: NodeJS.ProcessEnv = process.env):
 export function buildDbeaverConnectionInfo() {
   return {
     host: '127.0.0.1',
-    port: 54322,
+    port: 15422,
     database: 'postgres',
     username: 'postgres',
     password: 'postgres',

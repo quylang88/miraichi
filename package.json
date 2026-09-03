@@ -38,6 +38,8 @@
     "supabase:local:status": "tsx scripts/supabase-local-workflow.ts status",
     "supabase:local:sync": "tsx scripts/supabase-local-workflow.ts sync",
     "supabase:local:verify": "tsx scripts/supabase-local-workflow.ts verify",
+    "edge:function:build": "tsx scripts/build-supabase-edge-function.ts",
+    "edge:function:graph:verify": "tsx scripts/verify-supabase-edge-module-graph.ts",
     "phase9:local-data-api-verify": "pnpm exec vitest run packages/shared/src/contracts/local-match-contracts.test.ts apps/api/src/repositories/serving-match-store.test.ts apps/api/src/repositories/serving-match-store-repository.test.ts apps/api/src/routes/matches.test.ts apps/api/src/routes/match-detail.test.ts apps/api/src/routes/data-snapshot-status.test.ts apps/web/src/services/match-feed-service.test.ts apps/web/src/production-shell.test.ts scripts/build-serving-match-store.test.ts scripts/phase3-verify.test.ts",
     "phase9:cloud-persistence-verify": "tsx scripts/phase9-cloud-persistence-verify.ts",
     "phase9:non-ai-app-verify": "pnpm run phase9:local-data-api-verify && pnpm run phase9:cloud-persistence-verify",
@@ -68,6 +70,7 @@
   "devDependencies": {
     "@types/node": "^26.0.1",
     "@vitest/coverage-v8": "^4.1.9",
+    "esbuild": "0.28.2",
     "fake-indexeddb": "6.2.5",
     "supabase": "2.109.0",
     "tsx": "^4.22.4",

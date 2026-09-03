@@ -18,7 +18,7 @@ This document records the Phase 9 local Supabase workflow for developing Miraich
 APP_ENV=local
 API_URL=http://localhost:3001
 CLOUD_PERSISTENCE_MODE=supabase
-SUPABASE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+SUPABASE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:15422/postgres
 MIRAICHI_OWNER_PROFILE_ID=owner-primary
 LOCAL_MATCH_SERVING_ROOT=apps/api/data/serving
 ```
@@ -66,7 +66,7 @@ Use PostgreSQL connection type:
 | Field | Value |
 | --- | --- |
 | Host | `127.0.0.1` |
-| Port | `54322` |
+| Port | `15422` |
 | Database | `postgres` |
 | Username | `postgres` |
 | Password | `postgres` |

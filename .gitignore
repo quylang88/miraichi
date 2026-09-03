@@ -96,6 +96,7 @@ apps/api/data/serving/manifest.json
 apps/api/data/serving/versions/**
 apps/api/data/warehouse/versions/**
 apps/api/data/warehouse/runs/**
+supabase/functions/_shared/generated/**
 !apps/api/data/serving/README.md
 !apps/api/data/serving/.gitkeep
 !apps/api/data/warehouse/.gitkeep
