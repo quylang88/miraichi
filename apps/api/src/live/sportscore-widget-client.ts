@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer';
+
 const SPORTSCORE_WIDGET_ORIGIN = 'https://sportscore.com' as const;
 const MATCHES_PATH = '/api/widget/matches/' as const;
 const MATCH_PATH = '/api/widget/match/' as const;

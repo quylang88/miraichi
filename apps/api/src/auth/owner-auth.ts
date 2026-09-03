@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { createHmac, randomBytes, scrypt as nodeScrypt, timingSafeEqual } from 'node:crypto';
 
 const PASSWORD_PREFIX = 'scrypt-v1';

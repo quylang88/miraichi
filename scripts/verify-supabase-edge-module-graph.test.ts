@@ -26,12 +26,15 @@ describe('Supabase Edge module graph audit', () => {
     ]));
   });
 
-  it('allows runtime-neutral API code and the documented node:crypto compatibility API', () => {
+  it('allows runtime-neutral API code and the documented Node compatibility APIs', () => {
     expect(inspectSupabaseEdgeModuleGraph({
       inputs: {
         'apps/api/src/runtime/edge-runtime-composition.ts': {
           bytes: 1,
-          imports: [{ path: 'node:crypto', kind: 'import-statement' }]
+          imports: [
+            { path: 'node:buffer', kind: 'import-statement' },
+            { path: 'node:crypto', kind: 'import-statement' }
+          ]
         },
         'apps/api/src/api-router.ts': { bytes: 1, imports: [] }
       },

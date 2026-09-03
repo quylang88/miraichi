@@ -1,7 +1,13 @@
 import { createApiHandler, type ApiHandler } from '../api-router.js';
 import { authorizeEdgeGateway, EDGE_GATEWAY_HEADER, readEdgeGatewayConfig } from '../auth/edge-gateway-auth.js';
 import { readLiveRefreshServiceAuthConfig } from '../auth/live-refresh-service-auth.js';
-import { readOwnerAuthConfig } from '../auth/owner-auth.js';
+import {
+  createOwnerPasswordHash,
+  createOwnerSessionToken,
+  readOwnerAuthConfig,
+  verifyOwnerPassword,
+  verifyOwnerSessionToken
+} from '../auth/owner-auth.js';
 import { readEdgeCloudPersistenceConfig } from '../config/cloud-persistence-config.js';
 import { errorResponse } from '../http/web-http.js';
 import { LiveRefreshCoordinator } from '../live/live-refresh-coordinator.js';
@@ -26,6 +32,11 @@ const FUNCTION_MOUNTS = [
 ] as const;
 
 export type EdgeEnvironment = Readonly<Record<string, string | undefined>>;
+
+function runtimeDiagnostic(error: unknown): string {
+  if (!(error instanceof Error)) return 'unknown_error';
+  return `${error.name}: ${error.message}`.slice(0, 200);
+}
 
 function createUnavailableCloudAdapter(): CloudPersistenceAdapter {
   const unavailable = async (): Promise<never> => {
@@ -118,9 +129,33 @@ export function createPostgresEdgeApiHandler(
   }));
 }
 
-export function createPostgresRuntimeSmokeHandler(client: PostgresQueryClient): ApiHandler {
+export function createEdgeRuntimeSmokeHandler(client: PostgresQueryClient): ApiHandler {
   return async (request) => {
     const url = new URL(request.url);
+    if (url.pathname === '/__runtime-smoke/auth-primitives') {
+      if (request.method !== 'POST') return errorResponse(405, 'method_not_allowed', 'Method not allowed.');
+      try {
+        const password = 'miraichi-edge-runtime-smoke-password';
+        const hash = await createOwnerPasswordHash(password);
+        const parts = hash.split('$');
+        const scrypt = parts.slice(0, 4).join('$') === 'scrypt-v1$16384$8$1'
+          && await verifyOwnerPassword(password, hash);
+        const randomBytes = parts[4]?.length === 22;
+        const secret = 'miraichi-edge-runtime-smoke-session-secret';
+        const now = Date.now();
+        const token = createOwnerSessionToken(secret, now, 600);
+        const hmacSession = verifyOwnerSessionToken(token, secret, now + 1_000);
+        if (!scrypt || !randomBytes || !hmacSession) throw new Error('Auth primitive smoke failed');
+        return Response.json({
+          scope: 'auth-primitives', scrypt: true, randomBytes: true, hmacSession: true
+        }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
+      } catch (error) {
+        return Response.json({
+          error: { code: 'runtime_smoke_failed', message: 'Runtime smoke failed.' },
+          diagnostic: runtimeDiagnostic(error)
+        }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
+      }
+    }
     if (url.pathname !== '/__runtime-smoke/postgres') return null;
     if (request.method !== 'POST') return errorResponse(405, 'method_not_allowed', 'Method not allowed.');
     let body: unknown;
@@ -145,6 +180,8 @@ export function createPostgresRuntimeSmokeHandler(client: PostgresQueryClient): 
     }
   };
 }
+
+export const createPostgresRuntimeSmokeHandler = createEdgeRuntimeSmokeHandler;
 
 function normalizeFunctionRequest(request: Request): Request | null {
   const url = new URL(request.url);
@@ -187,7 +224,13 @@ export function createEdgeRequestHandler(options: {
       apiHandler ??= (options.createHandler ?? (() => createBootstrapEdgeApiHandler(options.env)))();
       return await apiHandler(normalized)
         ?? errorResponse(404, 'not_found', 'Not found.');
-    } catch {
+    } catch (error) {
+      if (options.env.APP_ENV === 'local' && options.env.MIRAICHI_EDGE_RUNTIME_SMOKE === 'enabled') {
+        return Response.json({
+          error: { code: 'edge_runtime_error', message: 'API request failed.' },
+          diagnostic: runtimeDiagnostic(error)
+        }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
+      }
       return errorResponse(500, 'edge_runtime_error', 'API request failed.', {
         headers: { 'Cache-Control': 'no-store' }
       });

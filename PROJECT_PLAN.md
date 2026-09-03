@@ -25,7 +25,7 @@
   owner hosting` — ten sequential TDD slices now name exact files, RED observations, minimal
   implementation, focused verification, and local commit boundaries.
 - **Active phase**: `phase:code-slice Supabase Edge Function and Cloudflare Worker owner hosting —
-  Slice 5 Exact owner auth and cookie flow in Edge Runtime`.
+  Slice 6 Cloudflare thin proxy`.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45
@@ -215,10 +215,15 @@ deployment path.
   connection, parameter binding, and transaction adaptation. The actual local Edge Runtime proved
   a bound-value query, forced rollback, committed transaction, cleanup, and a cloud status of
   `ready`; the probe route is unavailable outside explicit local smoke mode.
+- Slice 5 exposed a real Deno compatibility defect: the Edge Runtime does not provide Node's
+  `Buffer` global. Runtime modules now import `node:buffer` explicitly without changing scrypt cost,
+  hash format, HMAC format, cookie policy, or TTL. The actual runtime then proved scrypt
+  `N=16384, r=8, p=1`, random salt generation, HMAC session verification, generic invalid login,
+  hardened owner cookie, authenticated cloud route, refresh-token isolation, and logout expiry.
 - Windows had reserved the original `54320-54419` local port range. The checked-in local Supabase
   ports now use `15420-15429`; the local database, migration, schema, snapshot, lint, and security
   verification all passed on the replacement ports. This changes no hosted endpoint or database.
-- Slice 5 is now the earliest active code slice. No deployment, push, remote secret mutation,
+- Slice 6 is now the earliest active code slice. No deployment, push, remote secret mutation,
   Tokyo project creation, production promotion, or Frankfurt deletion has occurred.
 
 ## Product Boundary

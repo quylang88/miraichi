@@ -57,7 +57,7 @@ export async function buildSupabaseEdgeFunction(options: {
     metafile: true,
     sourcemap: false,
     legalComments: 'none',
-    external: ['node:crypto'],
+    external: ['node:buffer', 'node:crypto'],
     plugins: [workspaceSourcePlugin(rootDir)],
     logLevel: 'silent'
   });

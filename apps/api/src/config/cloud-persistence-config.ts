@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import type { CloudPersistenceMode } from '@miraichi/shared/src/contracts/cloud-persistence-contracts.js';
 
 export interface CloudPersistenceConfig {

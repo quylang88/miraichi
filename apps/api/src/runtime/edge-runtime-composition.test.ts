@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { PostgresQueryClient } from '../persistence/supabase/postgres-query-client.js';
 import {
+  createEdgeRuntimeSmokeHandler,
   createEdgeRequestHandler,
   createPostgresEdgeApiHandler
 } from './edge-runtime-composition.js';
@@ -118,5 +119,21 @@ describe('Supabase Edge request composition', () => {
     expect(createRuntimeSmokeHandler).not.toHaveBeenCalled();
     expect((await enabled(baseRequest(token))).status).toBe(200);
     expect(createRuntimeSmokeHandler).toHaveBeenCalledTimes(1);
+  });
+
+  it('exercises the exact owner crypto primitives only on the local auth smoke route', async () => {
+    const client: PostgresQueryClient = {
+      query: async () => ({ rows: [], rowCount: 0 }),
+      transaction: async (operation) => operation(client)
+    };
+    const handler = createEdgeRuntimeSmokeHandler(client);
+    const response = await handler(new Request(
+      'http://edge-runtime.internal/__runtime-smoke/auth-primitives',
+      { method: 'POST' }
+    ));
+    expect(response?.status).toBe(200);
+    await expect(response?.json()).resolves.toEqual({
+      scope: 'auth-primitives', scrypt: true, randomBytes: true, hmacSession: true
+    });
   });
 });
