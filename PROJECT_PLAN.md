@@ -25,13 +25,14 @@
   owner hosting` — ten sequential TDD slices now name exact files, RED observations, minimal
   implementation, focused verification, and local commit boundaries.
 - **Active phase**: `phase:code-slice Supabase Edge Function and Cloudflare Worker owner hosting —
-  Slice 9 Cross-runtime integration`.
+  Slice 10 Local release closeout and staging handoff`.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45
   current competition editions and its exact snapshot is synced to the retained Frankfurt Supabase
-  staging project. No Edge Function or Cloudflare Worker implementation/deployment, hosted smoke,
-  owner-feedback release gate, Tokyo project creation, or production promotion has run.
+  staging project. The Edge Function and Cloudflare Worker implementation has passed its focused
+  local integration gates, but neither runtime has been deployed. No hosted smoke, owner-feedback
+  release gate, Tokyo project creation, or production promotion has run.
 - **Current lifecycle source of truth**: this file.
 
 ## Historical Owner-Hosted API And Visibility-Driven Live Overlay — 2026-09-02
@@ -239,7 +240,14 @@ deployment path.
 - Windows had reserved the original `54320-54419` local port range. The checked-in local Supabase
   ports now use `15420-15429`; the local database, migration, schema, snapshot, lint, and security
   verification all passed on the replacement ports. This changes no hosted endpoint or database.
-- Slice 9 is now the earliest active code slice. No deployment, push, remote secret mutation,
+- Slice 9 added two cross-runtime integrations around the real Edge composition, PostgreSQL
+  adapter contract, canonical Web API router, and Cloudflare proxy. Eight focused tests proved
+  fail-closed direct Edge access, owner login/session/logout, refresh-token isolation, provider
+  locator redaction, no hosted filesystem-detail fallback, transaction rollback, cookie/body/query
+  preservation, one upstream request, persisted bankroll/bet flow, visible refresh, and terminal
+  projection. The actual local Edge Runtime `all` smoke also passed every PostgreSQL and auth
+  assertion; Edge bundle/graph verification and the 63-file Cloudflare dry-run artifact passed.
+- Slice 10 is now the earliest active code slice. No deployment, push, remote secret mutation,
   Tokyo project creation, production promotion, or Frankfurt deletion has occurred.
 
 ## Product Boundary

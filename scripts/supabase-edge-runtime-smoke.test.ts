@@ -5,9 +5,10 @@ import {
 } from './supabase-edge-runtime-smoke.js';
 
 describe('Supabase Edge runtime smoke', () => {
-  it('accepts only the postgres and auth scopes', () => {
+  it('accepts only the postgres, auth, and aggregate scopes', () => {
     expect(parseEdgeRuntimeSmokeArgs(['--scope', 'postgres'])).toEqual({ scope: 'postgres' });
     expect(parseEdgeRuntimeSmokeArgs(['--scope', 'auth'])).toEqual({ scope: 'auth' });
+    expect(parseEdgeRuntimeSmokeArgs(['--scope', 'all'])).toEqual({ scope: 'all' });
     expect(() => parseEdgeRuntimeSmokeArgs(['--scope', 'unknown'])).toThrow('Unsupported Edge runtime smoke scope');
   });
 

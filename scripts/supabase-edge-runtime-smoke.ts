@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export interface EdgeRuntimeSmokeArgs {
-  readonly scope: 'postgres' | 'auth';
+  readonly scope: 'postgres' | 'auth' | 'all';
 }
 
 export interface EdgePostgresRuntimeSmokeResult {
@@ -29,29 +29,43 @@ export interface EdgeAuthRuntimeSmokeResult {
 
 export type EdgeRuntimeSmokeResult = EdgePostgresRuntimeSmokeResult | EdgeAuthRuntimeSmokeResult;
 
+export interface EdgeAllRuntimeSmokeResult {
+  readonly scope: 'all';
+  readonly postgres: EdgePostgresRuntimeSmokeResult;
+  readonly auth: EdgeAuthRuntimeSmokeResult;
+}
+
 export function parseEdgeRuntimeSmokeArgs(args: readonly string[]): EdgeRuntimeSmokeArgs {
   const scopeIndex = args.indexOf('--scope');
   const scope = scopeIndex >= 0 ? args[scopeIndex + 1] : undefined;
-  if (scope !== 'postgres' && scope !== 'auth') {
+  if (scope !== 'postgres' && scope !== 'auth' && scope !== 'all') {
     throw new Error(`Unsupported Edge runtime smoke scope: ${scope ?? 'missing'}`);
   }
   return { scope };
 }
 
 export async function runEdgeRuntimeSmoke(options: {
-  readonly scope: 'postgres' | 'auth';
+  readonly scope: 'postgres' | 'auth' | 'all';
   readonly functionUrl: string;
   readonly gatewayToken: string;
   readonly ownerPassword?: string;
   readonly refreshToken?: string;
   readonly fetcher?: typeof fetch;
-}): Promise<EdgeRuntimeSmokeResult> {
+}): Promise<EdgeRuntimeSmokeResult | EdgeAllRuntimeSmokeResult> {
   if (Buffer.byteLength(options.gatewayToken, 'utf8') < 32) {
     throw new Error('MIRAICHI_GATEWAY_TOKEN must be at least 32 bytes');
   }
   const fetcher = options.fetcher ?? fetch;
   const functionUrl = options.functionUrl.replace(/\/$/, '');
   const gatewayHeaders = { 'x-miraichi-gateway-token': options.gatewayToken };
+  if (options.scope === 'all') {
+    const postgres = await runEdgeRuntimeSmoke({ ...options, scope: 'postgres' });
+    const auth = await runEdgeRuntimeSmoke({ ...options, scope: 'auth' });
+    if (postgres.scope !== 'postgres' || auth.scope !== 'auth') {
+      throw new Error('Edge all-scope smoke returned an invalid result');
+    }
+    return { scope: 'all', postgres, auth };
+  }
   if (options.scope === 'auth') {
     if (!options.ownerPassword || options.ownerPassword.length < 12) {
       throw new Error('MIRAICHI_OWNER_PASSWORD is required for the auth smoke');
