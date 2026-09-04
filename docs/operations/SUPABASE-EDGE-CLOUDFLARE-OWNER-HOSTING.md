@@ -177,7 +177,35 @@ Use only the Cloudflare `*.workers.dev` origin for browser smoke:
 
 Do not call SportScore `/api/v1`. Do not execute full-season hydration or historical hydration.
 
-## 6. Configure Vault and hourly cron (planned)
+## 6. Vault-backed hourly cron
+
+The tracked migration creates but does not call these owner-only functions:
+
+- `miraichi_app.configure_edge_hourly_live_refresh()`;
+- `miraichi_app.invoke_edge_hourly_live_refresh()`;
+- `miraichi_app.unschedule_edge_hourly_live_refresh()`.
+
+It resolves exactly these Vault names at execution time:
+
+- `miraichi_edge_function_url`;
+- `miraichi_edge_gateway_token`;
+- `miraichi_live_refresh_token`.
+
+Local migration and disposable scheduler verification is repeatable with:
+
+```powershell
+pnpm exec supabase db reset --local
+pnpm exec supabase migration up --local --include-all
+pnpm run live:hourly:local-sql-smoke
+pnpm exec supabase db lint --local --schema miraichi_app --level warning --fail-on error
+pnpm exec supabase db advisors --local --type security --fail-on error
+```
+
+The explicit `migration up` makes this gate robust on the current Windows/Supabase CLI combination,
+where `db reset` has twice recreated the local database without applying migrations. It is local
+only. Never substitute `--linked`.
+
+Frankfurt Vault configuration and scheduling remain owner staging actions.
 
 Only after the Edge function works:
 
@@ -190,6 +218,16 @@ Only after the Edge function works:
 5. Confirm only `POST /api/v1/live/refresh?reason=hourly` ran, the durable lease/cooldown was honored,
    and execution region was Frankfurt.
 6. Mark the GitHub Actions hourly workflow superseded only after this smoke passes.
+
+After the three Vault values exist, the owner enables or disables exactly one job with:
+
+```sql
+select miraichi_app.configure_edge_hourly_live_refresh();
+select miraichi_app.unschedule_edge_hourly_live_refresh();
+```
+
+The GitHub Actions hourly trigger remains the rollback scheduler until the Frankfurt cron smoke is
+recorded. At that gate, remove only its `schedule` trigger and retain `workflow_dispatch`.
 
 If the job loops, fails repeatedly, or targets the wrong route/region, unschedule the named job and
 diagnose. Never delete canonical matches or the last-good live overlay as recovery.
