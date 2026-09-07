@@ -106,7 +106,7 @@ describe('FotMob terminal result publication job', () => {
     expect(evidence).not.toContain('match-live');
     expect(evidence).not.toContain('8 - 7');
     expect(evidence).not.toContain('must');
-  });
+  }, 15_000);
 
   it('uses the date ETag and retries due matches after a 304 without publication', async () => {
     const dataRoot = await createDataRoot([

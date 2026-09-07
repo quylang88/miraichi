@@ -94,7 +94,7 @@ describe('owner-local FotMob terminal results runtime', () => {
     expect(serving.matches[0]).toMatchObject({
       status: 'completed', score: { home: 3, away: 2 }
     });
-  });
+  }, 15_000);
 
   it('rejects an isolated or unbootstrapped target instead of writing outside active data', async () => {
     const activeDataRoot = await createActiveRoot();

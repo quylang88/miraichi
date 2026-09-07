@@ -6,9 +6,10 @@
 - Architecture: `ARCHITECTURE.md`
 - Roadmap: `ROADMAP.md`
 - Product reset decision: `docs/decisions/ADR-0044-ai-sportmonks-removal-product-reset.md`
-- Current owner-hosted/live decision: `docs/decisions/ADR-0051-owner-hosted-api-and-live-overlay.md`
-- Current design: `docs/superpowers/specs/2026-09-02-owner-hosted-api-live-overlay-design.md`
-- Current implementation plan: `docs/superpowers/plans/2026-09-02-owner-hosted-api-live-overlay.md`
+- Current owner-hosted/live decision: `docs/decisions/ADR-0052-supabase-edge-cloudflare-owner-hosting.md`
+- Current design: `docs/superpowers/specs/2026-09-03-supabase-edge-cloudflare-owner-hosting-design.md`
+- Current implementation plan: `docs/superpowers/plans/2026-09-03-supabase-edge-cloudflare-owner-hosting.md`
+- Current owner hosting runbook: `docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md`
 - Architecture map: `docs/architecture/module-map.md`
 - ADR index: `docs/decisions/README.md`
 - Testing workflow: `docs/workflows/testing-workflow.md`

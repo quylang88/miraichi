@@ -2,7 +2,8 @@
 
 ## Current State
 
-- **Status**: Active
+- **Status**: Blocked at staging handoff pending explicit owner authorization and owner-entered
+  secrets/configuration.
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
@@ -24,15 +25,19 @@
 - **Completed phase**: `phase:implementation-plan Supabase Edge Function and Cloudflare Worker
   owner hosting` — ten sequential TDD slices now name exact files, RED observations, minimal
   implementation, focused verification, and local commit boundaries.
-- **Active phase**: `phase:code-slice Supabase Edge Function and Cloudflare Worker owner hosting —
-  Slice 10 Local release closeout and staging handoff`.
+- **Completed phase**: `phase:integration-test Supabase Edge Function and Cloudflare Worker owner
+  hosting` — all ten local TDD slices, the complete local/release/staging command gates, actual
+  Supabase Edge runtime smoke, and Cloudflare artifact verification passed on 2026-09-07.
+- **Earliest safe next phase**: `phase:staging Supabase Edge Function and Cloudflare Worker owner
+  hosting` — **BLOCKED** until the owner explicitly authorizes push/deploy/remote migration and
+  enters the required values directly into Supabase, Vault, and Cloudflare.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45
   current competition editions and its exact snapshot is synced to the retained Frankfurt Supabase
-  staging project. The Edge Function and Cloudflare Worker implementation has passed its focused
-  local integration gates, but neither runtime has been deployed. No hosted smoke, owner-feedback
-  release gate, Tokyo project creation, or production promotion has run.
+  staging project. The Edge Function and Cloudflare Worker implementation has passed every planned
+  local gate, but neither runtime has been deployed. The seventh migration is local only. No hosted
+  smoke, owner-feedback release gate, Tokyo project creation, or production promotion has run.
 - **Current lifecycle source of truth**: this file.
 
 ## Historical Owner-Hosted API And Visibility-Driven Live Overlay — 2026-09-02
@@ -210,30 +215,35 @@ deployment path.
 - Slice 2 moved the canonical API boundary to Web `Request`/`Response` while retaining Node as an
   adapter in local commit `8a27c17`.
 - Slice 3 added the fail-closed gateway, deterministic Edge bundle, forbidden-import audit, and one
-  `miraichi-api` function. The actual Supabase CLI Edge Runtime returned the same generic `401` for
-  missing/wrong gateway tokens and `200` for the authorized health request.
+  `miraichi-api` function in local commit `4f4c426`. The actual Supabase CLI Edge Runtime returned
+  the same generic `401` for missing/wrong gateway tokens and `200` for the authorized health
+  request.
 - Slice 4 added the version-pinned `postgres` Edge driver with `prepare: false`, one bounded
-  connection, parameter binding, and transaction adaptation. The actual local Edge Runtime proved
-  a bound-value query, forced rollback, committed transaction, cleanup, and a cloud status of
-  `ready`; the probe route is unavailable outside explicit local smoke mode.
+  connection, parameter binding, and transaction adaptation in local commit `ea47641`. The actual
+  local Edge Runtime proved a bound-value query, forced rollback, committed transaction, cleanup,
+  and a cloud status of `ready`; the probe route is unavailable outside explicit local smoke mode.
 - Slice 5 exposed a real Deno compatibility defect: the Edge Runtime does not provide Node's
   `Buffer` global. Runtime modules now import `node:buffer` explicitly without changing scrypt cost,
-  hash format, HMAC format, cookie policy, or TTL. The actual runtime then proved scrypt
-  `N=16384, r=8, p=1`, random salt generation, HMAC session verification, generic invalid login,
-  hardened owner cookie, authenticated cloud route, refresh-token isolation, and logout expiry.
+  hash format, HMAC format, cookie policy, or TTL in local commit `243355d`. The actual runtime then
+  proved scrypt `N=16384, r=8, p=1`, random salt generation, HMAC session verification, generic
+  invalid login, hardened owner cookie, authenticated cloud route, refresh-token isolation, and
+  logout expiry.
 - Slice 6 added one Cloudflare Worker that delegates non-API requests to Static Assets and sends
-  exact `/api` traffic to the single Edge Function with one upstream subrequest. It overwrites the
+  exact `/api` traffic to the single Edge Function with one upstream subrequest in local commit
+  `d4402b3`. It overwrites the
   gateway/Frankfurt headers, preserves cookie/origin/body/query/`Set-Cookie`, removes hop-by-hop
   headers, disables API caching and redirects, and sanitizes upstream failures. Cloudflare accepts
   no database, provider, owner-password, session, or refresh credential binding.
 - Slice 7 configured `apps/web/dist` as SPA Static Assets with Worker-first routing only for `/api`
-  and `/api/*`. The build contains exactly 63 files, 385,780 total bytes, and a 54,672-byte largest
-  file; same-origin API inspection and Wrangler 4.128.0 dry-run passed without deploying.
+  and `/api/*` in local commit `52623e2`. The build contains exactly 63 files, 385,780 total bytes,
+  and a 54,672-byte largest file; same-origin API inspection and Wrangler 4.128.0 dry-run passed
+  without deploying.
 - Slice 8 added a locked-down Vault/pg_cron/pg_net migration that creates no job until the owner
-  explicitly configures it. Local SQL smoke proved missing-secret rejection, one idempotent
-  minute-17 job, one sanitized rollback-only pg_net queue entry, idempotent unschedule, and removal
-  of all disposable Vault values. The current GitHub hourly trigger remains as rollback until a
-  Frankfurt cron smoke exists. On this Windows host, Supabase CLI 2.109.0 `db reset --local`
+  explicitly configures it in local commit `545f106`. Local SQL smoke proved missing-secret
+  rejection, one idempotent minute-17 job, one sanitized rollback-only pg_net queue entry,
+  idempotent unschedule, and removal of all disposable Vault values. The current GitHub hourly
+  trigger remains as rollback until a Frankfurt cron smoke exists. On this Windows host, Supabase
+  CLI 2.109.0 `db reset --local`
   recreated the database twice without applying migrations; explicit `migration up --local
   --include-all` applied all seven versions, after which the 10,899-match local snapshot was
   restored and verified.
@@ -241,14 +251,40 @@ deployment path.
   ports now use `15420-15429`; the local database, migration, schema, snapshot, lint, and security
   verification all passed on the replacement ports. This changes no hosted endpoint or database.
 - Slice 9 added two cross-runtime integrations around the real Edge composition, PostgreSQL
-  adapter contract, canonical Web API router, and Cloudflare proxy. Eight focused tests proved
-  fail-closed direct Edge access, owner login/session/logout, refresh-token isolation, provider
-  locator redaction, no hosted filesystem-detail fallback, transaction rollback, cookie/body/query
-  preservation, one upstream request, persisted bankroll/bet flow, visible refresh, and terminal
-  projection. The actual local Edge Runtime `all` smoke also passed every PostgreSQL and auth
-  assertion; Edge bundle/graph verification and the 63-file Cloudflare dry-run artifact passed.
-- Slice 10 is now the earliest active code slice. No deployment, push, remote secret mutation,
-  Tokyo project creation, production promotion, or Frankfurt deletion has occurred.
+  adapter contract, canonical Web API router, and Cloudflare proxy in local commit `b010e15`. Eight
+  focused tests proved fail-closed direct Edge access, owner login/session/logout, refresh-token
+  isolation, provider locator redaction, no hosted filesystem-detail fallback, transaction
+  rollback, cookie/body/query preservation, one upstream request, persisted bankroll/bet flow,
+  visible refresh, and terminal projection. The actual local Edge Runtime `all` smoke also passed
+  every PostgreSQL and auth assertion; Edge bundle/graph verification and the 63-file Cloudflare
+  dry-run artifact passed.
+- Slice 10 corrected the staging runbook and documentation index, recorded every Slice 1–9 commit,
+  and ran the complete closeout gate. An exact staging dry-run exposed the missing `env.staging`
+  Wrangler declaration; a RED/GREEN configuration check now enforces it and the same command passes
+  without that warning. Repeated full-gate runs also exposed four filesystem-heavy tests whose
+  five-second limit caused nondeterministic timeout/cleanup failures under suite load; only those
+  four cases now have a bounded 15-second timeout and pass together. `verify:local` passed 140 test
+  files/703 unit tests plus syntax, type, architecture, and type-safety audits. `test:integration`,
+  `verify:release`, and the local-only `verify:staging` command passed; the latter rebuilt the
+  same-origin PWA. The final Edge `all` smoke again passed parameter binding, rollback, commit,
+  cleanup, crypto, cookie, protected route, refresh isolation, and logout. Cloudflare verification
+  again measured 63 files/385,780 bytes with a 54,672-byte largest file, and `git diff --check`
+  passed.
+
+### Local closeout transition — 2026-09-07
+
+- **Fact**: the code/integration exit gate is satisfied locally. No push, deployment, remote
+  migration, remote secret mutation, Vault scheduling, Tokyo project creation, production
+  promotion, or Frankfurt deletion occurred.
+- **Blocked staging actions**: the owner must explicitly authorize the push/deploy workflow and
+  remote application of `20260903120000`; identify the exact staging `*.workers.dev` origin; and
+  enter the documented secrets/configuration directly into Supabase, Vault, and Cloudflare.
+- **Staging exit evidence still missing**: deployed Function/Worker IDs, direct gateway denial,
+  Frankfurt region, hosted authenticated owner flow, real hosted transaction behavior, one
+  pg_cron/pg_net delivery, and a rollback drill.
+- **Recommendation**: start `phase:staging Supabase Edge Function and Cloudflare Worker owner
+  hosting` only after those owner actions are explicitly approved. Production and Tokyo remain out
+  of scope.
 
 ## Product Boundary
 

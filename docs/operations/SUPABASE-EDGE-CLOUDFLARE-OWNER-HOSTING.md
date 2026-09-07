@@ -1,19 +1,21 @@
 # Supabase Edge + Cloudflare Worker owner hosting runbook
 
-> **Status: local implementation through Cloudflare artifact packaging.** Edge runtime and
-> Cloudflare dry-run gates exist and pass locally. Do not push or deploy until every remaining TDD
-> slice and `pnpm run verify:staging` pass and the owner explicitly authorizes staging operations.
+> **Status: local implementation and release closeout complete on 2026-09-07.** The next phase is
+> Frankfurt staging, blocked until the owner explicitly authorizes push/deploy/remote migration and
+> enters the required secrets/configuration directly into Supabase Edge Secrets, Supabase Vault,
+> and Cloudflare.
 
 This runbook replaces the Koyeb deployment path. It retains the Frankfurt Supabase staging project
 and its verified match snapshot. It does not authorize a push, Tokyo project, production promotion,
-paid service, database reset, or project deletion.
+paid service, remote database reset, or project deletion.
 
 ## Current retained state
 
 - Supabase project: `Miraichi Staging`
 - Project ref: `qpexxwmrnreooxftfucv`
 - Region: Frankfurt
-- Applied migrations: six versions through `20260902120000`
+- Remote applied migrations: six versions through `20260902120000`; the seventh local migration
+  `20260903120000_edge_hourly_live_refresh.sql` remains unapplied until owner-authorized staging.
 - Verified cloud snapshot: 10,899 matches, 45 competitions, one snapshot
 - Data API: disabled in hosted staging
 - Local CA: `.secrets/supabase-staging-ca.crt` (gitignored; used only by owner-local DB tooling)
@@ -36,11 +38,24 @@ pnpm run verify:staging
 pnpm run data:validate:serving:matches
 pnpm run edge:function:build
 pnpm run edge:function:graph:verify
+pnpm run edge:runtime:smoke -- --scope all
 pnpm run cloudflare:artifact:verify
 ```
 
 Do not continue on any failure. Local success is only a deployment precondition, not staging
 approval.
+
+Recorded local closeout evidence on 2026-09-07:
+
+- `verify:product-boundary`, `verify:local`, `test:integration`, `verify:release`, and the local-only
+  `verify:staging` command all passed; unit verification covered 140 files and 703 tests.
+- The actual Supabase Edge Runtime `--scope all` smoke passed parameterized queries, rollback,
+  commit, cleanup, scrypt, random bytes, HMAC session, generic invalid login, hardened cookie,
+  protected route, refresh isolation, and logout.
+- The Cloudflare dry-run artifact passed with 63 files, 385,780 total bytes, and a 54,672-byte
+  largest file. The exact `--env staging` dry-run with all public bindings also passed without a
+  missing-environment warning; verification now requires the explicit `env.staging` declaration.
+- `git diff --check` passed. No remote operation occurred.
 
 ## 1. Secret inventory
 
@@ -77,14 +92,15 @@ Build first, then start the local database/gateway/runtime and serve the functio
 pnpm run edge:function:build
 pnpm run edge:function:graph:verify
 pnpm exec supabase start --exclude gotrue,imgproxy,logflare,mailpit,postgres-meta,postgrest,realtime,storage-api,studio,supavisor,vector
+pnpm exec supabase migration up --local --include-all
+pnpm run supabase:local:sync
 pnpm exec supabase functions serve miraichi-api --env-file .secrets/edge.local.env
 ```
 
 In a second terminal run:
 
 ```powershell
-pnpm run edge:runtime:smoke -- --scope postgres
-pnpm run edge:runtime:smoke -- --scope auth
+pnpm run edge:runtime:smoke -- --scope all
 pnpm run supabase:local:verify
 ```
 
@@ -105,8 +121,9 @@ After implementation and verification:
 
 1. Confirm the CLI is still linked to `qpexxwmrnreooxftfucv`.
 2. Confirm remote migrations match local; inspect a dry run before applying any new migration.
-3. Store the four Miraichi secrets in Supabase Edge Function Secrets. `SUPABASE_DB_URL` is provided
-   by Supabase and must not be copied to Cloudflare.
+3. Create gitignored `.secrets/edge.staging.env` with the exact runtime names below. It contains four
+   secrets plus non-secret runtime configuration, so protect the whole file. `SUPABASE_DB_URL` is
+   provided by Supabase and must not be included or copied to Cloudflare.
 4. Deploy the single `miraichi-api` function from the reviewed commit.
 5. Record the commit, function deployment ID, and sanitized deployment output.
 6. Call the direct function URL without the gateway token and verify it fails before health/auth.
@@ -120,8 +137,27 @@ pnpm exec supabase link --project-ref qpexxwmrnreooxftfucv
 pnpm exec supabase migration list
 pnpm exec supabase db push --dry-run
 pnpm exec supabase db push
+pnpm exec supabase secrets set --env-file .secrets/edge.staging.env --project-ref qpexxwmrnreooxftfucv
 pnpm exec supabase functions deploy miraichi-api --project-ref qpexxwmrnreooxftfucv
 ```
+
+The staging environment file must define only the required server runtime values; never enable the
+local smoke route in staging:
+
+```dotenv
+APP_ENV=staging
+MIRAICHI_GATEWAY_TOKEN=<PASSWORD_MANAGER_VALUE>
+MIRAICHI_OWNER_AUTH_MODE=password
+MIRAICHI_OWNER_PASSWORD_HASH='<PASSWORD_MANAGER_VALUE>'
+MIRAICHI_SESSION_SECRET=<PASSWORD_MANAGER_VALUE>
+MIRAICHI_REFRESH_TOKEN=<PASSWORD_MANAGER_VALUE>
+MIRAICHI_OWNER_PROFILE_ID=owner-primary
+MIRAICHI_PUBLIC_ORIGIN=https://<EXACT_STAGING_WORKER>.workers.dev
+SPORTSCORE_LIVE_MODE=widget
+```
+
+Do not add `MIRAICHI_EDGE_RUNTIME_SMOKE=enabled`. Review `supabase secrets list` by name only after
+setting the file; never print values.
 
 Do not run `supabase db reset --linked` or any remote reset.
 
@@ -132,9 +168,11 @@ Use a dedicated staging Worker on the owner's existing Cloudflare account and it
 
 Required non-secret staging configuration:
 
+- `DEPLOYMENT_ENV=staging`;
 - `MIRAICHI_EDGE_FUNCTION_URL` set to the exact Supabase Edge Function URL;
 - `MIRAICHI_EDGE_REGION=eu-central-1`;
-- exact Cloudflare public origin after the Worker name/subdomain is known.
+- `MIRAICHI_PUBLIC_ORIGIN` set to the exact Cloudflare public origin after the Worker
+  name/subdomain is known.
 
 Required Cloudflare secret:
 
@@ -144,18 +182,25 @@ The reviewed Wrangler configuration must point Static Assets at `apps/web/dist`,
 and run Worker code first only for exact `/api` and `/api/*`. The proxy performs one exact upstream
 subrequest and never follows redirects.
 
-Expected commands after Wrangler is pinned and the configuration exists:
+Set the two task-specific PowerShell variables to reviewed non-secret values. The dry-run and
+version upload pass all four public bindings explicitly; the gateway token is entered only at the
+interactive secret prompt:
 
 ```powershell
+$MiraichiEdgeUrl = "https://qpexxwmrnreooxftfucv.supabase.co/functions/v1/miraichi-api"
+$MiraichiWorkerOrigin = "https://<EXACT_STAGING_WORKER>.workers.dev"
 pnpm run build:web-static
 pnpm run cloudflare:artifact:verify
-pnpm --filter @miraichi/cloudflare-gateway exec wrangler deploy --env staging --dry-run
+pnpm --filter @miraichi/cloudflare-gateway exec wrangler deploy --env staging --dry-run --var "DEPLOYMENT_ENV:staging" --var "MIRAICHI_EDGE_FUNCTION_URL:$MiraichiEdgeUrl" --var "MIRAICHI_PUBLIC_ORIGIN:$MiraichiWorkerOrigin" --var "MIRAICHI_EDGE_REGION:eu-central-1"
+pnpm --filter @miraichi/cloudflare-gateway exec wrangler versions upload --env staging --var "DEPLOYMENT_ENV:staging" --var "MIRAICHI_EDGE_FUNCTION_URL:$MiraichiEdgeUrl" --var "MIRAICHI_PUBLIC_ORIGIN:$MiraichiWorkerOrigin" --var "MIRAICHI_EDGE_REGION:eu-central-1"
 pnpm --filter @miraichi/cloudflare-gateway exec wrangler versions secret put MIRAICHI_GATEWAY_TOKEN --env staging
-pnpm --filter @miraichi/cloudflare-gateway exec wrangler deploy --env staging
+pnpm --filter @miraichi/cloudflare-gateway exec wrangler versions deploy <SECRET_BEARING_VERSION_ID>@100% --env staging
 ```
 
-`wrangler versions secret put` is preferred because `wrangler secret put` deploys immediately. Read
-the generated diff/output before making the version active. Record the Worker version ID.
+`wrangler versions upload` and `wrangler versions secret put` create versions without routing
+traffic. Read both outputs, use the version ID returned by the secret command, and only then run the
+explicit `versions deploy`. Do not substitute `wrangler secret put`, which deploys immediately.
+Record the active Worker version ID.
 
 ## 5. Same-origin staging smoke
 

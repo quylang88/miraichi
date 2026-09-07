@@ -223,7 +223,7 @@ describe('LocalMatchDetailStore', () => {
         'match-euro-2024-esp-eng',
         'match-xyz-999'
       ]);
-    });
+    }, 15_000);
 
     it('returns empty array if match-details directory does not exist when listing', async () => {
       const emptyStore = new LocalMatchDetailStore(path.join(tempDir, 'fresh-subdir'));

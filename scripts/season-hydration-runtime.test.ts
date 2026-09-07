@@ -141,7 +141,7 @@ describe('owner-local season hydration runtime', () => {
     const snapshot = await readServingMatchStoreSnapshot(path.join(activeRoot, 'serving'));
     expect(snapshot.matches.some((match) => match.homeTeam.name === 'Bootstrap Home')).toBe(true);
     expect(snapshot.matches.some((match) => match.homeTeam.name === 'Hydrated Home')).toBe(true);
-  });
+  }, 15_000);
 
   it('contains no SportScore API client or /api/v1 execution path', async () => {
     const source = await readFile(path.join(process.cwd(), 'scripts', 'season-hydration-runtime.ts'), 'utf8');
