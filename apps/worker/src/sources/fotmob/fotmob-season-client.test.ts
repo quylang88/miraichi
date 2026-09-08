@@ -26,6 +26,14 @@ function validPayload() {
 }
 
 describe('FotMob unofficial season client', () => {
+  it('reads bounded UTF-8 bodies without a Node Buffer global in Edge', async () => {
+    const response = { ok: true, status: 200, headers: new Headers(), text: async () => JSON.stringify(validPayload()) } as Response;
+    const client = new FotMobSeasonClient({ fetchFn: vi.fn(async () => response) });
+    vi.stubGlobal('Buffer', undefined);
+    try {
+      expect((await client.getSeasonMatches({ externalCompetitionId: 47, externalCountryCode: 'ENG', providerSeason: '2026/2027' })).status).toBe('modified');
+    } finally { vi.unstubAllGlobals(); }
+  });
   it('uses only the exact public season endpoint and forwards an ETag', async () => {
     const fetchFn = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(validPayload()), {
       status: 200,

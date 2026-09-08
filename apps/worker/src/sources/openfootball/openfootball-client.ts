@@ -145,7 +145,7 @@ export class OpenFootballClient {
       throw new Error(`OpenFootball HTTP ${response.status}: ${response.statusText}`);
     }
     const rawText = await response.text();
-    if (Buffer.byteLength(rawText, 'utf8') > this.maxResponseBytes) {
+    if (new TextEncoder().encode(rawText).byteLength > this.maxResponseBytes) {
       throw new Error('OpenFootball response exceeded the configured size limit.');
     }
     let parsed: unknown;

@@ -79,6 +79,14 @@ source/hosting approvals are already present. Each completed slice records real 
   Browser RED and a deployed-entrypoint RED reproduced them. Explicit visible empty/unavailable
   styles, PWA cache v10 and the entrypoint token/cap forwarding fix pass 22 focused tests. The
   deterministic E2E fixture also now validates its counts and clears completed period/minute.
+- Hosted browser gate passed on Worker `bc4eb715-e26c-45db-833c-84785bf74443`, including visible
+  empty state, filter restoration, redaction and logout replay denial. Chromium's 401 response-body
+  observer did not finish; the suite now checks that error body with a direct same-origin request
+  and bounds its network audit. Final full local chain passed 149 files / 730 tests.
+- Hosted provider authentication now passes (authenticated GET returns 405 without provider work).
+  The current batch failed after response reading: the reused clients depended on global Node
+  Buffer. A no-Buffer RED reproduced the defect; FotMob season/daily and OpenFootball now measure
+  UTF-8 with TextEncoder. Durable retry state is retained; no cooldown reset or bypass is used.
 
 - Preflight: clean branch `feat/api-football-rapid-ingestion`, HEAD `f3113ed`; remote Edge v5 ACTIVE
   and Worker `1c71033f-f97f-42b9-9884-1862d64ad870` at 100% independently checked on 2026-09-09.

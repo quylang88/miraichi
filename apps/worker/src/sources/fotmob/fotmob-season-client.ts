@@ -162,7 +162,7 @@ export class FotMobSeasonClient {
       throw new Error('FotMob response exceeded the configured size limit.');
     }
     const rawText = await response.text();
-    if (Buffer.byteLength(rawText, 'utf8') > this.maxResponseBytes) {
+    if (new TextEncoder().encode(rawText).byteLength > this.maxResponseBytes) {
       throw new Error('FotMob response exceeded the configured size limit.');
     }
     let parsed: unknown;

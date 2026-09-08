@@ -1,11 +1,14 @@
 import { spawnSync } from 'node:child_process';
 import { gate } from './staging-hosted-config.js';
+let querySequence = 0;
 
 export function linkedStagingQuery(sql: string): Record<string, unknown>[] {
+  const queryId = ++querySequence;
   const result = spawnSync(process.execPath, ['node_modules/supabase/dist/supabase.js', 'db', 'query', '--linked', '--output-format', 'json'], {
     input: sql, encoding: 'utf8', windowsHide: true, timeout: 45_000
   });
-  gate(result.status === 0, 'linked Frankfurt query');
+  const sqlState = /SQLSTATE\s+([A-Z0-9]{5})/u.exec(result.stderr ?? '')?.[1] ?? 'none';
+  gate(result.status === 0, `linked Frankfurt query ${queryId}; exit=${result.status}; sqlstate=${sqlState}`);
   const offset = result.stdout.indexOf('{');
   gate(offset >= 0, 'linked query response');
   const parsed = JSON.parse(result.stdout.slice(offset)) as { rows?: Record<string, unknown>[] };

@@ -24,18 +24,24 @@ export async function runStagingOwnerFlow(): Promise<void> {
   let authenticated = false;
   let fixtureCalls = 0;
   const networkChecks: Promise<void>[] = [];
+  const pendingChecks = new Map<number, { path: string; step: string }>();
   let networkFailure = false;
   page.on('response', (response) => {
     if (!response.url().startsWith(`${origin}/api/`)) return;
+    const checkId = networkChecks.length;
+    pendingChecks.set(checkId, { path: new URL(response.url()).pathname, step: 'headers' });
     networkChecks.push((async () => {
       const headers = await response.allHeaders();
+      pendingChecks.get(checkId)!.step = 'body';
       if (Object.keys(headers).some((key) => /^(sb-|x-supabase|x-sb-|x-region|x-deno|x-miraichi-gateway)/u.test(key))) networkFailure = true;
-      if (response.status() !== 204) {
+      // Chromium may omit loadingFinished for a 401 login response. Its body is checked below
+      // with a direct request to the same hosted endpoint, while these headers remain audited.
+      if (response.status() !== 204 && response.status() !== 401) {
         const text = await response.text();
         if (secretValues.some((value) => text.includes(value))) networkFailure = true;
         try { if (hasLocator(JSON.parse(text))) networkFailure = true; } catch { /* non-JSON responses checked by their route */ }
       }
-    })().catch(() => { networkFailure = true; }));
+    })().catch(() => { networkFailure = true; }).finally(() => pendingChecks.delete(checkId)));
   });
   try {
     const root = await page.goto(origin, { waitUntil: 'networkidle' });
@@ -56,6 +62,12 @@ export async function runStagingOwnerFlow(): Promise<void> {
     const [invalid] = await Promise.all([page.waitForResponse((response) => response.url().endsWith('/api/v1/auth/login')),
       page.locator('form button[type="submit"]').click()]);
     gate(invalid.status() === 401, 'wrong login denied');
+    const denied = await context.request.post('/api/v1/auth/login', {
+      headers: { origin }, data: { password: 'miraichi-deliberately-wrong-e2e-password' }
+    });
+    gate(denied.status() === 401, 'wrong login body probe denied');
+    const deniedBody = await denied.text();
+    gate(!secretValues.some((value) => deniedBody.includes(value)) && !hasLocator(JSON.parse(deniedBody)), 'wrong login body redaction');
     gate(!(await context.cookies()).some((cookie) => cookie.name === '__Host-miraichi_owner'), 'wrong login cookie absent');
     phase = 'correct login';
     await page.locator('input[type="password"]').fill(password);
@@ -108,6 +120,7 @@ export async function runStagingOwnerFlow(): Promise<void> {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ snapshot, refresh: { outcome: 'fresh' } }) });
     });
     phase = 'deterministic live rows';
+    console.log(JSON.stringify({ gate: 'hosted-browser', stage: phase }));
     await page.getByRole('button', { name: 'LIVE', exact: true }).click();
     await page.locator('[data-live-match-id="match-e2e-browser-2"]').waitFor();
     gate(await page.locator('#screen-matches [data-match-row]').count() === 3, 'only live/halftime/suspended rows');
@@ -118,21 +131,36 @@ export async function runStagingOwnerFlow(): Promise<void> {
     snapshot.coverage.publishedCount = 0;
     snapshot.coverage.mappedCount = 0;
     phase = 'deterministic empty state';
+    console.log(JSON.stringify({ gate: 'hosted-browser', stage: phase }));
     await page.getByRole('button', { name: 'LIVE', exact: true }).click();
     await page.locator('[data-live-empty]').waitFor();
     gate(await page.locator('#screen-matches [data-match-row]').count() === 0, 'empty live list');
     await page.unroute('**/api/v1/live/refresh?reason=manual');
     phase = 'logout';
+    console.log(JSON.stringify({ gate: 'hosted-browser', stage: phase }));
     gate((await context.request.post('/api/v1/auth/logout', { headers: { origin } })).status() === 204, 'logout');
     authenticated = false;
     gate((await context.request.get('/api/v1/matches')).status() === 401, 'session cleared');
     gate((await context.request.get('/api/v1/matches', { headers: { cookie: savedCookie } })).status() === 401, 'logged out cookie replay denied');
-    await Promise.all(networkChecks);
+    phase = 'network audit';
+    console.log(JSON.stringify({ gate: 'hosted-browser', stage: phase }));
+    let auditTimer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([Promise.all(networkChecks), new Promise<never>((_, reject) => {
+        auditTimer = setTimeout(() => reject(new Error('Hosted gate failed: response audit timeout')), 15_000);
+      })]);
+    } finally { clearTimeout(auditTimer); }
     gate(!networkFailure, 'network locators/headers/secrets redacted');
     console.log(JSON.stringify({ gate: 'hosted-browser', status: 'passed', origin, realOwnerFlow: true, deterministicLiveStates: true, ownerDataCreated: false }));
   } catch (error) {
     console.log(JSON.stringify({ gate: 'hosted-browser-diagnostic', phase, fixtureCalls,
+      pendingChecks: [...pendingChecks.values()],
       liveRows: await page.locator('[data-live-match-id]').count(),
+      empty: await page.locator('[data-live-empty]').evaluateAll((nodes) => nodes.map((node) => ({
+        display: getComputedStyle(node).display, visibility: getComputedStyle(node).visibility,
+        height: node.getBoundingClientRect().height, width: node.getBoundingClientRect().width,
+        parent: node.parentElement?.getAttribute('data-live-state')
+      }))),
       liveState: await page.locator('[data-live-state]').getAttribute('data-live-state').catch(() => null),
       active: await page.locator('[data-live-toggle]').getAttribute('aria-pressed').catch(() => null) }));
     const detail = error instanceof Error && error.message.startsWith('Hosted gate failed:') ? ` (${error.message})` : '';
