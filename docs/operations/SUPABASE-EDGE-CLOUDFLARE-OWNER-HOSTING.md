@@ -24,7 +24,7 @@ Do not delete or reset this project. Do not move the CA into source control.
 
 - Reviewed Git source through `caa853f` is pushed on `feat/api-football-rapid-ingestion`.
 - Supabase Edge Function: `miraichi-api`, deployment ID
-  `0e192eca-fc8e-4fe3-be44-748ef9a68609`, active version 4, Frankfurt execution verified.
+  `0e192eca-fc8e-4fe3-be44-748ef9a68609`, active version 5, Frankfurt execution verified.
 - Cloudflare origin: `https://miraichi-owner-gateway-staging.quylang88.workers.dev`; active Worker
   version `1c71033f-f97f-42b9-9884-1862d64ad870` at 100% traffic.
 - Vault has exactly the three scheduler names. Cron job ID 2 is active at `17 * * * *`; its command
@@ -313,8 +313,9 @@ causes an outage; the recovery is restoring matching secret versions, not bypass
   `4824619d-6a8e-4857-a1c5-7d79de289108`; health remained `200`. The remediated version was then
   restored to 100% traffic, health remained `200`, `Cache-Control` remained `no-store`, and no
   observed Supabase runtime header was exposed.
-- The clean reviewed Edge source at commit `caa853f` rebuilt, passed graph verification, and the
-  deploy command reported no byte change because that exact bundle was already active as version 4.
+- The clean reviewed Edge source at commit `caa853f` rebuilt and passed graph verification. The
+  follow-up deploy command reported no byte change; a subsequent independent function-list check
+  recorded deployment ID `0e192eca-fc8e-4fe3-be44-748ef9a68609` as `ACTIVE` version 5.
 - The cron unschedule drill removed the only job while retaining all three Vault names, and the
   configure function restored one exact active job as job ID 2. A controlled post-restore pg_net
   request returned `200 fresh`; earlier natural runs at minute 17 were recorded as succeeded.

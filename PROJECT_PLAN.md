@@ -38,7 +38,7 @@
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active 10,899-match/45-competition snapshot is retained in Frankfurt;
-  Supabase Edge Function version 4 and Cloudflare Worker version
+  Supabase Edge Function version 5 and Cloudflare Worker version
   `1c71033f-f97f-42b9-9884-1862d64ad870` are active and green. The owner-feedback release gate,
   Tokyo project creation, and production promotion have not run and are not approved.
 - **Current lifecycle source of truth**: this file.
@@ -303,7 +303,7 @@ deployment path.
   nine reviewed Edge secret/config names. Direct missing/wrong gateway requests both returned the
   same `401 gateway_auth_required`; authorized health returned `200` from `eu-central-1`.
 - Supabase Edge Function `miraichi-api` deployment ID
-  `0e192eca-fc8e-4fe3-be44-748ef9a68609`, version 4, is `ACTIVE` with platform JWT verification
+  `0e192eca-fc8e-4fe3-be44-748ef9a68609`, version 5, is `ACTIVE` with platform JWT verification
   disabled behind Miraichi's independent gateway and owner-session controls.
 - Cloudflare Worker `miraichi-owner-gateway-staging` is live at
   `https://miraichi-owner-gateway-staging.quylang88.workers.dev`. Active version
