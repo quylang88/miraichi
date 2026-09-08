@@ -2,8 +2,9 @@
 
 ## Current State
 
-- **Status**: Active staging; blocked at secret upload until the owner finishes the prepared local
-  staging secret file.
+- **Status**: Frankfurt staging exit gate satisfied on 2026-09-08. The next phase is the final
+  `phase:owner-feedback` release review; Tokyo/production remains blocked pending explicit owner
+  approval.
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
@@ -28,18 +29,18 @@
 - **Completed phase**: `phase:integration-test Supabase Edge Function and Cloudflare Worker owner
   hosting` — all ten local TDD slices, the complete local/release/staging command gates, actual
   Supabase Edge runtime smoke, and Cloudflare artifact verification passed on 2026-09-07.
-- **Active phase**: `phase:staging Supabase Edge Function and Cloudflare Worker owner hosting` —
-  owner authorized push/deploy/remote migration on 2026-09-08; deployment is **BLOCKED** until the
-  owner enters the required secret values directly into `.secrets/edge.staging.env` and retains the
-  new gateway token in the password manager.
+- **Completed phase**: `phase:staging Supabase Edge Function and Cloudflare Worker owner hosting` —
+  the reviewed branch is pushed; Frankfurt migration, Edge Function, Worker, Vault cron, complete
+  hosted owner smoke, full staging gate, and rollback drill passed on 2026-09-08.
+- **Active phase**: `phase:owner-feedback Supabase Edge Function and Cloudflare Worker owner
+  hosting` — the staging candidate is ready for the owner's final release review. This phase does
+  not authorize Tokyo project creation or production promotion.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
-- **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45
-  current competition editions and its exact snapshot is synced to the retained Frankfurt Supabase
-  staging project. The Edge Function and Cloudflare Worker implementation has passed every planned
-  local gate, but neither runtime has been deployed. All seven migrations are now applied remotely.
-  No hosted smoke, owner-feedback release gate, Tokyo project creation, or production promotion has
-  run.
+- **Promotion state**: The active 10,899-match/45-competition snapshot is retained in Frankfurt;
+  Supabase Edge Function version 4 and Cloudflare Worker version
+  `1c71033f-f97f-42b9-9884-1862d64ad870` are active and green. The owner-feedback release gate,
+  Tokyo project creation, and production promotion have not run and are not approved.
 - **Current lifecycle source of truth**: this file.
 
 ## Historical Owner-Hosted API And Visibility-Driven Live Overlay — 2026-09-02
@@ -292,20 +293,53 @@ deployment path.
 
 - The owner explicitly authorized the Frankfurt staging push, remote migration, and Edge/Cloudflare
   deployment workflow.
-- Local commit `fded0df` and its preceding 11 commits were pushed to
-  `origin/feat/api-football-rapid-ingestion`.
+- Local commits through `caa853f` were pushed to `origin/feat/api-football-rapid-ingestion`.
 - Supabase project `qpexxwmrnreooxftfucv` was linked and `ACTIVE_HEALTHY` in `eu-central-1`.
   Migration dry-run named only `20260903120000_edge_hourly_live_refresh.sql`; it was applied and a
   fresh remote migration list matched all seven local versions. Supabase CLI 2.109.0 warned that it
   could not cache the post-push pg-delta catalog because its temporary CA file was absent, but the
   push exited successfully and the independent remote list verified the applied version.
-- Cloudflare OAuth succeeded for the expected owner account. Its Workers subdomain is `quylang88`;
-  `miraichi-owner-gateway-staging` does not yet exist, so the exact planned public origin is
-  `https://miraichi-owner-gateway-staging.quylang88.workers.dev`.
-- Supabase Edge Secrets are empty. The gitignored `.secrets/edge.staging.env` template contains the
-  exact non-secret staging configuration and awaits owner entry of gateway, password-hash, session,
-  and refresh secrets. No Edge Function, Worker version, Vault value, or cron job was deployed or
-  configured before that gate.
+- The owner entered the staging values only in gitignored local files. Supabase accepted exactly the
+  nine reviewed Edge secret/config names. Direct missing/wrong gateway requests both returned the
+  same `401 gateway_auth_required`; authorized health returned `200` from `eu-central-1`.
+- Supabase Edge Function `miraichi-api` deployment ID
+  `0e192eca-fc8e-4fe3-be44-748ef9a68609`, version 4, is `ACTIVE` with platform JWT verification
+  disabled behind Miraichi's independent gateway and owner-session controls.
+- Cloudflare Worker `miraichi-owner-gateway-staging` is live at
+  `https://miraichi-owner-gateway-staging.quylang88.workers.dev`. Active version
+  `1c71033f-f97f-42b9-9884-1862d64ad870` serves the 63-file/385,780-byte artifact and proxies API
+  responses with `Cache-Control: no-store` while stripping all observed Supabase runtime headers.
+- The first real cron delivery exposed a cross-driver JSONB bug: JSON serialized for Node `pg` was
+  encoded as a JSON scalar by Edge `postgres.js`, violating the live-snapshot object constraint.
+  Commit `caa853f` introduced explicit driver-specific JSON parameters. The RED test was observed;
+  30 focused tests, typecheck, Edge build/graph verification, and repeated remote calls then passed
+  with HTTP 200 (`refreshed` then `fresh`).
+- Vault contains exactly the three reviewed scheduler names. The active job is unique, runs
+  `17 * * * *`, and uses the exact invocation function. Natural runs at 09:17, 10:17, and 11:17 UTC
+  were recorded as `succeeded`. The unschedule drill produced zero jobs while retaining all three
+  Vault names; reconfiguration restored one active exact job as job ID 2.
+- The GitHub Actions hourly schedule was removed only after the cron proof; `workflow_dispatch`
+  remains as the manual rollback path.
+- Static smoke, authenticated same-origin owner smoke, cloud persistence, 10,899-match snapshot,
+  bankroll setup/read, draft-to-settlement, backup/export log, live read/manual refresh, redaction,
+  hardened cookie, and logout all passed. Disposable owner data was removed and counts returned to
+  zero. The inspected 200-row Edge log window matched zero configured secret values.
+- Cloudflare was rolled back to prior working version
+  `4824619d-6a8e-4857-a1c5-7d79de289108`, returned healthy, then restored to the remediated version
+  at 100% traffic; restored health was `200` with zero observed internal headers.
+- `pnpm run verify:staging` passed after remediation: 141 unit files/705 tests, every integration
+  suite, endpoint E2E, PWA verification, audits, typecheck, and the final static build all passed.
+  This is staging evidence only; production remains unapproved.
+
+### Staging closeout and transition
+
+- **Fact**: the `phase:staging` exit gate is satisfied by the full staging command, active
+  deployments, fresh hosted owner/cron smoke, cleanup proof, and rollback drill.
+- **Owner decision still required**: accept or reject this staging candidate in the final
+  `phase:owner-feedback` review. No production action follows automatically.
+- **Recommendation**: review the four-tab PWA at the recorded Worker origin, then explicitly approve
+  or reject production preparation. If approved, the earliest safe next phase is a separate
+  `phase:production` that creates a Tokyo project while retaining Frankfurt for rollback.
 
 ## Product Boundary
 

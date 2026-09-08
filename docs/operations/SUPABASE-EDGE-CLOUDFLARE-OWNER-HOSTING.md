@@ -1,8 +1,8 @@
 # Supabase Edge + Cloudflare Worker owner hosting runbook
 
-> **Status: Frankfurt staging started on 2026-09-08.** Push and the seventh remote migration are
-> complete. Deployment is blocked until the owner fills the prepared gitignored Edge staging file
-> and retains the new gateway token in the password manager.
+> **Status: Frankfurt staging completed on 2026-09-08.** Migration, Edge/Worker deployment,
+> Vault cron, hosted owner smoke, full staging verification, cleanup, and rollback drill passed.
+> Tokyo/production remains blocked until explicit owner approval after final review.
 
 This runbook replaces the Koyeb deployment path. It retains the Frankfurt Supabase staging project
 and its verified match snapshot. It does not authorize a push, Tokyo project, production promotion,
@@ -19,6 +19,19 @@ paid service, remote database reset, or project deletion.
 - Local CA: `.secrets/supabase-staging-ca.crt` (gitignored; used only by owner-local DB tooling)
 
 Do not delete or reset this project. Do not move the CA into source control.
+
+## Recorded Frankfurt staging state — 2026-09-08
+
+- Reviewed Git source through `caa853f` is pushed on `feat/api-football-rapid-ingestion`.
+- Supabase Edge Function: `miraichi-api`, deployment ID
+  `0e192eca-fc8e-4fe3-be44-748ef9a68609`, active version 4, Frankfurt execution verified.
+- Cloudflare origin: `https://miraichi-owner-gateway-staging.quylang88.workers.dev`; active Worker
+  version `1c71033f-f97f-42b9-9884-1862d64ad870` at 100% traffic.
+- Vault has exactly the three scheduler names. Cron job ID 2 is active at `17 * * * *`; its command
+  exactly calls `miraichi_app.invoke_edge_hourly_live_refresh()`.
+- GitHub Actions keeps only `workflow_dispatch`; its duplicate hourly schedule was removed after
+  real cron deliveries succeeded.
+- No Tokyo project, custom domain, paid service, production promotion, reset, or deletion occurred.
 
 ## 0. Preconditions
 
@@ -200,6 +213,11 @@ traffic. Read both outputs, use the version ID returned by the secret command, a
 explicit `versions deploy`. Do not substitute `wrangler secret put`, which deploys immediately.
 Record the active Worker version ID.
 
+For the first deployment only, `versions upload` cannot create a Worker that does not yet exist.
+Frankfurt staging therefore used one explicit fail-closed bootstrap deployment with a known
+non-secret placeholder gateway value, then created and activated a secret-bearing version. Do not
+reuse that bootstrap path once the Worker exists.
+
 ## 5. Same-origin staging smoke
 
 Use only the Cloudflare `*.workers.dev` origin for browser smoke:
@@ -288,6 +306,28 @@ Before declaring staging complete:
 
 Gateway secret rotations must be coordinated. A mismatched Cloudflare/Edge/Vault value intentionally
 causes an outage; the recovery is restoring matching secret versions, not bypassing authentication.
+
+### Recorded rollback and staging smoke — 2026-09-08
+
+- Cloudflare rolled back from `1c71033f-f97f-42b9-9884-1862d64ad870` to prior working version
+  `4824619d-6a8e-4857-a1c5-7d79de289108`; health remained `200`. The remediated version was then
+  restored to 100% traffic, health remained `200`, `Cache-Control` remained `no-store`, and no
+  observed Supabase runtime header was exposed.
+- The clean reviewed Edge source at commit `caa853f` rebuilt, passed graph verification, and the
+  deploy command reported no byte change because that exact bundle was already active as version 4.
+- The cron unschedule drill removed the only job while retaining all three Vault names, and the
+  configure function restored one exact active job as job ID 2. A controlled post-restore pg_net
+  request returned `200 fresh`; earlier natural runs at minute 17 were recorded as succeeded.
+- The first controlled delivery exposed and stopped on a JSONB driver mismatch. `postgres.js` had
+  encoded Node-oriented JSON strings as JSON scalars. Commit `caa853f` now brands JSON parameters
+  and lets Node `pg` stringify while the Edge driver uses its JSON encoder. Remote live refresh then
+  returned `200 refreshed`, and the complete owner write/settlement/backup smoke passed.
+- Static/root/deep-route/API health checks and authenticated login/session/cloud/snapshot/matches/
+  bankroll/draft/bet/settlement/backup/live/logout checks all passed through the Worker origin.
+  Disposable owner rows were deleted after proof; bankroll, bet, draft, backup-log, and discipline
+  counts returned to zero. A 200-row Edge log inspection matched zero configured secret values.
+- `pnpm run verify:staging` passed with 141 unit files/705 tests, all integration suites, endpoint
+  E2E, PWA verification, audits, typecheck, and the final static build.
 
 ## 8. Frankfurt staging to Tokyo production
 
