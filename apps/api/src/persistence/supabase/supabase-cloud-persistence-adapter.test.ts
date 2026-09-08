@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CloudMatchSnapshot } from '@miraichi/shared/src/contracts/index.js';
 import { liveSnapshotFixture } from '../../../../../tests/fixtures/live-match-snapshot.js';
 import type { PostgresQueryClient } from './postgres-query-client.js';
+import { postgresJson } from './postgres-parameters.js';
 import { createSupabaseCloudPersistenceAdapter } from './supabase-cloud-persistence-adapter.js';
 
 class FakeClient implements PostgresQueryClient {
@@ -162,8 +163,8 @@ describe('supabase cloud persistence adapter', () => {
 
     const snapshotCall = client.calls.find((call) => call.text.includes('miraichi_app.match_snapshot'));
     const matchCall = client.calls.find((call) => call.text.includes('miraichi_app.match_record'));
-    expect(snapshotCall?.values[4]).toBe(JSON.stringify(snapshot.sources));
-    const rows = JSON.parse(String(matchCall?.values[2])) as Array<Record<string, unknown>>;
+    expect(snapshotCall?.values[4]).toEqual(postgresJson(snapshot.sources));
+    const rows = (matchCall?.values[2] as { readonly value: Array<Record<string, unknown>> }).value;
     expect(matchCall?.text).toContain('$3::jsonb');
     expect(rows[0]?.competition_type).toBe('club');
     expect(rows[0]?.source_refs).toEqual(snapshot.matches[0]!.sourceRefs);
@@ -192,7 +193,9 @@ describe('supabase cloud persistence adapter', () => {
     const batches = client.calls.filter((call) => call.text.includes('miraichi_app.match_record'));
     expect(client.transactions).toBe(1);
     expect(batches).toHaveLength(3);
-    expect(batches.map((call) => (JSON.parse(String(call.values[2])) as unknown[]).length)).toEqual([500, 500, 201]);
+    expect(batches.map((call) => (
+      call.values[2] as { readonly value: unknown[] }
+    ).value.length)).toEqual([500, 500, 201]);
   });
 
   it('reads the canonical club competition type from persisted match rows', async () => {

@@ -1,4 +1,5 @@
 import type { PostgresQueryClient } from './postgres-query-client.js';
+import { normalizePostgresJsParameters } from './postgres-parameters.js';
 
 export type PostgresJsResult<T extends Record<string, unknown>> = T[] & {
   readonly count?: number;
@@ -13,12 +14,16 @@ export interface PostgresJsTransactionDriver {
 
 export interface PostgresJsDriver extends PostgresJsTransactionDriver {
   begin<T>(operation: (driver: PostgresJsTransactionDriver) => Promise<T>): Promise<T>;
+  json(value: unknown): unknown;
 }
 
-function queryClientFor(driver: PostgresJsTransactionDriver): PostgresQueryClient {
+function queryClientFor(
+  driver: PostgresJsTransactionDriver,
+  encodeJson: (value: unknown) => unknown
+): PostgresQueryClient {
   const client: PostgresQueryClient = {
     query: async <T extends Record<string, unknown>>(text: string, values: readonly unknown[] = []) => {
-      const result = await driver.unsafe<T>(text, values);
+      const result = await driver.unsafe<T>(text, normalizePostgresJsParameters(values, encodeJson));
       return {
         rows: Array.from(result),
         rowCount: typeof result.count === 'number' ? result.count : result.length
@@ -32,11 +37,12 @@ function queryClientFor(driver: PostgresJsTransactionDriver): PostgresQueryClien
 }
 
 export function createPostgresJsQueryClient(driver: PostgresJsDriver): PostgresQueryClient {
-  const root = queryClientFor(driver);
+  const encodeJson = (value: unknown) => driver.json(value);
+  const root = queryClientFor(driver, encodeJson);
   return {
     query: root.query,
     transaction: async <T>(operation: (client: PostgresQueryClient) => Promise<T>) => (
-      driver.begin(async (transactionDriver) => operation(queryClientFor(transactionDriver)))
+      driver.begin(async (transactionDriver) => operation(queryClientFor(transactionDriver, encodeJson)))
     )
   };
 }

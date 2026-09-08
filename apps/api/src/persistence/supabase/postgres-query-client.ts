@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { normalizeNodePostgresParameters } from './postgres-parameters.js';
 
 export type PostgresSslConfig = false | { rejectUnauthorized: true; ca: string };
 
@@ -33,14 +34,14 @@ export function createPostgresQueryClient(databaseUrl: string, databaseCa?: stri
   });
   return {
     query: async <T extends Record<string, unknown>>(text: string, values: readonly unknown[] = []) => {
-      const result = await pool.query(text, [...values]);
+      const result = await pool.query(text, normalizeNodePostgresParameters(values));
       return { rows: result.rows as T[], rowCount: result.rowCount ?? 0 };
     },
     transaction: async <T>(operation: (client: PostgresQueryClient) => Promise<T>) => {
       const client = await pool.connect();
       const transactionClient: PostgresQueryClient = {
         query: async <R extends Record<string, unknown>>(text: string, values: readonly unknown[] = []) => {
-          const result = await client.query(text, [...values]);
+          const result = await client.query(text, normalizeNodePostgresParameters(values));
           return { rows: result.rows as R[], rowCount: result.rowCount ?? 0 };
         },
         transaction: async <R>(nested: (nestedClient: PostgresQueryClient) => Promise<R>) => nested(transactionClient)

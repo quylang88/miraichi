@@ -4,12 +4,27 @@ import {
   type PostgresJsDriver,
   type PostgresJsResult
 } from './postgres-js-query-client.js';
+import { postgresJson } from './postgres-parameters.js';
 
 function result<T extends Record<string, unknown>>(rows: T[], count = rows.length): PostgresJsResult<T> {
   return Object.assign(rows, { count });
 }
 
 describe('postgres.js query client', () => {
+  it('uses the driver JSON encoder for branded JSON parameters', async () => {
+    const payload = { status: 'ready', tags: ['edge'] };
+    const encoded = { driverJson: payload };
+    const unsafe = vi.fn(async () => result([]));
+    const json = vi.fn(() => encoded);
+    const driver = { unsafe, json, begin: vi.fn() } as unknown as PostgresJsDriver;
+    const client = createPostgresJsQueryClient(driver);
+
+    await client.query('select $1::jsonb', [postgresJson(payload), 'plain']);
+
+    expect(json).toHaveBeenCalledWith(payload);
+    expect(unsafe).toHaveBeenCalledWith('select $1::jsonb', [encoded, 'plain']);
+  });
+
   it('passes numbered parameters to the driver without interpolating them', async () => {
     const unsafe = vi.fn(async () => result([{ echoed: 'owner-primary' }], 1));
     const driver = { unsafe, begin: vi.fn() } as unknown as PostgresJsDriver;
@@ -30,6 +45,7 @@ describe('postgres.js query client', () => {
     let commits = 0;
     const driver: PostgresJsDriver = {
       unsafe: vi.fn(),
+      json: vi.fn((value) => value),
       begin: async (operation) => {
         const value = await operation({
           unsafe: transactionUnsafe as unknown as PostgresJsDriver['unsafe']
@@ -51,6 +67,7 @@ describe('postgres.js query client', () => {
     let rollbacks = 0;
     const driver: PostgresJsDriver = {
       unsafe: vi.fn(),
+      json: vi.fn((value) => value),
       begin: async (operation) => {
         try {
           return await operation({ unsafe: vi.fn(async () => result([])) });

@@ -148,9 +148,9 @@ if (process.argv[1] && import.meta.url === new URL(`file:///${process.argv[1].re
       return;
     }
     const workflow = readFileSync('.github/workflows/hourly-live-refresh.yml', 'utf8');
-    const findings = verifyHourlyLiveRefreshWorkflow(workflow);
+    const findings = verifyHourlyLiveRefreshWorkflow(workflow, { stagingCronProven: true });
     if (findings.length > 0) throw new Error(JSON.stringify({ status: 'failed', findings }));
-    console.log(JSON.stringify({ status: 'passed', workflow: 'hourly-live-refresh-fallback-retained' }));
+    console.log(JSON.stringify({ status: 'passed', workflow: 'hourly-live-refresh-manual-rollback-only' }));
   };
   void main().catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));

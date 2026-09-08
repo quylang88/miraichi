@@ -1,6 +1,6 @@
 import { pathToFileURL } from 'url';
 
-export const DEFAULT_PHASE_5_12_CACHE_MARKER = 'miraichi-shell-v5-phase-5-12-quality-up';
+export const DEFAULT_PHASE_5_12_CACHE_MARKER = 'miraichi-shell-v8-static-attribution';
 
 type SmokeFetchResponse = {
   ok: boolean;
@@ -51,7 +51,7 @@ export function buildStagingSmokeChecks(
     {
       label: 'root shell',
       url: `${baseUrl}/`,
-      markers: ['Miraichi', 'shell-entry', 'app-root', 'type="importmap"', 'window.MIRAICHI_ENV', 'API_URL'],
+      markers: ['Miraichi', 'auth-bootstrap', 'app-root', 'type="importmap"', 'window.MIRAICHI_ENV', 'API_URL'],
       forbiddenMarkers: ['API_URL: "http://localhost', 'API_URL: "http://127.0.0.1']
     },
     {

@@ -7,6 +7,7 @@ import type {
 import { assertValidLiveMatchSnapshot, sanitizeLiveRefreshErrorCode } from '@miraichi/shared/src/contracts/live-match-contracts.js';
 import type { CloudPersistenceAdapter } from '../cloud-persistence-adapter.js';
 import type { PostgresQueryClient } from './postgres-query-client.js';
+import { postgresJson, type PostgresJsonParameter } from './postgres-parameters.js';
 import { classifyMatchSnapshotFreshness } from '../../match-snapshot-freshness.js';
 
 type Row = Record<string, unknown>;
@@ -16,7 +17,7 @@ const number = (value: unknown) => typeof value === 'number' ? value : Number(va
 const text = (value: unknown) => String(value ?? '');
 const optionalText = (value: unknown) => value == null ? undefined : String(value);
 const dateText = (value: unknown) => value instanceof Date ? value.toISOString() : text(value);
-const jsonb = (value: unknown): string => JSON.stringify(value);
+const jsonb = (value: unknown): PostgresJsonParameter => postgresJson(value);
 const MATCH_UPSERT_BATCH_SIZE = 500;
 
 function matchUpsertRow(match: LocalMatch): Row {

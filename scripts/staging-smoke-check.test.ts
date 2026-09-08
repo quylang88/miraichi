@@ -76,7 +76,7 @@ describe('staging smoke check helpers', () => {
       {
         label: 'root shell',
         url: 'https://example.pages.dev/',
-        markers: ['Miraichi', 'shell-entry', 'app-root', 'type="importmap"', 'window.MIRAICHI_ENV', 'API_URL'],
+        markers: ['Miraichi', 'auth-bootstrap', 'app-root', 'type="importmap"', 'window.MIRAICHI_ENV', 'API_URL'],
         forbiddenMarkers: ['API_URL: "http://localhost', 'API_URL: "http://127.0.0.1']
       },
       {
@@ -121,7 +121,7 @@ describe('staging smoke check helpers', () => {
   it('passes when every staging endpoint returns expected markers', async () => {
     const baseUrl = 'https://example.pages.dev';
     const fetchStub = createFetchStub({
-      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi shell-entry</div>'),
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script src="/apps/web/src/auth-bootstrap.js"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi</div>'),
       [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),
       [`${baseUrl}/service-worker.js`]: createResponse(DEFAULT_PHASE_5_12_CACHE_MARKER),
       [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
@@ -148,7 +148,7 @@ describe('staging smoke check helpers', () => {
   it('reports missing markers without leaking response bodies', async () => {
     const baseUrl = 'https://example.pages.dev';
     const fetchStub = createFetchStub({
-      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi shell-entry</div>'),
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script src="/apps/web/src/auth-bootstrap.js"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi</div>'),
       [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),
       [`${baseUrl}/service-worker.js`]: createResponse('old-cache-marker-secret-like-text'),
       [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
@@ -176,7 +176,7 @@ describe('staging smoke check helpers', () => {
   it('reports malformed manifest JSON', async () => {
     const baseUrl = 'https://example.pages.dev';
     const fetchStub = createFetchStub({
-      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi shell-entry</div>'),
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script src="/apps/web/src/auth-bootstrap.js"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi</div>'),
       [`${baseUrl}/manifest.webmanifest`]: createResponse('{bad-json'),
       [`${baseUrl}/service-worker.js`]: createResponse(DEFAULT_PHASE_5_12_CACHE_MARKER),
       [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
@@ -199,9 +199,9 @@ describe('staging smoke check helpers', () => {
 
   it('rejects a Pages SPA fallback returned for a missing JavaScript module', async () => {
     const baseUrl = 'https://example.pages.dev';
-    const shellHtml = '<!DOCTYPE html><div id="app-root">Miraichi shell-entry</div>';
+    const shellHtml = '<!DOCTYPE html><div id="app-root">Miraichi auth-bootstrap</div>';
     const fetchStub = createFetchStub({
-      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi shell-entry</div>'),
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script src="/apps/web/src/auth-bootstrap.js"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi</div>'),
       [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),
       [`${baseUrl}/service-worker.js`]: createResponse(DEFAULT_PHASE_5_12_CACHE_MARKER),
       [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
@@ -221,7 +221,7 @@ describe('staging smoke check helpers', () => {
 
   it('fails when the configured staging API health route returns Pages fallback HTML', async () => {
     const baseUrl = 'https://example.pages.dev';
-    const rootHtml = '<script type="importmap"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi shell-entry</div>';
+    const rootHtml = '<script type="importmap"></script><script src="/apps/web/src/auth-bootstrap.js"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi</div>';
     const fetchStub = createFetchStub({
       [`${baseUrl}/`]: createResponse(rootHtml),
       [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),

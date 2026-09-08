@@ -9,9 +9,9 @@ import {
 const WORKFLOW_PATH = '.github/workflows/hourly-live-refresh.yml';
 
 describe('hourly live refresh workflow', () => {
-  it('is an hourly best-effort wake-up using only the scoped service credential', () => {
+  it('is a manual rollback trigger using only the scoped service credential after staging cron proof', () => {
     const workflow = readFileSync(WORKFLOW_PATH, 'utf8');
-    expect(verifyHourlyLiveRefreshWorkflow(workflow)).toEqual([]);
+    expect(verifyHourlyLiveRefreshWorkflow(workflow, { stagingCronProven: true })).toEqual([]);
   });
 
   it('rejects unsafe endpoints, deploy behavior, local mutation, and unbounded requests', () => {
@@ -30,12 +30,16 @@ jobs:\n  refresh:\n    steps:\n      - run: pnpm run deploy:staging && curl http
 
   it('retains hourly fallback until staging cron proof, then requires manual-only rollback', () => {
     const workflow = readFileSync(WORKFLOW_PATH, 'utf8');
-    expect(verifyHourlyLiveRefreshWorkflow(workflow, { stagingCronProven: false })).toEqual([]);
-    expect(verifyHourlyLiveRefreshWorkflow(workflow, { stagingCronProven: true }))
-      .toContain('hourly_fallback_must_be_removed');
+    expect(verifyHourlyLiveRefreshWorkflow(workflow, { stagingCronProven: false }))
+      .toContain('missing_hourly_schedule');
+    expect(verifyHourlyLiveRefreshWorkflow(workflow, { stagingCronProven: true })).toEqual([]);
 
-    const manualOnly = workflow.replace(/\s+schedule:\s*\n\s+- cron: ['"]17 \* \* \* \*['"]/u, '');
-    expect(verifyHourlyLiveRefreshWorkflow(manualOnly, { stagingCronProven: true })).toEqual([]);
+    const scheduledFallback = workflow.replace(
+      'on:\n  workflow_dispatch:',
+      "on:\n  schedule:\n    - cron: '17 * * * *'\n  workflow_dispatch:"
+    );
+    expect(verifyHourlyLiveRefreshWorkflow(scheduledFallback, { stagingCronProven: true }))
+      .toContain('hourly_fallback_must_be_removed');
   });
 
   it('proves missing-secret rejection, one request, idempotency, and cleanup without exposing values', async () => {
