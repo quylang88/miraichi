@@ -28,6 +28,15 @@ describe('Cloudflare owner gateway', () => {
 
   it('streams one exact API request and overwrites only gateway routing headers', async () => {
     const upstreamHeaders = new Headers({ 'Content-Type': 'application/json', Connection: 'close' });
+    for (const name of [
+      'endpoint-load-metrics',
+      'sb-gateway-version',
+      'sb-project-ref',
+      'sb-request-id',
+      'x-deno-execution-id',
+      'x-sb-edge-region',
+      'x-served-by'
+    ]) upstreamHeaders.set(name, 'private-upstream-value');
     upstreamHeaders.append('Set-Cookie', 'one=1; Secure');
     upstreamHeaders.append('Set-Cookie', 'two=2; Secure');
     const upstream = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => new Response('{"ok":true}', {
@@ -70,6 +79,15 @@ describe('Cloudflare owner gateway', () => {
     expect(response.status).toBe(201);
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(response.headers.get('connection')).toBeNull();
+    for (const name of [
+      'endpoint-load-metrics',
+      'sb-gateway-version',
+      'sb-project-ref',
+      'sb-request-id',
+      'x-deno-execution-id',
+      'x-sb-edge-region',
+      'x-served-by'
+    ]) expect(response.headers.get(name)).toBeNull();
     expect(response.headers.getSetCookie()).toEqual(['one=1; Secure', 'two=2; Secure']);
     await expect(response.json()).resolves.toEqual({ ok: true });
   });

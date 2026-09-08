@@ -23,6 +23,15 @@ const HOP_BY_HOP_HEADERS = new Set([
   'transfer-encoding',
   'upgrade'
 ]);
+const INTERNAL_UPSTREAM_RESPONSE_HEADERS = new Set([
+  'endpoint-load-metrics',
+  'sb-gateway-version',
+  'sb-project-ref',
+  'sb-request-id',
+  'x-deno-execution-id',
+  'x-sb-edge-region',
+  'x-served-by'
+]);
 const UPSTREAM_TIMEOUT_MS = 15_000;
 
 function isApiPath(pathname: string): boolean {
@@ -48,7 +57,10 @@ function forwardingHeaders(request: Request, gatewayToken: string, region: strin
 function responseHeaders(source: Headers): Headers {
   const headers = new Headers();
   for (const [name, value] of source.entries()) {
-    if (name.toLowerCase() !== 'set-cookie' && !HOP_BY_HOP_HEADERS.has(name.toLowerCase())) {
+    const normalizedName = name.toLowerCase();
+    if (normalizedName !== 'set-cookie'
+      && !HOP_BY_HOP_HEADERS.has(normalizedName)
+      && !INTERNAL_UPSTREAM_RESPONSE_HEADERS.has(normalizedName)) {
       headers.append(name, value);
     }
   }
