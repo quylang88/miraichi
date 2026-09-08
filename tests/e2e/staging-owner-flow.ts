@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { gate, localStagingEnvironment, requireStagingConfig, readLocalEnv } from '../../scripts/staging-hosted-config.js';
 import { liveSnapshotFixture } from '../fixtures/live-match-snapshot.js';
-import { toProviderNeutralLiveMatchSnapshot } from '../../packages/shared/src/contracts/live-match-contracts.js';
+import { toProviderNeutralLiveMatchSnapshot, validateLiveMatchSnapshot } from '../../packages/shared/src/contracts/live-match-contracts.js';
 
 const privateKeys = new Set(['sourceMatchId','sourceUrl','leaseId','externalCompetitionId','providerEntityId','providerFixtureId']);
 function hasLocator(value: unknown): boolean {
@@ -22,6 +22,7 @@ export async function runStagingOwnerFlow(): Promise<void> {
   page.setDefaultTimeout(25_000);
   let phase = 'root';
   let authenticated = false;
+  let fixtureCalls = 0;
   const networkChecks: Promise<void>[] = [];
   let networkFailure = false;
   page.on('response', (response) => {
@@ -97,9 +98,16 @@ export async function runStagingOwnerFlow(): Promise<void> {
     const snapshot = toProviderNeutralLiveMatchSnapshot(liveSnapshotFixture);
     snapshot.generatedAt = new Date().toISOString();
     snapshot.matches = ['live','halftime','suspended','completed'].map((status, index) => ({ ...snapshot.matches[0],
-      matchId: `match-e2e-browser-${index}`, status: status as 'live' | 'halftime' | 'suspended' | 'completed' }));
-    await page.route('**/api/v1/live/refresh?reason=manual', (route) => route.fulfill({ status: 200,
-      contentType: 'application/json', body: JSON.stringify({ snapshot, refresh: { outcome: 'fresh' } }) }));
+      matchId: `match-e2e-browser-${index}`, status: status as 'live' | 'halftime' | 'suspended' | 'completed',
+      ...(status === 'completed' ? { period: null, elapsedMinute: null } : {}) }));
+    snapshot.coverage.publishedCount = snapshot.matches.length;
+    snapshot.coverage.mappedCount = snapshot.matches.length;
+    gate(validateLiveMatchSnapshot(snapshot).ok, 'valid deterministic live fixture');
+    await page.route('**/api/v1/live/refresh?reason=manual', (route) => {
+      fixtureCalls++;
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ snapshot, refresh: { outcome: 'fresh' } }) });
+    });
+    phase = 'deterministic live rows';
     await page.getByRole('button', { name: 'LIVE', exact: true }).click();
     await page.locator('[data-live-match-id="match-e2e-browser-2"]').waitFor();
     gate(await page.locator('#screen-matches [data-match-row]').count() === 3, 'only live/halftime/suspended rows');
@@ -107,6 +115,9 @@ export async function runStagingOwnerFlow(): Promise<void> {
     gate((await page.locator('[data-live-minute]').first().textContent())?.includes('67'), 'elapsed minute');
     await page.getByRole('button', { name: 'LIVE', exact: true }).click();
     snapshot.matches = [];
+    snapshot.coverage.publishedCount = 0;
+    snapshot.coverage.mappedCount = 0;
+    phase = 'deterministic empty state';
     await page.getByRole('button', { name: 'LIVE', exact: true }).click();
     await page.locator('[data-live-empty]').waitFor();
     gate(await page.locator('#screen-matches [data-match-row]').count() === 0, 'empty live list');
@@ -120,6 +131,10 @@ export async function runStagingOwnerFlow(): Promise<void> {
     gate(!networkFailure, 'network locators/headers/secrets redacted');
     console.log(JSON.stringify({ gate: 'hosted-browser', status: 'passed', origin, realOwnerFlow: true, deterministicLiveStates: true, ownerDataCreated: false }));
   } catch (error) {
+    console.log(JSON.stringify({ gate: 'hosted-browser-diagnostic', phase, fixtureCalls,
+      liveRows: await page.locator('[data-live-match-id]').count(),
+      liveState: await page.locator('[data-live-state]').getAttribute('data-live-state').catch(() => null),
+      active: await page.locator('[data-live-toggle]').getAttribute('aria-pressed').catch(() => null) }));
     const detail = error instanceof Error && error.message.startsWith('Hosted gate failed:') ? ` (${error.message})` : '';
     throw new Error(`Hosted browser gate failed during ${phase}${detail}`);
   } finally {

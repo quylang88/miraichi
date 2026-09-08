@@ -14,6 +14,11 @@ afterEach(async () => {
 });
 
 describe('Supabase Edge function bundle', () => {
+  it('passes provider credentials and the current batch cap through the deployed entrypoint', async () => {
+    const entry = await readFile('supabase/functions/miraichi-api/index.ts', 'utf8');
+    expect(entry).toContain("'MIRAICHI_PROVIDER_REFRESH_TOKEN'");
+    expect(entry).toContain("'MIRAICHI_CURRENT_REFRESH_BATCH_SIZE'");
+  });
   it('builds one deterministic ESM runtime and metadata below the requested output root', async () => {
     const outputRoot = await mkdtemp(path.join(os.tmpdir(), 'miraichi-edge-build-'));
     temporaryDirectories.push(outputRoot);

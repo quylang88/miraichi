@@ -74,6 +74,11 @@ source/hosting approvals are already present. Each completed slice records real 
   `verify:local`, complete integration and static build). The final blocked-checkpoint correction
   additionally passed all 12 provider tests and rebuilt/verified the Edge graph. Hosted TypeScript,
   10,899-match serving validation, real local SQL smoke and 64-file Cloudflare artifact gates pass.
+- First hosted deployment exposed two real gaps: the empty LIVE message inherited `display:none`,
+  and the deployed Edge entrypoint omitted the provider-token environment key (cron returned 401).
+  Browser RED and a deployed-entrypoint RED reproduced them. Explicit visible empty/unavailable
+  styles, PWA cache v10 and the entrypoint token/cap forwarding fix pass 22 focused tests. The
+  deterministic E2E fixture also now validates its counts and clears completed period/minute.
 
 - Preflight: clean branch `feat/api-football-rapid-ingestion`, HEAD `f3113ed`; remote Edge v5 ACTIVE
   and Worker `1c71033f-f97f-42b9-9884-1862d64ad870` at 100% independently checked on 2026-09-09.

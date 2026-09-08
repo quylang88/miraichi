@@ -876,6 +876,7 @@ svg {
 .live-toggle { min-width: 72px; min-height: 44px; font-weight: 750; letter-spacing: .04em; }
 .live-toggle[aria-pressed=true] { background: #b32632; color: #fff; border-color: #b32632; }
 .live-badges { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+.empty-state[data-live-empty], .empty-state[data-live-state=unavailable] { display: block; }
 [data-live-minute], [data-live-score] { color: #60d394; font-variant-numeric: tabular-nums; }
 
 .match-detail-lineups {
