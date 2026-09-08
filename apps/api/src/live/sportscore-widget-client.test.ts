@@ -12,6 +12,12 @@ function jsonResponse(payload: unknown, status = 200): Response {
 }
 
 describe('SportScore widget-only client', () => {
+  it('times out the whole response body and exposes blocked access without its body', async () => {
+    const client = new SportScoreWidgetClient({ timeoutMs: 500, fetcher: async () => ({ ok: true, status: 200,
+      text: () => new Promise<string>(() => undefined) }) as Response });
+    await expect(client.listMatches()).rejects.toMatchObject({ code: 'timeout' });
+    await expect(new SportScoreWidgetClient({ fetcher: async () => jsonResponse({}, 429) }).listMatches()).rejects.toMatchObject({ code: 'blocked' });
+  }, 1500);
   it('can construct only the two approved football widget requests', async () => {
     const fetcher = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => jsonResponse({ matches: [] }));
     const client = new SportScoreWidgetClient({ fetcher, timeoutMs: 1_000 });

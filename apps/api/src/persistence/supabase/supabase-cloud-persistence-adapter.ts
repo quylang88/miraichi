@@ -74,12 +74,29 @@ async function upsertMatchBatch(
     )
     on conflict (id) do update set
       snapshot_id=excluded.snapshot_id,
+      kickoff_utc=excluded.kickoff_utc,
+      competition_name=excluded.competition_name,
       competition_type=excluded.competition_type,
+      home_team_name=excluded.home_team_name,
+      away_team_name=excluded.away_team_name,
+      home_country_code=excluded.home_country_code,
+      away_country_code=excluded.away_country_code,
+      venue=excluded.venue,
+      round_label=excluded.round_label,
+      stage=excluded.stage,
+      neutral_venue=excluded.neutral_venue,
       status=excluded.status,
       home_score=excluded.home_score,
       away_score=excluded.away_score,
       source_refs=excluded.source_refs,
       updated_at=excluded.updated_at
+    where miraichi_app.match_record.owner_profile_id=excluded.owner_profile_id
+      and miraichi_app.match_record.competition_id=excluded.competition_id
+      and miraichi_app.match_record.season=excluded.season
+      and miraichi_app.match_record.home_team_id=excluded.home_team_id
+      and miraichi_app.match_record.away_team_id=excluded.away_team_id
+      and miraichi_app.match_record.updated_at <= excluded.updated_at
+      and (miraichi_app.match_record.status <> 'completed' or excluded.status = 'completed')
   `, [owner, snapshotId, jsonb(matches.map(matchUpsertRow))]);
 }
 
@@ -172,7 +189,7 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
   const status = async (): Promise<LocalDataSnapshotStatus> => {
     const snapshot = await client.query<Row>('select snapshot_id, generated_at, imported_at, sources from miraichi_app.match_snapshot where owner_profile_id = $1 order by imported_at desc limit 1', [ownerProfileId]);
     if (!snapshot.rows[0]) return { snapshotId: 'cloud-missing', generatedAt: now(), importedAt: now(), matchCount: 0, competitions: [], sources: [], freshness: 'missing', warnings: ['Cloud match snapshot is unavailable.'] };
-    const counts = await client.query<Row>('select competition_id as id, competition_name as name, array_agg(distinct season) as seasons, count(*)::int as match_count from miraichi_app.match_record where owner_profile_id = $1 and snapshot_id = $2 group by competition_id, competition_name', [ownerProfileId, snapshot.rows[0].snapshot_id]);
+    const counts = await client.query<Row>('select competition_id as id, competition_name as name, array_agg(distinct season) as seasons, count(*)::int as match_count from miraichi_app.match_record where owner_profile_id = $1 group by competition_id, competition_name', [ownerProfileId]);
     const generatedAt = dateText(snapshot.rows[0].generated_at);
     return { snapshotId: text(snapshot.rows[0].snapshot_id), generatedAt, importedAt: dateText(snapshot.rows[0].imported_at), matchCount: counts.rows.reduce((sum, row) => sum + number(row.match_count), 0), competitions: counts.rows.map((row) => ({ id: text(row.id), name: text(row.name), seasons: Array.isArray(row.seasons) ? row.seasons.map(String) : [], matchCount: number(row.match_count) })), sources: Array.isArray(snapshot.rows[0].sources) ? snapshot.rows[0].sources as LocalDataSnapshotStatus['sources'] : [], freshness: classifyMatchSnapshotFreshness(generatedAt, now()), warnings: [] };
   };
@@ -211,7 +228,7 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
     getCloudMatchSnapshotStatus: async (owner) => { assertOwner(owner); return status(); },
     getLiveMatchSnapshot: async (owner) => { assertOwner(owner); const row=(await client.query<Row>('select overlay_json from miraichi_app.live_match_snapshot where owner_profile_id=$1',[owner])).rows[0]; return row ? mapLiveSnapshot(row) : null; },
     getLiveRefreshState: async (owner) => { assertOwner(owner); const row=(await client.query<Row>('select * from miraichi_app.live_refresh_state where owner_profile_id=$1',[owner])).rows[0]; return row ? mapLiveRefreshState(row) : null; },
-    acquireLiveRefreshLease: async (owner,input:AcquireLiveRefreshLeaseInput) => { assertOwner(owner); const acquiredAt=Date.parse(input.acquiredAt);const expiresAt=Date.parse(input.expiresAt);if(!Number.isFinite(acquiredAt)||!Number.isFinite(expiresAt)||expiresAt<=acquiredAt)throw new Error('Live refresh lease timestamps are invalid');const result=await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.live_refresh_state (owner_profile_id,status,reason,last_attempt_at,last_success_at,last_completed_at,last_error_code,lease_id,lease_acquired_at,lease_expires_at,updated_at) values ($1,'running',$3,$4,null,null,null,$2,$4,$5,$4) on conflict (owner_profile_id) do update set status='running',reason=excluded.reason,last_attempt_at=excluded.last_attempt_at,last_error_code=null,lease_id=excluded.lease_id,lease_acquired_at=excluded.lease_acquired_at,lease_expires_at=excluded.lease_expires_at,updated_at=excluded.updated_at where miraichi_app.live_refresh_state.last_attempt_at <= excluded.last_attempt_at and (miraichi_app.live_refresh_state.lease_expires_at is null or miraichi_app.live_refresh_state.lease_expires_at <= excluded.last_attempt_at) returning owner_profile_id`,[owner,input.leaseId,input.reason,input.acquiredAt,input.expiresAt]);return result.rows.length===1; },
+    acquireLiveRefreshLease: async (owner,input:AcquireLiveRefreshLeaseInput) => { assertOwner(owner); const acquiredAt=Date.parse(input.acquiredAt);const expiresAt=Date.parse(input.expiresAt);if(!Number.isFinite(acquiredAt)||!Number.isFinite(expiresAt)||expiresAt<=acquiredAt)throw new Error('Live refresh lease timestamps are invalid');const result=await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.live_refresh_state (owner_profile_id,status,reason,last_attempt_at,last_success_at,last_completed_at,last_error_code,lease_id,lease_acquired_at,lease_expires_at,updated_at) values ($1,'running',$3,$4,null,null,null,$2,$4,$5,$4) on conflict (owner_profile_id) do update set status='running',reason=excluded.reason,last_attempt_at=excluded.last_attempt_at,last_error_code=null,lease_id=excluded.lease_id,lease_acquired_at=excluded.lease_acquired_at,lease_expires_at=excluded.lease_expires_at,updated_at=excluded.updated_at where miraichi_app.live_refresh_state.last_attempt_at + case when miraichi_app.live_refresh_state.last_error_code='upstream_blocked' then interval '15 minutes' else interval '60 seconds' end <= excluded.last_attempt_at and (miraichi_app.live_refresh_state.lease_expires_at is null or miraichi_app.live_refresh_state.lease_expires_at <= excluded.last_attempt_at) returning owner_profile_id`,[owner,input.leaseId,input.reason,input.acquiredAt,input.expiresAt]);return result.rows.length===1; },
     finishLiveRefresh: async (owner,input:FinishLiveRefreshInput) => { assertOwner(owner);if(!Number.isFinite(Date.parse(input.completedAt)))throw new Error('Live refresh completion timestamp is invalid');if(input.outcome==='succeeded')assertValidLiveMatchSnapshot(input.snapshot);await client.transaction(async(tx)=>{const errorCode=input.outcome==='failed'?sanitizeLiveRefreshErrorCode(input.errorCode):null;const updated=await tx.query<Row>(`update miraichi_app.live_refresh_state set status=$3,last_success_at=case when $3='succeeded' then $4 else last_success_at end,last_completed_at=$4,last_error_code=$5,lease_id=null,lease_acquired_at=null,lease_expires_at=null,updated_at=$4 where owner_profile_id=$1 and lease_id=$2 and status='running' and last_attempt_at <= $4 and lease_expires_at > $4 returning owner_profile_id`,[owner,input.leaseId,input.outcome,input.completedAt,errorCode]);if(!updated.rows[0])throw new Error('Live refresh lease is no longer owned or expired');if(input.outcome==='succeeded')await tx.query(`insert into miraichi_app.live_match_snapshot (owner_profile_id,snapshot_id,schema_version,generated_at,overlay_json,updated_at) values ($1,$2,$3,$4,$5,$6) on conflict (owner_profile_id) do update set snapshot_id=excluded.snapshot_id,schema_version=excluded.schema_version,generated_at=excluded.generated_at,overlay_json=excluded.overlay_json,updated_at=excluded.updated_at`,[owner,input.snapshot.snapshotId,input.snapshot.schemaVersion,input.snapshot.generatedAt,jsonb(input.snapshot),input.completedAt]);}); },
     exportOwnerData: async (owner,exportedAt): Promise<CloudBackupEnvelope> => { assertOwner(owner); return {schemaVersion:'miraichi.cloud-backup.v2',exportedAt,ownerProfileId:owner,drafts:[...(await client.query<Row>('select * from miraichi_app.bet_draft where owner_profile_id=$1 order by draft_id',[owner])).rows.map(mapDraft)],bets:[...(await client.query<Row>('select * from miraichi_app.bet_record where owner_profile_id=$1 order by bet_id',[owner])).rows.map(mapBet)],bankrollAccounts:[...(await client.query<Row>('select * from miraichi_app.bankroll_account where owner_profile_id=$1 order by account_id',[owner])).rows.map(mapAccount)],bankrollLedgerEntries:[...(await client.query<Row>('select * from miraichi_app.bankroll_ledger_entry where owner_profile_id=$1 order by entry_id',[owner])).rows.map(mapLedger)],disciplineConfigs:[...(await client.query<Row>('select * from miraichi_app.discipline_config where owner_profile_id=$1',[owner])).rows.map(mapDisciplineConfig)],settlementEvents:[...(await client.query<Row>('select * from miraichi_app.bet_settlement_event where owner_profile_id=$1 order by settlement_event_id',[owner])).rows.map(mapSettlementEvent)]}; },
     importOwnerData: async (owner,envelope) => { assertOwner(owner); if(envelope.ownerProfileId!==owner) throw new Error('Backup owner mismatch'); await client.transaction(async (tx)=>{
@@ -228,3 +245,5 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
     listBackupExports: async (owner) => { assertOwner(owner); const result=await client.query<Row>('select * from miraichi_app.backup_export_log where owner_profile_id=$1 order by exported_at desc',[owner]); return result.rows.map((row)=>({exportId:text(row.export_id),ownerProfileId:text(row.owner_profile_id),schemaVersion:(text(row.schema_version)==='miraichi.cloud-backup.v2'?'miraichi.cloud-backup.v2':'miraichi.cloud-backup.v1'),exportedAt:dateText(row.exported_at),sha256:text(row.sha256),recordCounts:row.record_counts as BackupExportReceipt['recordCounts']})); }
   };
 }
+
+export { mapMatch as mapCloudMatchRow, upsertMatchBatch };

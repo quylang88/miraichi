@@ -54,7 +54,7 @@ function renderSheets(bankroll: BankrollViewState, translate: TranslateFunction)
 
 export function renderAppShell({
   activeTabId = 'today', translate = t, locale = 'en', matchFeed = defaultMatchFeed, timezone = 'local',
-  liveMatches = defaultLiveMatches,
+  liveMatches = defaultLiveMatches, liveMode = false,
   filters = { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set<string>() },
   searchQuery = '', isFilterPanelOpen = false, betRecordsState = defaultBetRecordsState,
   bankrollState = defaultBankrollState, betRecordFilter = 'ongoing', bankrollView = 'overview',
@@ -68,6 +68,7 @@ export function renderAppShell({
   readonly locale?: SupportedLocale;
   readonly matchFeed?: MatchFeedViewState;
   readonly liveMatches?: LiveMatchViewState;
+  readonly liveMode?: boolean;
   readonly timezone?: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh';
   readonly filters?: MatchFilters;
   readonly searchQuery?: string;
@@ -91,7 +92,7 @@ export function renderAppShell({
   const resolvedTimeZone = timezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone;
   const panels = [
     renderTodayScreen({ activeTabId: safeActiveTabId, translate, bets: betRecordsState, bankroll: bankrollState, discipline: disciplineConfigState, report: todayReportState, matchFeed, locale, timezone }),
-    renderMatchesScreen({ activeTabId: safeActiveTabId, translate, locale, matchFeed, liveMatches, timezone, filters, searchQuery, isFilterPanelOpen, isCalendarOpen: isMatchesCalendarOpen, ...(matchesCalendarMonth !== undefined ? { calendarMonth: matchesCalendarMonth } : {}) }),
+    renderMatchesScreen({ activeTabId: safeActiveTabId, translate, locale, matchFeed, liveMatches, liveMode, timezone, filters, searchQuery, isFilterPanelOpen, isCalendarOpen: isMatchesCalendarOpen, ...(matchesCalendarMonth !== undefined ? { calendarMonth: matchesCalendarMonth } : {}) }),
     renderBetsScreen({ activeTabId: safeActiveTabId, translate, state: betRecordsState, filter: betRecordFilter, bankroll: bankrollState }),
     renderBankrollScreen({ activeTabId: safeActiveTabId, translate, locale, timeZone: resolvedTimeZone, state: bankrollState, view: bankrollView, disciplineConfigState, reportState, reportPeriod, customCalendarMonth, customRangeStart, customRangeEnd })
   ].join('');

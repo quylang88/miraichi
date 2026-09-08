@@ -32,7 +32,7 @@
 - **Completed phase**: `phase:staging Supabase Edge Function and Cloudflare Worker owner hosting` —
   the reviewed branch is pushed; Frankfurt migration, Edge Function, Worker, Vault cron, complete
   hosted owner smoke, full staging gate, and rollback drill passed on 2026-09-08.
-- **Active phase**: `phase:code-slice Hosted automatic provider refresh and Matches LIVE quality-up — Slice 1`.
+- **Active phase**: `phase:staging Hosted automatic provider refresh and Matches LIVE quality-up`.
   The owner authorized implementation, migration, Frankfurt redeployment, committed hosted E2E,
   rollback drills, commit and push on the current branch. Tokyo/production remain unapproved.
 - **Approved implementation plan**: `docs/superpowers/plans/2026-09-09-hosted-provider-refresh-live.md`;
@@ -41,7 +41,7 @@
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active 10,899-match/45-competition snapshot is retained in Frankfurt;
   Supabase Edge Function version 5 and Cloudflare Worker version
-  `1c71033f-f97f-42b9-9884-1862d64ad870` are active and green. The owner-feedback release gate,
+  `1c71033f-f97f-42b9-9884-1862d64ad870` remain active as the historical candidate. The owner-feedback release gate,
   Tokyo project creation, and production promotion have not run and are not approved.
 - **Current lifecycle source of truth**: this file.
 

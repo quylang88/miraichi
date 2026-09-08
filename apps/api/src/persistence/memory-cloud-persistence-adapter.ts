@@ -172,6 +172,7 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
         throw new Error('Live refresh lease timestamps are invalid');
       }
       const current = liveRefreshStates.get(owner);
+      if (current && acquiredAt - Date.parse(current.lastAttemptAt) < (current.lastErrorCode === 'upstream_blocked' ? 900_000 : 60_000)) return false;
       if (current && Date.parse(current.lastAttemptAt) > acquiredAt) return false;
       if (current?.lease && Date.parse(current.lease.expiresAt) > acquiredAt) return false;
       liveRefreshStates.set(owner, {

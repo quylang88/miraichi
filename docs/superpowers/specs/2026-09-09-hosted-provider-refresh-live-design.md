@@ -22,6 +22,8 @@ Never publish a stale base or replace the whole warehouse. No raw live body is p
 
 Current cadence: scheduler every five minutes, current-only planner, 24-hour TTL, ETag/304,
 registry order, hard cap nine requests per invocation; stop starting requests at the run deadline.
+The Edge composition defaults to three requests per invocation to bound CPU and DB transfer;
+MIRAICHI_CURRENT_REFRESH_BATCH_SIZE may lower it or raise it only within the hard nine-request cap.
 Terminal cadence: scheduler every minute, due ledger enforces at least two minutes between date
 requests, at most two dates per invocation, zero provider requests without due matches.
 Kickoff +105 minutes / four-hour cutoff and finite retries retain the approved local policy.

@@ -49,7 +49,7 @@ export async function handleLiveMatches(
     }
     if (url.pathname === '/api/v1/live/refresh' && req.method === 'POST') {
       const reason = url.searchParams.get('reason');
-      if (reason !== 'visible' && reason !== 'manual' && reason !== 'hourly') {
+      if (reason !== 'visible' && reason !== 'manual' && reason !== 'hourly' && reason !== 'background') {
         writeError(res, 400, 'invalid_refresh_reason', 'reason must be visible, manual, or hourly.');
         return;
       }

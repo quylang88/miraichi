@@ -585,7 +585,7 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('class="date-chip active" type="button" data-date="2026-06-30"');
 
     expect(html).not.toContain('id="live-filter-btn"');
-    expect(html).not.toContain('>LIVE</button>');
+    expect(html).toContain('aria-pressed="false">LIVE</button>');
   });
 
   it('renders interactive month calendar picker when isMatchesCalendarOpen is true', () => {

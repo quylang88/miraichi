@@ -1,12 +1,63 @@
 # Supabase Edge + Cloudflare Worker owner hosting runbook
 
-> **Status: Frankfurt staging completed on 2026-09-08.** Migration, Edge/Worker deployment,
-> Vault cron, hosted owner smoke, full staging verification, cleanup, and rollback drill passed.
-> Tokyo/production remains blocked until explicit owner approval after final review.
+> **Status: candidate rejected by owner feedback on 2026-09-09; quality-up in progress.**
+> The 2026-09-08 evidence below is historical. A new staging exit requires the committed
+> `pnpm run verify:staging:hosted` gate to pass on Frankfurt after deployment. Local verification
+> and `verify:staging` alone cannot close staging. Tokyo/production remains unapproved.
 
 This runbook replaces the Koyeb deployment path. It retains the Frankfurt Supabase staging project
 and its verified match snapshot. It does not authorize a push, Tokyo project, production promotion,
 paid service, remote database reset, or project deletion.
+
+## 2026-09-09 hosted refresh and LIVE acceptance gate
+
+The owner's current instruction authorizes this branch's Frankfurt migration/deploy/rollback work.
+Follow `docs/superpowers/plans/2026-09-09-hosted-provider-refresh-live.md` for the current boundary.
+Only three bounded Edge refresh jobs replace the historical hourly scheduler. Full filesystem
+hydration remains local; the hosted coordinator reads DB canonical rows and publishes deltas in
+one fenced transaction. Current TTL remains 24 hours, hard request cap nine, Edge default three.
+
+Apply migrations `20260909120000` through `20260909150000` forward-only. The migrations add
+provider control/lease state, scheduler functions, background-live reason/circuit code and hashed
+session revocations. They do not schedule jobs or delete match/owner data.
+
+Add one independently generated `MIRAICHI_PROVIDER_REFRESH_TOKEN` to the gitignored Edge deployment
+env file and Supabase secrets. Store the same value in Vault as `miraichi_provider_refresh_token`.
+Keep the existing three Vault values. The browser and Cloudflare never receive this token.
+After the reviewed Edge/Worker code is deployed, call `miraichi_app.configure_hosted_refresh()`.
+It replaces the old hourly job with exactly these jobs:
+
+| Job | Cadence | Protected operation |
+| --- | --- | --- |
+| miraichi-current-refresh | Every five minutes | Current-only TTL/ETag revalidation |
+| miraichi-terminal-refresh | Every minute | Due ledger; at least two minutes between date requests |
+| miraichi-live-refresh | Every five minutes | SportScore widget refresh; shared 60-second manual floor |
+
+For future runs, put `STAGING_URL` and `MIRAICHI_OWNER_PASSWORD` in the existing gitignored root
+`.env` once. Both commands load it automatically. Never pass root `.env` wholesale to deployment.
+The password remains local and is not a build variable. A missing URL/password or localhost URL
+fails; nothing is skipped. Install the pinned browser with `pnpm exec playwright install chromium`.
+
+```powershell
+pnpm run provider:local-sql-smoke
+pnpm exec tsc -p tsconfig.staging.json --noEmit
+pnpm run test:e2e:staging
+pnpm run verify:staging:hosted
+```
+
+The committed browser suite lives in `tests/e2e/staging-owner-flow.ts`. It tests the real hosted
+owner flow and separately identifies deterministic browser response fixtures for live/halftime/
+suspended/completed and empty states; those fixtures are never represented as provider availability.
+No owner bankroll/bet data is created. Finally logout/context cleanup is mandatory and a cleanup
+failure fails the gate. No password, cookie, token, report trace, screenshot or video is recorded.
+The scheduler smoke checks exact Vault/job names, controlled pg_net 2xx delivery and checkpoint/
+last-good evidence; it prints no secret.
+
+Rollback: unschedule with `miraichi_app.unschedule_hosted_refresh()`, retain Vault/control/snapshots,
+restore the recorded prior Worker version and prior Edge source. Old hourly configuration remains
+available only as the explicit rollback path. Restore current Edge/Worker, call configure again,
+then rerun the full hosted gate. Record actual results below; never treat an expected rollback
+regression as a passing current candidate.
 
 ## Current retained state
 

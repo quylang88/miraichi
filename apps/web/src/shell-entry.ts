@@ -28,6 +28,7 @@ import { renderMatchesScreen } from './components/screens/matches-screen.js';
 import { renderBetsScreen } from './components/screens/bets-screen.js';
 import { renderBankrollScreen } from './components/screens/bankroll-screen.js';
 import { refreshLiveMatches, type LiveMatchViewState } from './services/live-match-service.js';
+import { createLiveMode, retainLastGoodLive } from './live/live-mode.js';
 import { createLiveRefreshLifecycle } from './live/live-refresh-lifecycle.js';
 import { bindPullDownRefresh } from './live/pull-down-refresh.js';
 
@@ -93,6 +94,7 @@ let matchFeedState: MatchFeedViewState = {
   date: todayLocalDate()
 };
 let liveMatchState: LiveMatchViewState = { status: 'loading' };
+const matchesLiveMode = createLiveMode(() => refreshLiveMatchView('manual'));
 let liveMatchRequestVersion = 0;
 let unbindPullDownRefresh: (() => void) | null = null;
 
@@ -146,6 +148,7 @@ function updateMatchesScreenView(): void {
     locale: settings.locale,
     matchFeed: matchFeedState,
     liveMatches: liveMatchState,
+    liveMode: matchesLiveMode.active,
     timezone: settings.timezone,
     filters: activeFilters,
     searchQuery: currentSearchQuery,
@@ -217,6 +220,7 @@ function render(activeTabId: string, fullRebuild = false): void {
       locale: settings.locale,
       matchFeed: matchFeedState,
       liveMatches: liveMatchState,
+      liveMode: matchesLiveMode.active,
       timezone: settings.timezone,
       filters: activeFilters,
       searchQuery: currentSearchQuery,
@@ -656,6 +660,12 @@ function updateSettlementPreview(): void {
 appRoot.addEventListener('click', (event) => {
   const eventTarget = event.target instanceof Element ? event.target : null;
   if (!eventTarget) {
+    return;
+  }
+  if (eventTarget.closest('[data-live-toggle]')) {
+    matchesLiveMode.toggle();
+    updateMatchesScreenView();
+    appRoot.querySelector<HTMLButtonElement>('[data-live-toggle]')?.focus();
     return;
   }
 
@@ -1281,7 +1291,7 @@ async function refreshLiveMatchView(reason: 'visible' | 'manual'): Promise<void>
   const requestVersion = ++liveMatchRequestVersion;
   const result = await refreshLiveMatches(reason);
   if (requestVersion !== liveMatchRequestVersion) return;
-  liveMatchState = result;
+  liveMatchState = retainLastGoodLive(liveMatchState, result);
   updateMatchesScreenView();
 }
 

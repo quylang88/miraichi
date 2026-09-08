@@ -20,6 +20,27 @@ function setup(nowValue = '2026-09-02T12:00:00.000Z') {
 }
 
 describe('live refresh coordinator', () => {
+  it('refreshes background every five minutes and applies cooldown after failed manual attempts', async () => {
+    const ctx = setup();
+    await ctx.coordinator.refresh('visible');
+    ctx.setNow('2026-09-02T12:04:00.000Z');
+    expect((await ctx.coordinator.refresh('background')).outcome).toBe('fresh');
+    ctx.setNow('2026-09-02T12:05:00.000Z');
+    expect((await ctx.coordinator.refresh('background' as never)).outcome).toBe('refreshed');
+    ctx.setNow('2026-09-02T12:06:00.000Z');
+    ctx.source.listMatches.mockRejectedValue(new Error('offline'));
+    expect((await ctx.coordinator.refresh('manual')).outcome).toBe('failed');
+    ctx.setNow('2026-09-02T12:06:30.000Z');
+    await ctx.coordinator.refresh('manual');
+    expect(ctx.source.listMatches).toHaveBeenCalledTimes(3);
+  });
+  it('enforces a shared manual floor atomically at lease acquisition', async () => {
+    const ctx = setup();
+    await ctx.coordinator.refresh('manual');
+    expect(await ctx.persistence.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'stale-reader', reason: 'manual', acquiredAt: '2026-09-02T12:00:30.000Z', expiresAt: '2026-09-02T12:01:30.000Z'
+    })).toBe(false);
+  });
   it('shares freshness policy and the durable lease across visible/manual/hourly reasons', async () => {
     const ctx = setup();
     expect((await ctx.coordinator.refresh('visible')).outcome).toBe('refreshed');

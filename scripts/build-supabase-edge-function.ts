@@ -53,6 +53,7 @@ export async function buildSupabaseEdgeFunction(options: {
     bundle: true,
     format: 'esm',
     platform: 'neutral',
+    mainFields: ['module', 'main'],
     target: 'es2022',
     metafile: true,
     sourcemap: false,

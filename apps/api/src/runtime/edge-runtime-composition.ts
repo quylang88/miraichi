@@ -23,6 +23,10 @@ import { CloudMatchSnapshotRepository } from '../repositories/cloud-match-snapsh
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
 import { TerminalLiveProjectionRepository } from '../repositories/terminal-live-projection-repository.js';
 import { defineApiRuntime } from './api-runtime.js';
+import { createHostedProviderRoute } from '../refresh/hosted-provider-route.js';
+import { HostedProviderRefresh } from '../refresh/hosted-provider-refresh.js';
+import { PostgresHostedProviderStore } from '../refresh/hosted-provider-postgres-store.js';
+import { postgresOwnerSessionRevocations, withRevocableOwnerSessions } from '../auth/owner-session-revocation.js';
 
 export { createPostgresJsQueryClient } from '../persistence/supabase/postgres-js-query-client.js';
 
@@ -118,7 +122,11 @@ export function createPostgresEdgeApiHandler(
     repository: matchRepository,
     source: liveMode === 'widget' ? new SportScoreWidgetClient({ timeoutMs }) : disabledLiveSource
   });
-  return createApiHandler(defineApiRuntime({
+  const providerRoute = createHostedProviderRoute(env.MIRAICHI_PROVIDER_REFRESH_TOKEN, () => new HostedProviderRefresh({
+    store: new PostgresHostedProviderStore(client, config.ownerProfileId),
+    maxCurrentRequests: Number(env.MIRAICHI_CURRENT_REFRESH_BATCH_SIZE || 3)
+  }));
+  const api = createApiHandler(defineApiRuntime({
     ownerAuthConfig: readOwnerAuthConfig(env),
     liveRefreshServiceAuthConfig: readLiveRefreshServiceAuthConfig(env),
     cloudDependencies: { adapter, ownerProfileId: config.ownerProfileId },
@@ -127,6 +135,8 @@ export function createPostgresEdgeApiHandler(
     liveCoordinator,
     ...(env.MIRAICHI_PUBLIC_ORIGIN?.trim() ? { allowedOrigin: env.MIRAICHI_PUBLIC_ORIGIN.trim() } : {})
   }));
+  const authenticatedApi = withRevocableOwnerSessions(api, readOwnerAuthConfig(env), postgresOwnerSessionRevocations(client), env.MIRAICHI_PUBLIC_ORIGIN);
+  return async (request) => await providerRoute(request) ?? authenticatedApi(request);
 }
 
 export function createEdgeRuntimeSmokeHandler(client: PostgresQueryClient): ApiHandler {

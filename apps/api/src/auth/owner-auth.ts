@@ -111,7 +111,7 @@ function sessionSignature(versionAndPayload: string, secret: string): Buffer {
 
 export function createOwnerSessionToken(secret: string, issuedAtMs: number, ttlSeconds: number): string {
   const issuedAt = Math.floor(issuedAtMs / 1_000);
-  const payload = Buffer.from(JSON.stringify({ sub: 'owner', iat: issuedAt, exp: issuedAt + ttlSeconds })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ sub: 'owner', iat: issuedAt, exp: issuedAt + ttlSeconds, nonce: randomBytes(16).toString('base64url') })).toString('base64url');
   const versionAndPayload = `v1.${payload}`;
   const signature = sessionSignature(versionAndPayload, secret).toString('base64url');
   return `${versionAndPayload}.${signature}`;

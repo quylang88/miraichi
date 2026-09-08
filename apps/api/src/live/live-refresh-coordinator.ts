@@ -13,6 +13,7 @@ import { adaptSportScoreLiveRecords, adaptTrackedSportScoreRecord } from './spor
 
 const FRESHNESS_MS: Readonly<Record<LiveRefreshReason, number>> = Object.freeze({
   visible: 5 * 60 * 1_000,
+  background: 5 * 60 * 1_000,
   manual: 60 * 1_000,
   hourly: 60 * 60 * 1_000
 });
@@ -38,12 +39,17 @@ export interface LiveRefreshCoordinatorOptions {
 
 function sourceErrorCode(error: unknown): LiveRefreshErrorCode {
   if (!(error instanceof SportScoreWidgetClientError)) return 'internal_error';
+  if (error.code === 'blocked') return 'upstream_blocked';
   if (error.code === 'timeout') return 'upstream_timeout';
   if (error.code === 'network' || error.code === 'http_status') return 'upstream_unavailable';
   return 'upstream_contract_invalid';
 }
 
 function isFresh(state: LiveRefreshState | null, reason: LiveRefreshReason, nowMs: number): boolean {
+  if (state?.lastAttemptAt) {
+    const cooldown = state.lastErrorCode === 'upstream_blocked' ? 15 * 60_000 : 60_000;
+    if (nowMs - Date.parse(state.lastAttemptAt) < cooldown) return true;
+  }
   if (!state?.lastSuccessAt) return false;
   const age = nowMs - Date.parse(state.lastSuccessAt);
   return Number.isFinite(age) && age >= 0 && age < FRESHNESS_MS[reason];
@@ -131,15 +137,17 @@ export class LiveRefreshCoordinator {
       const missingTracked = (previousSnapshot?.matches ?? [])
         .filter((match) => match.status !== 'completed' && !currentMatchIds.has(match.matchId));
       const toCheck = missingTracked.filter((match) => trackedSportScoreSlug(match)).slice(0, MAX_TERMINAL_CHECKS);
-      const checked = await Promise.all(toCheck.map(async (tracked) => {
+      const checked: LiveMatchOverlay[] = [];
+      for (const tracked of toCheck) {
         const slug = trackedSportScoreSlug(tracked)!;
         try {
           const raw = await this.source.getMatch(slug);
-          return adaptTrackedSportScoreRecord({ raw, tracked, observedAt: startedAt }) ?? tracked;
-        } catch {
-          return tracked;
+          checked.push(adaptTrackedSportScoreRecord({ raw, tracked, observedAt: startedAt }) ?? tracked);
+        } catch (error) {
+          if (error instanceof SportScoreWidgetClientError && error.code === 'blocked') throw error;
+          checked.push(tracked);
         }
-      }));
+      }
       const checkedIds = new Set(toCheck.map((match) => match.matchId));
       const retainedUnchecked = missingTracked.filter((match) => !checkedIds.has(match.matchId));
       const retainedCheckedCount = checked.filter((match) => match.updatedAt !== startedAt).length;

@@ -12,6 +12,7 @@ export type SportScoreWidgetClientErrorCode =
   | 'timeout'
   | 'network'
   | 'http_status'
+  | 'blocked'
   | 'invalid_json'
   | 'invalid_payload';
 
@@ -84,20 +85,30 @@ export class SportScoreWidgetClient implements SportScoreLiveSource {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const expired = new Promise<never>((_resolve, reject) => {
+      timeout = setTimeout(() => { controller.abort(); reject(new SportScoreWidgetClientError('timeout', 'Widget request timed out.')); }, this.timeoutMs);
+    });
+    try {
+      return await Promise.race([this.fetchAndRead(url, controller.signal), expired]);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private async fetchAndRead(url: URL, signal: AbortSignal): Promise<unknown> {
     let response: Response;
     try {
       response = await this.fetcher(url, {
         method: 'GET',
         headers: { Accept: 'application/json' },
         redirect: 'error',
-        signal: controller.signal
+        signal
       });
     } catch {
-      throw new SportScoreWidgetClientError(controller.signal.aborted ? 'timeout' : 'network', controller.signal.aborted ? 'Widget request timed out.' : 'Widget request failed.');
-    } finally {
-      clearTimeout(timeout);
+      throw new SportScoreWidgetClientError(signal.aborted ? 'timeout' : 'network', signal.aborted ? 'Widget request timed out.' : 'Widget request failed.');
     }
+    if (response.status === 403 || response.status === 429) throw new SportScoreWidgetClientError('blocked', 'Widget access blocked.');
     if (!response.ok) throw new SportScoreWidgetClientError('http_status', 'Widget returned a non-success status.');
 
     const contentLength = Number(response.headers?.get?.('content-length') ?? 0);

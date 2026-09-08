@@ -48,6 +48,33 @@ source/hosting approvals are already present. Each completed slice records real 
   and rescheduled identity tests passed. Focused runs: 9 ledger/planner tests, then 7 bridge/merge/
   planner tests; TypeScript passed. Local evidence only.
 
+- Slices 2–4: observed missing coordinator/route RED and atomic snapshot-count regression RED;
+  focused provider, authorization, scheduler and live suites pass. Real local Postgres smoke proves
+  concurrent lease exclusion, incremental publication, expired fencing, transaction rollback and
+  mandatory cleanup. Widget response-body timeout RED was reproduced and fixed. Background/manual
+  attempts share a durable cooldown; upstream 403/429 stops the batch and persists the circuit.
+- Slices 5–6: LIVE toggle/retained-state RED and replay-after-logout RED reproduced, then focused
+  UI/auth suites passed. Session nonces distinguish simultaneous logins; hashed revocations survive
+  handler replacement. PWA cache-version and 63-versus-64 static artifact failures were observed and
+  fixed before staging. EN/VI keys remain identical.
+- Slice 7: missing URL, missing credential and localhost configuration tests pass. The real browser
+  suite ran against the previous hosted candidate: login and four tabs passed, then LIVE failed as
+  expected because that candidate lacks the toggle. This is RED evidence, not staging acceptance.
+  Browser fixtures are isolated from real provider evidence, and logout cleanup is in finally.
+- Local integration: `verify:local` passed 149 files / 729 tests plus lint, types and audits;
+  `test:integration` passed all source/owner/Edge/endpoint/PWA checks. Actual Edge runtime smoke
+  passed PostgreSQL commit/rollback/cleanup and auth primitives/cookie/protected route/logout.
+  Edge bundle graph and Cloudflare artifact checks pass (64 files). Final `verify:staging` is
+  rerun after the cache change; hosted deployment and rollback evidence remain pending.
+- The final integration rerun exposed accidental discovery of rollback-worktree tests. Added a
+  Vitest exclusion for `.worktrees`, preserving the rollback source. An additional RED exposed
+  a blocked current checkpoint incorrectly reporting `fresh`; the runner now reports `failed`
+  without another provider request. Hosted live smoke requires a snapshot younger than ten minutes.
+- Final local staging chain passed on 2026-09-09: `verify:staging` (including `verify:release`,
+  `verify:local`, complete integration and static build). The final blocked-checkpoint correction
+  additionally passed all 12 provider tests and rebuilt/verified the Edge graph. Hosted TypeScript,
+  10,899-match serving validation, real local SQL smoke and 64-file Cloudflare artifact gates pass.
+
 - Preflight: clean branch `feat/api-football-rapid-ingestion`, HEAD `f3113ed`; remote Edge v5 ACTIVE
   and Worker `1c71033f-f97f-42b9-9884-1862d64ad870` at 100% independently checked on 2026-09-09.
 - The earlier untracked owner smoke depends on a missing `.secrets/staging-smoke.env`. The owner

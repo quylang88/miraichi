@@ -43,10 +43,34 @@ const mockChampionsLeagueMatch: LocalMatch = {
 };
 
 describe('matches screen UI refinements', () => {
+  it('has exactly one LIVE toggle and replaces the date list with only live states', () => {
+    const common = { activeTabId: 'matches' as const, translate: createTranslator('en'), locale: 'en' as const,
+      matchFeed: { status: 'loading' as const, date: '2026-01-01' }, timezone: 'UTC' as const,
+      filters: { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set<string>() }, searchQuery: 'saved search', isFilterPanelOpen: true };
+    const off = renderMatchesScreen(common);
+    expect(off).toContain('aria-pressed="false">LIVE</button>');
+    expect(off).not.toContain('data-live-state');
+    const snapshot = toProviderNeutralLiveMatchSnapshot(liveSnapshotFixture);
+    snapshot.matches.push({ ...snapshot.matches[0], matchId: 'completed-test', status: 'completed' });
+    const on = renderMatchesScreen({ ...common, liveMode: true,
+      liveMatches: { status: 'ready', snapshot, stale: false, partial: false, warningCode: null } });
+    expect(on.match(/>LIVE<\/button>/gu)).toHaveLength(1);
+    expect(on).toContain('aria-pressed="true">LIVE</button>');
+    expect(on).not.toContain('live-panel');
+    expect(on).not.toContain('completed-test');
+    expect(on).toContain('class="match-row');
+    expect(on).toContain('data-status="live"');
+    expect(on).not.toContain('id="date-prev-btn"');
+    expect(on).not.toContain('id="match-search"');
+    const empty = renderMatchesScreen({ ...common, liveMode: true,
+      liveMatches: { status: 'ready', snapshot: { ...snapshot, matches: [] }, stale: false, partial: false, warningCode: null } });
+    expect(empty).toContain('data-live-empty');
+  });
   it('renders factual live score/minute and partial stale states without a refresh button', () => {
     const translate = createTranslator('en');
     const html = renderMatchesScreen({
       activeTabId: 'matches',
+      liveMode: true,
       translate,
       locale: 'en',
       matchFeed: { status: 'loading', date: '2026-09-02' },

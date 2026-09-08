@@ -94,6 +94,15 @@ describe('Supabase Edge request composition', () => {
     expect(query).toHaveBeenCalledTimes(1);
   });
 
+  it('routes hosted provider refresh through a separate token before database work', async () => {
+    const query = vi.fn();
+    const client: PostgresQueryClient = { query: query as PostgresQueryClient['query'], transaction: async (run) => run(client) };
+    const handler = createPostgresEdgeApiHandler({ APP_ENV: 'local', SUPABASE_DB_URL: 'postgresql://postgres:postgres@db:5432/postgres' }, client);
+    const response = await handler(new Request('https://staging.test/api/internal/providers/current/refresh', { method: 'POST' }));
+    expect(response?.status).toBe(401);
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it('keeps the runtime smoke route local, explicit, and behind gateway auth', async () => {
     const createRuntimeSmokeHandler = vi.fn(() => vi.fn(async () => Response.json({ ok: true })));
     const baseRequest = (tokenValue: string) => new Request(

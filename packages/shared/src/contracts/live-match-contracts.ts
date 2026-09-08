@@ -2,9 +2,10 @@ import type { LocalDataSourceId } from './local-match-contracts.js';
 
 export type LiveMatchStatus = 'live' | 'halftime' | 'suspended' | 'completed';
 export type LiveMatchPeriod = 'first_half' | 'second_half' | 'extra_time' | 'penalties' | 'unknown';
-export type LiveRefreshReason = 'visible' | 'manual' | 'hourly';
+export type LiveRefreshReason = 'visible' | 'manual' | 'hourly' | 'background';
 export type LiveRefreshErrorCode =
   | 'upstream_timeout'
+  | 'upstream_blocked'
   | 'upstream_unavailable'
   | 'upstream_contract_invalid'
   | 'persistence_unavailable'
@@ -91,6 +92,7 @@ const VALID_SOURCE_IDS = new Set<LocalDataSourceId>(['sportscore', 'openfootball
 const VALID_STATUSES = new Set<LiveMatchStatus>(['live', 'halftime', 'suspended', 'completed']);
 const VALID_PERIODS = new Set<LiveMatchPeriod>(['first_half', 'second_half', 'extra_time', 'penalties', 'unknown']);
 const VALID_REFRESH_ERRORS = new Set<LiveRefreshErrorCode>([
+  'upstream_blocked',
   'upstream_timeout',
   'upstream_unavailable',
   'upstream_contract_invalid',

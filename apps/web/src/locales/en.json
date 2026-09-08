@@ -33,6 +33,7 @@
   "matches.title": "Matches",
   "matches.manualAdd": "Manual Add Bet",
   "live.eyebrow": "Current window",
+  "live.allDates": "Live now · all dates",
   "live.title": "Live matches",
   "live.loading": "Loading live matches",
   "live.empty": "No mapped live matches right now.",

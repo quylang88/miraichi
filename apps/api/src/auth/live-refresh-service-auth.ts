@@ -36,7 +36,7 @@ export function isAuthorizedHourlyLiveRefresh(
 ): boolean {
   if (!config.token || req.method !== 'POST') return false;
   const url = new URL(req.url || '/', 'http://localhost');
-  if (url.pathname !== '/api/v1/live/refresh' || url.search !== '?reason=hourly') return false;
+  if (url.pathname !== '/api/v1/live/refresh' || !['?reason=hourly', '?reason=background'].includes(url.search)) return false;
   const authorization = req.headers.authorization;
   if (typeof authorization !== 'string' || !authorization.startsWith('Bearer ')) return false;
   return secureEqual(authorization.slice('Bearer '.length), config.token);

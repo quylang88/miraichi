@@ -88,25 +88,24 @@ function renderFeedState(feed: Exclude<MatchFeedViewState, { status: 'ready' }>,
 
 function liveStatus(match: Extract<LiveMatchViewState, { status: 'ready' }>['snapshot']['matches'][number], translate: TranslateFunction): string {
   if (match.status === 'completed') return translate('live.status.completed');
-  if (match.status === 'halftime') return translate('live.status.halftime');
-  if (match.status === 'suspended') return translate('live.status.suspended');
+  if (match.status === 'halftime' || match.status === 'suspended') return `${translate(`live.status.${match.status}`)}${match.elapsedMinute === null ? '' : ` · ${match.elapsedMinute}'`}`;
   return match.elapsedMinute === null ? translate('live.status.live') : `${match.elapsedMinute}'`;
 }
 
 function renderLiveMatches(state: LiveMatchViewState, translate: TranslateFunction): string {
   if (state.status === 'loading') {
-    return `<div class="live-panel" data-live-state="loading" role="region" aria-label="${escapeHtml(translate('live.loading'))}"><div class="live-panel-heading"><h2>${escapeHtml(translate('live.title'))}</h2><span class="tag blue">${escapeHtml(translate('common.loading'))}</span></div>${renderSkeletonMatchRows(2)}</div>`;
+    return `<div data-live-state="loading" aria-label="${escapeHtml(translate('live.loading'))}">${renderSkeletonMatchRows(2)}</div>`;
   }
   if (state.status === 'unavailable') {
-    return `<div class="live-panel note-card warning" data-live-state="unavailable" role="region" aria-label="${escapeHtml(translate('live.title'))}"><div class="note-eyebrow">${escapeHtml(translate('live.title'))}</div><div class="note-title">${escapeHtml(translate('live.unavailable'))}</div><p class="note-copy">${escapeHtml(translate('live.unavailableCopy'))}</p></div>`;
+    return `<p class="empty-state" data-live-state="unavailable">${escapeHtml(translate('live.unavailable'))}</p>`;
   }
   const badges = [
     state.stale ? `<span class="tag amber">${escapeHtml(translate('live.stale'))}</span>` : '',
     state.partial ? `<span class="tag amber">${escapeHtml(translate('live.partial'))}</span>` : ''
   ].join('');
-  const rows = state.snapshot.matches.map((match) => `<article class="live-match-row" data-live-match-id="${escapeHtml(match.matchId)}"><div class="live-match-main"><div class="row-title">${escapeHtml(match.homeTeam.name)} vs ${escapeHtml(match.awayTeam.name)}</div><div class="row-meta">${escapeHtml(match.competition.name)} · ${escapeHtml(liveStatus(match, translate))}</div></div><strong class="live-score">${match.score.home} – ${match.score.away}</strong></article>`).join('');
+  const rows = state.snapshot.matches.filter((match) => ['live', 'halftime', 'suspended'].includes(match.status)).map((match) => `<article class="match-row" data-match-row data-status="${escapeHtml(match.status)}" data-live-match-id="${escapeHtml(match.matchId)}"><div class="row-split"><div><div class="row-title">${escapeHtml(match.homeTeam.name)} vs ${escapeHtml(match.awayTeam.name)}</div><div class="row-meta">${escapeHtml(match.competition.name)} · <span data-live-minute>${escapeHtml(liveStatus(match, translate))}</span></div></div><div class="row-right"><strong class="row-score" data-live-score>${match.score.home} – ${match.score.away}</strong></div></div></article>`).join('');
   const content = rows || `<p class="empty-state" data-live-empty>${escapeHtml(translate('live.empty'))}</p>`;
-  return `<div class="live-panel" data-live-state="ready" data-live-stale="${state.stale}" data-live-partial="${state.partial}" role="region" aria-label="${escapeHtml(translate('live.title'))}"><div class="live-panel-heading"><div><p class="screen-label">${escapeHtml(translate('live.eyebrow'))}</p><h2>${escapeHtml(translate('live.title'))}</h2></div><div class="live-badges">${badges}</div></div>${content}<p class="live-updated">${escapeHtml(translate('live.updatedAt', { date: new Date(state.snapshot.generatedAt).toLocaleString() }))}</p></div>`;
+  return `<div data-live-state="ready" data-live-stale="${state.stale}" data-live-partial="${state.partial}" aria-live="polite"><div class="live-badges">${badges}</div>${content}<p class="row-meta">${escapeHtml(translate('live.updatedAt', { date: new Date(state.snapshot.generatedAt).toLocaleString() }))}</p></div>`;
 }
 
 function isWomenMatch(match: AppMatch): boolean {
@@ -152,6 +151,7 @@ export function renderMatchesScreen(input: {
   readonly locale: SupportedLocale;
   readonly matchFeed: MatchFeedViewState;
   readonly liveMatches?: LiveMatchViewState;
+  readonly liveMode?: boolean;
   readonly timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh';
   readonly filters: MatchFilters;
   readonly searchQuery: string;
@@ -159,7 +159,7 @@ export function renderMatchesScreen(input: {
   readonly isCalendarOpen?: boolean;
   readonly calendarMonth?: string;
 }): string {
-  const { activeTabId, translate, locale, matchFeed, liveMatches = { status: 'loading' }, timezone, filters, searchQuery, isFilterPanelOpen, isCalendarOpen = false, calendarMonth } = input;
+  const { activeTabId, translate, locale, matchFeed, liveMatches = { status: 'loading' }, liveMode = false, timezone, filters, searchQuery, isFilterPanelOpen, isCalendarOpen = false, calendarMonth } = input;
   const filtered = filterMatches(matchFeed, filters, searchQuery);
   const ribbon = getRibbonDates(matchFeed.date, translate, timezone).map((date) => `<button class="date-chip${date.dateStr === matchFeed.date ? ' active' : ''}" type="button" data-date="${escapeHtml(date.dateStr)}"><span class="date-chip-label">${escapeHtml(date.label)}</span><span class="date-chip-number">${escapeHtml(date.dayNumber)}</span></button>`).join('');
   const leagues = matchFeed.status === 'ready' ? [...new Set(matchFeed.matches.map((match) => match.competition.name))].sort(compareCompetitionsByPopularity) : [];
@@ -185,12 +185,13 @@ export function renderMatchesScreen(input: {
     : '';
   return `<section class="${screenClass('matches', activeTabId)}" id="screen-matches" data-shell-tab-panel="matches" aria-labelledby="matches-title">
     ${screenHeader(translate('matches.eyebrow'), translate('matches.title'), 'matches-title', `<button class="primary-button add-inline" type="button" data-open-manual-add>${escapeHtml(translate('matches.manualAdd'))}</button>`)}
-    ${renderLiveMatches(liveMatches, translate)}
+    <div class="action-row"><button class="${liveMode ? 'primary-button' : 'secondary-button'} live-toggle" type="button" data-live-toggle aria-pressed="${liveMode}">LIVE</button>${liveMode ? `<span class="row-meta">${escapeHtml(translate('live.allDates'))}</span>` : ''}</div>
+    ${liveMode ? renderLiveMatches(liveMatches, translate) : `
     <div class="date-navigator"><button id="date-prev-btn" class="nav-arrow-btn" type="button" aria-label="${escapeHtml(translate('matches.previousDay'))}">${backIcon}</button><div class="date-ribbon">${ribbon}</div><button id="date-next-btn" class="nav-arrow-btn" type="button" aria-label="${escapeHtml(translate('matches.nextDay'))}">${nextIcon}</button><button id="date-picker-btn" class="calendar-btn${isCalendarOpen ? ' active' : ''}" type="button" aria-label="${escapeHtml(translate('matches.pickDate'))}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button></div>
     ${calendarPicker}
     <div class="search-row"><input class="search-input" id="match-search" type="search" placeholder="${escapeHtml(translate('matches.search'))}" aria-label="${escapeHtml(translate('matches.search'))}"><button class="filter-button" id="filter-panel-toggle-btn" type="button" aria-label="${escapeHtml(translate('matches.openFilters'))}">${filterIcon}</button></div>
     <div class="filter-panel" id="matches-filter-panel" ${isFilterPanelOpen ? '' : 'hidden'}><div class="filter-group"><span class="filter-group-title">${escapeHtml(translate('matches.sortGroup'))}</span><div class="filter-options">${radio('groupby', 'league', translate('matches.league'), filters.groupby === 'league')}${radio('groupby', 'time', translate('matches.time'), filters.groupby === 'time')}</div></div><div class="filter-group"><span class="filter-group-title">${escapeHtml(translate('matches.competitionType'))}</span><div class="filter-options">${radio('type', 'all', translate('matches.all'), filters.type === 'all')}${radio('type', 'national', translate('matches.national'), filters.type === 'national')}${radio('type', 'club', translate('matches.club'), filters.type === 'club')}</div></div><div class="filter-group"><span class="filter-group-title">${escapeHtml(translate('matches.gender'))}</span><div class="filter-options">${radio('gender', 'all', translate('matches.all'), filters.gender === 'all')}${radio('gender', 'men', translate('matches.men'), filters.gender === 'men')}${radio('gender', 'women', translate('matches.women'), filters.gender === 'women')}</div></div><div class="filter-group full-width"><span class="filter-group-title">${escapeHtml(translate('matches.leagues'))}</span><div id="filter-leagues-list" class="leagues-checklist">${leagueOptions}</div></div></div>
-    ${content}<div class="empty-state" id="matches-empty" style="display: ${matchFeed.status === 'ready' && filtered.length === 0 ? 'block' : 'none'};">${escapeHtml(translate('matches.noFilterResults'))}</div>
+    ${content}<div class="empty-state" id="matches-empty" style="display: ${matchFeed.status === 'ready' && filtered.length === 0 ? 'block' : 'none'};">${escapeHtml(translate('matches.noFilterResults'))}</div>`}
   </section>`;
 }
 
