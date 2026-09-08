@@ -2,9 +2,9 @@
 
 ## Current State
 
-- **Status**: Frankfurt staging exit gate satisfied on 2026-09-08. The next phase is the final
-  `phase:owner-feedback` release review; Tokyo/production remains blocked pending explicit owner
-  approval.
+- **Status**: Owner rejected the previous staging candidate on 2026-09-09. Hosted automatic
+  provider refresh and `phase:quality-up ui-ux-improve` are required. Previous smoke evidence
+  remains historical; a new committed hosted browser gate must pass before owner review.
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
@@ -32,9 +32,11 @@
 - **Completed phase**: `phase:staging Supabase Edge Function and Cloudflare Worker owner hosting` —
   the reviewed branch is pushed; Frankfurt migration, Edge Function, Worker, Vault cron, complete
   hosted owner smoke, full staging gate, and rollback drill passed on 2026-09-08.
-- **Active phase**: `phase:owner-feedback Supabase Edge Function and Cloudflare Worker owner
-  hosting` — the staging candidate is ready for the owner's final release review. This phase does
-  not authorize Tokyo project creation or production promotion.
+- **Active phase**: `phase:code-slice Hosted automatic provider refresh and Matches LIVE quality-up — Slice 1`.
+  The owner authorized implementation, migration, Frankfurt redeployment, committed hosted E2E,
+  rollback drills, commit and push on the current branch. Tokyo/production remain unapproved.
+- **Approved implementation plan**: `docs/superpowers/plans/2026-09-09-hosted-provider-refresh-live.md`;
+  DB-first design and filesystem audit: `docs/superpowers/specs/2026-09-09-hosted-provider-refresh-live-design.md`.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active 10,899-match/45-competition snapshot is retained in Frankfurt;

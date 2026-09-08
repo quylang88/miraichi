@@ -3,7 +3,7 @@ import {
   fotMobDateKey,
   fotMobMatchKey,
   type FotMobResultLedgerState
-} from './fotmob-result-ledger.js';
+} from './fotmob-result-ledger-contract.js';
 
 const FIRST_CHECK_AFTER_MINUTES = 105;
 const MAX_CHECKS = 45;
