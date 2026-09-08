@@ -2,8 +2,8 @@
 
 ## Current State
 
-- **Status**: Blocked at staging handoff pending explicit owner authorization and owner-entered
-  secrets/configuration.
+- **Status**: Active staging; blocked at secret upload until the owner finishes the prepared local
+  staging secret file.
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
@@ -28,16 +28,18 @@
 - **Completed phase**: `phase:integration-test Supabase Edge Function and Cloudflare Worker owner
   hosting` — all ten local TDD slices, the complete local/release/staging command gates, actual
   Supabase Edge runtime smoke, and Cloudflare artifact verification passed on 2026-09-07.
-- **Earliest safe next phase**: `phase:staging Supabase Edge Function and Cloudflare Worker owner
-  hosting` — **BLOCKED** until the owner explicitly authorizes push/deploy/remote migration and
-  enters the required values directly into Supabase, Vault, and Cloudflare.
+- **Active phase**: `phase:staging Supabase Edge Function and Cloudflare Worker owner hosting` —
+  owner authorized push/deploy/remote migration on 2026-09-08; deployment is **BLOCKED** until the
+  owner enters the required secret values directly into `.secrets/edge.staging.env` and retains the
+  new gateway token in the password manager.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
 - **Promotion state**: The active `apps/api/data` snapshot is fresh with 10,899 matches across 45
   current competition editions and its exact snapshot is synced to the retained Frankfurt Supabase
   staging project. The Edge Function and Cloudflare Worker implementation has passed every planned
-  local gate, but neither runtime has been deployed. The seventh migration is local only. No hosted
-  smoke, owner-feedback release gate, Tokyo project creation, or production promotion has run.
+  local gate, but neither runtime has been deployed. All seven migrations are now applied remotely.
+  No hosted smoke, owner-feedback release gate, Tokyo project creation, or production promotion has
+  run.
 - **Current lifecycle source of truth**: this file.
 
 ## Historical Owner-Hosted API And Visibility-Driven Live Overlay — 2026-09-02
@@ -285,6 +287,25 @@ deployment path.
 - **Recommendation**: start `phase:staging Supabase Edge Function and Cloudflare Worker owner
   hosting` only after those owner actions are explicitly approved. Production and Tokyo remain out
   of scope.
+
+### Frankfurt staging evidence — 2026-09-08
+
+- The owner explicitly authorized the Frankfurt staging push, remote migration, and Edge/Cloudflare
+  deployment workflow.
+- Local commit `fded0df` and its preceding 11 commits were pushed to
+  `origin/feat/api-football-rapid-ingestion`.
+- Supabase project `qpexxwmrnreooxftfucv` was linked and `ACTIVE_HEALTHY` in `eu-central-1`.
+  Migration dry-run named only `20260903120000_edge_hourly_live_refresh.sql`; it was applied and a
+  fresh remote migration list matched all seven local versions. Supabase CLI 2.109.0 warned that it
+  could not cache the post-push pg-delta catalog because its temporary CA file was absent, but the
+  push exited successfully and the independent remote list verified the applied version.
+- Cloudflare OAuth succeeded for the expected owner account. Its Workers subdomain is `quylang88`;
+  `miraichi-owner-gateway-staging` does not yet exist, so the exact planned public origin is
+  `https://miraichi-owner-gateway-staging.quylang88.workers.dev`.
+- Supabase Edge Secrets are empty. The gitignored `.secrets/edge.staging.env` template contains the
+  exact non-secret staging configuration and awaits owner entry of gateway, password-hash, session,
+  and refresh secrets. No Edge Function, Worker version, Vault value, or cron job was deployed or
+  configured before that gate.
 
 ## Product Boundary
 

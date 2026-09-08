@@ -1,9 +1,8 @@
 # Supabase Edge + Cloudflare Worker owner hosting runbook
 
-> **Status: local implementation and release closeout complete on 2026-09-07.** The next phase is
-> Frankfurt staging, blocked until the owner explicitly authorizes push/deploy/remote migration and
-> enters the required secrets/configuration directly into Supabase Edge Secrets, Supabase Vault,
-> and Cloudflare.
+> **Status: Frankfurt staging started on 2026-09-08.** Push and the seventh remote migration are
+> complete. Deployment is blocked until the owner fills the prepared gitignored Edge staging file
+> and retains the new gateway token in the password manager.
 
 This runbook replaces the Koyeb deployment path. It retains the Frankfurt Supabase staging project
 and its verified match snapshot. It does not authorize a push, Tokyo project, production promotion,
@@ -14,8 +13,7 @@ paid service, remote database reset, or project deletion.
 - Supabase project: `Miraichi Staging`
 - Project ref: `qpexxwmrnreooxftfucv`
 - Region: Frankfurt
-- Remote applied migrations: six versions through `20260902120000`; the seventh local migration
-  `20260903120000_edge_hourly_live_refresh.sql` remains unapplied until owner-authorized staging.
+- Remote applied migrations: seven versions through `20260903120000`
 - Verified cloud snapshot: 10,899 matches, 45 competitions, one snapshot
 - Data API: disabled in hosted staging
 - Local CA: `.secrets/supabase-staging-ca.crt` (gitignored; used only by owner-local DB tooling)
@@ -188,7 +186,7 @@ interactive secret prompt:
 
 ```powershell
 $MiraichiEdgeUrl = "https://qpexxwmrnreooxftfucv.supabase.co/functions/v1/miraichi-api"
-$MiraichiWorkerOrigin = "https://<EXACT_STAGING_WORKER>.workers.dev"
+$MiraichiWorkerOrigin = "https://miraichi-owner-gateway-staging.quylang88.workers.dev"
 pnpm run build:web-static
 pnpm run cloudflare:artifact:verify
 pnpm --filter @miraichi/cloudflare-gateway exec wrangler deploy --env staging --dry-run --var "DEPLOYMENT_ENV:staging" --var "MIRAICHI_EDGE_FUNCTION_URL:$MiraichiEdgeUrl" --var "MIRAICHI_PUBLIC_ORIGIN:$MiraichiWorkerOrigin" --var "MIRAICHI_EDGE_REGION:eu-central-1"
