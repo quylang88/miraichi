@@ -30,7 +30,7 @@ const matchRow = {
   away_team_name: 'Away',
   home_score: 2,
   away_score: 1,
-  source_refs: [{ sourceId: 'fotmob', importedAt: '2026-09-03T12:00:00.000Z', locator: 'private-locator' }],
+  source_refs: [{ sourceId: 'fotmob-unofficial', importedAt: '2026-09-03T12:00:00.000Z', sourceMatchId: 'private-locator' }],
   updated_at: '2026-09-03T12:00:00.000Z'
 };
 
@@ -134,10 +134,10 @@ describe('Supabase Edge owner flow integration', () => {
     const detail = await edge(request('/api/v1/matches/detail?id=edge-match-1', {
       headers: { Cookie: cookie }
     }));
-    expect(detail.status).toBe(503);
-    await expect(detail.json()).resolves.toEqual({
-      error: { code: 'detail_unavailable', message: 'Match detail is currently unavailable.' }
-    });
+    expect(detail.status).toBe(200);
+    const detailBody=await detail.text();
+    expect(JSON.parse(detailBody)).toMatchObject({match:{id:'edge-match-1'},refresh:{outcome:'unavailable',lastSuccessAt:null}});
+    expect(detailBody).not.toMatch(/private-locator|sourceMatchId|sourceUrl/);
   });
 
   it('rolls a failed postgres.js transaction back through the shared contract', async () => {

@@ -6,6 +6,8 @@ import { toCanonicalWarehouse } from '../apps/worker/src/sources/shared/hosted-c
 import { adaptFotMobDetail } from '../apps/worker/src/sources/fotmob/fotmob-detail-adapter.js';
 import { detailCanonicalFixture, fotmobDetailFixture } from '../tests/fixtures/fotmob-detail.js';
 import { gate } from './staging-hosted-config.js';
+import { createPostgresEdgeApiHandler } from '../apps/api/src/runtime/edge-runtime-composition.js';
+import { PostgresProviderCircuitStore, guardProviderFetch } from '../apps/api/src/refresh/provider-request-guard.js';
 
 async function main() {
   // Deliberately fixed disposable local database; this gate cannot target staging or production.
@@ -70,6 +72,26 @@ async function main() {
     }); } catch(error) { if(error!==intentionalRollback) throw error; exercisedRollback=true; }
     gate(exercisedRollback,'intentional rollback exercised');
     gate((await store.read(match.id))?.detail?.events.length===3,'rollback preserves previous cache');
+    await client.query('update miraichi_app.match_detail_cache set lease_id=null,lease_expires_at=null where owner_profile_id=$1',[owner]);
+    await client.query('update miraichi_app.match_detail_provider_control set lease_id=null,lease_expires_at=null where owner_profile_id=$1',[owner]);
+    await resetCooldown();
+    let providerRequests=0;
+    const fetcher:typeof fetch=async()=>{providerRequests++;return Response.json(fotmobDetailFixture);};
+    const api=createPostgresEdgeApiHandler({APP_ENV:'local',SUPABASE_DB_URL:'postgresql://postgres:postgres@127.0.0.1:15422/postgres',MIRAICHI_OWNER_PROFILE_ID:owner},client,fetcher);
+    const cached=await api(new Request(`http://localhost/api/v1/matches/detail?id=${match.id}`));
+    gate(cached?.status===200 && (await cached.json()).enrichment?.statistics.length>0 && providerRequests===0,'Edge GET rich cache without provider');
+    const explicit=await api(new Request(`http://localhost/api/v1/matches/detail/refresh?id=${match.id}`,{method:'POST'}));
+    gate(explicit?.status===200 && (await explicit.json()).refresh?.outcome==='refreshed' && Number(providerRequests)===1,'Edge POST invokes one provider');
+    const cooldown=await api(new Request(`http://localhost/api/v1/matches/detail/refresh?id=${match.id}`,{method:'POST'}));
+    gate(cooldown?.status===200 && (await cooldown.json()).refresh?.outcome==='cooldown' && Number(providerRequests)===1,'Edge POST cooldown has no provider call');
+    const circuits=new PostgresProviderCircuitStore(client,owner);
+    await circuits.block('sportscore');
+    const guarded=guardProviderFetch('sportscore',circuits,fetcher);
+    let circuitRejected=false; try {await guarded('https://sportscore.com/api/widget/matches/');} catch {circuitRejected=true;}
+    gate(circuitRejected && Number(providerRequests)===1,'persisted circuit prevents scheduled request');
+    await resetCooldown();
+    const detailBlocked=await store.acquire((await store.read(second.id))!.match,{provider:'sportscore',id:'home-vs-away'});
+    gate(!detailBlocked.lease && (detailBlocked.retryAfterSeconds??0)>800,'persisted common circuit prevents detail acquisition');
     await client.query('update miraichi_app.match_detail_provider_control set lease_id=null,lease_expires_at=null,requests_today=1000 where owner_profile_id=$1',[owner]);
     await resetCooldown();
     const quota=await store.acquire((await store.read(second.id))!.match,source);

@@ -4,6 +4,7 @@ import type { SelectedDetailSource } from './match-detail-source.js';
 import type { PostgresQueryClient } from '../persistence/supabase/postgres-query-client.js';
 import { mapCloudMatchRow } from '../persistence/supabase/supabase-cloud-persistence-adapter.js';
 import { postgresJson } from '../persistence/supabase/postgres-parameters.js';
+import { PostgresProviderCircuitStore } from '../refresh/provider-request-guard.js';
 export interface DetailRead {
   match:LocalMatch; detail:LocalMatchDetail|null; now:string; lastSuccessAt:string|null; retryAfterSeconds:number|null;
 }
@@ -47,12 +48,8 @@ export class PostgresHostedMatchDetailStore implements HostedMatchDetailStore {
       if(control.next_attempt_at && Date.parse(iso(control.next_attempt_at))>now) return denied('cooldown',control.next_attempt_at);
       const sameDay=String(control.budget_date)===String(control.today);
       if(sameDay && Number(control.requests_today)>=1000) return denied('cooldown',new Date(Date.parse(`${control.today}T00:00:00Z`)+86400000));
-      const existing=(await tx.query(`select state_json->'circuits'->>$2 as blocked_until from miraichi_app.provider_refresh_control where owner_profile_id=$1`,[this.owner,source.provider])).rows[0];
-      if(existing?.blocked_until && Date.parse(String(existing.blocked_until))>now) return denied('cooldown',existing.blocked_until);
-      if(source.provider==='sportscore') {
-        const live=(await tx.query(`select last_attempt_at,last_error_code from miraichi_app.live_refresh_state where owner_profile_id=$1`,[this.owner])).rows[0];
-        if(live?.last_error_code==='upstream_blocked' && Date.parse(iso(live.last_attempt_at))+900000>now) return denied('cooldown',new Date(Date.parse(iso(live.last_attempt_at))+900000));
-      }
+      const blockedUntil=await new PostgresProviderCircuitStore(tx,this.owner).blockedUntil(source.provider);
+      if(blockedUntil) return denied('cooldown',blockedUntil);
       const current=(await tx.query(`select * from miraichi_app.match_record where owner_profile_id=$1 and id=$2 for share`,[this.owner,match.id])).rows[0];
       if(!current || matchKey(mapCloudMatchRow(current))!==matchKey(match)) return {lease:null,outcome:'unavailable'};
       await tx.query(`insert into miraichi_app.match_detail_cache(owner_profile_id,match_id) values($1,$2) on conflict do nothing`,[this.owner,match.id]);

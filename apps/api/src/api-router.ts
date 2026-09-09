@@ -112,7 +112,7 @@ export function createApiHandler(runtime: ApiRuntime): ApiHandler {
       handleHealth(req, res);
     } else if (pathname === '/api/v1/live' || pathname === '/api/v1/live/refresh') {
       await handleLiveMatches(req, res, { coordinator: runtime.liveCoordinator });
-    } else if (pathname === '/api/v1/matches/detail') {
+    } else if (pathname === '/api/v1/matches/detail' || pathname === '/api/v1/matches/detail/refresh') {
       await handleMatchDetail(req, res, runtime.matchDetailDependencies);
     } else if (pathname === '/api/v1/data-snapshot/status') {
       await handleDataSnapshotStatus(req, res, { repository: runtime.matchRepository });

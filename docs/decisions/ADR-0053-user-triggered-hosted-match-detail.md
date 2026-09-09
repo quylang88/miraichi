@@ -29,11 +29,17 @@ scores, momentum, betting data, automated insights, prose reviews, raw URLs/IDs 
 predicted lineups. Historical team-form/H2H payloads are not imported in this phase. Null/missing
 fields stay missing, never become invented zeros. Shot positions are displayed without xG.
 
-Host cache, per-match lease/revision and provider cooldown/circuit in private Postgres. Explicit
+Host cache, per-match lease fence and provider cooldown/circuit in private Postgres. Explicit
 POST refresh performs at most one selected-provider request; GET is a cache/canonical read only.
 Use a 60-second per-match floor, bounded provider budget, timeout/body cap, ETag/304 and atomic
 lease-fenced publication. Failures preserve the last good detail and report staleness. Revalidate
 canonical identity at publication; detail never mutates the canonical match or bankroll state.
+The detail budget is 1,000 attempts per provider per UTC day, with one active provider lease.
+Persist access blocks independently of publication: six hours for FotMob and fifteen minutes for
+SportScore. Every hosted current/terminal/detail/widget client checks the common circuit before
+its request; a block observed by one capability stops later requests by the others. Requests
+already in flight before the block are not retroactively cancelled. No circuit causes a timer
+or retry in the detail view.
 
 Stage on Frankfurt, run full local and hosted E2E, verify no request before/after the owner's
 detail action, cache/cooldown, latest-selection wins, unavailable/partial/stale rendering, identity

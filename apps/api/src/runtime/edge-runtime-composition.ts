@@ -11,7 +11,7 @@ import {
 import { readEdgeCloudPersistenceConfig } from '../config/cloud-persistence-config.js';
 import { errorResponse } from '../http/web-http.js';
 import { LiveRefreshCoordinator } from '../live/live-refresh-coordinator.js';
-import { SportScoreWidgetClient, type SportScoreLiveSource } from '../live/sportscore-widget-client.js';
+import type { SportScoreLiveSource } from '../live/sportscore-widget-client.js';
 import { CloudPersistenceUnconfiguredError, type CloudPersistenceAdapter } from '../persistence/cloud-persistence-adapter.js';
 import {
   runPostgresRuntimeSmoke,
@@ -27,6 +27,10 @@ import { createHostedProviderRoute } from '../refresh/hosted-provider-route.js';
 import { HostedProviderRefresh } from '../refresh/hosted-provider-refresh.js';
 import { PostgresHostedProviderStore } from '../refresh/hosted-provider-postgres-store.js';
 import { postgresOwnerSessionRevocations, withRevocableOwnerSessions } from '../auth/owner-session-revocation.js';
+import { createGuardedProviderClients } from './guarded-provider-clients.js';
+import { HostedMatchDetailCoordinator } from '../detail/hosted-match-detail.js';
+import { PostgresHostedMatchDetailStore } from '../detail/hosted-match-detail-store.js';
+import { fetchSelectedMatchDetail } from '../detail/match-detail-source.js';
 
 export { createPostgresJsQueryClient } from '../persistence/supabase/postgres-js-query-client.js';
 
@@ -94,7 +98,8 @@ export function createBootstrapEdgeApiHandler(env: EdgeEnvironment): ApiHandler 
 
 export function createPostgresEdgeApiHandler(
   env: EdgeEnvironment,
-  client: PostgresQueryClient
+  client: PostgresQueryClient,
+  fetcher: typeof fetch = globalThis.fetch
 ): ApiHandler {
   const config = readEdgeCloudPersistenceConfig(env);
   const adapter = createSupabaseCloudPersistenceAdapter({
@@ -116,14 +121,19 @@ export function createPostgresEdgeApiHandler(
     throw new Error('SPORTSCORE_LIVE_MODE must be disabled or widget');
   }
   const timeoutMs = Number(env.SPORTSCORE_WIDGET_TIMEOUT_MS?.trim() || 8_000);
+  const clients = createGuardedProviderClients(client, config.ownerProfileId, timeoutMs, fetcher);
+  const detailCoordinator = new HostedMatchDetailCoordinator(new PostgresHostedMatchDetailStore(client, config.ownerProfileId),
+    (input) => fetchSelectedMatchDetail({ ...input, fotmob: clients.detail, sportscore: clients.widget }));
   const liveCoordinator = new LiveRefreshCoordinator({
     ownerProfileId: config.ownerProfileId,
     persistence: adapter,
     repository: matchRepository,
-    source: liveMode === 'widget' ? new SportScoreWidgetClient({ timeoutMs }) : disabledLiveSource
+    source: liveMode === 'widget' ? clients.widget : disabledLiveSource
   });
   const providerRoute = createHostedProviderRoute(env.MIRAICHI_PROVIDER_REFRESH_TOKEN, () => new HostedProviderRefresh({
     store: new PostgresHostedProviderStore(client, config.ownerProfileId),
+    currentClient: clients.current,
+    dailyClient: clients.daily,
     maxCurrentRequests: Number(env.MIRAICHI_CURRENT_REFRESH_BATCH_SIZE || 3)
   }));
   const api = createApiHandler(defineApiRuntime({
@@ -131,7 +141,7 @@ export function createPostgresEdgeApiHandler(
     liveRefreshServiceAuthConfig: readLiveRefreshServiceAuthConfig(env),
     cloudDependencies: { adapter, ownerProfileId: config.ownerProfileId },
     matchRepository,
-    matchDetailDependencies: { repository: matchRepository },
+    matchDetailDependencies: { repository: cloudRepository, coordinator: detailCoordinator },
     liveCoordinator,
     ...(env.MIRAICHI_PUBLIC_ORIGIN?.trim() ? { allowedOrigin: env.MIRAICHI_PUBLIC_ORIGIN.trim() } : {})
   }));

@@ -79,3 +79,12 @@ run focused verification, then commit locally immediately before starting the ne
   retry delays; each was fixed. Club and national-team rows exercise the same SQL behavior.
   Provider circuits currently coordinate detail matches and read existing refresh/live circuits;
   the reverse scheduled-client guard is an explicit slice 4 runtime gate, not claimed complete here.
+- Slice 4: route/router/Node REDs prove the old GET/queue behavior and missing explicit route;
+  guard REDs prove repeated network calls despite a provider block. GET is now cache-only, POST
+  requires exactly one canonical ID, owner auth and origin checks remain enforced, and Node/Edge
+  compositions use the durable coordinator. A separate private common circuit catches 403/429
+  before client parsing and is checked by current, terminal, detail and both widget operations.
+  SQL smoke exercises the actual Edge handler: rich GET sends zero provider requests, explicit
+  POST sends one, and cooldown sends none. It also proves the persisted common circuit prevents
+  both a scheduled request and detail lease acquisition. TypeScript, product boundary, type audit
+  and Edge build/module graph pass; owner API integration retains locator redaction.

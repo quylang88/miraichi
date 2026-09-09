@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { readLiveRefreshServiceAuthConfig } from './auth/live-refresh-service-auth.js';
-import { createOwnerPasswordHash, readOwnerAuthConfig } from './auth/owner-auth.js';
+import { createOwnerPasswordHash, createOwnerSessionToken, OWNER_SESSION_COOKIE, readOwnerAuthConfig } from './auth/owner-auth.js';
 import { createMemoryCloudPersistenceAdapter } from './persistence/memory-cloud-persistence-adapter.js';
 import { createApiHandler } from './api-router.js';
 import { defineApiRuntime, type ApiRuntime } from './runtime/api-runtime.js';
@@ -38,6 +38,20 @@ function localRuntime(overrides: Partial<ApiRuntime> = {}): ApiRuntime {
 }
 
 describe('Web API router', () => {
+  it('permits explicit detail POST only for an owner session and rejects cross-origin/service bearer access', async () => {
+    const secret='detail-router-session-secret-long-enough';
+    const coordinator={read:vi.fn(),refresh:vi.fn(async()=>null)};
+    const runtime=localRuntime({ownerAuthConfig:readOwnerAuthConfig({APP_ENV:'staging',MIRAICHI_OWNER_PASSWORD_HASH:await createOwnerPasswordHash('fixture-password'),MIRAICHI_SESSION_SECRET:secret}),
+      matchDetailDependencies:{coordinator} as never,liveRefreshServiceAuthConfig:{token:'detail-test-service-token-at-least32characters'}});
+    const handle=createApiHandler(runtime); const url='https://miraichi.example/api/v1/matches/detail/refresh?id=match-example';
+    expect((await handle(new Request(url,{method:'POST'})))?.status).toBe(401);
+    const cookie=`${OWNER_SESSION_COOKIE}=${createOwnerSessionToken(secret,Date.now(),600)}`;
+    expect((await handle(new Request(url,{method:'POST',headers:{cookie,origin:'https://bad.example'}})))?.status).toBe(403);
+    expect((await handle(new Request(url,{method:'POST',headers:{authorization:'Bearer detail-test-service-token-at-least32characters'}})))?.status).toBe(401);
+    expect(coordinator.refresh).not.toHaveBeenCalled();
+    expect((await handle(new Request(url,{method:'POST',headers:{cookie,origin:'https://miraichi.example'}})))?.status).toBe(404);
+    expect(coordinator.refresh).toHaveBeenCalledExactlyOnceWith('match-example');
+  });
   it('routes health before owner auth and returns null outside /api', async () => {
     const passwordHash = await createOwnerPasswordHash('correct horse battery staple');
     const runtime = localRuntime({
