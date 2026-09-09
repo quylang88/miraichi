@@ -15,7 +15,7 @@ function hasLocator(value: unknown): boolean {
 export async function runStagingOwnerFlow(): Promise<void> {
   const { origin, password } = requireStagingConfig(localStagingEnvironment());
   const secretValues = [password, ...Object.entries(readLocalEnv('.secrets/edge.staging.env'))
-    .filter(([key]) => /TOKEN|SECRET|PASSWORD|DATABASE/u.test(key)).map(([, value]) => value)].filter((value) => value.length >= 12);
+    .filter(([key]) => /TOKEN|SECRET|PASSWORD|DATABASE/u.test(key)).map(([, value]) => value).filter((value) => value.length >= 12)];
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ baseURL: origin, viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   const page = await context.newPage();
@@ -161,8 +161,8 @@ export async function runStagingOwnerFlow(): Promise<void> {
         height: node.getBoundingClientRect().height, width: node.getBoundingClientRect().width,
         parent: node.parentElement?.getAttribute('data-live-state')
       }))),
-      liveState: await page.locator('[data-live-state]').getAttribute('data-live-state').catch(() => null),
-      active: await page.locator('[data-live-toggle]').getAttribute('aria-pressed').catch(() => null) }));
+      liveState: await page.locator('[data-live-state]').evaluateAll((nodes) => nodes[0]?.getAttribute('data-live-state') ?? null),
+      active: await page.locator('[data-live-toggle]').evaluateAll((nodes) => nodes[0]?.getAttribute('aria-pressed') ?? null) }));
     const detail = error instanceof Error && error.message.startsWith('Hosted gate failed:') ? ` (${error.message})` : '';
     throw new Error(`Hosted browser gate failed during ${phase}${detail}`);
   } finally {

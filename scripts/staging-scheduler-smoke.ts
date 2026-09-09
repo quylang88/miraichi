@@ -4,9 +4,21 @@ let querySequence = 0;
 
 export function linkedStagingQuery(sql: string): Record<string, unknown>[] {
   const queryId = ++querySequence;
-  const result = spawnSync(process.execPath, ['node_modules/supabase/dist/supabase.js', 'db', 'query', '--linked', '--output-format', 'json'], {
+  const execute = () => spawnSync(process.execPath, ['node_modules/supabase/dist/supabase.js', 'db', 'query', '--linked', '--output-format', 'json'], {
     input: sql, encoding: 'utf8', windowsHide: true, timeout: 45_000
   });
+  let result = execute();
+  const metadataRead = /^select (?:name|jobname|status_code|\(select)\b/u.test(sql) && !sql.includes(';');
+  for (let attempt = 1; metadataRead && result.status !== 0 && attempt < 3; attempt++) {
+    const message = (result.stderr ?? '').toLowerCase();
+    const reasons = ['too many connections','remaining connection slots','too many clients','connection refused',
+      'connection reset','connection terminated','timeout','timed out','password authentication failed',
+      'sasl','certificate','rate limit','429','500','could not connect','circuit breaker','no such file']
+      .filter((reason) => message.includes(reason));
+    console.log(JSON.stringify({ gate: 'hosted-scheduler', stage: 'metadata-read-retry', queryId, attempt, reasons }));
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1_000);
+    result = execute();
+  }
   const sqlState = /SQLSTATE\s+([A-Z0-9]{5})/u.exec(result.stderr ?? '')?.[1] ?? 'none';
   gate(result.status === 0, `linked Frankfurt query ${queryId}; exit=${result.status}; sqlstate=${sqlState}`);
   const offset = result.stdout.indexOf('{');
@@ -29,6 +41,7 @@ export async function runStagingSchedulerSmoke(): Promise<void> {
   }
   const outcomes: Record<string, string> = {};
   for (const kind of ['current','terminal','live']) {
+    console.log(JSON.stringify({ gate: 'hosted-scheduler', stage: kind }));
     const before = linkedStagingQuery(`select (select revision from miraichi_app.provider_refresh_control where owner_profile_id='owner-primary') as revision,
       (select count(*)::int from miraichi_app.match_record) as matches,
       (select generated_at from miraichi_app.live_match_snapshot where owner_profile_id='owner-primary') as live_at`)[0];
