@@ -25,7 +25,10 @@ run focused verification, then commit locally immediately before starting the ne
 4. **Owner-only explicit API.** Files: `routes/match-detail.ts`, router, runtime compositions and
    tests. RED: GET never enqueues/fetches, POST refresh only with owner/same-origin guard, exact
    one canonical ID, sanitized ready/cached/partial/stale/unavailable response. GREEN: hosted
-   wiring and retire automatic queue invocation. Verify route/auth/Edge graph tests.
+   wiring and retire automatic queue invocation. Wire a provider request guard into detail,
+   current/terminal and live clients so a persisted 403/429 circuit stops subsequent requests
+   in both directions across capabilities; test the guard with actual SQL and runtime injection.
+   Verify route/auth/Edge graph tests.
 5. **Detail interaction and rendering.** Files: web detail service/controller/view, shell, rich
    detail renderer, EN/VI catalogs, CSS and tests. RED: open Information invokes once, no timer or
    hidden/focus refetch, cached last-good visible while pending, selection race/abort, period stats,
@@ -67,3 +70,12 @@ run focused verification, then commit locally immediately before starting the ne
   streaming limits, early body cleanup, unverified legacy widget IDs and live status/minute aliases.
   All fixes passed 28 tests across five focused files (including the existing live source integration)
   and TypeScript. Independent review confirmed no unresolved findings before local commit.
+- Slice 3: coordinator stub RED (six behavioral assertions), then nine focused unit tests pass.
+  Actual local PostgreSQL smoke proves read creates no state, same-match/provider lease exclusion,
+  60-second floor, ETag/304, last-good retention, provider circuit and 1,000-request UTC daily budget,
+  expired lease and canonical identity rejection, transactional rollback and fixture cleanup.
+  SQL caught a local-time conversion bug in the UTC budget-day comparison. Review REDs caught
+  dropped stadium name, failure circuit lost after canonical change, and misleading provider/match
+  retry delays; each was fixed. Club and national-team rows exercise the same SQL behavior.
+  Provider circuits currently coordinate detail matches and read existing refresh/live circuits;
+  the reverse scheduled-client guard is an explicit slice 4 runtime gate, not claimed complete here.

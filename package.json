@@ -65,6 +65,7 @@
     "test:e2e:staging": "tsx tests/e2e/staging-owner-flow.ts",
     "verify:staging:hosted": "tsx scripts/verify-staging-hosted.ts",
     "provider:local-sql-smoke": "tsx scripts/hosted-provider-local-sql-smoke.ts",
+    "detail:local-sql-smoke": "tsx scripts/hosted-detail-local-sql-smoke.ts",
     "audit": "tsx scripts/audit-rules.ts",
     "audit:type-safety": "tsx scripts/type-safety-audit.ts",
     "phase2:check-rules": "tsx scripts/phase2-verify.ts",
