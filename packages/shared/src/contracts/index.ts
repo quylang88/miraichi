@@ -7,3 +7,4 @@ export * from './cloud-persistence-contracts.js';
 export * from './provider-ingestion-contracts.js';
 export * from './core-betting-contracts.js';
 export * from './live-match-contracts.js';
+export * from './match-detail-contracts.js';

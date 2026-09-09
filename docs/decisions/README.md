@@ -37,4 +37,9 @@
 - `ADR-0039-provider-adapter-contract-and-data-validation-schema.md`
 - `ADR-0043-phase-9-cloud-database-provider.md`
 
-Removed or superseded decisions remain in the repository or Git history for audit. SportScore is the only currently approved external match source; any replacement or additional source requires a new accepted ADR.
+- `ADR-0053-user-triggered-hosted-match-detail.md` — Accepted within the 2026-09-09 owner request.
+  Reopens rich factual detail through explicit per-match actions, private durable cache and hosted E2E.
+
+Removed or superseded decisions remain in Git for audit. Current approved providers are FotMob
+(ADR-0049/0053), OpenFootball's configured season files, and SportScore's attributed widget API.
+New providers require an accepted decision; ESPN and API-Football remain inactive.

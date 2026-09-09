@@ -2,9 +2,9 @@
 
 ## Current State
 
-- **Status**: Hosted automatic provider refresh and Matches LIVE quality-up are complete on
-  Frankfurt staging. The new candidate passed the complete local gate, committed hosted browser
-  and scheduler gate, and rollback/restore drill on 2026-09-09. Final owner review is pending.
+- **Status**: Hosted automatic refresh and LIVE staging gates are complete. On 2026-09-09 the owner
+  requested the next match-detail phase: research the richest feasible factual detail from existing
+  providers, implement per-match user-triggered refresh only, and verify E2E on Frankfurt staging.
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
@@ -35,12 +35,18 @@
 - **Completed phase**: `phase:staging Hosted automatic provider refresh and Matches LIVE quality-up`.
   The owner-authorized implementation, forward migrations, Frankfurt redeployment, committed hosted
   E2E, and rollback/restore exit gates passed. Git delivery uses the existing approved branch.
-- **Active phase**: `phase:owner-feedback Hosted automatic provider refresh and Matches LIVE`.
-  Review the new candidate; acceptance has not been inferred from automated checks.
+- **Active phase**: `phase:code-slice User-triggered hosted match detail`.
+  The owner explicitly reopened lazy detail and authorized implementation through hosted E2E.
+  Research and exact TDD slices are recorded in ADR-0053 and
+  `docs/superpowers/plans/2026-09-09-user-triggered-match-detail.md`. Refresh only the selected match on an explicit
+  detail action; no detail cron, prefetch, polling, pending retry timer or automatic page-focus refresh.
+  The previous staging evidence is retained; moving phases is not production approval.
 - **Approved implementation plan**: `docs/superpowers/plans/2026-09-09-hosted-provider-refresh-live.md`;
   DB-first design and filesystem audit: `docs/superpowers/specs/2026-09-09-hosted-provider-refresh-live-design.md`.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
-- **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
+- **Lazy match-detail state**: **REOPENED by owner instruction on 2026-09-09**. Implement through
+  research, exact TDD slices and Frankfurt E2E, retaining canonical IDs and nullable factual fields.
+  Existing source approvals apply; no paid source, bypass, historical hydration or production action.
 - **Promotion state**: Frankfurt retains 11,163 matches across 45 competitions and 17 snapshots
   (rollback/restore observation at `2026-09-09T04:35:38.278Z`). Supabase Edge Function version 11
   is ACTIVE; Cloudflare Worker `bc4eb715-e26c-45db-833c-84785bf74443` serves 100% of traffic.

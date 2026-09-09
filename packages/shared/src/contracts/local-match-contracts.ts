@@ -1,3 +1,5 @@
+import { isMatchDetailEnrichment, isMatchDetailRefreshState, type MatchDetailEnrichment, type MatchDetailRefreshState } from './match-detail-contracts.js';
+
 export type LocalDataSourceId =
   | 'sportscore'
   | 'openfootball'
@@ -100,6 +102,8 @@ export interface LocalMatchEvent {
 }
 
 export interface LocalMatchDetail {
+  enrichment?: MatchDetailEnrichment;
+  refresh?: MatchDetailRefreshState;
   match: LocalMatch;
   status: LocalMatchStatus;
   elapsedMinute: number | null;
@@ -544,6 +548,11 @@ export function validateLocalMatchDetail(input: unknown): ValidationResult {
   if (!isObject(input)) {
     return { ok: false, errors: ['Input is not an object'] };
   }
+
+  const matchTeams = isObject(input.match) ? [isObject(input.match.homeTeam) ? input.match.homeTeam.id : null,
+    isObject(input.match.awayTeam) ? input.match.awayTeam.id : null] : [];
+  if (input.enrichment !== undefined && !isMatchDetailEnrichment(input.enrichment, matchTeams)) errors.push('Invalid factual detail enrichment');
+  if (input.refresh !== undefined && !isMatchDetailRefreshState(input.refresh)) errors.push('Invalid detail refresh state');
 
   // Strictly reject forbidden provider/betting/analytical fields in input
   for (const field of FORBIDDEN_DETAIL_FIELDS) {
