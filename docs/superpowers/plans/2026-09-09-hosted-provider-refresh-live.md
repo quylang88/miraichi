@@ -64,8 +64,8 @@ source/hosting approvals are already present. Each completed slice records real 
 - Local integration: `verify:local` passed 149 files / 729 tests plus lint, types and audits;
   `test:integration` passed all source/owner/Edge/endpoint/PWA checks. Actual Edge runtime smoke
   passed PostgreSQL commit/rollback/cleanup and auth primitives/cookie/protected route/logout.
-  Edge bundle graph and Cloudflare artifact checks pass (64 files). Final `verify:staging` is
-  rerun after the cache change; hosted deployment and rollback evidence remain pending.
+  Edge bundle graph and Cloudflare artifact checks pass (64 files). This was intermediate local
+  evidence; the final staging and rollback evidence is recorded below.
 - The final integration rerun exposed accidental discovery of rollback-worktree tests. Added a
   Vitest exclusion for `.worktrees`, preserving the rollback source. An additional RED exposed
   a blocked current checkpoint incorrectly reporting `fresh`; the runner now reports `failed`
@@ -84,12 +84,32 @@ source/hosting approvals are already present. Each completed slice records real 
   observer did not finish; the suite now checks that error body with a direct same-origin request
   and bounds its network audit. Final full local chain passed 149 files / 730 tests.
 - Hosted provider authentication now passes (authenticated GET returns 405 without provider work).
-  The current batch failed after response reading: the reused clients depended on global Node
-  Buffer. A no-Buffer RED reproduced the defect; FotMob season/daily and OpenFootball now measure
-  UTF-8 with TextEncoder. Durable retry state is retained; no cooldown reset or bypass is used.
+  The first authenticated current batch returned `failed`. A no-Buffer client RED reproduced an
+  Edge incompatibility; FotMob season/daily and OpenFootball now measure UTF-8 with TextEncoder.
+  Subsequent hosted publication and the complete hosted gate passed. Durable retry state was
+  retained; no cooldown reset or bypass was used.
+- The combined hosted gate passed at `2026-09-09T01:23:40.919Z`: current `fresh`, terminal
+  `refreshed`, live `fresh`, exactly four Vault names and three active jobs. Metadata-only CLI
+  reads have bounded retries; an uncertain invocation is never retried automatically. The focused
+  transport/config tests prove both behaviors. Browser network audits have a finite timeout.
+- Rollback drill completed at `2026-09-09T04:35:38.278Z`. Unscheduling produced zero jobs while
+  retaining four Vault names, 11,163 matches and 17 snapshots. The prior Worker was restored to
+  100% traffic, then the exact `f3113ed` Edge bundle was deployed as version 10. Committed browser
+  E2E after each deployment passed login/four tabs and failed at the expected missing LIVE control.
+  Restoring the new Worker while old Edge remained passed LIVE and failed at expected cookie replay
+  denial. These old-version failures are rollback observations, never current acceptance.
+  Restoring the current Edge bundle produced ACTIVE version 11; browser E2E passed at
+  `2026-09-09T04:35:15.781Z`. Reconfiguration restored exactly three jobs without changing the
+  retained data counts. No migration, Vault value or owner data was deleted.
+- Slice 8 complete: the final `verify:staging` rerun passed 150 unit files / 733 tests and all
+  integration/build checks. After rollback restoration, `verify:staging:hosted` passed at
+  `2026-09-09T04:38:29.867Z` with current/terminal/live all `fresh`, valid live freshness, four Vault
+  names and three jobs. All eight slices are complete. The active phase is now the owner's
+  requested `phase:owner-feedback`; owner acceptance and production approval remain pending.
 
 - Preflight: clean branch `feat/api-football-rapid-ingestion`, HEAD `f3113ed`; remote Edge v5 ACTIVE
   and Worker `1c71033f-f97f-42b9-9884-1862d64ad870` at 100% independently checked on 2026-09-09.
-- The earlier untracked owner smoke depends on a missing `.secrets/staging-smoke.env`. The owner
-  requested reuse of one existing file: hosted E2E will read STAGING_URL and MIRAICHI_OWNER_PASSWORD
-  from the gitignored root `.env`. The password must never be included in deployment secret input.
+- The earlier untracked owner smoke depended on a missing `.secrets/staging-smoke.env`. The owner
+  requested reuse of one existing file: both committed hosted commands now read STAGING_URL and
+  MIRAICHI_OWNER_PASSWORD from the existing gitignored root `.env`. Actual login passed using those
+  saved values. The root file is never passed wholesale to deployment secret input.

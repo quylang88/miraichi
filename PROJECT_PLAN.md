@@ -2,9 +2,9 @@
 
 ## Current State
 
-- **Status**: Owner rejected the previous staging candidate on 2026-09-09. Hosted automatic
-  provider refresh and `phase:quality-up ui-ux-improve` are required. Previous smoke evidence
-  remains historical; a new committed hosted browser gate must pass before owner review.
+- **Status**: Hosted automatic provider refresh and Matches LIVE quality-up are complete on
+  Frankfurt staging. The new candidate passed the complete local gate, committed hosted browser
+  and scheduler gate, and rollback/restore drill on 2026-09-09. Final owner review is pending.
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
@@ -32,18 +32,55 @@
 - **Completed phase**: `phase:staging Supabase Edge Function and Cloudflare Worker owner hosting` —
   the reviewed branch is pushed; Frankfurt migration, Edge Function, Worker, Vault cron, complete
   hosted owner smoke, full staging gate, and rollback drill passed on 2026-09-08.
-- **Active phase**: `phase:staging Hosted automatic provider refresh and Matches LIVE quality-up`.
-  The owner authorized implementation, migration, Frankfurt redeployment, committed hosted E2E,
-  rollback drills, commit and push on the current branch. Tokyo/production remain unapproved.
+- **Completed phase**: `phase:staging Hosted automatic provider refresh and Matches LIVE quality-up`.
+  The owner-authorized implementation, forward migrations, Frankfurt redeployment, committed hosted
+  E2E, and rollback/restore exit gates passed. Git delivery uses the existing approved branch.
+- **Active phase**: `phase:owner-feedback Hosted automatic provider refresh and Matches LIVE`.
+  Review the new candidate; acceptance has not been inferred from automated checks.
 - **Approved implementation plan**: `docs/superpowers/plans/2026-09-09-hosted-provider-refresh-live.md`;
   DB-first design and filesystem audit: `docs/superpowers/specs/2026-09-09-hosted-provider-refresh-live-design.md`.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
 - **Lazy match-detail state**: **PENDING by owner decision on 2026-09-01**. It is excluded from the active bankroll phase and may reopen only through a separate `phase:plan FotMob lazy terminal match detail`.
-- **Promotion state**: The active 10,899-match/45-competition snapshot is retained in Frankfurt;
-  Supabase Edge Function version 5 and Cloudflare Worker version
-  `1c71033f-f97f-42b9-9884-1862d64ad870` remain active as the historical candidate. The owner-feedback release gate,
-  Tokyo project creation, and production promotion have not run and are not approved.
+- **Promotion state**: Frankfurt retains 11,163 matches across 45 competitions and 17 snapshots
+  (rollback/restore observation at `2026-09-09T04:35:38.278Z`). Supabase Edge Function version 11
+  is ACTIVE; Cloudflare Worker `bc4eb715-e26c-45db-833c-84785bf74443` serves 100% of traffic.
+  The three refresh jobs and four Vault names are restored. Owner acceptance, Tokyo project
+  creation, and production promotion remain unapproved.
 - **Current lifecycle source of truth**: this file.
+
+## Hosted automatic provider refresh and Matches LIVE — 2026-09-09 closeout
+
+- **Delivered**: DB-first current/terminal refresh, shared durable lease and fenced atomic delta
+  publication, TTL/ETag checkpoints, bounded requests/timeouts/backoff, and five-minute background
+  widget live refresh. Current cap is nine, with an Edge default of three. Terminal requests remain
+  due-ledger driven; the 0–2 minute objective is best effort, not an upstream availability promise.
+- **Owner UI**: one Matches LIVE toggle replaces the date list, uses last-good state, renders only
+  live/halftime/suspended score/minute rows, shows a visible empty state, and restores the previous
+  date/search/filters. EN/VI parity and crawler-visible SportScore attribution are retained.
+- **Hosted gate**: `pnpm run verify:staging:hosted` passed after restoration at
+  `2026-09-09T04:38:29.867Z` on the exact Cloudflare origin. Real Chromium login/session/four-tab/
+  LIVE/logout/replay/redaction checks and explicit deterministic live/empty fixtures passed.
+  Controlled current/terminal/live deliveries returned 2xx with valid `fresh` no-ops; the earlier
+  complete gate at `01:23:40.919Z` also observed terminal `refreshed` with checkpoint progress.
+- **Local gate**: the final `pnpm run verify:staging` passed 150 unit files / 733 tests, lint,
+  TypeScript, product/lifecycle/architecture/type-safety audits, all integration suites, endpoint
+  E2E, PWA checks and the static build. Actual local PostgreSQL fencing/rollback/cleanup and Edge
+  runtime auth/persistence smokes also passed during this implementation.
+- **Remote persistence**: eleven forward migrations through `20260909150000` are applied. The
+  canonical registry has 45 current-edition checkpoints. No historical hydration or lazy detail
+  was enabled. E2E creates no owner bankroll/bet rows; finally logout and browser cleanup passed.
+- **Rollback evidence**: scheduler removal produced zero jobs while retaining Vault and data.
+  Prior Worker `1c71033f-f97f-42b9-9884-1862d64ad870` and the exact `f3113ed` Edge bundle were
+  deployed; browser checks exposed the expected old LIVE and session-replay limitations.
+  Current Worker/Edge restoration passed browser E2E, then reconfiguration restored three jobs.
+  Counts remained 11,163 matches / 17 snapshots. Migrations and owner data were preserved.
+- **Saved credentials**: both committed hosted commands reuse `STAGING_URL` and
+  `MIRAICHI_OWNER_PASSWORD` from the gitignored root `.env`; repeated entry is unnecessary.
+  Credential values are excluded from deployment artifacts, reports and Git.
+- **Owner decision required**: accept or reject this new staging candidate. The earliest safe
+  next phase is the explicitly requested `phase:owner-feedback`; production is a separate decision.
+- **Evidence/runbook**: `docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md` and
+  `docs/superpowers/plans/2026-09-09-hosted-provider-refresh-live.md`.
 
 ## Historical Owner-Hosted API And Visibility-Driven Live Overlay — 2026-09-02
 

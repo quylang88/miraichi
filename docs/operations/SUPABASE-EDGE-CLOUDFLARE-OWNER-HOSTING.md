@@ -1,9 +1,9 @@
 # Supabase Edge + Cloudflare Worker owner hosting runbook
 
-> **Status: candidate rejected by owner feedback on 2026-09-09; quality-up in progress.**
-> The 2026-09-08 evidence below is historical. A new staging exit requires the committed
-> `pnpm run verify:staging:hosted` gate to pass on Frankfurt after deployment. Local verification
-> and `verify:staging` alone cannot close staging. Tokyo/production remains unapproved.
+> **Status: new Frankfurt candidate passed; awaiting owner feedback.**
+> Hosted automatic refresh, Matches LIVE quality-up and rollback/restore are complete.
+> `pnpm run verify:staging:hosted` passed after restoration at `2026-09-09T04:38:29.867Z`.
+> Local verification alone cannot close staging. Tokyo/production remains unapproved.
 
 This runbook replaces the Koyeb deployment path. It retains the Frankfurt Supabase staging project
 and its verified match snapshot. It does not authorize a push, Tokyo project, production promotion,
@@ -64,17 +64,64 @@ regression as a passing current candidate.
 - Supabase project: `Miraichi Staging`
 - Project ref: `qpexxwmrnreooxftfucv`
 - Region: Frankfurt
-- Remote applied migrations: seven versions through `20260903120000`
-- Verified cloud snapshot: 10,899 matches, 45 competitions, one snapshot
+- Remote applied migrations: eleven versions through `20260909150000`
+- Verified cloud data: 11,163 matches, 45 competitions, 17 snapshots
+- Current-edition checkpoint keys: 45
+- Edge Function: `miraichi-api`, ACTIVE version 11 after rollback restoration
+- Worker: `bc4eb715-e26c-45db-833c-84785bf74443`, 100% of staging traffic
+- Scheduler: exactly four Vault names and three active jobs using the table above
 - Data API: disabled in hosted staging
 - Local CA: `.secrets/supabase-staging-ca.crt` (gitignored; used only by owner-local DB tooling)
 
 Do not delete or reset this project. Do not move the CA into source control.
 
+## Recorded Frankfurt acceptance and rollback — 2026-09-09
+
+The previous candidate was rejected by the owner. The replacement uses the existing Frankfurt
+project and Cloudflare origin; the code remains on `feat/api-football-rapid-ingestion`. All times
+in this section are UTC.
+
+- Final `verify:staging` passed 150 unit files / 733 tests, every integration suite, endpoint E2E,
+  PWA checks, lint/types/audits and static build. Local PostgreSQL concurrent lease, fenced atomic
+  publication, expired lease, rollback and mandatory cleanup tests passed; actual Edge runtime
+  PostgreSQL/auth smoke and the filesystem-free bundle graph passed during implementation.
+- `verify:staging:hosted` passed at `01:23:40.919Z` with current `fresh`, terminal `refreshed`, live
+  `fresh`. After the complete rollback/restore, it passed again at `04:38:29.867Z`, with all three
+  controlled pg_net deliveries returning 2xx and valid `fresh` no-ops. Vault names, job commands,
+  cadence, checkpoint revision, request caps and live snapshot freshness were checked explicitly.
+- The real Chromium owner flow passed static/API health, wrong/correct login, hardened cookie,
+  four tabs, LIVE refresh and retained filters, secret/locator/header redaction, logout and saved
+  cookie replay denial. Valid live/halftime/suspended score/minute and empty rendering also passed
+  through explicitly identified browser fixtures; they do not claim upstream live availability.
+- E2E created no bankroll/bet data. Finally logout/context/browser cleanup passed. No password,
+  session cookie, token, screenshot, video or trace is stored in the evidence.
+- Independent read-only verification at `04:39:12.274Z` confirmed 11,163 matches, 45 competitions,
+  17 snapshots, exactly four Vault names/three active jobs and zero bet drafts, bets, bankroll
+  accounts or ledger entries. The fresh remote migration list matched all eleven tracked versions.
+- The restored static artifact passed: 64 files, 386,336 total bytes, largest file 55,154 bytes.
+
+| Rollback operation | Observed result |
+| --- | --- |
+| Unschedule hosted refresh | Zero jobs; all four Vault names, 11,163 matches and 17 snapshots retained |
+| Prior Worker `1c71033f-f97f-42b9-9884-1862d64ad870` at 100% | Committed browser E2E passed login/four tabs, failed at expected missing LIVE control |
+| Exact prior `f3113ed` Edge source deployed as version 10 | ACTIVE; browser repeated the same expected old-UI failure on forward migrations |
+| Current Worker restored with old Edge | LIVE and empty state passed; saved cookie replay check failed as expected for old auth |
+| Current Edge restored as version 11 | ACTIVE; full browser E2E passed at `04:35:15.781Z` |
+| Scheduler configured again | Exactly three active jobs and unchanged data counts at `04:35:38.278Z`; complete hosted gate then passed |
+
+The old-version browser failures prove the known rollback limitations and are not acceptance
+passes. No schema rollback, match/snapshot removal or Vault deletion occurred. Rollback Edge bundle
+SHA-256: `d412c24855ef926b2295b7a49b18beafd72852843710660bbbc8e0ba61cc575c`.
+Restored bundle SHA-256: `c821b7aaa47d414dcdb1fbc45ef09e32a0f65ab4cc07e645eaadcf129e9c6885`.
+The detached rollback source is retained in gitignored `.worktrees/hosted-refresh-rollback`.
+
+The new candidate is ready for the requested `phase:owner-feedback`. The owner must accept or
+reject it explicitly. No production/Tokyo action is authorized by this evidence.
+
 ## Recorded Frankfurt staging state — 2026-09-08
 
 - Reviewed Git source through `caa853f` is pushed on `feat/api-football-rapid-ingestion`.
-- Supabase Edge Function: `miraichi-api`, deployment ID
+- Supabase Edge Function: `miraichi-api`, function ID
   `0e192eca-fc8e-4fe3-be44-748ef9a68609`, active version 5, Frankfurt execution verified.
 - Cloudflare origin: `https://miraichi-owner-gateway-staging.quylang88.workers.dev`; active Worker
   version `1c71033f-f97f-42b9-9884-1862d64ad870` at 100% traffic.
