@@ -59,7 +59,11 @@ run focused verification, then commit locally immediately before starting the ne
   product-boundary and type-safety audit passed. Actual saved completed/upcoming provider payloads
   also normalized successfully: completed 21 events, 3 statistic periods, 35 team metrics,
   32 players and 43 shots; upcoming predicted/last-starting lineup was excluded.
-  Independent reviewer supplied actionable findings, then hit its usage limit before final
-  re-review. The primary agent reviewed the fixes and confirmed the regression results; no
+  Independent reviewer supplied actionable findings and subsequently confirmed every fix; no
   unresolved Critical/Important finding remains in this slice. Physical-metric unit labeling
   requires separate evidence before UI display; no unit is inferred here.
+- Slice 2: RED covered exact request/ETag/timeout/body bounds, single-source selection, current
+  verified season, provider identity and observed widget shape. Review regression REDs caught
+  streaming limits, early body cleanup, unverified legacy widget IDs and live status/minute aliases.
+  All fixes passed 28 tests across five focused files (including the existing live source integration)
+  and TypeScript. Independent review confirmed no unresolved findings before local commit.

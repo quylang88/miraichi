@@ -18,7 +18,7 @@ const canonicalMatch: LocalMatch = {
 };
 
 function response(payload: unknown): Response {
-  return { ok: true, status: 200, headers: new Headers(), text: async () => JSON.stringify(payload) } as Response;
+  return new Response(JSON.stringify(payload));
 }
 
 function httpResponse() {

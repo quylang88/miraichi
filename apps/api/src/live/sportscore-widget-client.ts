@@ -1,5 +1,3 @@
-import { Buffer } from 'node:buffer';
-
 const SPORTSCORE_WIDGET_ORIGIN = 'https://sportscore.com' as const;
 const MATCHES_PATH = '/api/widget/matches/' as const;
 const MATCH_PATH = '/api/widget/match/' as const;
@@ -108,17 +106,30 @@ export class SportScoreWidgetClient implements SportScoreLiveSource {
     } catch {
       throw new SportScoreWidgetClientError(signal.aborted ? 'timeout' : 'network', signal.aborted ? 'Widget request timed out.' : 'Widget request failed.');
     }
-    if (response.status === 403 || response.status === 429) throw new SportScoreWidgetClientError('blocked', 'Widget access blocked.');
-    if (!response.ok) throw new SportScoreWidgetClientError('http_status', 'Widget returned a non-success status.');
+    const discard = () => { void response.body?.cancel().catch(() => {}); };
+    if (response.status === 403 || response.status === 429) { discard(); throw new SportScoreWidgetClientError('blocked', 'Widget access blocked.'); }
+    if (!response.ok) { discard(); throw new SportScoreWidgetClientError('http_status', 'Widget returned a non-success status.'); }
 
     const contentLength = Number(response.headers?.get?.('content-length') ?? 0);
     if (Number.isFinite(contentLength) && contentLength > MAX_RESPONSE_BYTES) {
+      discard();
       throw new SportScoreWidgetClientError('invalid_payload', 'Widget response is too large.');
     }
-    const body = await response.text();
-    if (Buffer.byteLength(body, 'utf8') > MAX_RESPONSE_BYTES) {
-      throw new SportScoreWidgetClientError('invalid_payload', 'Widget response is too large.');
-    }
+    if (!response.body) throw new SportScoreWidgetClientError('invalid_payload', 'Widget body is missing.');
+    const reader = response.body.getReader(); const decoder = new TextDecoder();
+    let body = ''; let bytes = 0;
+    const cancel = () => { void reader.cancel().catch(() => {}); };
+    signal.addEventListener('abort', cancel, { once: true });
+    try {
+      if (signal.aborted) throw new SportScoreWidgetClientError('timeout', 'Widget request timed out.');
+      while (true) {
+        const chunk = await reader.read(); if (chunk.done) break;
+        bytes += chunk.value.byteLength;
+        if (bytes > MAX_RESPONSE_BYTES) throw new SportScoreWidgetClientError('invalid_payload', 'Widget response is too large.');
+        body += decoder.decode(chunk.value, { stream: true });
+      }
+      body += decoder.decode();
+    } finally { signal.removeEventListener('abort', cancel); cancel(); }
     try {
       return JSON.parse(body) as unknown;
     } catch {

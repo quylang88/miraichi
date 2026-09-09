@@ -51,7 +51,7 @@ function score(record: Record<string, unknown>, side: 'home' | 'away'): number |
   return isRecord(record.score) ? integerScore(record.score[side]) : null;
 }
 
-function minute(record: Record<string, unknown>): number | null {
+export function minute(record: Record<string, unknown>): number | null {
   for (const value of [record.minute, record.elapsed, record.status_text]) {
     const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number.parseInt(value, 10) : Number.NaN;
     if (Number.isInteger(parsed) && parsed >= 0 && parsed <= 200) return parsed;
@@ -59,7 +59,7 @@ function minute(record: Record<string, unknown>): number | null {
   return null;
 }
 
-function mappedStatus(raw: string): { status: LiveMatchStatus; period: LiveMatchPeriod | null } | null {
+export function mappedStatus(raw: string): { status: LiveMatchStatus; period: LiveMatchPeriod | null } | null {
   const value = raw.trim().toLowerCase().replace(/[\s-]+/gu, '_');
   if (['finished', 'completed', 'ft', 'aet', 'pen'].includes(value)) return { status: 'completed', period: null };
   if (['halftime', 'half_time', 'ht', 'break'].includes(value)) return { status: 'halftime', period: null };
