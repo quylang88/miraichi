@@ -1404,7 +1404,7 @@ describe('Slice 8 basic match detail UI and guardrails', () => {
     }, createTranslator('vi'), 'vi', 'UTC');
     const unavailable = renderMatchDetailView({ status: 'unavailable', match: null, warnings: ['detail_request_failed'] }, createTranslator('vi'), 'vi', 'UTC');
 
-    expect(pending).toContain('Đang lấy dữ liệu chi tiết');
+    expect(pending).toContain('Chi tiết chưa sẵn sàng');
     expect(unavailable).toContain('data-match-detail-retry');
     expect(unavailable).toContain('Thử lại');
     expect(unavailable).not.toContain('detail_request_failed');

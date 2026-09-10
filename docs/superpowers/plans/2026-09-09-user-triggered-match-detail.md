@@ -96,3 +96,12 @@ run focused verification, then commit locally immediately before starting the ne
   ignores late previous-match responses, and retains last-good after failure. Pending responses
   do not create a timer. Service rejects a valid payload belonging to another canonical ID.
   Seventy focused tests pass across controller, service and shell; TypeScript passes.
+- Slice 5B: initial rendering REDs and independent review regressions are fixed: shot-accuracy
+  fractions retain their numerator, partial observed live scores do not show a prematch separator,
+  first-load failure does not claim saved detail, and known coaches remain visible without lineups.
+  Rich periods, expandable player metrics, factual shot map, venue/attendance and manual refresh
+  states have EN/VI parity. Unverified physical units remain hidden. Sixty-eight focused tests,
+  TypeScript, product boundary, type audit and PWA verification pass. Real Chromium rendering of
+  the saved completed provider sample at 390px and 1100px shows 3 periods, 32 players and 43 shots;
+  a mobile score-column clipping assertion failed before the CSS fix and now passes. This is
+  local visual evidence; no detail-phase staging deployment has occurred at this slice boundary.

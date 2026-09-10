@@ -2,7 +2,7 @@
 
 export {};
 
-const CACHE_NAME = 'miraichi-shell-v10-live-empty';
+const CACHE_NAME = 'miraichi-shell-v11-match-detail';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

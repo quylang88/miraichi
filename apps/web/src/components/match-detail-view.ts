@@ -7,6 +7,7 @@ import type {
 import type { MatchDetailViewState } from '../services/match-detail-service.js';
 import { formatDateTime, type SupportedLocale, type TranslateFunction } from '../services/i18n-service.js';
 import { escapeHtml } from './html.js';
+import { renderRichStatistics,renderEnrichmentMetadata,renderDetailCoaches,renderDetailPlayers,renderDetailShots } from './match-detail-enrichment.js';
 
 export type MatchDetailRenderState = MatchDetailViewState | { status: 'loading' };
 
@@ -155,9 +156,9 @@ function renderLineupTeam(lineup: LocalMatchLineup, translate: TranslateFunction
 
 function renderLineups(detail: LocalMatchDetail, translate: TranslateFunction): string {
   if (!detail.lineups || detail.lineups.length === 0) {
-    return `<section class="match-detail-section"><h2>${escapeHtml(translate('detail.lineups'))}</h2><div class="match-detail-no-lineup">${escapeHtml(translate('detail.lineupsUnavailable'))}</div></section>`;
+    return `<section class="match-detail-section"><h2>${escapeHtml(translate('detail.lineups'))}</h2>${renderDetailCoaches(detail,translate)}<div class="match-detail-no-lineup">${escapeHtml(translate('detail.lineupsUnavailable'))}</div></section>`;
   }
-  return `<section class="match-detail-section"><h2>${escapeHtml(translate('detail.lineups'))}</h2><div class="match-detail-lineups">${detail.lineups.map((lineup) => renderLineupTeam(lineup, translate)).join('')}</div></section>`;
+  return `<section class="match-detail-section"><h2>${escapeHtml(translate(detail.enrichment?'detail.confirmedLineups':'detail.lineups'))}</h2>${renderDetailCoaches(detail,translate)}<div class="match-detail-lineups">${detail.lineups.map((lineup) => renderLineupTeam(lineup, translate)).join('')}</div></section>`;
 }
 
 function renderScoreBreakdown(detail: LocalMatchDetail, translate: TranslateFunction): string {
@@ -179,11 +180,13 @@ function renderReadyDetail(
   timeZone: string
 ): string {
   const match = detail.match;
-  const score = match.score.home !== null && match.score.away !== null
-    ? `${match.score.home} – ${match.score.away}`
-    : (match.status === 'scheduled' ? 'vs' : escapeHtml(translate('detail.noData')));
+  const observedScore=detail.enrichment?.score??match.score;
+  const observedStatus=detail.enrichment?.observedStatus??match.status;
+  const score = observedScore.home !== null && observedScore.away !== null
+    ? `${observedScore.home} – ${observedScore.away}`
+    : (observedStatus === 'scheduled' ? 'vs' : escapeHtml(translate('detail.noData')));
   const competitionContext = [match.competition.name, match.competition.season, match.round].filter(Boolean).join(' · ');
-  const status = translate(`matches.status.${match.status}`, match.status);
+  const status = translate(`matches.status.${observedStatus}`, translate(`detail.status.${observedStatus}`,observedStatus));
   const kickoff = formatDateTime(match.kickoffUtc, locale, timeZone);
   const elapsed = detail.elapsedMinute !== null && detail.elapsedMinute !== undefined
     ? `${detail.elapsedMinute}'`
@@ -201,13 +204,16 @@ function renderReadyDetail(
         <div><dt>${escapeHtml(translate('detail.kickoff'))}</dt><dd>${escapeHtml(kickoff)}</dd></div>
         <div><dt>${escapeHtml(translate('detail.venue'))}</dt><dd>${venue}</dd></div>
         <div><dt>${escapeHtml(translate('detail.referee'))}</dt><dd>${referee}</dd></div>
+        ${renderEnrichmentMetadata(detail,translate,locale)}
       </dl>
     </section>
     ${renderScoreBreakdown(detail, translate)}
     ${detail.warnings?.length ? `<p class="match-detail-coverage-warning">${escapeHtml(translate('detail.partialData'))}</p>` : ''}
     ${renderTimeline(detail, translate)}
-    ${renderStatistics(detail, translate)}
+    ${detail.enrichment?.statistics.length?renderRichStatistics(detail,translate,locale):renderStatistics(detail, translate)}
     ${renderLineups(detail, translate)}
+    ${renderDetailPlayers(detail,translate,locale)}
+    ${renderDetailShots(detail,translate)}
   </div>`;
 }
 
@@ -223,10 +229,20 @@ export function renderMatchDetailView(
     return `<div class="match-detail-pending" role="status" data-match-detail-state="loading">${escapeHtml(translate('detail.loading'))}</div>`;
   }
   if (state.status === 'pending') {
-    return `<div class="match-detail-pending" role="status" data-match-detail-state="pending">${escapeHtml(translate('detail.pendingRefresh'))}</div>`;
+    return `<div class="match-detail-pending" role="status" data-match-detail-state="pending">${escapeHtml(translate('detail.pendingRefresh'))}
+      <button class="secondary-button" type="button" data-match-detail-retry>${escapeHtml(translate('detail.retry'))}</button></div>`;
   }
   if (state.status === 'unavailable') {
     return renderUnavailable(translate, !state.warnings.includes('match_not_found'));
   }
-  return renderReadyDetail(state.detail, translate, locale, timeZone);
+  const refresh=state.detail.refresh;
+  const outcome=state.refreshError?'unavailable':refresh?.outcome??'cached';
+  const lastSuccess=refresh?refresh.lastSuccessAt:state.detail.updatedAt;
+  const outcomeMessage=outcome==='unavailable' && !lastSuccess?'detail.refreshUnavailableFirst':`detail.refreshOutcome.${outcome}`;
+  const controls=`<div class="detail-refresh" data-detail-refresh="${outcome}" aria-busy="${Boolean(state.refreshing)}">
+    <div><p role="status">${escapeHtml(translate(state.refreshing?'detail.refreshing':outcomeMessage))}</p>
+    ${lastSuccess?`<small>${escapeHtml(translate('detail.savedData'))} · ${escapeHtml(formatDateTime(lastSuccess,locale,timeZone))}</small>`:''}
+    ${!state.refreshing && refresh?.retryAfterSeconds && ['cooldown','busy','unavailable'].includes(outcome)?`<small>${escapeHtml(translate('detail.retryDelay',{seconds:refresh.retryAfterSeconds}))}</small>`:''}</div>
+    <button class="secondary-button" type="button" data-match-detail-retry${state.refreshing?' disabled':''}>${escapeHtml(translate('detail.refresh'))}</button></div>`;
+  return controls+renderReadyDetail(state.detail, translate, locale, timeZone);
 }

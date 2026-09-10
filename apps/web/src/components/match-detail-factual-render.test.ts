@@ -39,7 +39,7 @@ describe('factual match detail rendering', () => {
     const translate = createTranslator('vi');
     const pending = renderMatchDetailView({ status: 'pending', match, retryAfterSeconds: 150 }, translate, 'vi', 'UTC');
     const unavailable = renderMatchDetailView({ status: 'unavailable', match, warnings: ['detail_refresh_timeout'] }, translate, 'vi', 'UTC');
-    expect(pending).toContain('Đang lấy dữ liệu chi tiết');
+    expect(pending).toContain('Chi tiết chưa sẵn sàng');
     expect(unavailable).toContain('Chi tiết trận đấu không khả dụng');
     expect(`${pending}${unavailable}`).not.toContain('Powered by SportScore');
   });

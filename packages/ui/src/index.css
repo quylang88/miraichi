@@ -397,6 +397,37 @@ a:focus-visible {
 }
 
 /* Match detail */
+.detail-refresh { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.detail-refresh p { margin:0 0 5px; font-size:13px; }
+.detail-refresh small { display:block; color:var(--text-color-muted); font-size:11px; line-height:1.5; }
+.detail-refresh button { flex:none; min-height:44px; }
+.detail-refresh button:disabled { opacity:.55; cursor:wait; }
+.detail-period, .detail-player { border:1px solid var(--border-color-subtle); border-radius:8px; margin-bottom:8px; background:var(--surface-color-primary); }
+.detail-period summary, .detail-player summary { cursor:pointer; padding:13px 12px; font-size:13px; font-weight:600; }
+.detail-period summary:focus-visible, .detail-player summary:focus-visible { outline:2px solid var(--accent-color-primary); outline-offset:2px; }
+.detail-period[open] summary, .detail-player[open] summary { border-bottom:1px solid var(--border-color-subtle); }
+.match-detail-stats .detail-period table { margin-bottom:0; min-width:0; table-layout:fixed; }
+.detail-period th:first-child { width:46%; }
+.detail-period th, .detail-period td { overflow-wrap:anywhere; }
+.detail-period tbody tr:nth-child(even) { background:var(--surface-color-primary); }
+.detail-players h3 { font-size:13px; color:var(--text-color-muted); }
+.detail-player dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; padding:12px; margin:0; font-size:12px; }
+.detail-player dt { color:var(--text-color-muted); margin-bottom:4px; }
+.detail-player dd { margin:0; font-weight:600; }
+.detail-muted, .detail-coach { color:var(--text-color-muted); font-size:12px; line-height:1.5; }
+.detail-shot-map { display:block; width:100%; height:auto; border-radius:8px; }
+.detail-shot-legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; }
+.shot-home { color:#67b7ff; fill:#67b7ff; }
+.shot-away { color:#ffb766; fill:#ffb766; }
+.shot-goal { stroke:#fff; stroke-width:.7; }
+.detail-shot-list { padding:0 16px 0 32px; font-size:12px; line-height:1.6; }
+.detail-shot-list li { padding:5px 0; }
+.detail-shot-list span { color:var(--text-color-muted); display:block; }
+.match-detail-section { margin-bottom:20px; }
+@media(max-width:520px) {
+  .match-detail-stats .detail-period th, .match-detail-stats .detail-period td { padding:10px 7px; font-size:12px; }
+  .match-detail-scoreline span { overflow-wrap:anywhere; }
+}
 .match-detail-summary {
   background: var(--surface-color-secondary);
   border: 1px solid var(--border-color-subtle);
@@ -471,7 +502,8 @@ a:focus-visible {
   background: var(--surface-color-secondary);
   border-radius: var(--radius-card);
   overflow: hidden;
-  min-width: 420px;
+  min-width: 0;
+  table-layout: fixed;
 }
 
 .match-detail-score-breakdown th,
