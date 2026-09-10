@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { runStagingMatchDetail } from './staging-match-detail.js';
 import { gate, localStagingEnvironment, requireStagingConfig, readLocalEnv } from '../../scripts/staging-hosted-config.js';
 import { liveSnapshotFixture } from '../fixtures/live-match-snapshot.js';
 import { toProviderNeutralLiveMatchSnapshot, validateLiveMatchSnapshot } from '../../packages/shared/src/contracts/live-match-contracts.js';
@@ -17,7 +18,7 @@ export async function runStagingOwnerFlow(): Promise<void> {
   const secretValues = [password, ...Object.entries(readLocalEnv('.secrets/edge.staging.env'))
     .filter(([key]) => /TOKEN|SECRET|PASSWORD|DATABASE/u.test(key)).map(([, value]) => value).filter((value) => value.length >= 12)];
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ baseURL: origin, viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const context = await browser.newContext({ baseURL: origin, viewport: { width: 390, height: 844 }, timezoneId: 'UTC', serviceWorkers: 'block' });
   const page = await context.newPage();
   page.setDefaultTimeout(25_000);
   let phase = 'root';
@@ -136,6 +137,9 @@ export async function runStagingOwnerFlow(): Promise<void> {
     await page.locator('[data-live-empty]').waitFor();
     gate(await page.locator('#screen-matches [data-match-row]').count() === 0, 'empty live list');
     await page.unroute('**/api/v1/live/refresh?reason=manual');
+    phase = 'match detail';
+    console.log(JSON.stringify({ gate: 'hosted-browser', stage: phase }));
+    await runStagingMatchDetail(page);
     phase = 'logout';
     console.log(JSON.stringify({ gate: 'hosted-browser', stage: phase }));
     gate((await context.request.post('/api/v1/auth/logout', { headers: { origin } })).status() === 204, 'logout');

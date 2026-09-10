@@ -105,3 +105,11 @@ run focused verification, then commit locally immediately before starting the ne
   the saved completed provider sample at 390px and 1100px shows 3 periods, 32 players and 43 shots;
   a mobile score-column clipping assertion failed before the CSS fix and now passes. This is
   local visual evidence; no detail-phase staging deployment has occurred at this slice boundary.
+- Slice 6: committed hosted-owner flow now includes completed/current upcoming detail, exact
+  selected-ID GET/POST counts, manual cooldown and rendered rich facts. Browser fault fixtures
+  separately prove last-good retention, late-A/selected-B isolation and cold HTTP 202 without a
+  retry timer. The fully local static-browser harness passes with club/national-team fixtures;
+  this is explicitly not provider evidence. The old Frankfurt candidate failed the new gate with
+  `explicit selected POST refresh missing`, establishing hosted RED. TypeScript passes. Review
+  fixed an unbounded race-test Promise and a false assertion when two matches share a home team.
+  New-candidate hosted GREEN remains the required post-deployment gate in slice 7.
