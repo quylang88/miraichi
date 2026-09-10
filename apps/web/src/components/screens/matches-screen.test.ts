@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toProviderNeutralLiveMatchSnapshot, type LocalMatch, type LocalMatchDetail } from '@miraichi/shared';
 import { liveSnapshotFixture } from '../../../../../tests/fixtures/live-match-snapshot.js';
-import { renderMatchesScreen, renderMatchDetailScreen } from './matches-screen.js';
+import { renderMatchesScreen, renderMatchDetailScreen, getRibbonDates } from './matches-screen.js';
 import { renderMatchDetailView } from '../match-detail-view.js';
 import { createTranslator } from '../../services/i18n-service.js';
 import type { MatchFeedViewState } from '../../services/match-feed-service.js';
@@ -267,3 +267,33 @@ describe('timezone date partitioning', () => {
     expect(getLocalDateFromUtc('2026-08-31T17:00:00.000Z', 'Asia/Ho_Chi_Minh')).toBe('2026-09-01');
   });
 });
+
+describe('getRibbonDates label formatting', () => {
+  it('displays weekday names for all days except today, omitting yesterday and tomorrow', () => {
+    const translateEn = createTranslator('en');
+    const translateVi = createTranslator('vi');
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const datesEn = getRibbonDates(todayStr, translateEn, 'UTC');
+
+    const center = datesEn[2]!;
+    expect(center.label).toBe(translateEn('matches.today'));
+
+    const yesterday = datesEn[1]!;
+    expect(yesterday.label).not.toBe(translateEn('matches.yesterday'));
+    const expectedEnWeekdays = [0, 1, 2, 3, 4, 5, 6].map((day) => translateEn(`matches.weekday.${day}`));
+    expect(expectedEnWeekdays).toContain(yesterday.label);
+
+    const tomorrow = datesEn[3]!;
+    expect(tomorrow.label).not.toBe(translateEn('matches.tomorrow'));
+    expect(expectedEnWeekdays).toContain(tomorrow.label);
+
+    const datesVi = getRibbonDates(todayStr, translateVi, 'UTC');
+    expect(datesVi[2]!.label).toBe(translateVi('matches.today'));
+    expect(datesVi[1]!.label).not.toBe(translateVi('matches.yesterday'));
+    const expectedViWeekdays = [0, 1, 2, 3, 4, 5, 6].map((day) => translateVi(`matches.weekday.${day}`));
+    expect(expectedViWeekdays).toContain(datesVi[1]!.label);
+    expect(datesVi[3]!.label).not.toBe(translateVi('matches.tomorrow'));
+    expect(expectedViWeekdays).toContain(datesVi[3]!.label);
+  });
+});
+

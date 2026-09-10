@@ -14,6 +14,7 @@ export function createPullDownRefreshController(options: {
   readonly onRefresh: () => void;
   readonly thresholdPx?: number;
   readonly onProgress?: (progress: number) => void;
+  readonly canPull?: () => boolean;
 }): PullDownRefreshController {
   const threshold = options.thresholdPx ?? 72;
   let start: PullPoint | null = null;
@@ -28,10 +29,12 @@ export function createPullDownRefreshController(options: {
   return {
     touchStart(point) {
       reset();
+      if (options.canPull && !options.canPull()) return;
       if (options.getScrollTop() <= 0) start = point;
     },
     touchMove(point) {
       if (!start || options.getScrollTop() > 0) return false;
+      if (options.canPull && !options.canPull()) return false;
       const deltaX = point.clientX - start.clientX;
       const deltaY = point.clientY - start.clientY;
       if (deltaY <= 0 || Math.abs(deltaX) >= deltaY) {
@@ -39,13 +42,22 @@ export function createPullDownRefreshController(options: {
         return false;
       }
       options.onProgress?.(Math.min(1, deltaY / threshold));
-      if (!triggered && deltaY >= threshold) {
+      if (deltaY >= threshold) {
         triggered = true;
-        options.onRefresh();
+      } else {
+        triggered = false;
       }
       return triggered;
     },
-    touchEnd: reset
+    touchEnd() {
+      if (triggered) {
+        triggered = false;
+        start = null;
+        options.onRefresh();
+      } else {
+        reset();
+      }
+    }
   };
 }
 

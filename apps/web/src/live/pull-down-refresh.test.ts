@@ -9,8 +9,23 @@ describe('pull-down refresh gesture', () => {
     expect(controller.touchMove({ clientX: 14, clientY: 150 })).toBe(false);
     expect(controller.touchMove({ clientX: 15, clientY: 175 })).toBe(true);
     expect(controller.touchMove({ clientX: 15, clientY: 200 })).toBe(true);
+    expect(refresh).not.toHaveBeenCalled();
     controller.touchEnd();
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores gestures when canPull returns false', () => {
+    const refresh = vi.fn();
+    const controller = createPullDownRefreshController({
+      getScrollTop: () => 0,
+      onRefresh: refresh,
+      thresholdPx: 72,
+      canPull: () => false
+    });
+    controller.touchStart({ clientX: 10, clientY: 100 });
+    expect(controller.touchMove({ clientX: 10, clientY: 200 })).toBe(false);
+    controller.touchEnd();
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it('ignores gestures away from the top, upward drags, and horizontal swipes', () => {

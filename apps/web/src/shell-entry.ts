@@ -1261,8 +1261,19 @@ function bindCurrentPullDownRefresh(): void {
   const scroll = document.getElementById('main-scroll');
   if (!scroll) return;
   unbindPullDownRefresh = bindPullDownRefresh(scroll, {
+    canPull: () => currentScreenName === 'matches',
     onRefresh: () => {
-      void Promise.all([refreshLiveMatchView('manual'), refreshMatchFeed()]);
+      const indicator = document.getElementById('pull-refresh-indicator');
+      if (indicator) {
+        indicator.classList.add('refreshing');
+      }
+      Promise.all([refreshLiveMatchView('manual'), refreshMatchFeed()]).finally(() => {
+        if (indicator) {
+          indicator.classList.remove('refreshing');
+          indicator.dataset.pullProgress = '0';
+          indicator.style.setProperty('--pull-progress', '0');
+        }
+      });
     },
     onProgress: (progress) => {
       const indicator = document.getElementById('pull-refresh-indicator');

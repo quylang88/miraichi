@@ -47,11 +47,7 @@ export function getRibbonDates(
     const dayOfWeek = date.getUTCDay();
     const label = diffDays === 0
       ? translate('matches.today')
-      : diffDays === -1
-        ? translate('matches.yesterday')
-        : diffDays === 1
-          ? translate('matches.tomorrow')
-          : translate(`matches.weekday.${dayOfWeek}`);
+      : translate(`matches.weekday.${dayOfWeek}`);
     return { dateStr, dayNumber: String(date.getUTCDate()), label };
   });
 }

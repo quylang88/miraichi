@@ -56,7 +56,7 @@
   Existing source approvals apply; no paid source, bypass, historical hydration or production action.
 - **Promotion state**: Frankfurt retains 11,163 matches across 45 competitions, 35 snapshots and
   two detail caches (independent read at `2026-09-10T06:12:07.605Z`). Edge Function version 14
-  is ACTIVE; Cloudflare Worker `e735457e-245f-474f-8df3-965be8eb6041` serves 100% of traffic.
+  is ACTIVE; Cloudflare Worker `fc13e5a5-5dd5-4062-b686-3e0b329047bf` serves 100% of traffic.
   The three refresh jobs and four Vault names are restored. Owner acceptance, Tokyo project
   creation, and production promotion remain unapproved.
 - **Current lifecycle source of truth**: this file.
