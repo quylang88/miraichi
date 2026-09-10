@@ -113,3 +113,10 @@ run focused verification, then commit locally immediately before starting the ne
   `explicit selected POST refresh missing`, establishing hosted RED. TypeScript passes. Review
   fixed an unbounded race-test Promise and a false assertion when two matches share a home team.
   New-candidate hosted GREEN remains the required post-deployment gate in slice 7.
+- Integration correction: the first full gate exposed one fixture literal violating the existing
+  architecture audit (795 tests passed, one failed). Reusing the canonical fixture competition name
+  fixes the test without widening an allowlist. The artifact gate also failed at 64 versus 67 files;
+  its baseline now includes the reviewed shared detail contract, controller and enrichment renderer.
+  Eleven focused tests and the actual 67-file artifact dry run pass. Disposable local Edge credentials
+  had a password/hash mismatch; aligning only the ignored local hash restored all actual Edge runtime
+  auth/Postgres smoke gates. No staging credential or runtime configuration changed.

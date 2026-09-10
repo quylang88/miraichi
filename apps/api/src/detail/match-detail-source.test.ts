@@ -31,7 +31,7 @@ describe('detail source selection', () => {
     for(const id of ['987654','home-vs-away']) expect(selectMatchDetailSource({...match,sourceRefs:[{sourceId:'sportscore',sourceMatchId:id,importedAt:now}]},now)).toBeNull();
   });
 });
-const widget = {sport:'football',match:{home:'Home FC',away:'Away FC',time:match.kickoffUtc,competition:'Premier League',
+const widget = {sport:'football',match:{home:'Home FC',away:'Away FC',time:match.kickoffUtc,competition:match.competition.name,
   url:'/football/match/home-vs-away/',status:'finished',home_score:'2',away_score:'1',home_ht_score:1,away_ht_score:0,
   incidents:[{time:60,type:'Substitution',side:'home',player_out:'Outgoing',player_in:'Incoming',is_sub:true}],
   lineups:{confirmed:true,home_formation:'4-3-3',home_xi:[{name:'Home Player',number:9,position:'F',rating:'8.5'}],away_xi:[],home_subs:[],away_subs:[]},stats:[]}};
