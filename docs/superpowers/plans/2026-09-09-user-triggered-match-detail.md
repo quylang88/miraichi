@@ -29,11 +29,13 @@ run focused verification, then commit locally immediately before starting the ne
    current/terminal and live clients so a persisted 403/429 circuit stops subsequent requests
    in both directions across capabilities; test the guard with actual SQL and runtime injection.
    Verify route/auth/Edge graph tests.
-5. **Detail interaction and rendering.** Files: web detail service/controller/view, shell, rich
+5. **Detail interaction and rendering (two reviewed local commits).** Files: web detail service/controller/view, shell, rich
    detail renderer, EN/VI catalogs, CSS and tests. RED: open Information invokes once, no timer or
    hidden/focus refetch, cached last-good visible while pending, selection race/abort, period stats,
    expandable player details and factual shot map, empty fields/confirmed-lineup labels, safe HTML.
-   GREEN: explicit user actions and accessible rich detail UI. Verify focused web/i18n tests.
+   GREEN: explicit user actions and accessible rich detail UI. Slice 5A is service/controller/shell
+   interaction; slice 5B is rich rendering/i18n/CSS. Review and commit 5A before coding 5B.
+   Verify focused web/i18n tests.
 6. **Committed hosted detail E2E.** Files: `tests/e2e/staging-match-detail.ts`, existing hosted
    owner suite/orchestrator. RED on old candidate, then real completed/upcoming detail; prove zero
    detail calls from list/idle/tab changes, only selected ID, cooldown cache, no automatic pending
@@ -88,3 +90,9 @@ run focused verification, then commit locally immediately before starting the ne
   POST sends one, and cooldown sends none. It also proves the persisted common circuit prevents
   both a scheduled request and detail lease acquisition. TypeScript, product boundary, type audit
   and Edge build/module graph pass; owner API integration retains locator redaction.
+- Slice 5A: five RED assertions across controller/service/shell prove the old automatic timer
+  and GET-only behavior. The controller now starts only from explicit Information/Retry actions,
+  reads cached detail before one POST refresh, bounds memory to 20 matches, aborts on leave,
+  ignores late previous-match responses, and retains last-good after failure. Pending responses
+  do not create a timer. Service rejects a valid payload belonging to another canonical ID.
+  Seventy focused tests pass across controller, service and shell; TypeScript passes.

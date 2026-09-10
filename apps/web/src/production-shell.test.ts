@@ -1276,19 +1276,18 @@ describe('Slice 8 basic match detail UI and guardrails', () => {
     }
   });
 
-  it('wires service-backed match detail loading with bounded retry and timer cleanup in shell entry', () => {
+  it('wires explicit match detail actions and cancels them without any retry timer', () => {
     const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
-    expect(shellSource).toContain("import { fetchMatchDetail, type MatchDetailViewState } from './services/match-detail-service.js';");
-    expect(shellSource).toContain('async function loadAndRenderMatchDetail(matchId: string, retryCount = 0): Promise<void>');
-    expect(shellSource).toContain('fetchMatchDetail(matchId, { signal: abortController.signal })');
-    expect(shellSource).toContain('matchDetailRetryTimer = window.setTimeout(');
-    expect(shellSource).toContain('window.clearTimeout(matchDetailRetryTimer);');
+    expect(shellSource).toContain('createMatchDetailController');
+    expect(shellSource).toContain('matchDetailController.open(matchId)');
+    expect(shellSource).not.toContain('matchDetailRetryTimer');
+    expect(shellSource).not.toContain('retryCount');
     expect(shellSource).toContain("eventTarget.closest('#match-detail-back')");
     expect(shellSource).toContain("eventTarget.closest('[data-match-detail-retry]')");
-    expect(shellSource).toContain('matchDetailAbortController.abort();');
+    expect(shellSource).toContain('matchDetailController.cancel();');
   });
 
-  it('does not request historical detail until the owner opens the Info tab', () => {
+  it('does not request match detail until the owner opens the Info tab', () => {
     const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
     const openMatchStart = shellSource.indexOf("const openMatchTarget = eventTarget.closest<HTMLElement>('[data-open-match]')");
     const scopedAddStart = shellSource.indexOf("if (eventTarget.closest('[data-open-scoped-add]'))", openMatchStart);

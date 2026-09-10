@@ -40,6 +40,12 @@ describe('fetchMatchDetail', () => {
   afterEach(() => {
     global.fetch = originalFetch;
   });
+  it('uses POST only when explicit refresh is requested and rejects a mismatched match response',async()=>{
+    global.fetch=vi.fn(async()=>new Response(JSON.stringify(mockDetail)));
+    await fetchMatchDetail('match-1',{refresh:true});
+    expect(global.fetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/matches/detail/refresh?id=match-1',expect.objectContaining({method:'POST'}));
+    expect((await fetchMatchDetail('match-other',{refresh:true})).status).toBe('unavailable');
+  });
 
   it('returns ready state for valid 200 cached detail', async () => {
     global.fetch = vi.fn().mockResolvedValue({

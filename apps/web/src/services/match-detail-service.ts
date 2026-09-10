@@ -7,12 +7,13 @@ import {
 import { buildApiUrl } from '../config/client-env.js';
 
 export type MatchDetailViewState =
-  | { status: 'ready'; detail: LocalMatchDetail }
+  | { status: 'ready'; detail: LocalMatchDetail; refreshing?:boolean; refreshError?:boolean }
   | { status: 'pending'; match: LocalMatch; retryAfterSeconds: number }
   | { status: 'unavailable'; match: LocalMatch | null; warnings: string[] };
 
 export interface FetchMatchDetailOptions {
   readonly signal?: AbortSignal;
+  readonly refresh?: boolean;
 }
 
 const MAX_RETRY_AFTER_SECONDS = 900;
@@ -77,8 +78,10 @@ export async function fetchMatchDetail(
   options: FetchMatchDetailOptions = {}
 ): Promise<MatchDetailViewState> {
   try {
-    const url = buildApiUrl(`/api/v1/matches/detail?id=${encodeURIComponent(matchId)}`);
-    const response = options.signal
+    const url = buildApiUrl(`/api/v1/matches/detail${options.refresh?'/refresh':''}?id=${encodeURIComponent(matchId)}`);
+    const response = options.refresh
+      ? await fetch(url,{method:'POST',credentials:'same-origin',cache:'no-store',...(options.signal?{signal:options.signal}:{})})
+      : options.signal
       ? await fetch(url, { signal: options.signal })
       : await fetch(url);
 
@@ -94,14 +97,16 @@ export async function fetchMatchDetail(
       throw new Error('Response contains forbidden provider fields.');
     }
     if (response.status === 202) {
-      return parsePendingPayload(payload);
+      const pending=parsePendingPayload(payload);
+      if(pending.status!=='pending' || pending.match.id!==matchId) throw new Error('Mismatched detail response.');
+      return pending;
     }
     if (isRecord(payload) && payload.status === 'pending') {
       throw new Error('Pending detail requires HTTP 202.');
     }
 
     const validationResult = validateLocalMatchDetail(payload);
-    if (!validationResult.ok) {
+    if (!validationResult.ok || (payload as LocalMatchDetail).match.id!==matchId) {
       throw new Error('Malformed match detail response.');
     }
     return { status: 'ready', detail: payload as LocalMatchDetail };

@@ -6,7 +6,7 @@ import { createTranslator } from './services/i18n-service.js';
 import { getMatchFeed, type MatchFeedViewState } from './services/match-feed-service.js';
 import { deleteCloudBetDraft, loadBetRecordsViewState, saveCloudBetDraft, updateCloudBetDraft, type BetRecordsViewState } from './services/bet-record-service.js';
 import { createLedgerEntry, loadBankrollViewState, setupBankroll, type BankrollViewState } from './services/bankroll-service.js';
-import { fetchMatchDetail, type MatchDetailViewState } from './services/match-detail-service.js';
+import { createMatchDetailController, type MatchDetailControllerState } from './services/match-detail-controller.js';
 import {
   ApiRequestError,
   createDisciplineChallenge,
@@ -98,10 +98,8 @@ const matchesLiveMode = createLiveMode(() => refreshLiveMatchView('manual'));
 let liveMatchRequestVersion = 0;
 let unbindPullDownRefresh: (() => void) | null = null;
 
-let matchDetailRetryTimer: number | null = null;
-let matchDetailAbortController: AbortController | null = null;
-let matchDetailRequestVersion = 0;
-let matchDetailState: MatchDetailViewState | { status: 'loading' } = { status: 'loading' };
+let matchDetailState: MatchDetailControllerState = { status: 'loading' };
+const matchDetailController = createMatchDetailController({onState(state) {matchDetailState=state;renderMatchDetailState();}});
 
 function getInitialTabId(): ProductionNavigationTabId {
   const params = new URLSearchParams(window.location.search);
@@ -298,48 +296,11 @@ function renderMatchDetailState(): void {
 }
 
 function cancelMatchDetailLoad(): void {
-  matchDetailRequestVersion += 1;
-  if (matchDetailRetryTimer !== null) {
-    window.clearTimeout(matchDetailRetryTimer);
-    matchDetailRetryTimer = null;
-  }
-  if (matchDetailAbortController !== null) {
-    matchDetailAbortController.abort();
-    matchDetailAbortController = null;
-  }
+  matchDetailController.cancel();
 }
 
-async function loadAndRenderMatchDetail(matchId: string, retryCount = 0): Promise<void> {
-  cancelMatchDetailLoad();
-  const requestVersion = matchDetailRequestVersion;
-  const abortController = new AbortController();
-  matchDetailAbortController = abortController;
-  matchDetailState = { status: 'loading' };
-  renderMatchDetailState();
-
-  const result = await fetchMatchDetail(matchId, { signal: abortController.signal });
-  if (requestVersion !== matchDetailRequestVersion || currentOpenMatchId !== matchId) {
-    return;
-  }
-  matchDetailAbortController = null;
-
-  if (result.status === 'pending' && retryCount >= 3) {
-    matchDetailState = {
-      status: 'unavailable',
-      match: result.match,
-      warnings: ['detail_refresh_timeout']
-    };
-    renderMatchDetailState();
-    return;
-  }
-
-  matchDetailState = result;
-  renderMatchDetailState();
-  if (result.status === 'pending') {
-    matchDetailRetryTimer = window.setTimeout(() => {
-      void loadAndRenderMatchDetail(matchId, retryCount + 1);
-    }, result.retryAfterSeconds * 1000);
-  }
+async function loadAndRenderMatchDetail(matchId: string): Promise<void> {
+  await matchDetailController.open(matchId);
 }
 
 
