@@ -2,9 +2,9 @@
 
 ## Current State
 
-- **Status**: Hosted automatic refresh and LIVE staging gates are complete. On 2026-09-09 the owner
-  requested the next match-detail phase: research the richest feasible factual detail from existing
-  providers, implement per-match user-triggered refresh only, and verify E2E on Frankfurt staging.
+- **Status**: User-triggered rich match detail is implemented and verified on Frankfurt staging.
+  The complete hosted browser/scheduler gate passed after rollback restoration at
+  `2026-09-10T06:11:26.413Z`. The candidate is ready for the requested owner feedback.
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
@@ -35,30 +35,65 @@
 - **Completed phase**: `phase:staging Hosted automatic provider refresh and Matches LIVE quality-up`.
   The owner-authorized implementation, forward migrations, Frankfurt redeployment, committed hosted
   E2E, and rollback/restore exit gates passed. Git delivery uses the existing approved branch.
-- **Active phase**: `phase:staging User-triggered hosted match detail`.
+- **Completed phase**: `phase:staging User-triggered hosted match detail`.
   The owner explicitly reopened lazy detail and authorized implementation through hosted E2E.
   Research and exact TDD slices are recorded in ADR-0053 and
   `docs/superpowers/plans/2026-09-09-user-triggered-match-detail.md`. Refresh only the selected match on an explicit
   detail action; no detail cron, prefetch, polling, pending retry timer or automatic page-focus refresh.
   The previous staging evidence is retained; moving phases is not production approval.
+- **Active phase**: `phase:owner-feedback User-triggered hosted match detail`.
 - **Match-detail local exit gate (2026-09-10)**: reviewed slices and integration correction through
   `98cee02` pass `verify:staging` (157 files / 796 unit tests, complete integration/endpoint/PWA and
   static build), actual detail PostgreSQL smoke, actual Edge runtime auth/Postgres smoke, module
   graph and 67-file Cloudflare artifact gate. The old Frankfurt candidate fails the committed new
-  detail E2E because its Information action sends no POST refresh. New-candidate hosted E2E and
-  rollback/restore remain required; no match-detail staging success is claimed yet.
-- **Approved implementation plan**: `docs/superpowers/plans/2026-09-09-hosted-provider-refresh-live.md`;
-  DB-first design and filesystem audit: `docs/superpowers/specs/2026-09-09-hosted-provider-refresh-live-design.md`.
+  detail E2E because its Information action sends no POST refresh. New-candidate hosted E2E,
+  rollback/restore and the combined gate now pass; see the closeout below.
+- **Approved implementation plan**: `docs/superpowers/plans/2026-09-09-user-triggered-match-detail.md`.
+  Previous DB-first refresh design: `docs/superpowers/specs/2026-09-09-hosted-provider-refresh-live-design.md`.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
-- **Lazy match-detail state**: **REOPENED by owner instruction on 2026-09-09**. Implement through
-  research, exact TDD slices and Frankfurt E2E, retaining canonical IDs and nullable factual fields.
+- **Lazy match-detail state**: **DELIVERED TO STAGING on 2026-09-10** through research, reviewed
+  TDD slices and Frankfurt E2E, retaining canonical IDs and nullable factual fields.
   Existing source approvals apply; no paid source, bypass, historical hydration or production action.
-- **Promotion state**: Frankfurt retains 11,163 matches across 45 competitions and 17 snapshots
-  (rollback/restore observation at `2026-09-09T04:35:38.278Z`). Supabase Edge Function version 11
-  is ACTIVE; Cloudflare Worker `bc4eb715-e26c-45db-833c-84785bf74443` serves 100% of traffic.
+- **Promotion state**: Frankfurt retains 11,163 matches across 45 competitions, 35 snapshots and
+  two detail caches (independent read at `2026-09-10T06:12:07.605Z`). Edge Function version 14
+  is ACTIVE; Cloudflare Worker `e735457e-245f-474f-8df3-965be8eb6041` serves 100% of traffic.
   The three refresh jobs and four Vault names are restored. Owner acceptance, Tokyo project
   creation, and production promotion remain unapproved.
 - **Current lifecycle source of truth**: this file.
+
+## User-triggered hosted match detail — 2026-09-10 closeout
+
+- **Delivered**: per-match cache-only GET and owner-triggered POST refresh, durable leases and
+  publication fencing, 60-second per-match floor, ETag/304, last-good preservation, request bounds,
+  and a provider circuit shared with hosted scheduled operations. No detail cron, prefetch,
+  polling, pending retry timer or automatic focus refresh.
+- **Information UI**: factual events, confirmed lineups/coaches, stadium/referee/attendance,
+  period/team/player statistics and a shot map/list. EN/VI labels match; missing values remain
+  absent/null, and unverified physical units are hidden. Canonical match/bankroll data is not
+  overwritten by detail observations.
+- **Real hosted acceptance**: completed Manchester United/Ipswich returned 3 statistic periods,
+  32 players and 43 shots. The pre-researched upcoming AFC Bournemouth/Brentford sample refreshed
+  successfully. Browser assertions cover selected-ID request counts, no card/Bets request,
+  manual cooldown, error/late-response/202 fixtures, mobile layout, owner login/logout/replay,
+  and credential/locator/internal-header redaction. Fixtures are identified separately from
+  real provider results. No owner bet, draft, bankroll or ledger data was created by these E2Es.
+- **Coverage limit**: two acceptance samples do not prove uniform detail availability across 45
+  competitions. Santos/Cruzeiro was rejected for conflicting canonical/provider names and kickoff;
+  no detail was published, and this observation does not establish which side is correct.
+  Upcoming fixture expiry is a hard failure; replace it with a newly verified current-season
+  sample when necessary. Never skip the gate or loosen identity matching to make it pass.
+- **Hosted exit gate**: `verify:staging:hosted` passed at `2026-09-10T06:11:26.413Z` after restoration.
+  Exact four Vault names and three cron jobs were verified; controlled current/terminal/live
+  deliveries returned 2xx and valid `fresh` no-ops. Thirteen forward migrations are applied.
+  A subsequent independent read confirmed zero drafts, bets, bankroll accounts and ledger entries.
+- **Rollback**: zero scheduler jobs during the drill; baseline Edge/Worker passed the previous
+  owner/LIVE suite against the additive schema. The new detail suite exposed the expected missing
+  POST in the old UI. Restored detail Edge/Worker passed browser E2E; three jobs, four Vault names,
+  match snapshots and detail caches were retained. Full evidence and bundle hashes are in the
+  hosting runbook. Every behavior slice was reviewed and committed locally before the next slice.
+- **Next**: requested `phase:owner-feedback`. The owner should exercise Information and report
+  acceptance or concrete corrections. No additional decision is needed for completed staging
+  work; production/Tokyo and historical hydration remain separate, unapproved actions.
 
 ## Hosted automatic provider refresh and Matches LIVE — 2026-09-09 closeout
 

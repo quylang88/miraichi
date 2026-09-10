@@ -131,3 +131,14 @@ run focused verification, then commit locally immediately before starting the ne
   never skip. Actual hosted browser E2E passes completed `not_modified`, upcoming `refreshed`,
   3 periods / 32 players / 43 shots, manual fault fixtures, logout/replay and network redaction.
   These two samples prove acceptance, not uniform coverage of all 45 competitions.
+- Slices 7–8: complete local staging gate passes 157 files / 796 tests plus all integration,
+  endpoint, PWA and build checks; real SQL, Edge runtime, graph and artifact checks pass. Thirteen
+  migrations are applied to Frankfurt. The initial Edge deployment was v12; rollback restored
+  the verified v11 source as v13, then restored the detail bundle as ACTIVE v14. Worker
+  `e735457e-245f-474f-8df3-965be8eb6041` serves 100%. E2E ran after every deployment, exposing
+  expected missing-POST behavior while old UI was active and passing after combined restoration.
+  The baseline owner/LIVE suite also passed against the additive schema. At `02:11:21.805Z`,
+  restoration retained 11,163 matches, 35 snapshots, two detail caches, four Vault names, three
+  jobs and zero bets/ledger entries. Final combined `verify:staging:hosted` passed at
+  `2026-09-10T06:11:26.413Z`, with browser and all three scheduler operations green. The next
+  phase is the requested owner feedback; no production action follows automatically.

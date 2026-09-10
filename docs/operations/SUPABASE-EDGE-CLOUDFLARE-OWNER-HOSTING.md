@@ -1,18 +1,87 @@
 # Supabase Edge + Cloudflare Worker owner hosting runbook
 
-> **Status: new Frankfurt candidate passed; awaiting owner feedback.**
-> Hosted automatic refresh, Matches LIVE quality-up and rollback/restore are complete.
-> `pnpm run verify:staging:hosted` passed after restoration at `2026-09-09T04:38:29.867Z`.
+> **Status: match-detail candidate passed; awaiting owner feedback.**
+> User-triggered match detail, hosted browser E2E and rollback/restore passed on 2026-09-10.
+> `pnpm run verify:staging:hosted` passed after restoration at `2026-09-10T06:11:26.413Z`.
 > Local verification alone cannot close staging. Tokyo/production remains unapproved.
 
 This runbook replaces the Koyeb deployment path. It retains the Frankfurt Supabase staging project
 and its verified match snapshot. It does not authorize a push, Tokyo project, production promotion,
 paid service, remote database reset, or project deletion.
 
+## 2026-09-10 user-triggered match detail
+
+The current scope is ADR-0053 and
+`docs/superpowers/plans/2026-09-09-user-triggered-match-detail.md`. Information reads the cached
+selected match with GET, then sends one explicit POST to `/api/v1/matches/detail/refresh?id=...`.
+Opening a card starts on Bets without a detail request. Retry is manual; detail has no scheduler,
+prefetch, pending retry timer, polling or automatic focus request. Existing current/terminal/LIVE
+jobs retain their separate approved cadence.
+
+Two forward-only migrations, `20260909160000` and `20260909170000`, add private detail cache/control
+and the common provider circuit. GET never invokes the provider. POST uses owner/origin checks,
+a per-match 60-second floor, fenced leases, one selected-provider call, ETag/304 and last-good
+retention. Provider 403/429 blocks subsequent detail and scheduled requests through a shared
+persisted circuit. There is no schema rollback or owner-data deletion during a runtime rollback.
+
+FotMob detail requires a verified current-season binding and retained reference. SportScore
+fallback requires an already observed exact widget slug; there is no discovery call or fallback
+after a provider failure. Identity conflicts remain unavailable. Rich facts include events,
+confirmed lineups/coaches, venue/referee/attendance, period/team/player statistics and shot
+coordinates. Unknown values stay absent/null. Ratings, expected goals and predictions are excluded;
+physical metrics whose units are unverified are not displayed.
+
+The committed `tests/e2e/staging-match-detail.ts` runs within the authenticated owner suite. It
+checks real completed/upcoming data, exact selected GET/POST counts, cooldown and rendering, then
+explicit browser fixtures for errors, late responses and legacy 202 behavior. It inherits network
+redaction and finally logout/cleanup. `scripts/match-detail-browser-smoke.ts` runs only synthetic
+local browser data; its success is not evidence of provider or staging availability.
+
+```powershell
+pnpm run detail:local-browser-smoke
+pnpm run detail:local-sql-smoke
+pnpm exec tsc -p tsconfig.staging.json --noEmit
+pnpm run test:e2e:staging
+pnpm run verify:staging:hosted
+```
+
+Acceptance samples are in `tests/fixtures/match-detail-staging-targets.ts`: completed Manchester
+United/Ipswich and upcoming AFC Bournemouth/Brentford at 2026-09-12 14:00 UTC. The upcoming gate
+fails if the sample is missing, rescheduled or has started. Replace it deliberately using fresh
+verified current-season evidence; do not skip the assertion. These two samples do not establish
+uniform detail coverage across all 45 competitions. Santos/Cruzeiro exposed conflicting canonical
+and provider names/kickoffs during acceptance; its payload was rejected and no detail was cached.
+Neither side is declared correct by that observation. Canonical revalidation is separate from detail.
+
+Local exit evidence: `verify:staging` passed 157 unit files / 796 tests, all integration/endpoint/PWA
+checks and static build. Actual PostgreSQL detail and Edge auth/Postgres smokes passed. Edge graph,
+TypeScript staging check and the 67-file static artifact check passed (416,690 total bytes; largest
+54,421 bytes). Every TDD slice and corrective slice was independently reviewed and committed locally.
+
+Rollback baseline: Worker `bc4eb715-e26c-45db-833c-84785bf74443` and the Edge v11 bundle SHA-256
+`c821b7aaa47d414dcdb1fbc45ef09e32a0f65ab4cc07e645eaadcf129e9c6885`. The detail bundle SHA-256 is
+`4bc8fdfdcbf0564582a168ce089a57b6bf7270d4cdaf3208ef7dd5f5c5a295ba`. Keep both bundles in ignored
+local backup directories before another runtime deployment.
+
+| Drill step (UTC, 2026-09-10) | Observed result |
+| --- | --- |
+| Unschedule | Zero jobs; four Vault names, 11,163 matches, 35 snapshots and two cached details retained |
+| Baseline Worker and Edge restored | Baseline owner/LIVE E2E passed; new detail gate failed because the old UI sends no POST |
+| Detail Edge restored | Bundle verified; new detail gate still failed while old Worker remained active |
+| Detail Worker restored, 02:10:59.845 | Full browser E2E passed, both real detail samples returned `not_modified` |
+| Scheduler restored, 02:11:21.805 | Three jobs, four Vault names, 11,163 matches, 35 snapshots and two cached details; zero bets/ledger entries |
+
+An expected old-version detail failure is rollback evidence, never a passing current candidate.
+
+The final combined hosted gate passed at `2026-09-10T06:11:26.413Z`: real detail, explicit fault
+fixtures, owner logout/replay and network redaction passed; scheduler checks verified four Vault
+names and three exact jobs, with controlled current/terminal/live 2xx deliveries and valid `fresh`
+no-ops. Owner feedback is the next phase. Production/Tokyo and historical hydration remain unapproved.
+
 ## 2026-09-09 hosted refresh and LIVE acceptance gate
 
-The owner's current instruction authorizes this branch's Frankfurt migration/deploy/rollback work.
-Follow `docs/superpowers/plans/2026-09-09-hosted-provider-refresh-live.md` for the current boundary.
+The owner authorized this branch's Frankfurt migration/deploy/rollback work.
+The completed scope is recorded in `docs/superpowers/plans/2026-09-09-hosted-provider-refresh-live.md`.
 Only three bounded Edge refresh jobs replace the historical hourly scheduler. Full filesystem
 hydration remains local; the hosted coordinator reads DB canonical rows and publishes deltas in
 one fenced transaction. Current TTL remains 24 hours, hard request cap nine, Edge default three.
@@ -64,11 +133,12 @@ regression as a passing current candidate.
 - Supabase project: `Miraichi Staging`
 - Project ref: `qpexxwmrnreooxftfucv`
 - Region: Frankfurt
-- Remote applied migrations: eleven versions through `20260909150000`
-- Verified cloud data: 11,163 matches, 45 competitions, 17 snapshots
+- Remote applied migrations: thirteen versions through `20260909170000`
+- Verified cloud data at `2026-09-10T06:12:07.605Z`: 11,163 matches, 45 competitions, 35 snapshots,
+  two detail caches; zero drafts, bets, bankroll accounts and ledger entries
 - Current-edition checkpoint keys: 45
-- Edge Function: `miraichi-api`, ACTIVE version 11 after rollback restoration
-- Worker: `bc4eb715-e26c-45db-833c-84785bf74443`, 100% of staging traffic
+- Edge Function: `miraichi-api`, ACTIVE version 14 after detail rollback restoration
+- Worker: `e735457e-245f-474f-8df3-965be8eb6041`, 100% of staging traffic
 - Scheduler: exactly four Vault names and three active jobs using the table above
 - Data API: disabled in hosted staging
 - Local CA: `.secrets/supabase-staging-ca.crt` (gitignored; used only by owner-local DB tooling)
@@ -174,9 +244,10 @@ The owner already holds these values in a password manager:
 - `MIRAICHI_SESSION_SECRET`
 - `MIRAICHI_REFRESH_TOKEN`
 
-Implementation adds one independent random value:
+Hosted operation also requires two independent random values:
 
 - `MIRAICHI_GATEWAY_TOKEN` (at least 32 random bytes)
+- `MIRAICHI_PROVIDER_REFRESH_TOKEN` (independent of gateway, session and live-refresh values)
 
 Do not paste any value into chat, commit it, print it, or store it in a normal Wrangler variable.
 The same gateway value must be stored independently in:
@@ -230,7 +301,7 @@ After implementation and verification:
 
 1. Confirm the CLI is still linked to `qpexxwmrnreooxftfucv`.
 2. Confirm remote migrations match local; inspect a dry run before applying any new migration.
-3. Create gitignored `.secrets/edge.staging.env` with the exact runtime names below. It contains four
+3. Create gitignored `.secrets/edge.staging.env` with the exact runtime names below. It contains five
    secrets plus non-secret runtime configuration, so protect the whole file. `SUPABASE_DB_URL` is
    provided by Supabase and must not be included or copied to Cloudflare.
 4. Deploy the single `miraichi-api` function from the reviewed commit.
@@ -260,6 +331,7 @@ MIRAICHI_OWNER_AUTH_MODE=password
 MIRAICHI_OWNER_PASSWORD_HASH='<PASSWORD_MANAGER_VALUE>'
 MIRAICHI_SESSION_SECRET=<PASSWORD_MANAGER_VALUE>
 MIRAICHI_REFRESH_TOKEN=<PASSWORD_MANAGER_VALUE>
+MIRAICHI_PROVIDER_REFRESH_TOKEN=<INDEPENDENT_PASSWORD_MANAGER_VALUE>
 MIRAICHI_OWNER_PROFILE_ID=owner-primary
 MIRAICHI_PUBLIC_ORIGIN=https://<EXACT_STAGING_WORKER>.workers.dev
 SPORTSCORE_LIVE_MODE=widget
@@ -336,59 +408,63 @@ Use only the Cloudflare `*.workers.dev` origin for browser smoke:
 
 Do not call SportScore `/api/v1`. Do not execute full-season hydration or historical hydration.
 
-## 6. Vault-backed hourly cron
+## 6. Vault-backed hosted refresh cron
 
 The tracked migration creates but does not call these owner-only functions:
 
-- `miraichi_app.configure_edge_hourly_live_refresh()`;
-- `miraichi_app.invoke_edge_hourly_live_refresh()`;
-- `miraichi_app.unschedule_edge_hourly_live_refresh()`.
+- `miraichi_app.configure_hosted_refresh()`;
+- `miraichi_app.invoke_hosted_refresh('current' | 'terminal' | 'live')`;
+- `miraichi_app.unschedule_hosted_refresh()`.
 
 It resolves exactly these Vault names at execution time:
 
 - `miraichi_edge_function_url`;
 - `miraichi_edge_gateway_token`;
 - `miraichi_live_refresh_token`.
+- `miraichi_provider_refresh_token`.
 
 Local migration and disposable scheduler verification is repeatable with:
 
 ```powershell
-pnpm exec supabase db reset --local
 pnpm exec supabase migration up --local --include-all
-pnpm run live:hourly:local-sql-smoke
+pnpm run provider:local-sql-smoke
+pnpm run detail:local-sql-smoke
 pnpm exec supabase db lint --local --schema miraichi_app --level warning --fail-on error
 pnpm exec supabase db advisors --local --type security --fail-on error
 ```
 
-The explicit `migration up` makes this gate robust on the current Windows/Supabase CLI combination,
-where `db reset` has twice recreated the local database without applying migrations. It is local
-only. Never substitute `--linked`.
+These verification commands use the disposable local database. Apply remote migrations only through
+the reviewed forward migration procedure above.
 
 Frankfurt Vault configuration and scheduling remain owner staging actions.
 
 Only after the Edge function works:
 
-1. Put the Edge Function URL, gateway token, and existing refresh-only token into Supabase Vault
+1. Put the Edge Function URL, gateway token, live refresh token and provider refresh token into Vault
    under the exact names defined by the tracked migration/operation contract.
-2. Apply/enable the single named hourly job at minute 17.
-3. Inspect `cron.job` to confirm one job, then trigger one controlled invocation.
+2. Call `configure_hosted_refresh()` to enable exactly the three jobs in the cadence table above.
+3. Inspect `cron.job` to confirm exact names, schedules and commands, then run the committed hosted gate.
 4. Verify `cron.job_run_details` and the corresponding `pg_net` result without selecting decrypted
    Vault values into logs.
-5. Confirm only `POST /api/v1/live/refresh?reason=hourly` ran, the durable lease/cooldown was honored,
-   and execution region was Frankfurt.
-6. Mark the GitHub Actions hourly workflow superseded only after this smoke passes.
+5. Confirm current/terminal/LIVE controlled deliveries return 2xx with valid fresh/refreshed results,
+   request caps, durable checkpoints and last-good freshness. Detail has no cron job.
+6. Keep the superseded GitHub Actions schedule disabled; `workflow_dispatch` remains available.
 
-After the three Vault values exist, the owner enables or disables exactly one job with:
+After the four Vault values exist, enable or disable the three jobs with separate operations:
 
 ```sql
-select miraichi_app.configure_edge_hourly_live_refresh();
-select miraichi_app.unschedule_edge_hourly_live_refresh();
+select miraichi_app.configure_hosted_refresh();
 ```
 
-The GitHub Actions hourly trigger remains the rollback scheduler until the Frankfurt cron smoke is
-recorded. At that gate, remove only its `schedule` trigger and retain `workflow_dispatch`.
+```sql
+select miraichi_app.unschedule_hosted_refresh();
+```
 
-If the job loops, fails repeatedly, or targets the wrong route/region, unschedule the named job and
+The older `configure_edge_hourly_live_refresh()` function is retained only for explicitly selected
+historical rollback. Do not call it on the current candidate: it can add a fourth job. A runtime
+rollback in this phase pauses all three current jobs, then restores those same three jobs.
+
+If refresh loops, fails repeatedly, or targets the wrong route/region, unschedule hosted refresh and
 diagnose. Never delete canonical matches or the last-good live overlay as recovery.
 
 ## 7. Rollback drill
@@ -396,10 +472,11 @@ diagnose. Never delete canonical matches or the last-good live overlay as recove
 Before declaring staging complete:
 
 - Record the last-good Git commit, Supabase function deployment ID, Cloudflare Worker version ID,
-  cron job name, and snapshot ID.
-- Prove Cloudflare can roll back to the prior version with `wrangler rollback <VERSION_ID>`.
+  cron job names, and snapshot ID.
+- Prove Cloudflare can restore the prior version with
+  `wrangler versions deploy <VERSION_ID>@100% --env staging`.
 - Prove the prior reviewed Edge function source can be redeployed from Git.
-- Prove the named cron job can be unscheduled without deleting Vault or application data.
+- Prove all three cron jobs can be unscheduled without deleting Vault or application data.
 - Keep database migrations forward-only; use a reviewed compensating migration, never a linked reset.
 
 Gateway secret rotations must be coordinated. A mismatched Cloudflare/Edge/Vault value intentionally
