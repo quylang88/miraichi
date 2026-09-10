@@ -35,12 +35,18 @@
 - **Completed phase**: `phase:staging Hosted automatic provider refresh and Matches LIVE quality-up`.
   The owner-authorized implementation, forward migrations, Frankfurt redeployment, committed hosted
   E2E, and rollback/restore exit gates passed. Git delivery uses the existing approved branch.
-- **Active phase**: `phase:code-slice User-triggered hosted match detail`.
+- **Active phase**: `phase:staging User-triggered hosted match detail`.
   The owner explicitly reopened lazy detail and authorized implementation through hosted E2E.
   Research and exact TDD slices are recorded in ADR-0053 and
   `docs/superpowers/plans/2026-09-09-user-triggered-match-detail.md`. Refresh only the selected match on an explicit
   detail action; no detail cron, prefetch, polling, pending retry timer or automatic page-focus refresh.
   The previous staging evidence is retained; moving phases is not production approval.
+- **Match-detail local exit gate (2026-09-10)**: reviewed slices and integration correction through
+  `98cee02` pass `verify:staging` (157 files / 796 unit tests, complete integration/endpoint/PWA and
+  static build), actual detail PostgreSQL smoke, actual Edge runtime auth/Postgres smoke, module
+  graph and 67-file Cloudflare artifact gate. The old Frankfurt candidate fails the committed new
+  detail E2E because its Information action sends no POST refresh. New-candidate hosted E2E and
+  rollback/restore remain required; no match-detail staging success is claimed yet.
 - **Approved implementation plan**: `docs/superpowers/plans/2026-09-09-hosted-provider-refresh-live.md`;
   DB-first design and filesystem audit: `docs/superpowers/specs/2026-09-09-hosted-provider-refresh-live-design.md`.
 - **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
