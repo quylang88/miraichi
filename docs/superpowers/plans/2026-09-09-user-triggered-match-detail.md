@@ -120,3 +120,14 @@ run focused verification, then commit locally immediately before starting the ne
   Eleven focused tests and the actual 67-file artifact dry run pass. Disposable local Edge credentials
   had a password/hash mismatch; aligning only the ignored local hash restored all actual Edge runtime
   auth/Postgres smoke gates. No staging credential or runtime configuration changed.
+- Hosted acceptance correction: Edge v12 and Worker `e735457e-245f-474f-8df3-965be8eb6041`
+  first passed completed rich detail, but the arbitrary upcoming selection failed. Santos/Cruzeiro
+  has a canonical/provider identity conflict: canonical Santos FC on September 12 versus provider
+  Santos on September 13. No detail was published; neither source is declared authoritative by this
+  observation. The identity fence stays intact and canonical revalidation is a separate operation.
+  Upcoming acceptance is now pinned to the pre-implementation AFC Bournemouth/Brentford sample,
+  canonical `match-294a35225edcdf2afb906c57`, September 12 at 14:00 UTC. The gate fails when that
+  sample is missing, rescheduled or no longer upcoming; replace it with new verified evidence then,
+  never skip. Actual hosted browser E2E passes completed `not_modified`, upcoming `refreshed`,
+  3 periods / 32 players / 43 shots, manual fault fixtures, logout/replay and network redaction.
+  These two samples prove acceptance, not uniform coverage of all 45 competitions.

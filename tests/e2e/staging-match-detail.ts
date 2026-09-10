@@ -1,6 +1,7 @@
 import type { Page, Request, Route } from 'playwright';
 import { gate } from '../../scripts/staging-hosted-config.js';
 import { validateLocalMatchDetail, validateLocalMatchFeedResponse, type LocalMatch, type LocalMatchDetail } from '../../packages/shared/src/index.js';
+import { DETAIL_STAGING_TARGETS } from '../fixtures/match-detail-staging-targets.js';
 
 const detailPath='/api/v1/matches/detail';
 const isDetail=(url:string)=>new URL(url).pathname.startsWith(detailPath);
@@ -115,14 +116,11 @@ export async function runStagingMatchDetail(page:Page):Promise<void> {
     return (body as {matches:LocalMatch[]}).matches;
   };
   // Accepted current-season completed sample, canonical ID only; no provider locator in browser code.
-  const completed=(await feed('2026-08-30')).find(match=>match.id==='match-4f584556baff0c726aa49c86');
+  const completed=(await feed(DETAIL_STAGING_TARGETS.completed.date)).find(match=>match.id===DETAIL_STAGING_TARGETS.completed.id);
   gate(completed?.status==='completed','known completed current-season target');
-  let upcoming:LocalMatch|undefined;
-  for(let offset=2;offset<=7 && !upcoming;offset++) {
-    const date=new Date(Date.now()+offset*86_400_000).toISOString().slice(0,10);
-    upcoming=(await feed(date)).find(match=>match.status==='scheduled' && match.sourceRefs.some(ref=>ref.sourceId==='fotmob-unofficial'));
-  }
-  gate(upcoming,'upcoming current-season target in bounded seven-day window');
+  const upcoming=(await feed(DETAIL_STAGING_TARGETS.upcoming.date)).find(match=>match.id===DETAIL_STAGING_TARGETS.upcoming.id);
+  gate(upcoming?.status==='scheduled' && Date.parse(upcoming.kickoffUtc)===Date.parse(DETAIL_STAGING_TARGETS.upcoming.kickoffUtc)
+    && Date.parse(upcoming.kickoffUtc)>Date.now(),'researched upcoming sample still scheduled; replace expired sample deliberately');
   const calls:{method:string;id:string|null}[]=[];
   const track=(r:Request)=>{if(isDetail(r.url())) calls.push({method:r.method(),id:new URL(r.url()).searchParams.get('id')});};
   page.on('request',track);
@@ -147,6 +145,8 @@ export async function runStagingMatchDetail(page:Page):Promise<void> {
     await openMatch(page,upcoming);
     gate(Number(calls.length)===3,'leaving/changing match to Bets makes no detail request');
     future=await explicitRefresh(page,upcoming.id);
+    console.log(JSON.stringify({gate:'hosted-detail-outcomes',completed:rich.refresh?.outcome,upcoming:future.refresh?.outcome,
+      upcomingObservedStatus:future.enrichment?.observedStatus,upcomingHasLastSuccess:Boolean(future.refresh?.lastSuccessAt)}));
     gate(Number(calls.length)===5 && calls.slice(3).every(call=>call.id===upcoming!.id),'upcoming only selected GET/POST');
     gate(['refreshed','not_modified','cooldown'].includes(future.refresh?.outcome??'') && future.refresh?.lastSuccessAt
       && future.enrichment?.observedStatus==='scheduled','real upcoming detail refresh');
