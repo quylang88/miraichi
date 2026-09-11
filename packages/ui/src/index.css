@@ -29,6 +29,10 @@
   --radius-sheet: 18px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --tabbar-row-height: 49px;
+  --tabbar-height: calc(1px + var(--tabbar-row-height) + var(--safe-bottom));
   --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   --miraichi-bg: var(--bg-color-pure);
@@ -53,6 +57,15 @@ body {
   overflow: hidden;
   overscroll-behavior: none;
   width: 100%;
+}
+
+/* Size the viewport once; descendants inherit the available app height. */
+html {
+  height: 100dvh;
+}
+
+#app-root {
+  height: 100%;
 }
 
 body {
@@ -83,85 +96,6 @@ a:focus-visible {
   min-height: 100dvh;
   justify-content: center;
   padding: var(--spacing-xl);
-}
-
-.app-shell {
-  background: var(--bg-color-pure);
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100dvh;
-  width: 100%;
-}
-
-.app-shell__top-bar {
-  align-items: center;
-  border-bottom: 1px solid var(--border-color-subtle);
-  display: flex;
-  justify-content: space-between;
-  min-height: 64px;
-  padding: calc(var(--spacing-sm) + var(--safe-top)) var(--spacing-md) var(--spacing-sm);
-}
-
-.app-shell__brand {
-  align-items: center;
-  color: var(--text-color-primary);
-  display: inline-flex;
-  gap: var(--spacing-sm);
-  min-width: 0;
-  text-decoration: none;
-}
-
-.app-shell__brand-mark {
-  align-items: center;
-  background: var(--surface-color-secondary);
-  border: 1px solid var(--border-color-strong);
-  border-radius: 50%;
-  color: var(--accent-color-primary);
-  display: inline-flex;
-  flex: 0 0 36px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  height: 36px;
-  justify-content: center;
-  width: 36px;
-}
-
-.app-shell__brand strong,
-.app-shell__brand small {
-  display: block;
-}
-
-.app-shell__brand small {
-  color: var(--text-color-muted);
-  font-size: 0.78rem;
-  margin-top: 2px;
-}
-
-.app-shell__phase-badge {
-  border: 1px solid var(--border-color-strong);
-  border-radius: 999px;
-  color: var(--text-color-muted);
-  flex: 0 0 auto;
-  font-size: 0.75rem;
-  padding: 6px 10px;
-}
-
-.app-shell__content {
-  min-height: 0;
-  overflow-y: auto;
-  padding: var(--spacing-lg) var(--spacing-md) calc(88px + var(--safe-bottom));
-  -webkit-overflow-scrolling: touch;
-}
-
-.app-shell__bottom-bar {
-  background: color-mix(in srgb, var(--bg-color-pure) 92%, transparent);
-  border-top: 1px solid var(--border-color-subtle);
-  bottom: 0;
-  left: 0;
-  padding: var(--spacing-xs) var(--spacing-sm) calc(var(--spacing-xs) + var(--safe-bottom));
-  position: fixed;
-  right: 0;
-  z-index: 20;
 }
 
 .tab-view {
@@ -299,56 +233,6 @@ a:focus-visible {
   color: var(--text-color-muted);
   line-height: 1.5;
   margin-top: var(--spacing-md);
-}
-
-.nav-bar {
-  display: grid;
-  gap: var(--spacing-xs);
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: 0 auto;
-  max-width: 760px;
-}
-
-.nav-bar__item {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: var(--radius-control);
-  color: var(--text-color-muted);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-height: 56px;
-  min-width: 44px;
-  padding: 6px 4px;
-}
-
-.nav-bar__item--active {
-  background: var(--accent-color-primary-soft);
-  color: var(--accent-color-primary);
-}
-
-.nav-bar__icon {
-  align-items: center;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  display: inline-flex;
-  font-size: 0.72rem;
-  font-weight: 800;
-  height: 22px;
-  justify-content: center;
-  line-height: 1;
-  width: 22px;
-}
-
-.nav-bar__label {
-  font-size: 0.72rem;
-  line-height: 1.1;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .miraichi-btn {
@@ -696,13 +580,13 @@ svg {
   background: var(--bg);
   display: flex;
   justify-content: center;
-  min-height: 100dvh;
+  height: 100%;
   padding: 0;
   width: 100%;
 }
 
 .static-provider-attribution {
-  bottom: calc(74px + var(--safe-bottom));
+  bottom: calc(var(--tabbar-height) + 2px);
   font-size: 10px;
   line-height: 1;
   opacity: 0.72;
@@ -723,9 +607,7 @@ svg {
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  max-height: 100dvh;
-  min-height: 100dvh;
+  height: 100%;
   overflow: hidden;
   position: relative;
   width: 100%;
@@ -740,108 +622,11 @@ svg {
   }
 }
 
-.top-bar {
-  align-items: center;
-  background: rgba(0, 0, 0, 0.92);
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  flex: 0 0 auto;
-  gap: 14px;
-  justify-content: space-between;
-  padding: calc(14px + var(--safe-top)) 18px 12px;
-  z-index: 2;
-}
-
-.brand {
-  align-items: center;
-  color: var(--text);
-  display: flex;
-  gap: 10px;
-  min-width: 0;
-  text-decoration: none;
-}
-
-.brand-mark {
-  align-items: center;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--text);
-  display: grid;
-  flex: 0 0 auto;
-  font-size: 13px;
-  font-weight: 700;
-  height: 30px;
-  line-height: 1;
-  place-items: center;
-  width: 30px;
-}
-
-.brand-copy {
-  display: block;
-  min-width: 0;
-}
-
-.brand-name {
-  color: var(--text);
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.brand-meta {
-  color: var(--text-subtle);
-  display: block;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.2;
-  margin-top: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.status-chip {
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--text-muted);
-  display: inline-flex;
-  flex: 0 0 auto;
-  font-size: 11px;
-  font-weight: 600;
-  gap: 7px;
-  min-height: 30px;
-  padding: 0 10px;
-  white-space: nowrap;
-}
-
-.status-dot {
-  background: var(--accent);
-  border-radius: 999px;
-  height: 6px;
-  width: 6px;
-}
-
-.notice {
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  color: var(--text-muted);
-  flex: 0 0 auto;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.35;
-  padding: 8px 18px;
-  z-index: 2;
-}
-
 .main-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: calc(18px + var(--safe-top)) 18px calc(88px + var(--safe-bottom));
+  padding: calc(18px + var(--safe-top)) max(18px, var(--safe-right)) calc(var(--tabbar-height) + 26px) max(18px, var(--safe-left));
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
   z-index: 1;
@@ -1995,19 +1780,20 @@ svg {
 }
 
 .bottom-nav {
-  background: rgba(0, 0, 0, 0.96);
+  background: rgba(0, 0, 0, 0.94);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--line);
   bottom: 0;
   display: grid;
   flex: 0 0 auto;
-  gap: 4px;
+  gap: 2px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   left: 0;
   margin: 0 auto;
   max-width: 680px;
-  padding: 8px 8px calc(8px + var(--safe-bottom));
+  /* Paint to the screen edge; only the controls sit above the home indicator. */
+  padding: 0 max(8px, var(--safe-right)) var(--safe-bottom) max(8px, var(--safe-left));
   position: fixed;
   right: 0;
   width: 100%;
@@ -2015,20 +1801,21 @@ svg {
 }
 
 .nav-item {
+  align-items: center;
   background: transparent;
-  border-radius: 12px;
+  border: 0;
+  border-radius: 8px;
   color: var(--text-subtle);
   display: flex;
   flex-direction: column;
   font-size: 11px;
-  font-weight: 700;
-  gap: 4px;
+  font-weight: 600;
+  gap: 3px;
   justify-content: center;
-  align-items: center;
   line-height: 1;
-  min-height: 52px;
+  min-height: var(--tabbar-row-height);
   min-width: 0;
-  padding: 6px 2px;
+  padding: 4px 2px;
   transition: background 160ms ease, color 160ms ease, transform 100ms ease;
   width: 100%;
 }
@@ -2383,9 +2170,7 @@ svg {
     border: 0;
     border-radius: 0;
     box-shadow: none;
-    height: 100dvh;
     max-width: 100%;
-    min-height: 0;
     width: 100%;
   }
 
@@ -2413,14 +2198,8 @@ svg {
 
 @media (max-width: 360px) {
   .main-scroll {
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-
-  .top-bar,
-  .notice {
-    padding-left: 14px;
-    padding-right: 14px;
+    padding-left: max(12px, var(--safe-left));
+    padding-right: max(12px, var(--safe-right));
   }
 
   .screen-title {
@@ -2429,8 +2208,8 @@ svg {
 
   .bottom-nav {
     gap: 2px;
-    padding-left: 6px;
-    padding-right: 6px;
+    padding-left: max(6px, var(--safe-left));
+    padding-right: max(6px, var(--safe-right));
   }
 
   .nav-item {

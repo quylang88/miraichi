@@ -46,7 +46,7 @@ if ('serviceWorker' in navigator) {
       return;
     }
 
-    navigator.serviceWorker.register('/service-worker.js')
+    navigator.serviceWorker.register('/service-worker.js', { type: 'module' })
       .then((registration) => {
         console.log('[PWA] ServiceWorker registration successful with scope: ', registration.scope);
       })

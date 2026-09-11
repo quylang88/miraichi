@@ -279,21 +279,21 @@ describe('getRibbonDates label formatting', () => {
     expect(center.label).toBe(translateEn('matches.today'));
 
     const yesterday = datesEn[1]!;
-    expect(yesterday.label).not.toBe(translateEn('matches.yesterday'));
     const expectedEnWeekdays = [0, 1, 2, 3, 4, 5, 6].map((day) => translateEn(`matches.weekday.${day}`));
     expect(expectedEnWeekdays).toContain(yesterday.label);
+    expect(yesterday.label).not.toBe(translateEn('matches.today'));
 
     const tomorrow = datesEn[3]!;
-    expect(tomorrow.label).not.toBe(translateEn('matches.tomorrow'));
     expect(expectedEnWeekdays).toContain(tomorrow.label);
+    expect(tomorrow.label).not.toBe(translateEn('matches.today'));
 
     const datesVi = getRibbonDates(todayStr, translateVi, 'UTC');
     expect(datesVi[2]!.label).toBe(translateVi('matches.today'));
-    expect(datesVi[1]!.label).not.toBe(translateVi('matches.yesterday'));
     const expectedViWeekdays = [0, 1, 2, 3, 4, 5, 6].map((day) => translateVi(`matches.weekday.${day}`));
     expect(expectedViWeekdays).toContain(datesVi[1]!.label);
-    expect(datesVi[3]!.label).not.toBe(translateVi('matches.tomorrow'));
+    expect(datesVi[1]!.label).not.toBe(translateVi('matches.today'));
     expect(expectedViWeekdays).toContain(datesVi[3]!.label);
+    expect(datesVi[3]!.label).not.toBe(translateVi('matches.today'));
   });
 });
 

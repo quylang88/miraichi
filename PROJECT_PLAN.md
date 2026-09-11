@@ -2,9 +2,9 @@
 
 ## Current State
 
-- **Status**: User-triggered rich match detail is implemented and verified on Frankfurt staging.
-  The complete hosted browser/scheduler gate passed after rollback restoration at
-  `2026-09-10T06:11:26.413Z`. The candidate is ready for the requested owner feedback.
+- **Status**: User-triggered rich match detail and the requested iPhone PWA tabbar quality-up are implemented on Frankfurt staging.
+  The final hosted browser/scheduler gate passed at `2026-09-10T09:05:38.429Z`, with separate Chromium/WebKit layout and active service-worker cache checks passing.
+  The owner accepted the PWA result on 2026-09-11 and authorized its local commit; push remains unapproved.
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
@@ -41,7 +41,7 @@
   `docs/superpowers/plans/2026-09-09-user-triggered-match-detail.md`. Refresh only the selected match on an explicit
   detail action; no detail cron, prefetch, polling, pending retry timer or automatic page-focus refresh.
   The previous staging evidence is retained; moving phases is not production approval.
-- **Active phase**: `phase:owner-feedback User-triggered hosted match detail`.
+- **Active phase**: `phase:owner-feedback iPhone PWA tabbar quality-up` — accepted by the owner on 2026-09-11 with authorization to commit locally. The newly requested cross-league score/LIVE bug investigation follows this accepted baseline.
 - **Match-detail local exit gate (2026-09-10)**: reviewed slices and integration correction through
   `98cee02` pass `verify:staging` (157 files / 796 unit tests, complete integration/endpoint/PWA and
   static build), actual detail PostgreSQL smoke, actual Edge runtime auth/Postgres smoke, module
@@ -56,10 +56,26 @@
   Existing source approvals apply; no paid source, bypass, historical hydration or production action.
 - **Promotion state**: Frankfurt retains 11,163 matches across 45 competitions, 35 snapshots and
   two detail caches (independent read at `2026-09-10T06:12:07.605Z`). Edge Function version 14
-  is ACTIVE; Cloudflare Worker `fc13e5a5-5dd5-4062-b686-3e0b329047bf` serves 100% of traffic.
+  is ACTIVE; Cloudflare Worker `2b262278-b532-4b89-b3c6-25a69b99c914` serves 100% of staging traffic after the UI quality-up.
   The three refresh jobs and four Vault names are restored. Owner acceptance, Tokyo project
   creation, and production promotion remain unapproved.
 - **Current lifecycle source of truth**: this file.
+
+## iPhone PWA tabbar quality-up — 2026-09-10
+
+- **Scope**: preserve the owner's current cleanup diff and the four-tab contract; correct viewport sizing, bottom safe-area spacing, and installed-shell cache delivery. No API/schema/provider changes.
+- **Implementation slice**: add `tests/e2e/pwa-layout.ts` to measure the real rendered shell in Chromium/WebKit. Observe RED for a 49px control row, single bottom inset, viewport-edge anchoring, and scroll clearance; simplify `packages/ui/src/index.css`; retain the owner's opaque iOS status bar in `apps/web/src/index.ts`.
+- **Installed update**: advance the cache version in `apps/web/public/service-worker.ts` and the matching `scripts/pwa-verify.ts` gate so existing installations receive the new shell.
+- **Registration correction**: the hosted cache check exposed the existing ES-module worker being registered as a classic script. A RED unit test in `apps/web/src/pwa/register-service-worker.test.ts` precedes registering it with `type: 'module'`; the hosted cache/reload gate must pass after redeployment.
+- **Verification**: focused browser regression, `pnpm run verify:staging`, Cloudflare artifact gate, deploy the existing Frankfurt Worker, fresh hosted owner/browser and PWA layout checks. Browser emulation cannot certify an actual Home Screen installation on iPhone.
+- **Delivery**: no commit or push until the owner reviews the deployed result and explicitly confirms.
+- **Implemented**: preserved the owner's removed legacy CSS/unused labels/import cleanup and opaque iOS status bar. One root dynamic viewport height feeds the shell; shared tabbar tokens define a 49px control row, 1px border and one bottom safe inset. Content/attribution clear that same bar; landscape controls respect side insets.
+- **Local evidence**: `pnpm run verify:staging` passed 157 unit files / 799 tests, all local/release/integration/PWA checks and the static build. `cloudflare:artifact:verify` passed 67 files / 414,263 bytes. `pnpm exec tsx tests/e2e/pwa-layout.ts` passed Chromium and WebKit across five sizes with synthetic safe insets; the new E2E also passed a focused TypeScript check.
+- **Deployed candidate**: Frankfurt Worker `2b262278-b532-4b89-b3c6-25a69b99c914` serves 100% of staging traffic, uploaded from uncommitted HEAD `78840092ab25706ad496496ed9dc3ed252b8deb0` plus the current diff. All eight changed browser artifacts fetched from staging match local SHA-256 hashes. Pre-task rollback Worker: `34587440-944a-4bb3-a5f8-804386f53359`; Edge/schema were unchanged.
+- **Hosted PWA evidence**: `pnpm exec tsx tests/e2e/pwa-layout.ts --staging` passed all ten browser/size cases, four-tab anchoring, final-item scroll clearance, and actual service-worker activation/cache/reload in Chromium and WebKit. Cache `miraichi-shell-v12-pwa-tabbar` contains byte-identical current CSS. This is fresh-browser cache evidence, not certification of every existing iPhone installation.
+- **Final hosted gate**: `pnpm run verify:staging:hosted` passed at `2026-09-10T09:05:38.429Z` on the final Worker. Real owner login/four-tab/LIVE/detail/logout/redaction checks passed without creating owner data; four Vault names and three scheduler jobs passed, with current/terminal/live deliveries reporting valid `fresh` results.
+- **Evidence files**: gitignored `output/playwright/pwa-tabbar/` retains gate logs, SHA-256 comparisons and local/staging screenshots; `staging-webkit-portrait.png` shows the hosted Matches tab with a synthetic 34px bottom inset.
+- **Owner acceptance (2026-09-11)**: owner confirmed the PWA result is satisfactory and explicitly authorized a local commit. Agent verification remains browser-based; the owner's acceptance does not claim an agent-run physical-device test. Push and production remain unapproved.
 
 ## User-triggered hosted match detail — 2026-09-10 closeout
 

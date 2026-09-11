@@ -1,3 +1,4 @@
+import { getLocalDateFromUtc } from '@miraichi/shared';
 import type { ProductionNavigationTabId } from '../../config/navigation-tabs.js';
 import { compareCompetitionsByPopularity } from '../../config/competition-popularity.js';
 import { t, type SupportedLocale, type TranslateFunction } from '../../services/i18n-service.js';
@@ -10,8 +11,6 @@ const backIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path 
 const nextIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const filterIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const plusIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
-
-import { getLocalDateFromUtc } from '@miraichi/shared';
 
 export interface MatchFilters {
   readonly groupby: string;

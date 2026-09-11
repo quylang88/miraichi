@@ -12,8 +12,6 @@ import { renderBankrollScreen, type BankrollSecondaryView } from './screens/bank
 import { renderMatchesScreen, renderMatchDetailScreen, type MatchFilters } from './screens/matches-screen.js';
 import { renderTodayScreen } from './screens/today-screen.js';
 
-export { getRibbonDates } from './screens/matches-screen.js';
-
 const closeIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const defaultMatchFeed: MatchFeedViewState = Object.freeze({ status: 'loading', date: new Date().toISOString().slice(0, 10) });
 const defaultLiveMatches: LiveMatchViewState = Object.freeze({ status: 'loading' });
