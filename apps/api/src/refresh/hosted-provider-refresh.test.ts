@@ -3,7 +3,8 @@ import { COMPETITION_SOURCE_REGISTRY } from '@miraichi/config';
 import { FotMobAccessBlockedError } from '../../../worker/src/sources/fotmob/fotmob-season-client.js';
 import type { HostedProviderStore, ProviderState } from './hosted-provider-store.js';
 import type { FotMobSeasonResponse } from '../../../worker/src/sources/fotmob/fotmob-season-client.js';
-import type { FotMobDailyResponse } from '../../../worker/src/sources/fotmob/fotmob-daily-client.js';
+import type { FotMobDailyRequest, FotMobDailyResponse } from '../../../worker/src/sources/fotmob/fotmob-daily-client.js';
+import { capturedCanonicalMatch, capturedDailyLeague, crossLeagueTargets } from '../../../../tests/fixtures/cross-league-score-live.js';
 
 async function setup() {
   const module = await import('./hosted-provider-refresh.js').catch(() => null);
@@ -19,7 +20,7 @@ async function setup() {
   const current = vi.fn(async (request): Promise<FotMobSeasonResponse> => ({ status: 'modified' as const, etag: '"v1"', rawText: '{}', payload: {
     details: { id: request.externalCompetitionId, selectedSeason: request.providerSeason }, fixtures: { allMatches: [] }
   } }));
-  const daily = vi.fn(async (): Promise<FotMobDailyResponse> => ({ status: 'not_modified' as const, etag: '"daily"' }));
+  const daily = vi.fn<(request: FotMobDailyRequest) => Promise<FotMobDailyResponse>>(async () => ({ status: 'not_modified' as const, etag: '"daily"' }));
   let clock = new Date('2026-09-09T12:00:00.000Z');
   const runner = new module.HostedProviderRefresh({ store, registry: COMPETITION_SOURCE_REGISTRY,
     currentClient: { getSeasonMatches: current }, dailyClient: { getDailyMatches: daily },
@@ -28,6 +29,24 @@ async function setup() {
 }
 
 describe('hosted provider refresh', () => {
+  it('reprocesses an unchanged grouped response after upgrading the terminal parser without repeating the reset', async () => {
+    const test = await setup();
+    test.setClock('2026-09-11T03:00:00Z');
+    test.state().dates['fotmob-unofficial|2026-09-11'] = { etag: '"already-seen-but-unparsed"', failureCount: 0 };
+    const target = crossLeagueTargets[0];
+    test.state().matches[`fotmob-unofficial|${target.id}`] = { attemptCount: 45 };
+    vi.mocked(test.store.readMatches).mockResolvedValue([capturedCanonicalMatch(target)]);
+    test.daily.mockResolvedValue({ status: 'modified', rawText: '{}', etag: '"grouped"',
+      payload: { date: '20260911', leagues: [capturedDailyLeague(target)] } });
+    expect(await test.runner.run('terminal')).toMatchObject({ outcome: 'refreshed', requests: 1 });
+    expect(test.daily.mock.calls[0]?.[0]).toEqual({ date: '2026-09-11', timeZone: 'UTC', ownerCountryCode: 'JPN' });
+    expect(test.finish.mock.calls[0]?.[2][0]?.matches[0]).toMatchObject({ matchId: target.id, scoreHome: 0, scoreAway: 2, status: 'completed' });
+    expect(test.state().terminalContractVersion).toBe(2);
+    test.setClock('2026-09-11T03:03:00Z');
+    await test.runner.run('terminal');
+    expect(test.daily).toHaveBeenCalledTimes(1);
+    expect(test.state().matches[`fotmob-unofficial|${target.id}`]?.attemptCount).toBe(1);
+  });
   it('caps current requests at nine, persists checkpoints and moves forward in registry order', async () => {
     const test = await setup();
     expect(await test.runner.run('current')).toMatchObject({ outcome: 'refreshed', requests: 9, publications: 0 });

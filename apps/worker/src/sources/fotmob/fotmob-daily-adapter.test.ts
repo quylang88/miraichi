@@ -73,6 +73,39 @@ function payload(matches: FotMobRawMatch[], id = leagueId): FotMobDailyPayload {
 }
 
 describe('FotMob daily terminal adapter', () => {
+  it.each(COMPETITION_SOURCE_REGISTRY.filter((item) => item.sourceBindings.result?.executionStatus === 'enabled'))(
+    'resolves a season/stage group to the registered root for $competitionId', (competition) => {
+      const base = baseMatch();
+      base.matches[0]!.competitionId = competition.competitionId;
+      const rootId = competition.sourceBindings.result!.externalNumericId!;
+      const result = adaptFotMobDailyTerminalResults({ registry: COMPETITION_SOURCE_REGISTRY, base,
+        rawPayload: { date: '20260831', leagues: [{ id: 1000001641, primaryId: rootId,
+          parentLeagueId: rootId, name: 'Stage label is not identity', matches: [rawMatch()] }] },
+        observedAt: '2026-08-31T14:00:00Z' });
+      expect(result.delta.matches).toEqual([expect.objectContaining({ matchId: 'match-current-alpha',
+        competitionId: competition.competitionId, status: 'completed', scoreHome: 2, scoreAway: 1 })]);
+      expect(result.issues).toEqual([]);
+    });
+
+  it.each([{ primaryId: String(leagueId) }, { parentLeagueId: leagueId }])('accepts one explicit root field: %j', (root) => {
+    const result = adaptFotMobDailyTerminalResults({ registry: COMPETITION_SOURCE_REGISTRY, base: baseMatch(),
+      rawPayload: { date: '20260831', leagues: [{ id: 987654, ...root, matches: [rawMatch()] }] },
+      observedAt: '2026-08-31T14:00:00Z' });
+    expect(result.delta.matches).toHaveLength(1);
+  });
+
+  it.each([
+    { id: leagueId, primaryId: leagueId, parentLeagueId: 999999 },
+    { id: leagueId, primaryId: 'not-an-id' },
+    { id: COMPETITION_SOURCE_REGISTRY[1]!.sourceBindings.result!.externalNumericId!, primaryId: leagueId }
+  ])('rejects conflicting or malformed competition identity: %j', (identity) => {
+    const result = adaptFotMobDailyTerminalResults({ registry: COMPETITION_SOURCE_REGISTRY, base: baseMatch(),
+      rawPayload: { date: '20260831', leagues: [{ ...identity, matches: [rawMatch()] }] },
+      observedAt: '2026-08-31T14:00:00Z' });
+    expect(result.delta.matches).toEqual([]);
+    expect(result.issues).toEqual([expect.objectContaining({ code: 'invalid_competition_identity' })]);
+  });
+
   it('updates an existing canonical match through its private provider link', () => {
     const result = adaptFotMobDailyTerminalResults({
       registry: COMPETITION_SOURCE_REGISTRY,

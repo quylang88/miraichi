@@ -1,8 +1,22 @@
 import type { LiveMatchOverlay, LiveMatchPeriod, LiveMatchStatus, LocalMatch } from '@miraichi/shared';
+import { COMPETITION_POPULARITY_RANKING } from '@miraichi/config';
 
 const MATCH_WINDOW_MS = 30 * 60 * 1_000;
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const ISO_DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+const WIDGET_MATCH_PATH = /^\/football\/match\/([a-z0-9]+(?:-[a-z0-9]+)*)\/$/;
+const competitionNames = new Map(COMPETITION_POPULARITY_RANKING.map((entry) => [
+  entry.id, new Set([entry.name, ...(entry.aliases ?? [])].map(identity))
+]));
+// Additional exact labels observed in the 2026-09-11 widget capture. No fuzzy team matching.
+competitionNames.get('conmebol-copa-libertadores')?.add(identity('CONMEBOL Copa Libertadores'));
+competitionNames.get('conmebol-copa-sudamericana')?.add(identity('CONMEBOL Copa Sudamericana'));
+competitionNames.get('mex-liga-mx')?.add(identity('Mexico Liga MX'));
+const teamNames: ReadonlyMap<string, ReadonlySet<string>> = new Map([
+  ['team-flamengo', new Set([identity('Flamengo - RJ')])],
+  ['team-pumas', new Set([identity('Pumas U.N.A.M.')])],
+  ['team-leon', new Set([identity('Club Leon')])]
+]);
 
 export interface SportScoreLiveAdapterIssue {
   readonly code: 'invalid_record' | 'unmapped_match' | 'ambiguous_match';
@@ -37,7 +51,16 @@ function displayName(value: unknown): string | null {
 }
 
 function identity(value: string): string {
-  return value.normalize('NFKC').trim().replace(/\s+/gu, ' ').toLocaleLowerCase('en-US');
+  return value.normalize('NFKD').replace(/\p{M}/gu, '').toLocaleLowerCase('en-US').replace(/[^\p{L}\p{N}]/gu, '');
+}
+
+function widgetSlug(record: Record<string, unknown>): string | null {
+  const direct = typeof record.slug === 'string' ? record.slug.trim() : undefined;
+  const fromUrl = typeof record.url === 'string' ? WIDGET_MATCH_PATH.exec(record.url)?.[1] : undefined;
+  if ((record.slug !== undefined && (!direct || !SLUG_PATTERN.test(direct)))
+    || (record.url !== undefined && !fromUrl) || (direct && fromUrl && direct !== fromUrl)) return null;
+  const slug = direct ?? fromUrl;
+  return slug && slug.length <= 160 ? slug : null;
 }
 
 function integerScore(value: unknown): number | null {
@@ -53,7 +76,8 @@ function score(record: Record<string, unknown>, side: 'home' | 'away'): number |
 
 export function minute(record: Record<string, unknown>): number | null {
   for (const value of [record.minute, record.elapsed, record.status_text]) {
-    const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number.parseInt(value, 10) : Number.NaN;
+    const parts = typeof value === 'string' ? /^(\d{1,3})(?:\s*\+\s*(\d{1,2}))?\s*['’′]?$/u.exec(value.trim()) : null;
+    const parsed = typeof value === 'number' ? value : parts ? Number(parts[1]) + Number(parts[2] ?? 0) : Number.NaN;
     if (Number.isInteger(parsed) && parsed >= 0 && parsed <= 200) return parsed;
   }
   return null;
@@ -73,12 +97,11 @@ export function mappedStatus(raw: string): { status: LiveMatchStatus; period: Li
 }
 
 function statusAndPeriod(record: Record<string, unknown>): { status: LiveMatchStatus; period: LiveMatchPeriod | null } | null {
-  for (const raw of [record.status, record.status_text]) {
-    if (typeof raw !== 'string' || !raw.trim()) continue;
-    const mapped = mappedStatus(raw);
-    if (mapped) return mapped;
-  }
-  return null;
+  const primary = typeof record.status === 'string' ? mappedStatus(record.status) : null;
+  const label = typeof record.status_text === 'string' ? mappedStatus(record.status_text) : null;
+  if (primary?.status === 'live' && primary.period === 'unknown'
+    && (label?.status === 'live' || label?.status === 'halftime')) return label;
+  return primary ?? label;
 }
 
 function isUpcoming(record: Record<string, unknown>): boolean {
@@ -98,14 +121,14 @@ function optionalCompetitionName(record: Record<string, unknown>): string | unde
 
 function normalizeRecord(raw: unknown): NormalizedWidgetRecord | null {
   if (!isRecord(raw)) return null;
-  const slug = typeof raw.slug === 'string' ? raw.slug.trim() : '';
+  const slug = widgetSlug(raw);
   const homeName = displayName(raw.home);
   const awayName = displayName(raw.away);
   const kickoffMs = typeof raw.time === 'string' && ISO_DATETIME_PATTERN.test(raw.time) ? Date.parse(raw.time) : Number.NaN;
   const lifecycle = statusAndPeriod(raw);
   const homeScore = score(raw, 'home');
   const awayScore = score(raw, 'away');
-  if (!SLUG_PATTERN.test(slug) || !homeName || !awayName || homeName === awayName
+  if (!slug || !homeName || !awayName || homeName === awayName
     || !Number.isFinite(kickoffMs) || !lifecycle || homeScore === null || awayScore === null) return null;
   return {
     slug,
@@ -121,9 +144,18 @@ function normalizeRecord(raw: unknown): NormalizedWidgetRecord | null {
   };
 }
 
-function matchesCanonical(record: NormalizedWidgetRecord, match: LocalMatch): boolean {
-  if (identity(record.homeName) !== identity(match.homeTeam.name) || identity(record.awayName) !== identity(match.awayTeam.name)) return false;
-  if (record.competitionName && identity(record.competitionName) !== identity(match.competition.name)) return false;
+function matchesTeam(name: string, team: { id: string; name: string }): boolean {
+  const normalized = identity(name);
+  return normalized === identity(team.name) || teamNames.get(team.id)?.has(normalized) === true;
+}
+
+function matchesCanonical(record: NormalizedWidgetRecord, match: {
+  homeTeam: { id: string; name: string }; awayTeam: { id: string; name: string };
+  competition: { id: string; name: string }; kickoffUtc: string;
+}): boolean {
+  if (!matchesTeam(record.homeName, match.homeTeam) || !matchesTeam(record.awayName, match.awayTeam)) return false;
+  if (record.competitionName && identity(record.competitionName) !== identity(match.competition.name)
+    && !competitionNames.get(match.competition.id)?.has(identity(record.competitionName))) return false;
   return Math.abs(Date.parse(record.kickoffUtc) - Date.parse(match.kickoffUtc)) <= MATCH_WINDOW_MS;
 }
 
@@ -155,7 +187,7 @@ export function adaptSportScoreLiveRecords(input: {
     if (isRecord(raw) && isUpcoming(raw)) continue;
     const normalized = normalizeRecord(raw);
     if (!normalized) {
-      const slug = isRecord(raw) && typeof raw.slug === 'string' && SLUG_PATTERN.test(raw.slug) ? raw.slug : undefined;
+      const slug = isRecord(raw) ? widgetSlug(raw) : null;
       issues.push({ code: 'invalid_record', ...(slug ? { slug } : {}) });
       continue;
     }
@@ -184,8 +216,7 @@ export function adaptTrackedSportScoreRecord(input: {
   if (!normalized) return null;
   const trackedSlug = input.tracked.sourceRefs.find((source) => source.sourceId === 'sportscore')?.sourceMatchId;
   if (normalized.slug !== trackedSlug
-    || identity(normalized.homeName) !== identity(input.tracked.homeTeam.name)
-    || identity(normalized.awayName) !== identity(input.tracked.awayTeam.name)) return null;
+    || !matchesCanonical(normalized, input.tracked)) return null;
   return {
     ...structuredClone(input.tracked),
     status: normalized.status,

@@ -13,6 +13,8 @@ export interface FotMobDailyRequest {
 
 export interface FotMobDailyLeague {
   id?: number | string;
+  primaryId?: number | string | null;
+  parentLeagueId?: number | string | null;
   name?: string;
   matches: FotMobRawMatch[];
 }

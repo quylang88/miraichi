@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { LocalMatch } from '@miraichi/shared';
 import { adaptSportScoreLiveRecords, adaptTrackedSportScoreRecord } from './sportscore-live-adapter.js';
+import { crossLeagueTargets, capturedCanonicalMatch, capturedWidgetMatch } from '../../../../tests/fixtures/cross-league-score-live.js';
+import { COMPETITION_POPULARITY_RANKING } from '@miraichi/config';
 
 const observedAt = '2026-09-02T12:00:00.000Z';
 const canonical: LocalMatch = {
@@ -20,6 +22,59 @@ const liveRaw = {
 };
 
 describe('SportScore provider-neutral live adapter', () => {
+  it.each(crossLeagueTargets)('accepts the real URL-only widget contract for $competition', (target) => {
+    const result = adaptSportScoreLiveRecords({ records: [capturedWidgetMatch(target)],
+      canonicalMatches: [capturedCanonicalMatch(target)], observedAt: '2026-09-11T03:15:00Z' });
+    expect(result.matches).toEqual([expect.objectContaining({ matchId: target.id, status: 'completed', score: target.score })]);
+    expect(result.issues).toEqual([]);
+  });
+
+  it.each(COMPETITION_POPULARITY_RANKING)('resolves configured competition labels for $id', (competition) => {
+    for (const name of [competition.name, ...(competition.aliases ?? [])]) {
+      const result = adaptSportScoreLiveRecords({ records: [{ ...liveRaw, competition: name }],
+        canonicalMatches: [{ ...canonical, competition: { ...canonical.competition, id: competition.id, name: competition.name } }], observedAt });
+      expect(result.matches).toHaveLength(1);
+    }
+  });
+
+  it('maps the observed Liga MX Pumas/Leon aliases without removing arbitrary club qualifiers', () => {
+    const match = { ...canonical, id: 'match-893c15c61f042ae6a260a994',
+      competition: { ...canonical.competition, id: 'mex-liga-mx', name: 'Liga MX' },
+      kickoffUtc: '2026-09-11T03:05:00Z', homeTeam: { id: 'team-pumas', name: 'Pumas' }, awayTeam: { id: 'team-leon', name: 'León' } };
+    const record = { home: 'Pumas U.N.A.M.', away: 'Club Leon', home_score: '0', away_score: '0',
+      status: 'live', status_text: '1st half', time: '2026-09-11T12:05:00+09:00',
+      competition: 'Mexico Liga MX', url: '/football/match/pumas-unam-vs-club-leon/' };
+    const result = adaptSportScoreLiveRecords({ records: [record], canonicalMatches: [match], observedAt: '2026-09-11T03:15:00Z' });
+    expect(result.matches).toEqual([expect.objectContaining({ matchId: match.id, status: 'live', period: 'first_half', elapsedMinute: null, score: { home: 0, away: 0 } })]);
+    expect(result.issues).toEqual([]);
+    expect(adaptSportScoreLiveRecords({ records: [{ ...record, away: 'Club Leon W' }], canonicalMatches: [match], observedAt }).matches).toEqual([]);
+  });
+
+  it.each([
+    ['2nd half', 'second_half', null], ['45+2', 'unknown', 47], ["67'", 'unknown', 67], ['unknown', 'unknown', null]
+  ] as const)('does not confuse the period label %s with an elapsed minute', (status_text, period, elapsedMinute) => {
+    const result = adaptSportScoreLiveRecords({ records: [{ ...liveRaw, status: 'live', status_text }], canonicalMatches: [canonical], observedAt });
+    expect(result.matches[0]).toMatchObject({ status: 'live', period, elapsedMinute });
+  });
+
+  it('accepts punctuation/diacritics without dropping team qualifiers', () => {
+    const match = { ...canonical, homeTeam: { id: 'dc', name: 'DC United' }, awayTeam: { id: 'montreal', name: 'CF Montréal' } };
+    expect(adaptSportScoreLiveRecords({ records: [{ ...liveRaw, home: 'D.C. United', away: 'CF Montreal' }], canonicalMatches: [match], observedAt }).matches).toHaveLength(1);
+    expect(adaptSportScoreLiveRecords({ records: [{ ...liveRaw, home: 'DC United U21', away: 'CF Montreal' }], canonicalMatches: [match], observedAt }).matches).toHaveLength(0);
+  });
+
+  it.each([
+    { url: 'https://evil.example/football/match/arsenal-vs-liverpool/' },
+    { url: '/football/match/other-match/' },
+    { url: '/football/match/arsenal-vs-liverpool/?redirect=evil' }
+  ])('rejects unsafe or conflicting URL/slug identity: %j', (url) => {
+    expect(adaptSportScoreLiveRecords({ records: [{ ...liveRaw, ...url }], canonicalMatches: [canonical], observedAt }).matches).toEqual([]);
+  });
+
+  it.each([{ time: '2026-09-03T11:00:00Z' }, { competition: 'Other Cup' }])('rejects tracked detail identity drift: %j', (changed) => {
+    const tracked = adaptSportScoreLiveRecords({ records: [liveRaw], canonicalMatches: [canonical], observedAt }).matches[0]!;
+    expect(adaptTrackedSportScoreRecord({ raw: { ...liveRaw, ...changed, status: 'finished' }, tracked, observedAt })).toBeNull();
+  });
   it('publishes only one uniquely resolved canonical match with score/status/minute evidence', () => {
     const result = adaptSportScoreLiveRecords({ records: [liveRaw], canonicalMatches: [canonical], observedAt });
     expect(result.matches).toEqual([expect.objectContaining({

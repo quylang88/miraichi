@@ -9,6 +9,7 @@ export interface CurrentCheckpoint {
   failures: number;
 }
 export interface ProviderState {
+  terminalContractVersion?: number;
   current: Record<string, CurrentCheckpoint>;
   dates: Record<string, FotMobResultDateCheckpoint>;
   matches: Record<string, FotMobResultMatchCheckpoint>;

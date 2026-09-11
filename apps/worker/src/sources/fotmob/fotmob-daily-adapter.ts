@@ -7,7 +7,7 @@ import type {
   ProviderLink
 } from '@miraichi/shared';
 import type { CanonicalWarehouseSnapshot } from '../../../../../scripts/providers/shared/canonical-warehouse.js';
-import type { FotMobDailyPayload } from './fotmob-daily-client.js';
+import type { FotMobDailyLeague, FotMobDailyPayload } from './fotmob-daily-client.js';
 import type { FotMobRawMatch } from './fotmob-season-client.js';
 
 const PROVIDER = 'fotmob-unofficial' as const;
@@ -19,7 +19,7 @@ export interface FotMobDailyObservation {
 }
 
 export interface FotMobDailyAdapterIssue {
-  code: 'invalid_match_identity' | 'unknown_match' | 'competition_mismatch' | 'invalid_score';
+  code: 'invalid_match_identity' | 'invalid_competition_identity' | 'unknown_match' | 'competition_mismatch' | 'invalid_score';
   message: string;
   leagueIndex: number;
   matchIndex: number;
@@ -70,8 +70,12 @@ export function adaptFotMobDailyTerminalResults(
   const issues: FotMobDailyAdapterIssue[] = [];
 
   for (const [leagueIndex, league] of input.rawPayload.leagues.entries()) {
-    const leagueId = positiveInteger(league.id);
-    const entry = leagueId === null ? undefined : entryByLeagueId.get(leagueId);
+    const root = resolveLeagueRoot(league, entryByLeagueId);
+    if (!root.valid) {
+      issues.push(issue('invalid_competition_identity', 'Daily league root IDs are malformed or conflicting.', leagueIndex, -1));
+      continue;
+    }
+    const entry = root.entry;
     if (!entry) continue;
 
     for (const [matchIndex, raw] of league.matches.entries()) {
@@ -188,6 +192,18 @@ export function adaptFotMobDailyTerminalResults(
     observations,
     issues
   };
+}
+
+function resolveLeagueRoot(league: FotMobDailyLeague, registry: ReadonlyMap<number, CompetitionSourceEntry>):
+  { valid: false } | { valid: true; entry: CompetitionSourceEntry | undefined } {
+  // Daily rows can be grouped by a season or knockout stage rather than the stable league ID.
+  const roots = [league.primaryId, league.parentLeagueId].filter((value) => value != null);
+  const ids = roots.map(positiveInteger);
+  if (ids.some((id) => id === null) || new Set(ids).size > 1) return { valid: false };
+  const groupId = positiveInteger(league.id);
+  const rootId = ids[0] ?? groupId;
+  if (ids.length && groupId !== null && registry.has(groupId) && groupId !== rootId) return { valid: false };
+  return { valid: true, entry: rootId === null ? undefined : registry.get(rootId) };
 }
 
 function terminalStatus(raw: FotMobRawMatch): CanonicalMatchStatus | null {

@@ -11,6 +11,11 @@ import { createMemoryCloudPersistenceAdapter } from '../../apps/api/src/persiste
 import { TerminalLiveProjectionRepository } from '../../apps/api/src/repositories/terminal-live-projection-repository.js';
 import { handleLiveMatches } from '../../apps/api/src/routes/live-matches.js';
 import { handleMatches } from '../../apps/api/src/routes/matches.js';
+import { COMPETITION_SOURCE_REGISTRY } from '../../packages/config/src/index.js';
+import { CloudMatchSnapshotRepository } from '../../apps/api/src/repositories/cloud-match-snapshot-repository.js';
+import { adaptFotMobDailyTerminalResults } from '../../apps/worker/src/sources/fotmob/fotmob-daily-adapter.js';
+import { toCanonicalWarehouse, fromCanonicalWarehouse, mergeCanonicalWarehouseSnapshots } from '../../apps/worker/src/sources/shared/hosted-canonical.js';
+import { crossLeagueTargets, capturedCanonicalMatch, capturedWidgetMatch, capturedDailyLeague, capturedMlsMatch, capturedMlsDailyLeague } from '../fixtures/cross-league-score-live.js';
 
 function request(method: string, url: string, body = '', headers: Record<string, string> = {}) {
   const req = Readable.from(body ? [body] : []) as Readable & {
@@ -62,6 +67,56 @@ const snapshotStatus: LocalDataSnapshotStatus = {
 };
 
 describe('hosted owner live operation', () => {
+  it('publishes real grouped terminal results through the cloud UTC/Tokyo date lists', async () => {
+    const now = '2026-09-11T03:15:00Z';
+    const original = [...crossLeagueTargets.map(capturedCanonicalMatch), capturedMlsMatch];
+    const base = toCanonicalWarehouse(original);
+    const adapted = adaptFotMobDailyTerminalResults({ registry: COMPETITION_SOURCE_REGISTRY, base,
+      rawPayload: { date: '20260911', leagues: [...crossLeagueTargets.map(capturedDailyLeague), capturedMlsDailyLeague] }, observedAt: now });
+    const persistence = createMemoryCloudPersistenceAdapter({ now: () => now });
+    await persistence.upsertMatchSnapshot('owner-primary', { snapshotId: 'cross-league-terminal', generatedAt: now, importedAt: now,
+      sources: [], matches: fromCanonicalWarehouse(mergeCanonicalWarehouseSnapshots(base, adapted.delta)) });
+    const repository = new CloudMatchSnapshotRepository(persistence, 'owner-primary');
+    for (const timezone of ['UTC', 'Asia/Tokyo']) {
+      for (const [date, count] of [['2026-09-10', 1], ['2026-09-11', 2]] as const) {
+        const result = response();
+        await handleMatches(request('GET', `/api/v1/matches?date=${date}&timezone=${timezone}`) as never, result as never, { repository });
+        const matches = JSON.parse(result.body).matches as LocalMatch[];
+        expect(matches).toHaveLength(count);
+        expect(matches.every(match => match.status === 'completed' && match.score.home !== null && match.score.away !== null)).toBe(true);
+        expect(result.body).not.toContain('sourceMatchId');
+      }
+    }
+    expect((await repository.findById(capturedMlsMatch.id))?.score).toEqual({ home: 1, away: 2 });
+  });
+
+  it('maps URL-only live records, preserves canonical rows, then projects confirmed final scores', async () => {
+    let now = '2026-09-11T01:40:00Z';
+    const persistence = createMemoryCloudPersistenceAdapter({ now: () => now });
+    await persistence.upsertMatchSnapshot('owner-primary', { snapshotId: 'cross-league-live', generatedAt: now, importedAt: now,
+      sources: [], matches: crossLeagueTargets.map(capturedCanonicalMatch) });
+    const repository = new CloudMatchSnapshotRepository(persistence, 'owner-primary');
+    const source = {
+      // Actual source shape and identity; in-play status/minute are deterministic fixtures.
+      listMatches: vi.fn(async () => ({ matches: crossLeagueTargets.map(target => ({ ...capturedWidgetMatch(target), status: 'second_half', status_text: "67'" })) })),
+      getMatch: vi.fn(async (slug: string) => ({ match: capturedWidgetMatch(crossLeagueTargets.find(target => target.slug === slug)!) }))
+    };
+    const coordinator = new LiveRefreshCoordinator({ ownerProfileId: 'owner-primary', persistence, repository, source, now: () => now });
+    const live = await coordinator.refresh('visible');
+    expect(live.snapshot?.matches).toHaveLength(2);
+    expect(live.snapshot?.matches.every(match => match.status === 'live' && match.elapsedMinute === 67)).toBe(true);
+    expect((await repository.listMatches()).matches.every(match => match.status === 'scheduled')).toBe(true);
+    now = '2026-09-11T03:15:00Z';
+    source.listMatches.mockResolvedValue({ matches: [] });
+    expect((await coordinator.refresh('visible')).snapshot?.matches.every(match => match.status === 'completed')).toBe(true);
+    const projected = new TerminalLiveProjectionRepository(repository, persistence, 'owner-primary');
+    const result = response();
+    await handleMatches(request('GET', '/api/v1/matches?date=2026-09-11&timezone=Asia/Tokyo') as never, result as never, { repository: projected });
+    expect(Object.fromEntries((JSON.parse(result.body).matches as LocalMatch[]).map(match => [match.id, match.score])))
+      .toEqual(Object.fromEntries(crossLeagueTargets.map(target => [target.id, target.score])));
+    expect(result.body).not.toContain('sourceMatchId');
+    expect(source.getMatch).toHaveBeenCalledTimes(2);
+  });
   it('authenticates, refreshes live, confirms FT, and projects the score without leaking provider locators', async () => {
     let now = '2026-09-02T12:00:00.000Z';
     const authConfig = readOwnerAuthConfig({

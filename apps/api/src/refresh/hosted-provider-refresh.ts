@@ -140,6 +140,19 @@ export class HostedProviderRefresh {
     const state = lease.state;
     if (blocked(state.circuits['fotmob-unofficial'], now)) { result.outcome = 'failed'; return; }
     const base = toCanonicalWarehouse(await this.options.store.readMatches({ dueAt: now.toISOString() }));
+    if (state.terminalContractVersion !== 2) {
+      // Old ETags and exhausted attempts can describe bodies the former group-ID parser skipped.
+      // Recheck once, inside the existing four-hour window and request/circuit/cooldown bounds.
+      for (const checkpoint of Object.values(state.dates)) delete checkpoint.etag;
+      for (const match of base.matches) {
+        const key = fotMobMatchKey(match.matchId);
+        const checkpoint = state.matches[key];
+        if (checkpoint && !checkpoint.terminalAt) {
+          state.matches[key] = { attemptCount: 0, ...(checkpoint.nextCheckAt ? { nextCheckAt: checkpoint.nextCheckAt } : {}) };
+        }
+      }
+      state.terminalContractVersion = 2;
+    }
     const plan = buildFotMobTerminalPlan({ base, ledger: { schemaVersion: FOTMOB_RESULT_LEDGER_SCHEMA_VERSION,
       revision: lease.revision, updatedAt: now.toISOString(), dates: state.dates, matches: state.matches }, now, timeZone: 'UTC', maxDates: 2 });
     for (const group of plan.groups) {
