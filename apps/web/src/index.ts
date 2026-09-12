@@ -3,6 +3,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import pathModule from 'path';
 import * as ts from 'typescript';
+import { renderAppShell } from './components/app-shell.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -224,8 +225,8 @@ export function getIndexHtml(apiUrl = process.env.API_URL || '') {
   <script type="module" src="/apps/web/src/auth-bootstrap.js"></script>
 </head>
 <body>
-  <div id="app-root" aria-live="polite">
-    <div class="shell-loading">Loading Miraichi...</div>
+  <div id="app-root" aria-live="polite" data-owner-session="pending">
+    ${renderAppShell().replace('id="main-scroll"', 'id="main-scroll" inert')}
   </div>
   <footer class="static-provider-attribution" data-static-provider-attribution="sportscore">
     <a href="https://sportscore.com/" rel="dofollow" title="Sports data by SportScore">Powered by SportScore</a>

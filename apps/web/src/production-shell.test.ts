@@ -516,7 +516,9 @@ describe('production PWA shell rendering', () => {
     expect(serverSource).toContain('function resolveSourcePath');
     expect(serverSource).toContain('filePath = resolveSourcePath(url);');
     expect(staticBuildSource).toContain("'packages/config/src'");
-    expect(serviceWorkerSource).toContain('/packages/config/src/competition-registry.mock.js');
+    // Production dependencies are bundled; legacy module URLs remain served for updates/dev.
+    expect(serviceWorkerSource).toContain('/apps/web/src/auth-bootstrap.js');
+    expect(staticBuildSource).toContain('bundle: true');
   });
 
   it('renders accessible bottom navigation buttons with the active tab marked', () => {

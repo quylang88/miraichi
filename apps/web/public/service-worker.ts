@@ -2,19 +2,15 @@
 
 export {};
 
-const CACHE_NAME = 'miraichi-shell-v13-daily-live';
+const CACHE_NAME = 'miraichi-shell-v14-instant-startup';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/packages/ui/src/index.css',
   '/apps/web/src/auth-bootstrap.js',
-  '/apps/web/src/config/navigation-tabs.js',
-  '/apps/web/src/components/app-shell.js',
-  '/packages/config/src/competition-registry.mock.js',
-  '/apps/web/src/components/bottom-navigation.js',
-  '/apps/web/src/components/html.js',
-  '/apps/web/src/services/settings-service.js',
-  '/apps/web/src/services/i18n-service.js'
+  '/apps/web/src/pwa/register-service-worker.js',
+  '/manifest.webmanifest',
+  '/icons/icon.svg'
 ] as const;
 
 const serviceWorkerScope = self as unknown as ServiceWorkerGlobalScope;
@@ -22,26 +18,27 @@ const serviceWorkerScope = self as unknown as ServiceWorkerGlobalScope;
 serviceWorkerScope.addEventListener('install', (event: ExtendableEvent) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll([...ASSETS_TO_CACHE]))
+      .then(() => serviceWorkerScope.skipWaiting())
   );
-  serviceWorkerScope.skipWaiting();
 });
 
 serviceWorkerScope.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => Promise.all(
       cacheNames.map((cacheName) => {
-        if (cacheName === CACHE_NAME) {
+        if (cacheName === CACHE_NAME || !cacheName.startsWith('miraichi-shell-')) {
           return Promise.resolve(false);
         }
         return caches.delete(cacheName);
       })
-    ))
+    )).then(() => serviceWorkerScope.clients.claim())
   );
-  serviceWorkerScope.clients.claim();
 });
 
 serviceWorkerScope.addEventListener('fetch', (event: FetchEvent) => {
   const url = new URL(event.request.url);
+
+  if (event.request.method !== 'GET' || url.origin !== serviceWorkerScope.location.origin) return;
 
   // Network-first or pass-through for API and AI routes
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ai/')) {
@@ -64,17 +61,16 @@ serviceWorkerScope.addEventListener('fetch', (event: FetchEvent) => {
 
   if (isShellAsset) {
     event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
+      caches.open(CACHE_NAME).then(async (cache) => {
+        const cacheKey = url.pathname === '/index.html' ? '/' : url.pathname;
+        const cachedResponse = await cache.match(cacheKey);
         if (cachedResponse) {
           return cachedResponse;
         }
 
-        return fetch(event.request).then((networkResponse) => {
+        return fetch(event.request).then(async (networkResponse) => {
           if (networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+            await cache.put(cacheKey, networkResponse.clone());
           }
           return networkResponse;
         });

@@ -1,4 +1,8 @@
 import { buildApiUrl } from './config/client-env.js';
+import { renderAppShell } from './components/app-shell.js';
+import { getSafeNavigationTabId } from './config/navigation-tabs.js';
+import { createSettingsService } from './services/settings-service.js';
+import { createTranslator } from './services/i18n-service.js';
 
 export type OwnerBootstrapState = 'authenticated' | 'login' | 'unavailable';
 export type OwnerLoginState = 'idle' | 'invalid' | 'unavailable';
@@ -13,7 +17,8 @@ const COPY = Object.freeze({
     password: 'Password',
     submit: 'Sign in',
     invalid: 'Incorrect password.',
-    unavailable: 'The secure session service is unavailable. Try again shortly.'
+    unavailable: 'Cannot connect. Check your connection and try again.',
+    retry: 'Try again'
   },
   vi: {
     eyebrow: 'Không gian riêng của chủ tài khoản',
@@ -22,14 +27,10 @@ const COPY = Object.freeze({
     password: 'Mật khẩu',
     submit: 'Đăng nhập',
     invalid: 'Sai mật khẩu.',
-    unavailable: 'Dịch vụ phiên bảo mật đang không khả dụng. Hãy thử lại sau.'
+    unavailable: 'Chưa thể kết nối. Kiểm tra mạng rồi thử lại.',
+    retry: 'Thử lại'
   }
 });
-
-function resolveOwnerLocale(): OwnerLocale {
-  if (typeof navigator === 'undefined') return 'en';
-  return navigator.languages?.some((language) => language.toLowerCase().startsWith('vi')) ? 'vi' : 'en';
-}
 
 export function renderOwnerLogin(locale: OwnerLocale, state: OwnerLoginState = 'idle'): string {
   const copy = COPY[locale];
@@ -54,19 +55,26 @@ export async function bootstrapAuthenticatedShell(
   fetcher: FetchLike,
   loadShell: () => Promise<unknown>
 ): Promise<OwnerBootstrapState> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
     const response = await fetcher(buildApiUrl('/api/v1/auth/session'), {
       method: 'GET',
       credentials: 'include',
-      headers: { Accept: 'application/json' }
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+      cache: 'no-store'
     });
     if (!response.ok) return 'unavailable';
     const payload = await response.json() as { authenticated?: unknown };
     if (payload.authenticated !== true) return 'login';
+    clearTimeout(timeout);
     await loadShell();
     return 'authenticated';
   } catch {
     return 'unavailable';
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -75,11 +83,60 @@ export async function startOwnerAuthBootstrap(
   fetcher: FetchLike = fetch,
   loadShell: () => Promise<unknown> = () => import('./shell-entry.js')
 ): Promise<void> {
-  const locale = resolveOwnerLocale();
+  const settings = createSettingsService().getSettings();
+  const locale = settings.locale;
+  const copy = COPY[locale];
+  const selectPendingTab = (value: string | null) => {
+    const tab = getSafeNavigationTabId(value || 'today');
+    const main = root.querySelector<HTMLElement>('#main-scroll');
+    if (main) main.dataset.activeTab = tab;
+    root.querySelectorAll<HTMLElement>('[data-shell-tab-panel]').forEach(panel => {
+      panel.classList.toggle('active', panel.dataset.shellTabPanel === tab);
+    });
+    root.querySelectorAll<HTMLElement>('.bottom-nav [data-tab-target]').forEach(button => {
+      const active = button.dataset.tabTarget === tab;
+      button.classList.toggle('active', active);
+      if (active) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState(null, '', url);
+  };
+  const showPendingShell = () => {
+    root.dataset.ownerSession = 'pending';
+    document.documentElement.lang = locale;
+    const tab = getSafeNavigationTabId(new URLSearchParams(window.location.search).get('tab') || 'today');
+    root.innerHTML = renderAppShell({ activeTabId: tab, locale, timezone: settings.timezone, translate: createTranslator(locale) });
+    root.querySelector<HTMLElement>('#main-scroll')?.setAttribute('inert', '');
+  };
+  const loadAuthenticatedShell = async () => {
+    await loadShell();
+    root.dataset.ownerSession = 'authenticated';
+  };
   const showLogin = (state: OwnerLoginState) => {
+    root.dataset.ownerSession = 'login';
     document.documentElement.lang = locale;
     root.innerHTML = renderOwnerLogin(locale, state);
   };
+  const checkSession = async () => {
+    showPendingShell();
+    const state = await bootstrapAuthenticatedShell(fetcher, loadAuthenticatedShell);
+    if (state === 'login') showLogin('idle');
+    if (state === 'unavailable') {
+      root.dataset.ownerSession = 'unavailable';
+      root.querySelector('.app-shell')?.insertAdjacentHTML('afterbegin',
+        `<div class="startup-connection" role="status"><span>${copy.unavailable}</span><button type="button" class="primary-button" data-owner-retry>${copy.retry}</button></div>`);
+    }
+  };
+
+  root.addEventListener('click', event => {
+    if (root.dataset.ownerSession === 'authenticated') return;
+    const target = event.target instanceof Element ? event.target : null;
+    const tab = target?.closest<HTMLElement>('.bottom-nav [data-tab-target]');
+    if (tab) selectPendingTab(tab.dataset.tabTarget ?? null);
+    if (target?.closest('[data-owner-retry]')) void checkSession();
+  });
 
   root.addEventListener('submit', (event) => {
     const form = event.target instanceof HTMLFormElement ? event.target : null;
@@ -98,7 +155,7 @@ export async function startOwnerAuthBootstrap(
         showLogin(response.status === 401 ? 'invalid' : 'unavailable');
         return;
       }
-      await loadShell();
+      await loadAuthenticatedShell();
     }).catch(() => showLogin('unavailable'));
   });
 
@@ -112,9 +169,7 @@ export async function startOwnerAuthBootstrap(
     }).finally(() => window.location.reload());
   });
 
-  const state = await bootstrapAuthenticatedShell(fetcher, loadShell);
-  if (state === 'login') showLogin('idle');
-  if (state === 'unavailable') showLogin('unavailable');
+  await checkSession();
 }
 
 if (typeof document !== 'undefined') {

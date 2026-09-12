@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { bootstrapAuthenticatedShell, renderOwnerLogin } from './auth-bootstrap.js';
 import { getIndexHtml } from './index.js';
 
@@ -9,6 +9,32 @@ function response(ok: boolean, payload: unknown, status = ok ? 200 : 401): Respo
 }
 
 describe('owner auth PWA bootstrap', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('ships the data-free four-tab shell in HTML before any session or script completes', () => {
+    const html = getIndexHtml();
+    expect(html).toContain('class="bottom-nav"');
+    expect(html).toContain('data-owner-session="pending"');
+    expect(html).toContain('id="main-scroll" inert');
+    expect(html).not.toContain('Loading Miraichi...');
+    for (const tab of ['today', 'matches', 'bets', 'bankroll']) {
+      expect(html).toContain(`data-shell-tab-panel="${tab}"`);
+    }
+    expect(html).not.toContain('data-today-setup-prompt');
+  });
+
+  it('bounds a stalled session without loading protected application behavior', async () => {
+    vi.useFakeTimers();
+    const loadShell = vi.fn(async () => undefined);
+    const fetcher = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+    }));
+    const state = bootstrapAuthenticatedShell(fetcher, loadShell);
+    await vi.advanceTimersByTimeAsync(8000);
+    expect(await Promise.race([state, Promise.resolve('still-pending')])).toBe('unavailable');
+    expect(loadShell).not.toHaveBeenCalled();
+  });
+
   it('imports the production shell only after an authenticated session response', async () => {
     const loadShell = vi.fn(async () => undefined);
     const authenticated = await bootstrapAuthenticatedShell(

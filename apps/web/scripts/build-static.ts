@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as ts from 'typescript';
+import { buildSync } from 'esbuild';
 import { getIndexHtml } from '../src/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -113,6 +114,21 @@ copyDirectory(PUBLIC_DIR, DIST_DIR);
 for (const sourceRoot of SOURCE_ROOTS) {
   exportSourceTree(sourceRoot);
 }
+
+// Keep legacy module URLs for already-open older installations during the update.
+// New launches need only these two cached entries, with no network import waterfall.
+buildSync({
+  absWorkingDir: ROOT_DIR,
+  entryPoints: ['apps/web/src/auth-bootstrap.ts', 'apps/web/src/pwa/register-service-worker.ts'],
+  outbase: ROOT_DIR,
+  outdir: DIST_DIR,
+  bundle: true,
+  splitting: false,
+  format: 'esm',
+  platform: 'browser',
+  target: ['es2022', 'safari16.4'],
+  minify: true
+});
 
 console.log(`[Web Static Build] Wrote Cloudflare Pages artifact to ${DIST_DIR}`);
 

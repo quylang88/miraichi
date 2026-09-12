@@ -1364,7 +1364,8 @@ function bindCurrentPullDownRefresh(): void {
   });
 }
 
-render(getInitialTabId());
+// Replace the public startup placeholders and unlock controls only after session verification.
+render(getInitialTabId(), true);
 const liveRefreshLifecycle = createLiveRefreshLifecycle({
   documentTarget: document,
   windowTarget: window,
