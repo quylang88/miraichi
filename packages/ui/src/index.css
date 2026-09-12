@@ -721,7 +721,7 @@ svg {
 .live-toggle[aria-pressed=true] { background: #b32632; color: #fff; border-color: #b32632; }
 .live-badges { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
 .empty-state[data-live-empty], .empty-state[data-live-state=unavailable] { display: block; }
-[data-live-minute], [data-live-score] { color: #60d394; font-variant-numeric: tabular-nums; }
+[data-live-minute], [data-live-score] { color: var(--accent-color-danger, #ff453a); font-variant-numeric: tabular-nums; }
 
 .match-detail-lineups {
   display: grid;
@@ -2389,19 +2389,34 @@ svg {
 
 .row-score.live {
   align-items: center;
-  color: #22c55e;
+  color: var(--accent-color-danger, #ff453a);
   display: inline-flex;
   gap: 6px;
 }
 
 .live-dot {
   animation: live-pulse 1.2s ease-in-out infinite;
-  background: #22c55e;
+  background: var(--accent-color-danger, #ff453a);
   border-radius: 50%;
   display: inline-block;
   flex: 0 0 auto;
   height: 7px;
   width: 7px;
+}
+
+.row-right.live {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row-live-time {
+  color: var(--accent-color-danger, #ff453a);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
 }
 
 @keyframes live-pulse {

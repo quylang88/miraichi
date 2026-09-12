@@ -66,7 +66,7 @@ describe('factual match detail rendering', () => {
     for (const key of [
       'detail.pendingRefresh', 'detail.unavailable', 'detail.noData', 'detail.stat.fouls',
       'detail.stat.offsides', 'detail.lineups', 'detail.formation', 'detail.starters',
-      'detail.substitutes', 'live.title', 'live.partial', 'live.stale'
+      'detail.substitutes', 'live.stale'
     ]) {
       expect(enKeys).toContain(key);
       expect(viKeys).toContain(key);

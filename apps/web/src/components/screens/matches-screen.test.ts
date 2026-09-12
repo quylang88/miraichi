@@ -90,9 +90,71 @@ describe('matches screen UI refinements', () => {
     expect(html).toContain('data-live-match-id="match-premier-league-arsenal-liverpool-2026-09-02"');
     expect(html).toContain('2 – 1');
     expect(html).toContain("67&#39;");
-    expect(html).toContain('Partial coverage');
+    expect(html).not.toContain('Partial coverage');
     expect(html).toContain('Last update is stale');
+    expect(html).toContain('class="date-group"');
+    expect(html).toContain('class="group-label">Premier League</div>');
+    expect(html).toContain('class="match-row clickable"');
+    expect(html).toContain('data-open-match');
+    expect(html).toContain('class="row-score live"');
+    expect(html).toContain('class="row-live-time" data-live-minute');
     expect(html).not.toMatch(/<button[^>]*>[^<]*Refresh/iu);
+  });
+
+  it('groups live matches by league sorted by popularity and formats halftime status', () => {
+    const translate = createTranslator('en');
+    const snapshot = toProviderNeutralLiveMatchSnapshot(liveSnapshotFixture);
+    snapshot.matches = [
+      {
+        ...snapshot.matches[0]!,
+        matchId: 'live-aut-1',
+        competition: { id: 'aut-bundesliga', name: 'Austrian Bundesliga' },
+        status: 'halftime',
+        elapsedMinute: 45,
+        score: { home: 1, away: 0 }
+      },
+      {
+        ...snapshot.matches[0]!,
+        matchId: 'live-epl-1',
+        competition: { id: 'eng-premier-league', name: 'Premier League' },
+        status: 'live',
+        elapsedMinute: 60,
+        score: { home: 2, away: 1 }
+      },
+      {
+        ...snapshot.matches[0]!,
+        matchId: 'live-ucl-1',
+        competition: { id: 'uefa-champions-league', name: 'UEFA Champions League' },
+        status: 'live',
+        elapsedMinute: 15,
+        score: { home: 0, away: 0 }
+      }
+    ];
+
+    const html = renderMatchesScreen({
+      activeTabId: 'matches',
+      liveMode: true,
+      translate,
+      locale: 'en',
+      matchFeed: { status: 'loading', date: '2026-09-02' },
+      liveMatches: { status: 'ready', snapshot, stale: false, partial: false, warningCode: null },
+      timezone: 'UTC',
+      filters: { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set() },
+      searchQuery: '',
+      isFilterPanelOpen: false
+    });
+
+    const uclPos = html.indexOf('class="group-label">UEFA Champions League</div>');
+    const eplPos = html.indexOf('class="group-label">Premier League</div>');
+    const autPos = html.indexOf('class="group-label">Austrian Bundesliga</div>');
+
+    expect(uclPos).toBeGreaterThan(-1);
+    expect(eplPos).toBeGreaterThan(uclPos);
+    expect(autPos).toBeGreaterThan(eplPos);
+
+    expect(html).toContain('data-live-match-id="live-aut-1"');
+    expect(html).toContain('>HT<');
+    expect(html).not.toContain('class="live-badges"');
   });
 
   it('does not render Data status or Snapshot generated metadata bar on matches screen', () => {

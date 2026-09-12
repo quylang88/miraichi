@@ -81,10 +81,30 @@ function renderFeedState(feed: Exclude<MatchFeedViewState, { status: 'ready' }>,
   return `<section class="note-card" data-match-feed-state="empty"><div class="note-eyebrow">${escapeHtml(translate('matches.store'))}</div><div class="note-title">${escapeHtml(translate('matches.noMatchesTitle', { date: feed.date }))}</div><p class="note-copy">${escapeHtml(translate('matches.noMatchesCopy'))}</p></section>`;
 }
 
+function groupMatchesByCompetition<T extends { competition: { name: string }; kickoffUtc: string }>(
+  matches: readonly T[]
+): Array<[string, T[]]> {
+  const groups = new Map<string, T[]>();
+  for (const match of matches) groups.set(match.competition.name, [...(groups.get(match.competition.name) ?? []), match]);
+  return [...groups.entries()]
+    .sort(([left], [right]) => compareCompetitionsByPopularity(left, right))
+    .map(([league, items]) => [league, items.sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc))]);
+}
+
 function liveStatus(match: Extract<LiveMatchViewState, { status: 'ready' }>['snapshot']['matches'][number], translate: TranslateFunction): string {
   if (match.status === 'completed') return translate('live.status.completed');
-  if (match.status === 'halftime' || match.status === 'suspended') return `${translate(`live.status.${match.status}`)}${match.elapsedMinute === null ? '' : ` · ${match.elapsedMinute}'`}`;
+  if (match.status === 'halftime') return translate('live.status.halftime');
+  if (match.status === 'suspended') return `${translate(`live.status.${match.status}`)}${match.elapsedMinute === null ? '' : ` · ${match.elapsedMinute}'`}`;
   return match.elapsedMinute === null ? translate('live.status.live') : `${match.elapsedMinute}'`;
+}
+
+function renderLiveMatchRow(
+  match: Extract<LiveMatchViewState, { status: 'ready' }>['snapshot']['matches'][number],
+  translate: TranslateFunction
+): string {
+  const title = `${match.homeTeam.name} vs ${match.awayTeam.name}`;
+  const meta = `${match.competition.name} · ${translate('matches.score', { score: `${match.score.home}-${match.score.away}` })} · ${translate(`live.status.${match.status}`, match.status)}`;
+  return `<article class="match-row clickable" data-match-row data-status="${escapeHtml(match.status)}" data-match-id="${escapeHtml(match.matchId)}" data-live-match-id="${escapeHtml(match.matchId)}" data-open-match data-match-title="${escapeHtml(title)}" data-match-meta="${escapeHtml(meta)}" role="button" tabindex="0"><div class="row-split"><div class="row-title">${escapeHtml(title)}</div><div class="row-right live"><strong class="row-score live" data-live-score>${match.score.home} – ${match.score.away}</strong><span class="row-live-time" data-live-minute>${escapeHtml(liveStatus(match, translate))}</span></div></div></article>`;
 }
 
 function renderLiveMatches(state: LiveMatchViewState, translate: TranslateFunction): string {
@@ -94,13 +114,12 @@ function renderLiveMatches(state: LiveMatchViewState, translate: TranslateFuncti
   if (state.status === 'unavailable') {
     return `<p class="empty-state" data-live-state="unavailable">${escapeHtml(translate('live.unavailable'))}</p>`;
   }
-  const badges = [
-    state.stale ? `<span class="tag amber">${escapeHtml(translate('live.stale'))}</span>` : '',
-    state.partial ? `<span class="tag amber">${escapeHtml(translate('live.partial'))}</span>` : ''
-  ].join('');
-  const rows = state.snapshot.matches.filter((match) => ['live', 'halftime', 'suspended'].includes(match.status)).map((match) => `<article class="match-row" data-match-row data-status="${escapeHtml(match.status)}" data-live-match-id="${escapeHtml(match.matchId)}"><div class="row-split"><div><div class="row-title">${escapeHtml(match.homeTeam.name)} vs ${escapeHtml(match.awayTeam.name)}</div><div class="row-meta">${escapeHtml(match.competition.name)} · <span data-live-minute>${escapeHtml(liveStatus(match, translate))}</span></div></div><div class="row-right"><strong class="row-score" data-live-score>${match.score.home} – ${match.score.away}</strong></div></div></article>`).join('');
-  const content = rows || `<p class="empty-state" data-live-empty>${escapeHtml(translate('live.empty'))}</p>`;
-  return `<div data-live-state="ready" data-live-stale="${state.stale}" data-live-partial="${state.partial}" aria-live="polite"><div class="live-badges">${badges}</div>${content}<p class="row-meta">${escapeHtml(translate('live.updatedAt', { date: new Date(state.snapshot.generatedAt).toLocaleString() }))}</p></div>`;
+  const staleBadge = state.stale ? `<div class="live-badges"><span class="tag amber">${escapeHtml(translate('live.stale'))}</span></div>` : '';
+  const liveMatches = state.snapshot.matches.filter((match) => ['live', 'halftime', 'suspended'].includes(match.status));
+  const content = liveMatches.length === 0
+    ? `<p class="empty-state" data-live-empty>${escapeHtml(translate('live.empty'))}</p>`
+    : groupMatchesByCompetition(liveMatches).map(([league, matches]) => `<div class="date-group"><div class="group-label">${escapeHtml(league)}</div>${matches.map((match) => renderLiveMatchRow(match, translate)).join('')}</div>`).join('');
+  return `<div data-live-state="ready" data-live-stale="${state.stale}" aria-live="polite">${staleBadge}${content}<p class="row-meta">${escapeHtml(translate('live.updatedAt', { date: new Date(state.snapshot.generatedAt).toLocaleString() }))}</p></div>`;
 }
 
 function isWomenMatch(match: AppMatch): boolean {
@@ -135,9 +154,7 @@ function filterMatches(feed: MatchFeedViewState, filters: MatchFilters, searchQu
 function renderReadyMatches(matches: readonly AppMatch[], feedDate: string, filters: MatchFilters, translate: TranslateFunction, timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   if (matches.length === 0) return '';
   if (filters.groupby === 'time') return `<div class="date-group"><div class="group-label">${escapeHtml(feedDate)}</div>${[...matches].sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc)).map((match) => renderMatchRow(match, translate, timezone)).join('')}</div>`;
-  const groups = new Map<string, AppMatch[]>();
-  for (const match of matches) groups.set(match.competition.name, [...(groups.get(match.competition.name) ?? []), match]);
-  return [...groups.entries()].sort(([left], [right]) => compareCompetitionsByPopularity(left, right)).map(([league, leagueMatches]) => `<div class="date-group"><div class="group-label">${escapeHtml(league)}</div>${leagueMatches.sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc)).map((match) => renderMatchRow(match, translate, timezone)).join('')}</div>`).join('');
+  return groupMatchesByCompetition(matches).map(([league, leagueMatches]) => `<div class="date-group"><div class="group-label">${escapeHtml(league)}</div>${leagueMatches.map((match) => renderMatchRow(match, translate, timezone)).join('')}</div>`).join('');
 }
 
 export function renderMatchesScreen(input: {
