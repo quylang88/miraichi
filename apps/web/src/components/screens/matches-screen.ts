@@ -5,7 +5,17 @@ import { t, type SupportedLocale, type TranslateFunction } from '../../services/
 import type { AppMatch, MatchFeedViewState } from '../../services/match-feed-service.js';
 import type { LiveMatchViewState } from '../../services/live-match-service.js';
 import { escapeHtml } from '../html.js';
-import { renderMonthCalendarPicker, renderSkeletonMatchRows, screenClass, screenHeader } from './screen-shared.js';
+import {
+  formatMatchTeamsHtml,
+  formatMatchTitle,
+  formatMatchTitleHtml,
+  renderMonthCalendarPicker,
+  renderSkeletonMatchRows,
+  screenClass,
+  screenHeader
+} from './screen-shared.js';
+
+export { formatMatchTeamsHtml, formatMatchTitle, formatMatchTitleHtml };
 
 const backIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const nextIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -63,8 +73,8 @@ function formatKickoffTime(isoValue: string, timezone: 'local' | 'UTC' | 'Asia/H
   }
 }
 
-function matchTitle(match: AppMatch): string {
-  return `${match.homeTeam.name} vs ${match.awayTeam.name}`;
+function matchTitle(match: { readonly homeTeam: { readonly name: string }; readonly awayTeam: { readonly name: string } }): string {
+  return formatMatchTitle(match.homeTeam.name, match.awayTeam.name);
 }
 
 function matchMeta(match: AppMatch, translate: TranslateFunction, timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
@@ -91,23 +101,79 @@ function groupMatchesByCompetition<T extends { competition: { name: string }; ki
     .map(([league, items]) => [league, items.sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc))]);
 }
 
+function formatLiveMinute(elapsedMinute: number | null, period?: string | null): string | null {
+  if (elapsedMinute === null || elapsedMinute === undefined) return null;
+  if (period === 'first_half' && elapsedMinute > 45) {
+    return `45+${elapsedMinute - 45}'`;
+  }
+  if (period === 'extra_time') {
+    if (elapsedMinute > 120) return `120+${elapsedMinute - 120}'`;
+    if (elapsedMinute > 105) return `105+${elapsedMinute - 105}'`;
+  }
+  if (elapsedMinute > 90) {
+    return `90+${elapsedMinute - 90}'`;
+  }
+  return `${elapsedMinute}'`;
+}
+
 function liveStatus(match: Extract<LiveMatchViewState, { status: 'ready' }>['snapshot']['matches'][number], translate: TranslateFunction): string {
   if (match.status === 'completed') return translate('live.status.completed');
   if (match.status === 'halftime') return translate('live.status.halftime');
-  if (match.status === 'suspended') return `${translate(`live.status.${match.status}`)}${match.elapsedMinute === null ? '' : ` · ${match.elapsedMinute}'`}`;
-  return match.elapsedMinute === null ? translate('live.status.live') : `${match.elapsedMinute}'`;
+  const min = formatLiveMinute(match.elapsedMinute, match.period);
+  if (match.status === 'suspended') {
+    return `${translate(`live.status.${match.status}`)}${min ? ` · ${min}` : ''}`;
+  }
+  return min ?? translate('live.status.live');
+}
+
+function renderMatchRowHtml(options: {
+  readonly matchId: string;
+  readonly liveMatchId?: string;
+  readonly status: string;
+  readonly title: string;
+  readonly meta: string;
+  readonly homeTeam: string;
+  readonly awayTeam: string;
+  readonly subMeta?: string;
+  readonly rightHtml: string;
+  readonly isLive?: boolean;
+}): string {
+  const liveAttr = options.liveMatchId ? ` data-live-match-id="${escapeHtml(options.liveMatchId)}"` : '';
+  const titleHtml = `<div class="row-title">${formatMatchTeamsHtml(options.homeTeam, options.awayTeam)}</div>`;
+  const leftHtml = options.subMeta
+    ? `<div>${titleHtml}<div class="row-meta">${escapeHtml(options.subMeta)}</div></div>`
+    : titleHtml;
+  return `<article class="match-row clickable" data-match-row data-status="${escapeHtml(options.status)}" data-match-id="${escapeHtml(options.matchId)}"${liveAttr} data-open-match data-match-title="${escapeHtml(options.title)}" data-match-meta="${escapeHtml(options.meta)}" role="button" tabindex="0"><div class="row-split">${leftHtml}<div class="row-right${options.isLive ? ' live' : ''}">${options.rightHtml}</div></div></article>`;
 }
 
 function renderLiveMatchRow(
   match: Extract<LiveMatchViewState, { status: 'ready' }>['snapshot']['matches'][number],
-  translate: TranslateFunction
+  translate: TranslateFunction,
+  timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'
 ): string {
-  const title = `${match.homeTeam.name} vs ${match.awayTeam.name}`;
+  const title = matchTitle(match);
   const meta = `${match.competition.name} · ${translate('matches.score', { score: `${match.score.home}-${match.score.away}` })} · ${translate(`live.status.${match.status}`, match.status)}`;
-  return `<article class="match-row clickable" data-match-row data-status="${escapeHtml(match.status)}" data-match-id="${escapeHtml(match.matchId)}" data-live-match-id="${escapeHtml(match.matchId)}" data-open-match data-match-title="${escapeHtml(title)}" data-match-meta="${escapeHtml(meta)}" role="button" tabindex="0"><div class="row-split"><div class="row-title">${escapeHtml(title)}</div><div class="row-right live"><strong class="row-score live" data-live-score>${match.score.home} – ${match.score.away}</strong><span class="row-live-time" data-live-minute>${escapeHtml(liveStatus(match, translate))}</span></div></div></article>`;
+  const kickoff = formatKickoffTime(match.kickoffUtc, timezone);
+  const rightHtml = `<strong class="row-score live" data-live-score>${match.score.home} – ${match.score.away}</strong><span class="row-live-time" data-live-minute>${escapeHtml(liveStatus(match, translate))}</span>`;
+  return renderMatchRowHtml({
+    matchId: match.matchId,
+    liveMatchId: match.matchId,
+    status: match.status,
+    title,
+    meta,
+    homeTeam: match.homeTeam.name,
+    awayTeam: match.awayTeam.name,
+    subMeta: kickoff,
+    rightHtml,
+    isLive: true
+  });
 }
 
-function renderLiveMatches(state: LiveMatchViewState, translate: TranslateFunction): string {
+function renderLiveMatches(
+  state: LiveMatchViewState,
+  translate: TranslateFunction,
+  timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'
+): string {
   if (state.status === 'loading') {
     return `<div data-live-state="loading" aria-label="${escapeHtml(translate('live.loading'))}">${renderSkeletonMatchRows(2)}</div>`;
   }
@@ -118,7 +184,7 @@ function renderLiveMatches(state: LiveMatchViewState, translate: TranslateFuncti
   const liveMatches = state.snapshot.matches.filter((match) => ['live', 'halftime', 'suspended'].includes(match.status));
   const content = liveMatches.length === 0
     ? `<p class="empty-state" data-live-empty>${escapeHtml(translate('live.empty'))}</p>`
-    : groupMatchesByCompetition(liveMatches).map(([league, matches]) => `<div class="date-group"><div class="group-label">${escapeHtml(league)}</div>${matches.map((match) => renderLiveMatchRow(match, translate)).join('')}</div>`).join('');
+    : groupMatchesByCompetition(liveMatches).map(([league, matches]) => `<div class="date-group"><div class="group-label">${escapeHtml(league)}</div>${matches.map((match) => renderLiveMatchRow(match, translate, timezone)).join('')}</div>`).join('');
   return `<div data-live-state="ready" data-live-stale="${state.stale}" aria-live="polite">${staleBadge}${content}<p class="row-meta">${escapeHtml(translate('live.updatedAt', { date: new Date(state.snapshot.generatedAt).toLocaleString() }))}</p></div>`;
 }
 
@@ -132,10 +198,18 @@ function isWomenMatch(match: AppMatch): boolean {
 function renderMatchRow(match: AppMatch, translate: TranslateFunction, timezone: 'local' | 'UTC' | 'Asia/Ho_Chi_Minh'): string {
   const title = matchTitle(match);
   const meta = matchMeta(match, translate, timezone);
-  const right = match.status === 'completed' && match.score.home !== null
+  const rightHtml = match.status === 'completed' && match.score.home !== null
     ? `<span class="row-score">${match.score.home} – ${match.score.away}</span>`
     : `<span class="row-kickoff">${formatKickoffTime(match.kickoffUtc, timezone)}</span>`;
-  return `<article class="match-row clickable" data-match-row data-status="${escapeHtml(match.status)}" data-match-id="${escapeHtml(match.id)}" data-open-match data-match-title="${escapeHtml(title)}" data-match-meta="${escapeHtml(meta)}" role="button" tabindex="0"><div class="row-split"><div class="row-title">${escapeHtml(title)}</div><div class="row-right">${right}</div></div></article>`;
+  return renderMatchRowHtml({
+    matchId: match.id,
+    status: match.status,
+    title,
+    meta,
+    homeTeam: match.homeTeam.name,
+    awayTeam: match.awayTeam.name,
+    rightHtml
+  });
 }
 
 function filterMatches(feed: MatchFeedViewState, filters: MatchFilters, searchQuery: string): AppMatch[] {
@@ -198,7 +272,7 @@ export function renderMatchesScreen(input: {
   return `<section class="${screenClass('matches', activeTabId)}" id="screen-matches" data-shell-tab-panel="matches" aria-labelledby="matches-title">
     ${screenHeader(translate('matches.eyebrow'), translate('matches.title'), 'matches-title', `<button class="primary-button add-inline" type="button" data-open-manual-add>${escapeHtml(translate('matches.manualAdd'))}</button>`)}
     <div class="action-row"><button class="${liveMode ? 'primary-button' : 'secondary-button'} live-toggle" type="button" data-live-toggle aria-pressed="${liveMode}">LIVE</button></div>
-    ${liveMode ? renderLiveMatches(liveMatches, translate) : `
+    ${liveMode ? renderLiveMatches(liveMatches, translate, timezone) : `
     <div class="date-navigator"><button id="date-prev-btn" class="nav-arrow-btn" type="button" aria-label="${escapeHtml(translate('matches.previousDay'))}">${backIcon}</button><div class="date-ribbon">${ribbon}</div><button id="date-next-btn" class="nav-arrow-btn" type="button" aria-label="${escapeHtml(translate('matches.nextDay'))}">${nextIcon}</button><button id="date-picker-btn" class="calendar-btn${isCalendarOpen ? ' active' : ''}" type="button" aria-label="${escapeHtml(translate('matches.pickDate'))}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button></div>
     ${calendarPicker}
     <div class="search-row"><input class="search-input" id="match-search" type="search" placeholder="${escapeHtml(translate('matches.search'))}" aria-label="${escapeHtml(translate('matches.search'))}"><button class="filter-button" id="filter-panel-toggle-btn" type="button" aria-label="${escapeHtml(translate('matches.openFilters'))}">${filterIcon}</button></div>

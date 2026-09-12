@@ -339,6 +339,10 @@ a:focus-visible {
   white-space: nowrap;
 }
 
+.match-detail-scoreline strong .match-vs {
+  font-size: 1rem;
+}
+
 .match-detail-competition {
   color: var(--text-color-muted);
   font-size: 0.85rem;
@@ -2392,6 +2396,8 @@ svg {
   color: var(--accent-color-danger, #ff453a);
   display: inline-flex;
   gap: 6px;
+  justify-content: center;
+  text-align: center;
 }
 
 .live-dot {
@@ -2404,11 +2410,26 @@ svg {
   width: 7px;
 }
 
+.match-vs {
+  color: var(--text-color-subtle, #6e6e73);
+  display: inline-block;
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin: 0 0.35em;
+  text-transform: uppercase;
+  user-select: none;
+  vertical-align: middle;
+}
+
 .row-right.live {
-  align-items: flex-end;
+  align-items: center;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  justify-content: center;
+  min-width: 48px;
+  text-align: center;
 }
 
 .row-live-time {
@@ -2417,6 +2438,7 @@ svg {
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.2;
+  text-align: center;
 }
 
 @keyframes live-pulse {

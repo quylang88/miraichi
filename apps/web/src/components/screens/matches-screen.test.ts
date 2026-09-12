@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toProviderNeutralLiveMatchSnapshot, type LocalMatch, type LocalMatchDetail } from '@miraichi/shared';
 import { liveSnapshotFixture } from '../../../../../tests/fixtures/live-match-snapshot.js';
-import { renderMatchesScreen, renderMatchDetailScreen, getRibbonDates } from './matches-screen.js';
+import { renderMatchesScreen, renderMatchDetailScreen, getRibbonDates, formatMatchTitleHtml, formatMatchTeamsHtml, formatMatchTitle } from './matches-screen.js';
 import { renderMatchDetailView } from '../match-detail-view.js';
 import { createTranslator } from '../../services/i18n-service.js';
 import type { MatchFeedViewState } from '../../services/match-feed-service.js';
@@ -98,7 +98,48 @@ describe('matches screen UI refinements', () => {
     expect(html).toContain('data-open-match');
     expect(html).toContain('class="row-score live"');
     expect(html).toContain('class="row-live-time" data-live-minute');
+    expect(html).toContain('<span class="match-vs">vs</span>');
+    expect(html).toContain('<div class="row-meta">11:00</div>');
     expect(html).not.toMatch(/<button[^>]*>[^<]*Refresh/iu);
+  });
+
+  it('formats stoppage time correctly as 45+X and 90+X in live status', () => {
+    const translate = createTranslator('en');
+    const snapshot = toProviderNeutralLiveMatchSnapshot(liveSnapshotFixture);
+    snapshot.matches = [
+      {
+        ...snapshot.matches[0]!,
+        matchId: 'live-stoppage-1',
+        period: 'first_half',
+        elapsedMinute: 47,
+        status: 'live',
+        score: { home: 1, away: 0 }
+      },
+      {
+        ...snapshot.matches[0]!,
+        matchId: 'live-stoppage-2',
+        period: 'second_half',
+        elapsedMinute: 94,
+        status: 'live',
+        score: { home: 2, away: 2 }
+      }
+    ];
+
+    const html = renderMatchesScreen({
+      activeTabId: 'matches',
+      liveMode: true,
+      translate,
+      locale: 'en',
+      matchFeed: { status: 'loading', date: '2026-09-02' },
+      liveMatches: { status: 'ready', snapshot, stale: false, partial: false, warningCode: null },
+      timezone: 'UTC',
+      filters: { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set() },
+      searchQuery: '',
+      isFilterPanelOpen: false
+    });
+
+    expect(html).toContain("45+2&#39;");
+    expect(html).toContain("90+4&#39;");
   });
 
   it('groups live matches by league sorted by popularity and formats halftime status', () => {
@@ -270,11 +311,15 @@ describe('match detail view business formatting', () => {
       'UTC'
     );
 
-    // Scoreline for scheduled match should show 'vs', not 'Unavailable – Unavailable'
+    // Scoreline for scheduled match should show stylized 'vs', not 'Unavailable – Unavailable'
     expect(html).toContain('Wolfsberger AC');
     expect(html).toContain('LASK');
-    expect(html).toContain('<strong>vs</strong>');
+    expect(html).toContain('<strong><span class="match-vs">vs</span></strong>');
     expect(html).not.toContain('Unavailable – Unavailable');
+    expect(formatMatchTitleHtml('Arsenal vs Chelsea')).toBe('Arsenal <span class="match-vs">vs</span> Chelsea');
+    expect(formatMatchTeamsHtml('Arsenal', 'Chelsea')).toBe('Arsenal <span class="match-vs">vs</span> Chelsea');
+    expect(formatMatchTitle('Arsenal', 'Chelsea')).toBe('Arsenal vs Chelsea');
+    expect(formatMatchTitleHtml('Arsenal')).toBe('Arsenal');
 
     // Elapsed, venue, referee should display '–' rather than 'Unavailable'
     expect(html).toContain('<dd>–</dd>');

@@ -10,6 +10,22 @@ export function screenHeader(label: string, title: string, titleId: string, asid
   return `<div class="screen-header"><div><p class="screen-label">${escapeHtml(label)}</p><h1 class="screen-title" id="${escapeHtml(titleId)}">${escapeHtml(title)}</h1></div>${aside}</div>`;
 }
 
+export function formatMatchTitle(home: string, away: string): string {
+  return `${home} vs ${away}`;
+}
+
+export function formatMatchTeamsHtml(home: string, away: string): string {
+  return `${escapeHtml(home)} <span class="match-vs">vs</span> ${escapeHtml(away)}`;
+}
+
+export function formatMatchTitleHtml(title: string): string {
+  const parts = title.split(' vs ');
+  if (parts.length === 2) {
+    return formatMatchTeamsHtml(parts[0]!, parts[1]!);
+  }
+  return escapeHtml(title);
+}
+
 export function metricRow(label: string, value: string, state = ''): string {
   return `<div class="points-row"><div><div class="points-label">${escapeHtml(label)}</div><div class="points-value">${escapeHtml(value)}</div></div>${state ? `<div class="points-state">${escapeHtml(state)}</div>` : ''}</div>`;
 }

@@ -25,6 +25,7 @@ import { renderSettlementTimeline, type BetRecordFilter } from './components/scr
 import type { BankrollSecondaryView } from './components/screens/bankroll-screen.js';
 import { renderTodayScreen } from './components/screens/today-screen.js';
 import { renderMatchesScreen } from './components/screens/matches-screen.js';
+import { formatMatchTitle, formatMatchTitleHtml } from './components/screens/screen-shared.js';
 import { renderBetsScreen } from './components/screens/bets-screen.js';
 import { renderBankrollScreen } from './components/screens/bankroll-screen.js';
 import { refreshLiveMatches, type LiveMatchViewState } from './services/live-match-service.js';
@@ -280,6 +281,13 @@ function setText(id: string, value: string): void {
     element.textContent = value;
   }
 }
+
+function setHtml(id: string, html: string): void {
+  const element = document.getElementById(id);
+  if (element) {
+    element.innerHTML = html;
+  }
+}
 function renderMatchDetailState(): void {
   const infoPanel = document.getElementById('match-detail-panel-info');
   if (!infoPanel) return;
@@ -330,7 +338,7 @@ function setActiveScreen(screenName: string): void {
 
 function setMatchDetailContext(title: string, meta: string): void {
   currentOpenMatchTitle = title;
-  setText('match-detail-title', title);
+  setHtml('match-detail-title', formatMatchTitleHtml(title));
   setText('match-detail-meta', meta);
   setText('add-sheet-subtitle', `Scoped to ${title}`);
   setText('add-summary-title', title);
@@ -551,7 +559,7 @@ function populateAddFormFromDraft(draft: AddBetDraft): void {
   setValue('motivation-field', draft.preBetMotivation);
   setValue('pre-bet-plan-adherence', draft.preBetPlanAdherence);
   setValue('note-field', draft.preBetNote ?? draft.notes);
-  setText('add-summary-title', draft.homeTeamName && draft.awayTeamName ? `${draft.homeTeamName} vs ${draft.awayTeamName}` : draft.matchGroupId);
+  setText('add-summary-title', draft.homeTeamName && draft.awayTeamName ? formatMatchTitle(draft.homeTeamName, draft.awayTeamName) : draft.matchGroupId);
   updateAddFormState();
 }
 
@@ -797,7 +805,7 @@ appRoot.addEventListener('click', (event) => {
     if (!draft) return;
     editingDraftId = draft.draftId;
     currentOpenMatchId = '';
-    currentOpenMatchTitle = draft.homeTeamName && draft.awayTeamName ? `${draft.homeTeamName} vs ${draft.awayTeamName}` : '';
+    currentOpenMatchTitle = draft.homeTeamName && draft.awayTeamName ? formatMatchTitle(draft.homeTeamName, draft.awayTeamName) : '';
     openSheet('add');
     populateAddFormFromDraft(draft);
     return;

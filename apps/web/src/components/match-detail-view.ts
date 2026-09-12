@@ -184,7 +184,7 @@ function renderReadyDetail(
   const observedStatus=detail.enrichment?.observedStatus??match.status;
   const score = observedScore.home !== null && observedScore.away !== null
     ? `${observedScore.home} – ${observedScore.away}`
-    : (observedStatus === 'scheduled' ? 'vs' : escapeHtml(translate('detail.noData')));
+    : (observedStatus === 'scheduled' ? '<span class="match-vs">vs</span>' : escapeHtml(translate('detail.noData')));
   const competitionContext = [match.competition.name, match.competition.season, match.round].filter(Boolean).join(' · ');
   const status = translate(`matches.status.${observedStatus}`, translate(`detail.status.${observedStatus}`,observedStatus));
   const kickoff = formatDateTime(match.kickoffUtc, locale, timeZone);
