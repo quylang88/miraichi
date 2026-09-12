@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
+import { readLiveDataMode } from '../config/live-data-mode.js';
 
 const MIN_TOKEN_BYTES = 32;
 
@@ -23,7 +24,7 @@ export function readLiveRefreshServiceAuthConfig(
   }
   const hostedWidgetEnabled = env.APP_ENV?.trim() !== 'local'
     && env.APP_ENV?.trim() !== 'test'
-    && env.SPORTSCORE_LIVE_MODE?.trim() === 'widget';
+    && readLiveDataMode(env) !== 'disabled';
   if (hostedWidgetEnabled && !token) {
     throw new Error('MIRAICHI_REFRESH_TOKEN is required for hosted SportScore widget refresh');
   }

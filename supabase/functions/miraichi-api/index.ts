@@ -20,6 +20,7 @@ const environment = Object.fromEntries([
   'MIRAICHI_PROVIDER_REFRESH_TOKEN',
   'MIRAICHI_CURRENT_REFRESH_BATCH_SIZE',
   'SPORTSCORE_LIVE_MODE',
+  'LIVE_DATA_MODE',
   'SPORTSCORE_WIDGET_TIMEOUT_MS',
   'SUPABASE_DB_URL'
 ].map((name) => [name, Deno.env.get(name)]));

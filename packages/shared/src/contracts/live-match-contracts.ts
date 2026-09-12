@@ -37,7 +37,7 @@ export interface LiveMatchSnapshot {
   snapshotId: string;
   generatedAt: string;
   coverage: {
-    kind: 'global-recent-window';
+    kind: 'global-recent-window' | 'registered-daily-window';
     upstreamLimit: number;
     upstreamCount: number;
     mappedCount: number;
@@ -178,7 +178,7 @@ export function validateLiveMatchSnapshot(input: unknown): LiveMatchValidationRe
   if (input.schemaVersion !== 'miraichi.live-match-snapshot.v1') errors.push('schemaVersion is invalid');
   if (!isNonEmptyString(input.snapshotId)) errors.push('snapshotId must be non-empty');
   if (!isIsoDateTime(input.generatedAt)) errors.push('generatedAt must be ISO datetime');
-  if (!isRecord(input.coverage) || input.coverage.kind !== 'global-recent-window') {
+  if (!isRecord(input.coverage) || !['global-recent-window', 'registered-daily-window'].includes(String(input.coverage.kind))) {
     errors.push('coverage is invalid');
   } else {
     const { upstreamLimit, upstreamCount, mappedCount, publishedCount, terminalCheckCount, retainedTrackedCount } = input.coverage;

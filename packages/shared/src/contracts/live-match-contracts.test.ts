@@ -7,6 +7,10 @@ import {
 import { liveSnapshotFixture } from '../../../../tests/fixtures/live-match-snapshot.js';
 
 describe('provider-neutral live match contracts', () => {
+  it('accepts bounded registered daily coverage above the widget window', () => {
+    expect(validateLiveMatchSnapshot({ ...liveSnapshotFixture,
+      coverage: { ...liveSnapshotFixture.coverage, kind: 'registered-daily-window', upstreamLimit: 2000, upstreamCount: 120 } }).ok).toBe(true);
+  });
   it('validates a normalized live snapshot and strips provider locator evidence for public output', () => {
     expect(validateLiveMatchSnapshot(liveSnapshotFixture)).toEqual({ ok: true });
     const output = toProviderNeutralLiveMatchSnapshot(liveSnapshotFixture);

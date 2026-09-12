@@ -3,6 +3,9 @@ import { readLiveRefreshServiceAuthConfig } from '../auth/live-refresh-service-a
 import { readOwnerAuthConfig } from '../auth/owner-auth.js';
 import { readCloudPersistenceConfig } from '../config/cloud-persistence-config.js';
 import { LiveRefreshCoordinator } from '../live/live-refresh-coordinator.js';
+import { FotMobDailyLiveSource } from '../live/fotmob-daily-live-source.js';
+import { FotMobDailyClient } from '../../../worker/src/sources/fotmob/fotmob-daily-client.js';
+import { readLiveDataMode } from '../config/live-data-mode.js';
 import { SportScoreWidgetClient, type SportScoreLiveSource } from '../live/sportscore-widget-client.js';
 import { createCloudPersistenceAdapter } from '../persistence/create-cloud-persistence-adapter.js';
 import { CloudMatchSnapshotRepository } from '../repositories/cloud-match-snapshot-repository.js';
@@ -47,10 +50,7 @@ export function createNodeRuntimeComposition(options: {
     new ServingMatchStoreRepository(),
     new CloudMatchSnapshotRepository(cloudAdapter, cloudConfig.ownerProfileId)
   );
-  const sportScoreLiveMode = env.SPORTSCORE_LIVE_MODE?.trim() || 'disabled';
-  if (sportScoreLiveMode !== 'disabled' && sportScoreLiveMode !== 'widget') {
-    throw new Error('SPORTSCORE_LIVE_MODE must be disabled or widget');
-  }
+  const liveMode = readLiveDataMode(env);
   const disabledLiveSource: SportScoreLiveSource = {
     listMatches: async () => { throw new Error('SportScore live widget is disabled'); },
     getMatch: async () => { throw new Error('SportScore live widget is disabled'); }
@@ -63,7 +63,8 @@ export function createNodeRuntimeComposition(options: {
     ownerProfileId: cloudConfig.ownerProfileId,
     persistence: cloudAdapter,
     repository: canonicalRepository,
-    source: sportScoreLiveMode === 'widget'
+    source: liveMode === 'fotmob-daily' ? new FotMobDailyLiveSource(clients?.daily ?? new FotMobDailyClient({ timeoutMs: 8000 }))
+      : liveMode === 'sportscore-widget'
       ? clients?.widget ?? new SportScoreWidgetClient({ timeoutMs: widgetTimeoutMs })
       : disabledLiveSource
   });

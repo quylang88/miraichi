@@ -11,6 +11,8 @@ import {
 import { readEdgeCloudPersistenceConfig } from '../config/cloud-persistence-config.js';
 import { errorResponse } from '../http/web-http.js';
 import { LiveRefreshCoordinator } from '../live/live-refresh-coordinator.js';
+import { FotMobDailyLiveSource } from '../live/fotmob-daily-live-source.js';
+import { readLiveDataMode } from '../config/live-data-mode.js';
 import type { SportScoreLiveSource } from '../live/sportscore-widget-client.js';
 import { CloudPersistenceUnconfiguredError, type CloudPersistenceAdapter } from '../persistence/cloud-persistence-adapter.js';
 import {
@@ -116,10 +118,7 @@ export function createPostgresEdgeApiHandler(
     listMatches: async () => { throw new Error('SportScore live widget is disabled'); },
     getMatch: async () => { throw new Error('SportScore live widget is disabled'); }
   };
-  const liveMode = env.SPORTSCORE_LIVE_MODE?.trim() || 'disabled';
-  if (liveMode !== 'disabled' && liveMode !== 'widget') {
-    throw new Error('SPORTSCORE_LIVE_MODE must be disabled or widget');
-  }
+  const liveMode = readLiveDataMode(env);
   const timeoutMs = Number(env.SPORTSCORE_WIDGET_TIMEOUT_MS?.trim() || 8_000);
   const clients = createGuardedProviderClients(client, config.ownerProfileId, timeoutMs, fetcher);
   const detailCoordinator = new HostedMatchDetailCoordinator(new PostgresHostedMatchDetailStore(client, config.ownerProfileId),
@@ -127,8 +126,9 @@ export function createPostgresEdgeApiHandler(
   const liveCoordinator = new LiveRefreshCoordinator({
     ownerProfileId: config.ownerProfileId,
     persistence: adapter,
-    repository: matchRepository,
-    source: liveMode === 'widget' ? clients.widget : disabledLiveSource
+    repository: cloudRepository,
+    source: liveMode === 'fotmob-daily' ? new FotMobDailyLiveSource(clients.daily)
+      : liveMode === 'sportscore-widget' ? clients.widget : disabledLiveSource
   });
   const providerRoute = createHostedProviderRoute(env.MIRAICHI_PROVIDER_REFRESH_TOKEN, () => new HostedProviderRefresh({
     store: new PostgresHostedProviderStore(client, config.ownerProfileId),

@@ -271,7 +271,7 @@ function updateUrl(tabId: ProductionNavigationTabId): void {
   } else {
     url.searchParams.set('tab', tabId);
   }
-  window.history.pushState({ tabId }, '', url);
+  window.history.replaceState({ tabId }, '', url);
 }
 
 function setText(id: string, value: string): void {
@@ -911,6 +911,7 @@ appRoot.addEventListener('click', (event) => {
     setMatchDetailContext(title, meta);
     resetMatchDetailTabs();
     setActiveScreen('match-detail');
+    window.history.pushState({ screen: 'match-detail', returnScreen: matchDetailReturnScreen }, '', window.location.href);
     matchDetailState = { status: 'loading' };
     renderMatchDetailState();
     return;
@@ -938,7 +939,12 @@ appRoot.addEventListener('click', (event) => {
 
   if (eventTarget.closest('#match-detail-back')) {
     cancelMatchDetailLoad();
-    setActiveScreen(matchDetailReturnScreen);
+    const returnScreen = matchDetailReturnScreen;
+    setActiveScreen(returnScreen);
+    updateUrl(returnScreen);
+    if (window.history.state?.screen === 'match-detail') {
+      window.history.back();
+    }
     return;
   }
 
@@ -1230,8 +1236,82 @@ document.addEventListener('keydown', (event) => {
 
 window.addEventListener('popstate', () => {
   cancelMatchDetailLoad();
-  setActiveScreen(getInitialTabId());
+  if (currentScreenName === 'match-detail') {
+    const returnScreen = matchDetailReturnScreen;
+    setActiveScreen(returnScreen);
+    updateUrl(returnScreen);
+    return;
+  }
+  if (isPrimaryTabId(currentScreenName)) {
+    updateUrl(currentScreenName);
+    return;
+  }
 });
+
+let edgeSwipeStartX = 0;
+let edgeSwipeStartY = 0;
+let edgeSwipeTracking = false;
+
+function handleTouchStart(event: TouchEvent): void {
+  if (event.touches.length !== 1) {
+    edgeSwipeTracking = false;
+    return;
+  }
+  const touch = event.touches[0];
+  if (!touch) return;
+  if (touch.clientX > 35) {
+    edgeSwipeTracking = false;
+    return;
+  }
+  edgeSwipeStartX = touch.clientX;
+  edgeSwipeStartY = touch.clientY;
+  edgeSwipeTracking = true;
+}
+
+function handleTouchMove(event: TouchEvent): void {
+  if (!edgeSwipeTracking || event.touches.length !== 1) return;
+  const touch = event.touches[0];
+  if (!touch) return;
+  const deltaX = touch.clientX - edgeSwipeStartX;
+  const deltaY = touch.clientY - edgeSwipeStartY;
+  if (deltaX < -10 || (Math.abs(deltaY) > 25 && Math.abs(deltaY) > Math.abs(deltaX))) {
+    edgeSwipeTracking = false;
+  }
+}
+
+function handleTouchEnd(event: TouchEvent): void {
+  if (!edgeSwipeTracking) return;
+  edgeSwipeTracking = false;
+  const touch = event.changedTouches[0];
+  if (!touch) return;
+  const deltaX = touch.clientX - edgeSwipeStartX;
+  const deltaY = touch.clientY - edgeSwipeStartY;
+  if (deltaX >= 50 && deltaX > Math.abs(deltaY) * 1.5) {
+    triggerEdgeSwipeBack();
+  }
+}
+
+function handleTouchCancel(): void {
+  edgeSwipeTracking = false;
+}
+
+function triggerEdgeSwipeBack(): void {
+  if (appRoot.querySelector('.sheet.open')) return;
+  if (isPrimaryTabId(currentScreenName)) return;
+
+  const activeScreen = appRoot.querySelector<HTMLElement>('.screen.active');
+  if (!activeScreen) return;
+
+  const backButton = activeScreen.querySelector<HTMLElement>('.back-button, #match-detail-back, [data-screen-back]');
+  if (backButton) {
+    backButton.click();
+  }
+}
+
+window.addEventListener('touchstart', handleTouchStart, { passive: true });
+window.addEventListener('touchmove', handleTouchMove, { passive: true });
+window.addEventListener('touchend', handleTouchEnd, { passive: true });
+window.addEventListener('touchcancel', handleTouchCancel, { passive: true });
 
 async function refreshMatchFeed(): Promise<void> {
   activeFilters.selectedLeagues.clear();

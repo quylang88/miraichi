@@ -1428,4 +1428,15 @@ describe('Slice 8 basic match detail UI and guardrails', () => {
     }
   });
 
+  it('enforces edge swipe back only for child screens with back buttons, replaces history for primary tabs, and prevents swipe back from 4 primary tabs', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellSource).toContain("window.history.replaceState({ tabId }, '', url);");
+    expect(shellSource).toContain("window.history.pushState({ screen: 'match-detail', returnScreen: matchDetailReturnScreen }");
+    expect(shellSource).toContain("if (currentScreenName === 'match-detail')");
+    expect(shellSource).toContain("if (isPrimaryTabId(currentScreenName))");
+    expect(shellSource).toContain('triggerEdgeSwipeBack()');
+    expect(shellSource).toContain('isPrimaryTabId(currentScreenName)');
+    expect(shellSource).toContain("activeScreen.querySelector<HTMLElement>('.back-button, #match-detail-back, [data-screen-back]')");
+    expect(shellSource).toContain("window.addEventListener('touchstart', handleTouchStart, { passive: true });");
+  });
 });

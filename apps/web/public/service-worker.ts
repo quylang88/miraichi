@@ -2,7 +2,7 @@
 
 export {};
 
-const CACHE_NAME = 'miraichi-shell-v12-pwa-tabbar';
+const CACHE_NAME = 'miraichi-shell-v13-daily-live';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

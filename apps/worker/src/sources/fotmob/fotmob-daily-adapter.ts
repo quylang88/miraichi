@@ -194,7 +194,7 @@ export function adaptFotMobDailyTerminalResults(
   };
 }
 
-function resolveLeagueRoot(league: FotMobDailyLeague, registry: ReadonlyMap<number, CompetitionSourceEntry>):
+export function resolveLeagueRoot(league: FotMobDailyLeague, registry: ReadonlyMap<number, CompetitionSourceEntry>):
   { valid: false } | { valid: true; entry: CompetitionSourceEntry | undefined } {
   // Daily rows can be grouped by a season or knockout stage rather than the stable league ID.
   const roots = [league.primaryId, league.parentLeagueId].filter((value) => value != null);

@@ -121,11 +121,11 @@ async function verifyInstalledCache(engine: BrowserType) {
     const cached = await page.evaluate(async () => {
       await navigator.serviceWorker.ready;
       const names = await caches.keys();
-      const cache = await caches.open('miraichi-shell-v12-pwa-tabbar');
+      const cache = await caches.open('miraichi-shell-v13-daily-live');
       return { names, css: await (await cache.match('/packages/ui/src/index.css'))?.text(),
         html: await (await cache.match('/'))?.text() };
     });
-    assert.deepEqual(cached.names, ['miraichi-shell-v12-pwa-tabbar'], 'active installed shell cache');
+    assert.deepEqual(cached.names, ['miraichi-shell-v13-daily-live'], 'active installed shell cache');
     assert.equal(cached.css, readFileSync('apps/web/dist/packages/ui/src/index.css', 'utf8'), 'cached CSS equals deployed build');
     assert.ok(cached.html?.includes('name="apple-mobile-web-app-status-bar-style" content="black"'));
     await page.reload();

@@ -17,6 +17,8 @@ export interface FotMobRawMatchStatus {
   utcTime?: string;
   finished?: boolean;
   started?: boolean;
+  ongoing?: boolean;
+  liveTime?: { short?: string; long?: string; basePeriod?: number; maxTime?: number; addedTime?: number };
   cancelled?: boolean;
   awarded?: boolean;
   scoreStr?: string;

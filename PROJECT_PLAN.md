@@ -2,9 +2,9 @@
 
 ## Current State
 
-- **Status**: Cross-league terminal-score and LIVE parser corrections are deployed to Frankfurt Edge version 16.
-  The final hosted browser/scheduler gate passed at `2026-09-11T04:17:29.360Z`; separate hosted final-score and synthetic LIVE transitions passed at UTC and Asia/Tokyo, and an unmocked Liga MX LIVE observation passed.
-  The owner accepted the previous PWA result and its local commit `ce5e575`; the new bug-fix diff remains uncommitted and push remains unapproved. Thirty-two retained legacy scheduled rows still need identity reconciliation; this release is not a claim that all historical data or LIVE coverage is complete.
+- **Status**: Daily LIVE recovery is deployed to Frankfurt Edge version 19 and verified on staging.
+  Two unmocked browser checks at `2026-09-12T14:46:34.543Z` and `2026-09-12T14:50:37.507Z` each rendered 30 active matches across 13 leagues with scores independently confirmed from the daily source, without opening detail. Later score and halftime changes were observed.
+  The full local staging gate and fresh hosted browser/scheduler/PWA gates pass. The owner explicitly authorized committing the entire current diff locally after successful staging verification, including existing UI edits; push remains unapproved. Legacy identity reconciliation remains outside this correction.
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
@@ -41,7 +41,8 @@
   `docs/superpowers/plans/2026-09-09-user-triggered-match-detail.md`. Refresh only the selected match on an explicit
   detail action; no detail cron, prefetch, polling, pending retry timer or automatic page-focus refresh.
   The previous staging evidence is retained; moving phases is not production approval.
-- **Active phase**: `phase:owner-feedback Cross-league terminal scores and LIVE corrections` — the authorized corrections pass RED/GREEN, full staging verification (918 unit tests plus integration/PWA/build), Edge auth/Postgres runtime, provider SQL, artifact gates and final version-16 hosted E2E/schedulers. The deployed diff is ready for the requested staging review, with the global LIVE-window and retained legacy identity limitations explicitly recorded below. A complete clean-data claim remains blocked on validating those legacy identities; next implementation work should use `phase:implementation-plan Legacy match identity reconciliation`, not production promotion.
+- **Completed phase**: `phase:staging Daily LIVE recovery` — owner reopened the empty LIVE defect on 2026-09-12 and requested direct staging verification. Plan: `docs/superpowers/plans/2026-09-12-daily-live-recovery.md`; ADR-0054 records reuse of existing FotMob daily data in the independent LIVE overlay. The full staging gate passes 161 unit files / 985 tests, integration/PWA/build, actual Edge auth/Postgres runtime, provider SQL and artifact checks. The real browser gate failed on the old empty LIVE, then passed twice after deployment with real score changes. The final hosted scheduler and Chromium/WebKit PWA gates pass.
+- **Active phase**: `phase:owner-feedback Daily LIVE recovery` — final staging review checkpoint. Local commit of all current changes is explicitly authorized after the passed gates; no further answer is needed for that delivery. Push and production are separate, unapproved actions.
 - **Match-detail local exit gate (2026-09-10)**: reviewed slices and integration correction through
   `98cee02` pass `verify:staging` (157 files / 796 unit tests, complete integration/endpoint/PWA and
   static build), actual detail PostgreSQL smoke, actual Edge runtime auth/Postgres smoke, module
@@ -55,12 +56,20 @@
 - **Lazy match-detail state**: **DELIVERED TO STAGING on 2026-09-10** through research, reviewed
   TDD slices and Frankfurt E2E, retaining canonical IDs and nullable factual fields.
   Existing source approvals apply; no paid source, bypass, historical hydration or production action.
-- **Promotion state**: Frankfurt retains 11,163 matches across 45 competitions (independent read at
-  `2026-09-11T04:14:06.647361Z`). Edge Function version 16 is ACTIVE; Cloudflare Worker
-  `2b262278-b532-4b89-b3c6-25a69b99c914` serves the accepted UI on staging.
-  Three refresh jobs and four Vault names pass the final hosted gate. Bug-fix acceptance, Tokyo
-  project creation, and production promotion remain pending; no push was performed.
+- **Promotion state**: Frankfurt Edge Function version 19 is ACTIVE; Cloudflare Worker
+  `1bacf8ed-fbca-45fc-93de-ddfff0386b6e` serves the current UI and PWA cache `miraichi-shell-v13-daily-live` on staging.
+  Three refresh jobs and four Vault names pass the hosted gate at `2026-09-12T14:49:55.752Z`.
+  Final owner acceptance, Tokyo project creation, and production promotion remain pending; no push was performed for this correction.
 - **Current lifecycle source of truth**: this file.
+
+## Daily LIVE recovery — 2026-09-12 staging report
+
+- **Root cause**: the widget returned 50 early-day fixtures, none active, while existing daily data contained known active matches. The previous parser fix could not discover records outside that response. A deployed Deno environment allowlist also needed `LIVE_DATA_MODE`; a failing executable bootstrap regression now protects it.
+- **Correction**: source the independent LIVE snapshot from guarded FotMob daily data for configured, known matches. Match provider ID, league root, kickoff and team direction strictly; retain the existing lease, refresh floors, circuit and last-good behavior. No detail polling or canonical in-play publication. The PWA accepts explicit registered daily coverage and receives the new cache version.
+- **Actual browser evidence**: 30 of 30 rendered active rows across 13 leagues matched independent source scores on both observations, with zero detail requests and no response fixtures. Snapshot timestamps advanced from `14:46:31.416Z` to `14:50:35.193Z`; Augsburg/Leverkusen changed 2–1 to 2–2, Mainz/Frankfurt 0–2 to 0–3, and Chelsea/Hull changed to halftime.
+- **Gates**: `verify:staging` passes 161 unit files / 985 tests and all integration/endpoint/PWA/build checks. Edge graph/auth/Postgres, provider SQL and 67-file Cloudflare artifact checks pass. `verify:staging:hosted` passes at `14:49:55.752Z`. Hosted PWA layout passes ten Chromium/WebKit cases and both real service-worker cache checks.
+- **Limits**: the snapshot still reports `identity_mismatch:1` and `ambiguous_matches:1`; these records are excluded instead of guessed. The two real samples establish current multi-league coverage, not guaranteed coverage at every time or reconciliation of the 32 previously identified historical rows. Morning-league mappings and midnight behavior have regression coverage, but those leagues were not playing during this hosted observation.
+- **Delivery**: the owner explicitly requested a local commit of all changes after staging verification, including the pre-existing UI navigation/label edits. No push or production action. The previous cross-league fixes were already committed as `91950a0` at the start of this correction. Detailed evidence and rollback are in `docs/superpowers/plans/2026-09-12-daily-live-recovery.md`.
 
 ## Cross-league scores and LIVE — 2026-09-11 staging report
 

@@ -10,6 +10,7 @@ import type { CloudPersistenceAdapter } from '../persistence/cloud-persistence-a
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
 import { SportScoreWidgetClientError, type SportScoreLiveSource } from './sportscore-widget-client.js';
 import { adaptSportScoreLiveRecords, adaptTrackedSportScoreRecord } from './sportscore-live-adapter.js';
+import { FotMobAccessBlockedError } from '../../../worker/src/sources/fotmob/fotmob-season-client.js';
 
 const FRESHNESS_MS: Readonly<Record<LiveRefreshReason, number>> = Object.freeze({
   visible: 5 * 60 * 1_000,
@@ -31,13 +32,21 @@ export interface LiveRefreshResult {
 export interface LiveRefreshCoordinatorOptions {
   readonly ownerProfileId: string;
   readonly persistence: CloudPersistenceAdapter;
-  readonly source: SportScoreLiveSource;
+  readonly source: SportScoreLiveSource | LiveSnapshotSource;
   readonly repository: MatchSnapshotRepository;
   readonly now?: () => string;
   readonly createLeaseId?: () => string;
 }
 
+export interface LiveSnapshotSource {
+  readSnapshot(input: { observedAt: string; previousSnapshot: LiveMatchSnapshot | null; repository: MatchSnapshotRepository }): Promise<LiveMatchSnapshot>;
+}
+
 function sourceErrorCode(error: unknown): LiveRefreshErrorCode {
+  if (error instanceof FotMobAccessBlockedError) return 'upstream_blocked';
+  if (error instanceof Error && /persisted circuit/u.test(error.message)) return 'upstream_blocked';
+  if (error instanceof Error && /FotMob daily.*timed out/u.test(error.message)) return 'upstream_timeout';
+  if (error instanceof Error && /FotMob daily/u.test(error.message)) return 'upstream_unavailable';
   if (!(error instanceof SportScoreWidgetClientError)) return 'internal_error';
   if (error.code === 'blocked') return 'upstream_blocked';
   if (error.code === 'timeout') return 'upstream_timeout';
@@ -75,7 +84,7 @@ function candidateUtcDates(records: readonly Record<string, unknown>[]): string[
 export class LiveRefreshCoordinator {
   private readonly ownerProfileId: string;
   private readonly persistence: CloudPersistenceAdapter;
-  private readonly source: SportScoreLiveSource;
+  private readonly source: SportScoreLiveSource | LiveSnapshotSource;
   private readonly repository: MatchSnapshotRepository;
   private readonly now: () => string;
   private readonly createLeaseId: () => string;
@@ -125,6 +134,10 @@ export class LiveRefreshCoordinator {
     }
 
     try {
+      if ('readSnapshot' in this.source) {
+        const snapshot = await this.source.readSnapshot({ observedAt: startedAt, previousSnapshot, repository: this.repository });
+        return await this.publishSnapshot(leaseId, snapshot);
+      }
       const envelope = await this.source.listMatches();
       const canonicalFeeds = await Promise.all(candidateUtcDates(envelope.matches).map((date) => (
         this.repository.listMatches({ date, timezone: 'UTC' })
@@ -179,9 +192,7 @@ export class LiveRefreshCoordinator {
         matches: merged,
         warnings
       };
-      const completedAt = this.now();
-      await this.persistence.finishLiveRefresh(this.ownerProfileId, { leaseId, outcome: 'succeeded', completedAt, snapshot });
-      return { outcome: 'refreshed', snapshot, state: await this.persistence.getLiveRefreshState(this.ownerProfileId) };
+      return await this.publishSnapshot(leaseId, snapshot);
     } catch (error) {
       const completedAt = this.now();
       try {
@@ -200,5 +211,10 @@ export class LiveRefreshCoordinator {
       ]);
       return { outcome: 'failed', snapshot, state };
     }
+  }
+
+  private async publishSnapshot(leaseId: string, snapshot: LiveMatchSnapshot): Promise<LiveRefreshResult> {
+    await this.persistence.finishLiveRefresh(this.ownerProfileId, { leaseId, outcome: 'succeeded', completedAt: this.now(), snapshot });
+    return { outcome: 'refreshed', snapshot, state: await this.persistence.getLiveRefreshState(this.ownerProfileId) };
   }
 }
