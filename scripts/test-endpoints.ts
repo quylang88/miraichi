@@ -125,7 +125,7 @@ void (async () => {
     assert(statusRes.ok && status.state === 'ready', 'Cloud persistence status is ready in memory integration mode');
 
     const timestamp = '2026-07-02T00:00:00.000Z';
-    const draft = { draftId: 'e2e-draft', matchGroupId: firstMatchId || 'match-e2e', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: timestamp, updatedAt: timestamp };
+    const draft = { draftId: 'e2e-draft', matchGroupId: firstMatchId || 'match-e2e', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: timestamp, updatedAt: timestamp };
     const draftCreate = await fetch(`${apiBaseUrl}/api/v1/bet-drafts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
     assert(draftCreate.status === 201, 'POST /api/v1/bet-drafts creates a draft');
     const draftList = await fetch(`${apiBaseUrl}/api/v1/bet-drafts`);
@@ -134,7 +134,7 @@ void (async () => {
     const accountCreate = await fetch(`${apiBaseUrl}/api/v1/bankroll/setup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ openingBalancePoints: 100, timeZone: 'Asia/Tokyo', weekStartDay: 'monday' }) });
     assert(accountCreate.status === 201, 'POST /api/v1/bankroll/setup creates the primary points bankroll');
 
-    const bet = { betId: 'e2e-bet', matchGroupId: firstMatchId || 'match-e2e', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, preBetEmotion: 'calm', preBetMotivation: 'planned_analysis', preBetPlanAdherence: 'yes', createdAt: timestamp };
+    const bet = { betId: 'e2e-bet', matchGroupId: firstMatchId || 'match-e2e', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, preBetEmotion: 'calm', preBetMotivation: 'planned_analysis', preBetPlanAdherence: 'yes', createdAt: timestamp };
     const betCreate = await fetch(`${apiBaseUrl}/api/v1/bets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bet) });
     assert(betCreate.status === 201, 'POST /api/v1/bets creates a bet record');
     const betPatch = await fetch(`${apiBaseUrl}/api/v1/bets?id=e2e-bet`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: 'integration update' }) });

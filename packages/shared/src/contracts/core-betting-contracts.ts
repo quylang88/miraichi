@@ -2,6 +2,7 @@ import {
   declaresStructuredBetSelection,
   validateStructuredBetSelection,
   type LiveContextSource,
+  type CreatableMarketType,
   type MarketPeriod,
   type RunningWindow,
   type SelectionCode
@@ -41,10 +42,10 @@ export interface CreateOngoingBetInput {
   readonly homeTeamName: string;
   readonly awayTeamName: string;
   readonly competitionLabel?: string;
-  readonly marketType: '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom' | 'running';
+  readonly marketType: CreatableMarketType;
   readonly customMarketLabel?: string;
   readonly selectionLabel?: string;
-  readonly selectionCode?: SelectionCode;
+  readonly selectionCode: SelectionCode;
   readonly marketPeriod?: MarketPeriod;
   readonly lineValue?: number | null;
   readonly runningWindow?: RunningWindow;
@@ -150,9 +151,9 @@ export function validateCreateOngoingBetInput(input: unknown): ContractValidatio
   for (const key of ['betId', 'matchGroupId', 'homeTeamName', 'awayTeamName'] as const) {
     if (!text(value[key])) errors.push(`${key} is required`);
   }
-  if (!structured && !text(value.selectionLabel)) errors.push('selectionLabel is required');
+  if (!structured) errors.push('structured selection fields are required');
   if (value.bankrollAccountId !== undefined && typeof value.bankrollAccountId !== 'string') errors.push('bankrollAccountId is invalid');
-  if (!['1X2', 'over_under', 'handicap', 'corners', 'custom', 'running'].includes(String(value.marketType))) errors.push('marketType is invalid');
+  if (!['1X2', 'over_under', 'handicap', 'corners', 'running'].includes(String(value.marketType))) errors.push('marketType is invalid');
   if (structured) {
     const selectionValidation = validateStructuredBetSelection(input);
     if (!selectionValidation.ok) errors.push(...selectionValidation.errors);

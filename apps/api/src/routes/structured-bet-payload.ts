@@ -16,7 +16,9 @@ function hasText(value: unknown): value is string {
 export function normalizeDeclaredStructuredBetPayload(
   payload: Record<string, unknown>
 ): NormalizedPayloadResult {
-  if (!declaresStructuredBetSelection(payload)) return { ok: true, payload };
+  if (!declaresStructuredBetSelection(payload)) {
+    return { ok: false, errors: ['structured selection fields are required'] };
+  }
   const validation = validateStructuredBetSelection(payload);
   if (!validation.ok) return validation;
   if (!hasText(payload.homeTeamName) || !hasText(payload.awayTeamName)) {

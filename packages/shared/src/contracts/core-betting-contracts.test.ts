@@ -16,7 +16,8 @@ const config: DisciplineConfig = {
 const bet = {
   betId: 'bet-1', matchGroupId: 'group-1', bankrollAccountId: 'account-1',
   homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2' as const,
-  selectionLabel: 'Japan', oddsFormat: 'HK' as const, oddsValue: 0.95, stakePoints: 10.25,
+  marketPeriod: 'full_time' as const, selectionCode: 'home' as const,
+  oddsFormat: 'HK' as const, oddsValue: 0.95, stakePoints: 10.25,
   preBetEmotion: 'calm' as const, preBetMotivation: 'planned_analysis' as const,
   preBetPlanAdherence: 'yes' as const,
   createdAt: '2026-08-21T00:00:00.000Z'
@@ -50,7 +51,10 @@ describe('core betting contracts', () => {
   });
 
   it('accepts declared structured input without a client label and rejects invalid combinations', () => {
-    const { selectionLabel: _selectionLabel, ...base } = bet;
+    const base = bet;
+    const { selectionCode: _selectionCode, marketPeriod: _marketPeriod, ...legacy } = bet;
+    expect(validateCreateOngoingBetInput({ ...legacy, selectionLabel: 'Japan' }).ok).toBe(false);
+    expect(validateCreateOngoingBetInput({ ...bet, marketType: 'custom' }).ok).toBe(false);
     expect(validateCreateOngoingBetInput({
       ...base, marketType: 'over_under', marketPeriod: 'full_time', selectionCode: 'under', lineValue: 3.25
     })).toEqual({ ok: true });
@@ -58,10 +62,10 @@ describe('core betting contracts', () => {
       ...base, marketType: 'over_under', marketPeriod: 'full_time', selectionCode: 'draw', lineValue: 3.25
     }).ok).toBe(false);
     expect(validateCreateOngoingBetInput({
-      ...bet, marketPeriod: 'full_time'
+      ...bet, selectionCode: undefined
     }).ok).toBe(false);
     expect(validateCreateOngoingBetInput({
-      ...base, marketType: 'running', selectionCode: 'over', lineValue: 0.75,
+      ...base, marketType: 'running', marketPeriod: undefined, selectionCode: 'over', lineValue: 0.75,
       runningWindow: 'to_full_time', liveScoreHome: 1, liveScoreAway: 0, liveMinute: 55,
       liveContextSource: 'manual'
     })).toEqual({ ok: true });
