@@ -21,6 +21,7 @@ async function measure(page: Page) {
     const shell = document.querySelector<HTMLElement>('.app-shell')!;
     const rect = nav.getBoundingClientRect();
     const style = getComputedStyle(nav);
+    const firstField = document.querySelector<HTMLElement>('.field-input');
     const buttons = [...nav.querySelectorAll('button')].map((button) => {
       const box = button.getBoundingClientRect();
       return { height: box.height, left: box.left, right: box.right, bottom: box.bottom };
@@ -30,6 +31,8 @@ async function measure(page: Page) {
       paddingBottom: parseFloat(style.paddingBottom), shellHeight: shell.getBoundingClientRect().height,
       scrollPadding: parseFloat(getComputedStyle(scroll).paddingBottom),
       horizontalOverflow: document.documentElement.scrollWidth > innerWidth,
+      formControlFontSize: firstField ? parseFloat(getComputedStyle(firstField).fontSize) : 0,
+      touchAction: getComputedStyle(document.documentElement).touchAction,
       buttons
     };
   });
@@ -56,7 +59,7 @@ async function run() {
         assert.equal((await measure(page)).bottom, 844, 'unmodified hosted viewport anchors to bottom');
       } else {
         const css = readFileSync('packages/ui/src/index.css', 'utf8');
-        await page.setContent(`<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>${css}</style><div id="app-root">${renderAppShell()}</div>`);
+        await page.setContent(`<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"><style>${css}</style><div id="app-root">${renderAppShell()}</div>`);
       }
       for (const scenario of cases) {
         await page.setViewportSize({ width: scenario.width, height: scenario.height });
@@ -75,6 +78,8 @@ async function run() {
         assert.ok(Math.abs(actual.shellHeight - scenario.height) < 0.5, `${label}: shell follows resized viewport (subpixel rounding)`);
         assert.ok(actual.scrollPadding >= actual.height + 16, `${label}: last content clears navigation`);
         assert.equal(actual.horizontalOverflow, false, `${label}: no horizontal overflow`);
+        assert.ok(['pan-x pan-y', 'pan-y pan-x'].includes(actual.touchAction), `${label}: pinch gesture excluded by CSS`);
+        if (scenario.width <= 900) assert.ok(actual.formControlFontSize >= 16, `${label}: form controls avoid iOS focus zoom`);
         assert.equal(actual.buttons.length, 4);
         for (const button of actual.buttons) {
           assert.ok(button.height >= 44, `${label}: touch target`);
@@ -121,11 +126,11 @@ async function verifyInstalledCache(engine: BrowserType) {
     const cached = await page.evaluate(async () => {
       await navigator.serviceWorker.ready;
       const names = await caches.keys();
-      const cache = await caches.open('miraichi-shell-v14-instant-startup');
+      const cache = await caches.open('miraichi-shell-v15-structured-add-bet');
       return { names, css: await (await cache.match('/packages/ui/src/index.css'))?.text(),
         html: await (await cache.match('/'))?.text() };
     });
-    assert.deepEqual(cached.names, ['miraichi-shell-v14-instant-startup'], 'active installed shell cache');
+    assert.deepEqual(cached.names, ['miraichi-shell-v15-structured-add-bet'], 'active installed shell cache');
     assert.equal(cached.css, readFileSync('apps/web/dist/packages/ui/src/index.css', 'utf8'), 'cached CSS equals deployed build');
     assert.ok(cached.html?.includes('name="apple-mobile-web-app-status-bar-style" content="black"'));
     await page.reload();

@@ -14,6 +14,7 @@ const filesToVerify = [
   'apps/web/public/service-worker.ts',
   'apps/web/public/icons/icon.svg',
   'apps/web/src/pwa/register-service-worker.ts',
+  'apps/web/src/pwa/zoom-controller.ts',
   'apps/web/src/auth-bootstrap.ts',
   'apps/web/src/shell-entry.ts',
   'apps/web/src/config/navigation-tabs.ts',
@@ -48,8 +49,9 @@ if (fs.existsSync(webServerPath)) {
   const content = fs.readFileSync(webServerPath, 'utf8');
   
   // Verify viewport corrected
-  if (!content.includes('viewport-fit=cover') || !content.includes('initial-scale=1')) {
-    console.error('  ❌ Viewport viewport-fit=cover or initial-scale=1 missing or incorrect.');
+  if (!content.includes('viewport-fit=cover') || !content.includes('initial-scale=1')
+    || !content.includes('maximum-scale=1') || !content.includes('user-scalable=no')) {
+    console.error('  ❌ Viewport zoom constraints, viewport-fit=cover, or initial-scale=1 missing or incorrect.');
     failed = true;
   } else {
     console.log('  ✅ Viewport corrected for notch and iOS safe area.');
@@ -147,7 +149,7 @@ const serviceWorkerPath = path.join(ROOT_DIR, 'apps/web/public/service-worker.ts
 if (fs.existsSync(serviceWorkerPath)) {
   const content = fs.readFileSync(serviceWorkerPath, 'utf8');
   const requiredCacheMarkers = [
-    "miraichi-shell-v14-instant-startup",
+    "miraichi-shell-v15-structured-add-bet",
     "/apps/web/src/auth-bootstrap.js",
     "/apps/web/src/pwa/register-service-worker.js",
     "/packages/ui/src/index.css"
@@ -155,10 +157,10 @@ if (fs.existsSync(serviceWorkerPath)) {
 
   for (const marker of requiredCacheMarkers) {
     if (!content.includes(marker)) {
-      console.error(`  ❌ Service worker missing Phase 5.12 cache marker: ${marker}`);
+      console.error(`  ❌ Service worker missing structured Add Bet cache marker: ${marker}`);
       failed = true;
     } else {
-      console.log(`  ✅ Service worker Phase 5.12 cache marker found: ${marker}`);
+      console.log(`  ✅ Service worker structured Add Bet cache marker found: ${marker}`);
     }
   }
 }
@@ -172,6 +174,32 @@ if (fs.existsSync(ownerAuthBootstrapPath)) {
       failed = true;
     } else {
       console.log(`  ✅ Owner auth bootstrap marker found: ${marker}`);
+    }
+  }
+}
+
+const zoomControllerPath = path.join(ROOT_DIR, 'apps/web/src/pwa/zoom-controller.ts');
+if (fs.existsSync(zoomControllerPath)) {
+  const content = fs.readFileSync(zoomControllerPath, 'utf8');
+  for (const marker of ['gesturestart', 'gesturechange', 'gestureend', "addEventListener('touchend'", 'passive: false']) {
+    if (!content.includes(marker)) {
+      console.error(`  ❌ Zoom controller missing best-effort gesture marker: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Zoom controller marker found: ${marker}`);
+    }
+  }
+}
+
+const shellStylesPath = path.join(ROOT_DIR, 'packages/ui/src/index.css');
+if (fs.existsSync(shellStylesPath)) {
+  const content = fs.readFileSync(shellStylesPath, 'utf8');
+  for (const marker of ['touch-action: pan-x pan-y', 'font-size: 16px']) {
+    if (!content.includes(marker)) {
+      console.error(`  ❌ Mobile zoom CSS marker missing: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Mobile zoom CSS marker found: ${marker}`);
     }
   }
 }
@@ -243,7 +271,7 @@ if (fs.existsSync(appShellPath)) {
     'data-open-settled-detail',
     'id="settlement-form"',
     'class="sheet-backdrop"',
-    'id="match-summary-readonly"'
+    'class="add-bet-team-row"'
   ];
 
   for (const marker of requiredShellMarkers) {

@@ -130,6 +130,12 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(emotion).not.toContain('value="tired"');
   });
 
+  it('keeps mobile form controls at 16px and limits touch gestures to panning', () => {
+    const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
+    expect(css).toMatch(/html,\s*body\s*\{[^}]*touch-action:\s*pan-x pan-y/s);
+    expect(css).toMatch(/@media\s*\(max-width:\s*900px\)[\s\S]*\.field-input,[\s\S]*\.field-select,[\s\S]*\.field-textarea[\s\S]*font-size:\s*16px/);
+  });
+
   it('starts isolated manual, quick, scoped, and edit sessions before opening Add Bet', () => {
     const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
     expect(shellSource).toContain("startAddBetSession(currentScreenName === 'today' ? 'quick' : 'manual'");

@@ -13,6 +13,7 @@ describe('owner auth PWA bootstrap', () => {
 
   it('ships the data-free four-tab shell in HTML before any session or script completes', () => {
     const html = getIndexHtml();
+    expect(html).toContain('content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"');
     expect(html).toContain('class="bottom-nav"');
     expect(html).toContain('data-owner-session="pending"');
     expect(html).toContain('id="main-scroll" inert');
@@ -65,6 +66,7 @@ describe('owner auth PWA bootstrap', () => {
   it('boots index and service worker through auth-bootstrap instead of loading shell-entry directly', () => {
     const html = getIndexHtml();
     expect(html).toContain('src="/apps/web/src/auth-bootstrap.js"');
+    expect(readFileSync(fileURLToPath(new URL('./auth-bootstrap.ts', import.meta.url)), 'utf8')).toContain('installApplicationZoomConstraints');
     expect(html).not.toContain('src="/apps/web/src/shell-entry.js"');
     const exactAttribution = '<a href="https://sportscore.com/" rel="dofollow" title="Sports data by SportScore">Powered by SportScore</a>';
     expect(html.split(exactAttribution)).toHaveLength(2);

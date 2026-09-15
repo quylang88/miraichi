@@ -3,6 +3,7 @@ import { renderAppShell } from './components/app-shell.js';
 import { getSafeNavigationTabId } from './config/navigation-tabs.js';
 import { createSettingsService } from './services/settings-service.js';
 import { createTranslator } from './services/i18n-service.js';
+import { installApplicationZoomConstraints } from './pwa/zoom-controller.js';
 
 export type OwnerBootstrapState = 'authenticated' | 'login' | 'unavailable';
 export type OwnerLoginState = 'idle' | 'invalid' | 'unavailable';
@@ -173,6 +174,7 @@ export async function startOwnerAuthBootstrap(
 }
 
 if (typeof document !== 'undefined') {
+  installApplicationZoomConstraints();
   const root = document.getElementById('app-root');
   if (!root) throw new Error('Missing app-root element for Miraichi owner authentication.');
   void startOwnerAuthBootstrap(root);

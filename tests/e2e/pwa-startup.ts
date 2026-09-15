@@ -113,7 +113,7 @@ async function verifyExistingInstallUpgrade() {
       let deployed = false;
       while (Date.now() < deadline) {
         const script = await context.request.get(`${origin}/service-worker.js`);
-        if ((await script.text()).includes('miraichi-shell-v14-instant-startup')) { deployed = true; break; }
+        if ((await script.text()).includes('miraichi-shell-v15-structured-add-bet')) { deployed = true; break; }
         await delay(5000);
       }
       assert.ok(deployed, 'new worker must be deployed within upgrade test window');
@@ -125,7 +125,7 @@ async function verifyExistingInstallUpgrade() {
       // Opening the new cache happens at install start; activation must finish before going offline.
       await page.waitForFunction(async () => {
         const names = await caches.keys();
-        return names.length === 1 && names[0] === 'miraichi-shell-v14-instant-startup';
+        return names.length === 1 && names[0] === 'miraichi-shell-v15-structured-add-bet';
       });
       await page.waitForFunction(async () => (await (await fetch('/')).text()).includes('data-owner-session="pending"'));
       if (engine === chromium) await context.setOffline(true);
@@ -133,7 +133,7 @@ async function verifyExistingInstallUpgrade() {
       assert.equal(await page.locator('.bottom-nav').count(), 1);
       await page.locator('.bottom-nav [data-tab-target="bankroll"]').click();
       assert.equal(await page.locator('#main-scroll').getAttribute('data-active-tab'), 'bankroll');
-      assert.deepEqual(await page.evaluate(() => caches.keys()), ['miraichi-shell-v14-instant-startup']);
+      assert.deepEqual(await page.evaluate(() => caches.keys()), ['miraichi-shell-v15-structured-add-bet']);
       await page.screenshot({ path: `${output}/upgraded-${engine.name()}.png` });
       const result = { gate: 'existing-install-upgrade', engine: engine.name(), offline: engine === chromium,
         status: 'passed', at: new Date().toISOString() };
