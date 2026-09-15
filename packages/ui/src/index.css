@@ -1359,6 +1359,24 @@ svg {
   min-width: 0;
 }
 
+.add-bet-team-row {
+  align-items: end;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  min-width: 0;
+}
+
+.add-bet-versus {
+  align-items: center;
+  display: flex;
+  font-size: 13px;
+  font-weight: 760;
+  justify-content: center;
+  min-height: 44px;
+  text-transform: lowercase;
+}
+
 .metric-grid {
   margin-bottom: 16px;
 }

@@ -25,13 +25,18 @@ import { renderSettlementTimeline, type BetRecordFilter } from './components/scr
 import type { BankrollSecondaryView } from './components/screens/bankroll-screen.js';
 import { renderTodayScreen } from './components/screens/today-screen.js';
 import { renderMatchesScreen } from './components/screens/matches-screen.js';
-import { formatMatchTitle, formatMatchTitleHtml } from './components/screens/screen-shared.js';
+import { formatMatchTitleHtml } from './components/screens/screen-shared.js';
 import { renderBetsScreen } from './components/screens/bets-screen.js';
 import { renderBankrollScreen } from './components/screens/bankroll-screen.js';
 import { refreshLiveMatches, type LiveMatchViewState } from './services/live-match-service.js';
 import { createLiveMode, retainLastGoodLive } from './live/live-mode.js';
 import { createLiveRefreshLifecycle } from './live/live-refresh-lifecycle.js';
 import { bindPullDownRefresh } from './live/pull-down-refresh.js';
+import {
+  startAddBetSession,
+  type AddBetFormElements,
+  type AddBetSessionState
+} from './features/add-bet/add-bet-session.js';
 
 
 const root = document.getElementById('app-root');
@@ -56,6 +61,8 @@ const activeFilters = {
 let isFilterPanelOpen = false;
 let currentOpenMatchId = '';
 let currentOpenMatchTitle = '';
+let currentOpenHomeTeam = '';
+let currentOpenAwayTeam = '';
 let betRecordsState: BetRecordsViewState = { status: 'loading' };
 let bankrollState: BankrollViewState = { status: 'loading' };
 let betRecordFilter: BetRecordFilter = 'ongoing';
@@ -336,12 +343,12 @@ function setActiveScreen(screenName: string): void {
   }
 }
 
-function setMatchDetailContext(title: string, meta: string): void {
+function setMatchDetailContext(title: string, meta: string, homeTeamName: string, awayTeamName: string): void {
   currentOpenMatchTitle = title;
+  currentOpenHomeTeam = homeTeamName;
+  currentOpenAwayTeam = awayTeamName;
   setHtml('match-detail-title', formatMatchTitleHtml(title));
   setText('match-detail-meta', meta);
-  setText('add-sheet-subtitle', `Scoped to ${title}`);
-  setText('add-summary-title', title);
 }
 
 function resetMatchDetailTabs(): void {
@@ -422,6 +429,36 @@ function updateAddFormState(): void {
   const odds = oddsField.value.trim();
   const stake = stakeField.value.trim();
   saveDraftShell.disabled = !(market && odds && stake);
+}
+
+function getAddBetFormElements(): AddBetFormElements | null {
+  const form = document.getElementById('add-form') as HTMLFormElement | null;
+  const homeTeam = document.getElementById('home-team') as HTMLInputElement | null;
+  const awayTeam = document.getElementById('away-team') as HTMLInputElement | null;
+  const feedback = document.getElementById('add-feedback');
+  if (!form || !homeTeam || !awayTeam || !feedback) return null;
+  return {
+    form,
+    controls: [...form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea')],
+    homeTeam,
+    awayTeam,
+    feedback
+  };
+}
+
+function activateAddBetSession(session: AddBetSessionState): void {
+  editingDraftId = session.editingDraftId;
+  currentOpenMatchId = session.matchId;
+  currentOpenMatchTitle = session.matchTitle;
+  if (session.mode !== 'scoped') {
+    currentOpenHomeTeam = '';
+    currentOpenAwayTeam = '';
+  }
+  pendingOngoingDraftId = null;
+  pendingOngoingInput = null;
+  pendingDisciplineChallenge = null;
+  setText('discipline-feedback', '');
+  updateAddFormState();
 }
 
 // Removed updateMatchFilters as filtering is done dynamically in renderAppShell before rendering
@@ -559,7 +596,6 @@ function populateAddFormFromDraft(draft: AddBetDraft): void {
   setValue('motivation-field', draft.preBetMotivation);
   setValue('pre-bet-plan-adherence', draft.preBetPlanAdherence);
   setValue('note-field', draft.preBetNote ?? draft.notes);
-  setText('add-summary-title', draft.homeTeamName && draft.awayTeamName ? formatMatchTitle(draft.homeTeamName, draft.awayTeamName) : draft.matchGroupId);
   updateAddFormState();
 }
 
@@ -716,11 +752,10 @@ appRoot.addEventListener('click', (event) => {
   }
 
   if (eventTarget.closest('[data-open-manual-add]')) {
-    editingDraftId = null;
-    currentOpenMatchId = '';
-    currentOpenMatchTitle = '';
+    const elements = getAddBetFormElements();
+    if (!elements) return;
+    activateAddBetSession(startAddBetSession(currentScreenName === 'today' ? 'quick' : 'manual', {}, elements));
     openSheet('add');
-    setText('add-summary-title', createTranslator(settingsService.getSettings().locale)('bets.manualMatch'));
     return;
   }
 
@@ -803,9 +838,9 @@ appRoot.addEventListener('click', (event) => {
   if (editDraft?.dataset.editDraft) {
     const draft = findDraft(editDraft.dataset.editDraft);
     if (!draft) return;
-    editingDraftId = draft.draftId;
-    currentOpenMatchId = '';
-    currentOpenMatchTitle = draft.homeTeamName && draft.awayTeamName ? formatMatchTitle(draft.homeTeamName, draft.awayTeamName) : '';
+    const elements = getAddBetFormElements();
+    if (!elements) return;
+    activateAddBetSession(startAddBetSession('edit', { draftId: draft.draftId }, elements));
     openSheet('add');
     populateAddFormFromDraft(draft);
     return;
@@ -914,9 +949,11 @@ appRoot.addEventListener('click', (event) => {
     const title = openMatchTarget.dataset.matchTitle || 'Selected match group';
     const meta = openMatchTarget.dataset.matchMeta || 'matchGroupId context';
     const matchId = openMatchTarget.dataset.matchId || '';
+    const homeTeamName = openMatchTarget.dataset.homeTeam || '';
+    const awayTeamName = openMatchTarget.dataset.awayTeam || '';
     currentOpenMatchId = matchId;
     matchDetailReturnScreen = isPrimaryTabId(currentScreenName) ? currentScreenName : 'today';
-    setMatchDetailContext(title, meta);
+    setMatchDetailContext(title, meta, homeTeamName, awayTeamName);
     resetMatchDetailTabs();
     setActiveScreen('match-detail');
     window.history.pushState({ screen: 'match-detail', returnScreen: matchDetailReturnScreen }, '', window.location.href);
@@ -926,13 +963,15 @@ appRoot.addEventListener('click', (event) => {
   }
 
   if (eventTarget.closest('[data-open-scoped-add]')) {
-    editingDraftId = null;
+    const elements = getAddBetFormElements();
+    if (!elements) return;
+    activateAddBetSession(startAddBetSession('scoped', {
+      matchId: currentOpenMatchId,
+      matchTitle: currentOpenMatchTitle,
+      homeTeamName: currentOpenHomeTeam,
+      awayTeamName: currentOpenAwayTeam
+    }, elements));
     openSheet('add');
-    const [home = '', away = ''] = currentOpenMatchTitle.split(' vs ');
-    const homeInput = document.getElementById('home-team') as HTMLInputElement | null;
-    const awayInput = document.getElementById('away-team') as HTMLInputElement | null;
-    if (homeInput) homeInput.value = home;
-    if (awayInput) awayInput.value = away;
     return;
   }
 

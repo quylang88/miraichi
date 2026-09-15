@@ -143,7 +143,7 @@ function renderMatchRowHtml(options: {
   const leftHtml = options.subMeta
     ? `<div>${titleHtml}<div class="row-meta">${escapeHtml(options.subMeta)}</div></div>`
     : titleHtml;
-  return `<article class="match-row clickable" data-match-row data-status="${escapeHtml(options.status)}" data-match-id="${escapeHtml(options.matchId)}"${liveAttr} data-open-match data-match-title="${escapeHtml(options.title)}" data-match-meta="${escapeHtml(options.meta)}" role="button" tabindex="0"><div class="row-split">${leftHtml}<div class="row-right${options.isLive ? ' live' : ''}">${options.rightHtml}</div></div></article>`;
+  return `<article class="match-row clickable" data-match-row data-status="${escapeHtml(options.status)}" data-match-id="${escapeHtml(options.matchId)}"${liveAttr} data-open-match data-match-title="${escapeHtml(options.title)}" data-match-meta="${escapeHtml(options.meta)}" data-home-team="${escapeHtml(options.homeTeam)}" data-away-team="${escapeHtml(options.awayTeam)}" role="button" tabindex="0"><div class="row-split">${leftHtml}<div class="row-right${options.isLive ? ' live' : ''}">${options.rightHtml}</div></div></article>`;
 }
 
 function renderLiveMatchRow(

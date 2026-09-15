@@ -81,6 +81,24 @@ describe('production PWA shell configuration', () => {
 });
 
 describe('phase 9 cloud persistence workflows', () => {
+  it('renders one stable Home vs Away row without duplicated manual-match summaries', () => {
+    const html = renderAppShell({ activeTabId: 'bets' });
+    const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
+    expect(html).toContain('class="add-bet-team-row"');
+    expect(html).toContain('class="add-bet-versus"');
+    expect(html).not.toContain('id="match-summary-readonly"');
+    expect(html).not.toContain('id="add-sheet-subtitle"');
+    expect(css).toMatch(/\.add-bet-team-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto\s+minmax\(0,\s*1fr\)/s);
+  });
+
+  it('starts isolated manual, quick, scoped, and edit sessions before opening Add Bet', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellSource).toContain("startAddBetSession(currentScreenName === 'today' ? 'quick' : 'manual'");
+    expect(shellSource).toContain("startAddBetSession('scoped'");
+    expect(shellSource).toContain("startAddBetSession('edit'");
+    expect(shellSource).not.toContain("setText('add-summary-title'");
+    expect(shellSource).not.toContain("currentOpenMatchTitle.split(' vs ')");
+  });
   it('localizes settlement timeline values and formats audit timestamps in the configured timezone', () => {
     const html = renderSettlementTimeline([{ settlementEventId: 's1', ownerProfileId: 'owner-primary', betId: 'b1', bankrollAccountId: 'a', settlementType: 'full_win', planAdherence: 'yes', calculatedProfitLossPoints: 9, ledgerDeltaPoints: 9, effectiveAt: '2026-08-21T12:00:00.000Z', occurredAt: '2026-08-21T12:00:00.000Z' }], createTranslator('vi'), 'vi', 'Asia/Tokyo');
     expect(html).toContain('Thắng đủ');
@@ -468,7 +486,8 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('data-bet-records-state');
     expect(html).toContain('class="sheet-backdrop"');
     expect(html).toContain('class="sheet" id="add-sheet"');
-    expect(html).toContain('id="match-summary-readonly"');
+    expect(html).not.toContain('id="match-summary-readonly"');
+    expect(html).toContain('class="add-bet-team-row"');
     expect(html).not.toContain('id="match-field"');
     expect(html).not.toContain('data-primary-add');
   });
