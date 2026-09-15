@@ -8,7 +8,7 @@ import {
   type SelectionCode
 } from './structured-bet-selection.js';
 
-export const PRE_BET_EMOTIONS = Object.freeze(['calm', 'excited', 'frustrated', 'anxious', 'tired'] as const);
+export const PRE_BET_EMOTIONS = Object.freeze(['calm', 'excited', 'tilted'] as const);
 export const PRE_BET_MOTIVATIONS = Object.freeze(['planned_analysis', 'familiar_market', 'chasing_loss', 'fomo', 'impulse', 'other'] as const);
 export const PLAN_ADHERENCE_VALUES = Object.freeze(['yes', 'partly', 'no'] as const);
 export const SETTLEMENT_TYPES = Object.freeze(['full_win', 'half_win', 'push', 'void', 'half_loss', 'full_loss', 'manual_adjustment'] as const);

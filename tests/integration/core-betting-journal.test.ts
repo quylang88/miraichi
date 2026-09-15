@@ -24,7 +24,7 @@ describe('core betting journal integration', () => {
     expect(out.statusCode).toBe(201);
     expect(JSON.parse(out.body)).toMatchObject({ account: { accountId: 'bankroll-primary', openingBalancePoints: 100 }, disciplineConfig: { dailyStopLossPoints: null, weeklyStopLossPoints: null, bigBetThresholdPoints: null } });
 
-    const bet = { betId: 'b', matchGroupId: 'manual:a-b', homeTeamName: 'A', awayTeamName: 'B', marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 110, preBetEmotion: 'anxious', preBetMotivation: 'fomo', preBetPlanAdherence: 'partly', createdAt: now };
+    const bet = { betId: 'b', matchGroupId: 'manual:a-b', homeTeamName: 'A', awayTeamName: 'B', marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 110, preBetEmotion: 'tilted', preBetMotivation: 'fomo', preBetPlanAdherence: 'partly', createdAt: now };
     out = response();
     await handleDiscipline(request('POST', '/api/v1/discipline-challenges', bet) as never, out as never, deps);
     const challenge = JSON.parse(out.body).challenge as { challengeId: string };

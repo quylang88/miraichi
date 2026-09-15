@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  PRE_BET_EMOTIONS,
   validateCreateOngoingBetInput,
   validateBetSettlementEvent,
   validateDisciplineConfig,
@@ -24,6 +25,13 @@ const bet = {
 };
 
 describe('core betting contracts', () => {
+  it('allows only the simplified emotion set for new bets', () => {
+    expect(PRE_BET_EMOTIONS).toEqual(['calm', 'excited', 'tilted']);
+    expect(validateCreateOngoingBetInput({ ...bet, preBetEmotion: 'tilted' })).toEqual({ ok: true });
+    for (const legacy of ['frustrated', 'anxious', 'tired']) {
+      expect(validateCreateOngoingBetInput({ ...bet, preBetEmotion: legacy }).ok).toBe(false);
+    }
+  });
   it('accepts nullable thresholds and a real IANA timezone without seeding defaults', () => {
     expect(validateDisciplineConfig(config)).toEqual({ ok: true });
     expect(validateDisciplineConfig({ ...config, timeZone: 'not/a-zone' }).ok).toBe(false);

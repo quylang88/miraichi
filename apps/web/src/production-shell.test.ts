@@ -119,6 +119,17 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('Kèo rung');
   });
 
+  it('defaults new bets to calm and exposes only three emotions', () => {
+    const html = renderAppShell({ activeTabId: 'bets', translate: createTranslator('vi') });
+    const emotion = html.slice(html.indexOf('id="emotion-field"'), html.indexOf('id="motivation-field"'));
+    expect(emotion).toContain('<option value="calm" selected>Bình tĩnh</option>');
+    expect(emotion).toContain('<option value="excited">Hưng phấn</option>');
+    expect(emotion).toContain('<option value="tilted">Mất kiểm soát</option>');
+    expect(emotion).not.toContain('value="frustrated"');
+    expect(emotion).not.toContain('value="anxious"');
+    expect(emotion).not.toContain('value="tired"');
+  });
+
   it('starts isolated manual, quick, scoped, and edit sessions before opening Add Bet', () => {
     const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
     expect(shellSource).toContain("startAddBetSession(currentScreenName === 'today' ? 'quick' : 'manual'");

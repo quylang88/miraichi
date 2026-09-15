@@ -7,6 +7,7 @@ import type {
   PersistedMarketType
 } from './betting-domain-contracts.js';
 import type { PlanAdherence, PreBetEmotion, PreBetMotivation } from './core-betting-contracts.js';
+import { PRE_BET_EMOTIONS } from './core-betting-contracts.js';
 import type {
   LiveContextSource,
   MarketPeriod,
@@ -141,6 +142,11 @@ export function isAddBetDraftReviewReady(draft: Partial<AddBetDraft>): boolean {
   if (draft.oddsFormat !== 'HK'
     || !hasFiniteNumber(draft.oddsValue) || draft.oddsValue <= 0 || !decimalsAtMost(draft.oddsValue, 4)
     || !hasFiniteNumber(draft.stakePoints) || draft.stakePoints <= 0 || !decimalsAtMost(draft.stakePoints, 2)) {
+    return false;
+  }
+
+  if (draft.preBetEmotion !== undefined
+    && !PRE_BET_EMOTIONS.includes(draft.preBetEmotion)) {
     return false;
   }
 
