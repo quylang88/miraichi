@@ -155,6 +155,15 @@ async function assertMarketControls(page: Page) {
   await page.locator('[data-bet-market="corners"]').click();
   await page.locator('[data-bet-period="first_half"]').click();
   assert.deepEqual(await visible(page, '[data-bet-selection]').allTextContents(), ['Over', 'Under']);
+  await page.locator('[data-bet-selection="over"]').click();
+  assert.deepEqual(await visible(page, '[data-bet-line]').allTextContents(), ['2.5', '3.5', '4.5', '5.5', '6.5']);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'HT corner chips fit the mobile viewport');
+  await page.locator('[data-bet-line="4.5"]').click();
+  assert.equal(await page.locator('#line-value-field').inputValue(), '4.5');
+  await page.locator('[data-bet-period="full_time"]').click();
+  assert.equal(await page.locator('#line-value-field').inputValue(), '', 'switching from HT clears dependent line');
+  await page.locator('[data-bet-selection="over"]').click();
+  assert.ok((await visible(page, '[data-bet-line]').allTextContents()).includes('9.5'));
 }
 
 async function verifyZoomRuntime(page: Page) {

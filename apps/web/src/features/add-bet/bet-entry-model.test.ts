@@ -30,6 +30,19 @@ describe('guided Add Bet entry model', () => {
     expect(getLinePresets(oneXTwo)).toEqual([]);
   });
 
+  it('offers first-half corner presets instead of full-time totals and clears a stale FT choice', () => {
+    let state = selectBetPeriod(selectBetMarket(createBetEntryState(), 'corners'), 'full_time');
+    expect(getLinePresets(state)).toEqual([7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11]);
+    state = selectBetLinePreset(selectBetSelection(state, 'over'), 9.5);
+    state = selectBetPeriod(state, 'first_half');
+    expect(state).toMatchObject({ selectionCode: '', lineValue: null });
+    expect(getLinePresets(state)).toEqual([2.5, 3.5, 4.5, 5.5, 6.5]);
+    expect(selectBetLinePreset(state, 9.5).lineValue).toBeNull();
+    expect(selectBetLinePreset(state, 4.5).lineValue).toBe(4.5);
+    state = selectBetSelection(state, 'over');
+    expect(setManualBetLine(state, '5.6').lineValue).toBeNull();
+  });
+
   it('clears dependent choices whenever market or period changes', () => {
     let state = selectBetPeriod(selectBetMarket(createBetEntryState(), 'handicap'), 'full_time');
     state = selectBetSelection(state, 'home');

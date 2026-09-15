@@ -71,7 +71,9 @@ export function getLinePresets(state: BetEntryState): readonly number[] {
       : structuredBetMarketCatalog.linePresets.goalsFullTime;
   }
   if (state.marketType === 'handicap') return structuredBetMarketCatalog.linePresets.handicap;
-  if (state.marketType === 'corners') return structuredBetMarketCatalog.linePresets.corners;
+  if (state.marketType === 'corners') return state.marketPeriod === 'first_half'
+    ? structuredBetMarketCatalog.linePresets.cornersFirstHalf
+    : structuredBetMarketCatalog.linePresets.corners;
   return structuredBetMarketCatalog.linePresets.halfTimeAndRunning;
 }
 

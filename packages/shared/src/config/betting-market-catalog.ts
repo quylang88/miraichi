@@ -97,7 +97,8 @@ export const structuredBetMarketCatalog = Object.freeze({
     goalsFullTime: Object.freeze([1.5, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5]),
     halfTimeAndRunning: Object.freeze([0.5, 0.75, 1, 1.25, 1.5]),
     handicap: Object.freeze([-1.5, -1.25, -1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]),
-    corners: Object.freeze([7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11])
+    corners: Object.freeze([7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11]),
+    cornersFirstHalf: Object.freeze([2.5, 3.5, 4.5, 5.5, 6.5])
   }),
   runningWindows: Object.freeze([
     { startMinute: 0, endMinute: 15 },
