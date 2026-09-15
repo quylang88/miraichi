@@ -16,6 +16,13 @@ async function createMemoryCloudPersistenceAdapter(){
   return adapter;
 }
 describe('bet draft routes',()=>{
+  it('derives fixed 15-minute Running Over 0.5 without a required minute',async()=>{
+    const adapter=await createMemoryCloudPersistenceAdapter();const {selectionCode:_selection,marketPeriod:_period,...base}=draft;
+    let out=response();await handleBetDrafts(request('POST','/api/v1/bet-drafts',{...base,marketType:'running',runningWindow:'fixed_15',windowStartMinute:60,windowEndMinute:75,liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual'}) as never,out as never,{adapter,ownerProfileId:'owner-primary'});
+    expect(out.statusCode).toBe(201);
+    expect(JSON.parse(out.body)).toMatchObject({selectionCode:'over',lineValue:0.5,runningGoalThreshold:0.5});
+    expect(JSON.parse(out.body)).not.toHaveProperty('liveMinute');
+  });
   it('round-trips a simple draft without adding optional motivation or plan',async()=>{
     const adapter=await createMemoryCloudPersistenceAdapter();const out=response();
     await handleBetDrafts(request('POST','/api/v1/bet-drafts',{...draft,preBetEmotion:'calm'}) as never,out as never,{adapter,ownerProfileId:'owner-primary'});

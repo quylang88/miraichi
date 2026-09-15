@@ -1,5 +1,6 @@
 import {
   declaresStructuredBetSelection,
+  deriveRunningOver,
   formatStructuredSelectionLabel,
   validateStructuredBetSelection,
   type StructuredBetSelection
@@ -24,11 +25,14 @@ export function normalizeDeclaredStructuredBetPayload(
   if (!hasText(payload.homeTeamName) || !hasText(payload.awayTeamName)) {
     return { ok: false, errors: ['homeTeamName and awayTeamName are required for structured selections'] };
   }
+  const derived = payload.marketType === 'running'
+    ? deriveRunningOver(payload as unknown as StructuredBetSelection) : null;
+  const canonical = derived ? { ...payload, ...derived } : payload;
   return {
     ok: true,
     payload: {
-      ...payload,
-      selectionLabel: formatStructuredSelectionLabel(payload as unknown as StructuredBetSelection, {
+      ...canonical,
+      selectionLabel: formatStructuredSelectionLabel(canonical as unknown as StructuredBetSelection, {
         homeTeamName: payload.homeTeamName.trim(),
         awayTeamName: payload.awayTeamName.trim()
       })

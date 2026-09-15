@@ -8,6 +8,7 @@ import {
   type MarketPeriod,
   type LiveContextSource,
   type RunningWindow,
+  type RunningGoalThreshold,
   type SelectionCode,
   type StructuredBetSelection
 } from '@miraichi/shared';
@@ -20,6 +21,7 @@ export interface BetEntryState {
   readonly manualLineActive: boolean;
   readonly manualLineInput: string;
   readonly runningWindow: RunningWindow | '';
+  readonly runningGoalThreshold: RunningGoalThreshold | null;
   readonly windowStartMinute: number | null;
   readonly windowEndMinute: number | null;
   readonly liveScoreHome: number | null;
@@ -32,7 +34,7 @@ export interface BetEntryState {
 export function createBetEntryState(): BetEntryState {
   return {
     marketType: '', marketPeriod: '', selectionCode: '', lineValue: null,
-    manualLineActive: false, manualLineInput: '', runningWindow: '',
+    manualLineActive: false, manualLineInput: '', runningWindow: '', runningGoalThreshold: null,
     windowStartMinute: null, windowEndMinute: null,
     liveScoreHome: null, liveScoreAway: null, liveMinute: null,
     liveContextSource: '', liveContextObservedAt: ''
@@ -53,6 +55,7 @@ export function selectBetPeriod(state: BetEntryState, marketPeriod: MarketPeriod
 
 export function getSelectionCodes(state: BetEntryState): readonly SelectionCode[] {
   if (!state.marketType || (state.marketType !== 'running' && !state.marketPeriod)) return [];
+  if (state.marketType === 'running') return ['over'];
   const market = structuredBetMarketCatalog.markets.find((item) => item.marketType === state.marketType);
   return market ? [...market.selections] : [];
 }
@@ -63,7 +66,7 @@ export function selectBetSelection(state: BetEntryState, selectionCode: Selectio
 }
 
 export function getLinePresets(state: BetEntryState): readonly number[] {
-  if (state.marketType === 'running') return structuredBetMarketCatalog.linePresets.halfTimeAndRunning;
+  if (state.marketType === 'running') return state.runningWindow === 'fixed_15' ? [0.5] : [0.5, 0.75];
   if (!state.marketType || !state.marketPeriod || state.marketType === '1X2') return [];
   if (state.marketType === 'over_under') {
     return state.marketPeriod === 'first_half'
@@ -90,12 +93,12 @@ export function selectRunningWindow(
     return {
       ...state, runningWindow,
       windowStartMinute: fixedWindow!.startMinute, windowEndMinute: fixedWindow!.endMinute,
-      selectionCode: '', lineValue: null, manualLineActive: false, manualLineInput: ''
+      selectionCode: 'over', runningGoalThreshold: 0.5, lineValue: null, manualLineActive: false, manualLineInput: ''
     };
   }
   return {
     ...state, runningWindow, windowStartMinute: null, windowEndMinute: null,
-    selectionCode: '', lineValue: null, manualLineActive: false, manualLineInput: ''
+    selectionCode: 'over', runningGoalThreshold: null, lineValue: null, manualLineActive: false, manualLineInput: ''
   };
 }
 
@@ -121,7 +124,7 @@ export function clearRunningContext(state: BetEntryState, source: LiveContextSou
   if (state.marketType !== 'running') return state;
   return {
     ...state,
-    runningWindow: '', windowStartMinute: null, windowEndMinute: null,
+    runningWindow: '', runningGoalThreshold: null, windowStartMinute: null, windowEndMinute: null,
     selectionCode: '', lineValue: null, manualLineActive: false, manualLineInput: '',
     liveScoreHome: null, liveScoreAway: null, liveMinute: null,
     liveContextSource: source, liveContextObservedAt: ''
@@ -142,6 +145,10 @@ export function setManualRunningContext(state: BetEntryState, context: {
 
 export function selectBetLinePreset(state: BetEntryState, lineValue: number): BetEntryState {
   if (!getLinePresets(state).includes(lineValue)) return state;
+  if (state.marketType === 'running') return {
+    ...state, selectionCode: 'over', runningGoalThreshold: lineValue as RunningGoalThreshold,
+    lineValue: null, manualLineActive: false, manualLineInput: ''
+  };
   return { ...state, lineValue, manualLineActive: false, manualLineInput: '' };
 }
 
@@ -159,22 +166,24 @@ export function enableManualBetLine(state: BetEntryState): BetEntryState {
 }
 
 export function toStructuredBetSelection(state: BetEntryState): StructuredBetSelection | null {
-  if (!state.marketType || !state.selectionCode) return null;
+  if (!state.marketType) return null;
   if (state.marketType === 'running') {
     if (!state.runningWindow || state.liveScoreHome === null || state.liveScoreAway === null
-      || state.liveMinute === null || !state.liveContextSource) return null;
+      || !state.liveContextSource || state.runningGoalThreshold === null) return null;
     const selection: StructuredBetSelection = {
       marketType: 'running', runningWindow: state.runningWindow,
       ...(state.runningWindow === 'fixed_15'
         ? { windowStartMinute: state.windowStartMinute!, windowEndMinute: state.windowEndMinute! }
         : {}),
-      selectionCode: state.selectionCode, lineValue: state.lineValue,
+      runningGoalThreshold: state.runningGoalThreshold,
       liveScoreHome: state.liveScoreHome, liveScoreAway: state.liveScoreAway,
-      liveMinute: state.liveMinute, liveContextSource: state.liveContextSource,
+      ...(state.liveMinute === null ? {} : { liveMinute: state.liveMinute }),
+      liveContextSource: state.liveContextSource,
       ...(state.liveContextSource === 'snapshot' ? { liveContextObservedAt: state.liveContextObservedAt } : {})
     };
     return validateStructuredBetSelection(selection).ok ? selection : null;
   }
+  if (!state.selectionCode) return null;
   if (!state.marketPeriod) return null;
   const selection = {
     marketType: state.marketType,
@@ -191,6 +200,7 @@ export function restoreBetEntryState(input: {
   readonly selectionCode?: SelectionCode;
   readonly lineValue?: number | null;
   readonly runningWindow?: RunningWindow;
+  readonly runningGoalThreshold?: RunningGoalThreshold;
   readonly windowStartMinute?: number;
   readonly windowEndMinute?: number;
   readonly liveScoreHome?: number;
@@ -205,15 +215,15 @@ export function restoreBetEntryState(input: {
     if (input.runningWindow) state = selectRunningWindow(state, input.runningWindow, {
       startMinute: input.windowStartMinute ?? -1, endMinute: input.windowEndMinute ?? -1
     });
-    if (input.liveScoreHome != null && input.liveScoreAway != null && input.liveMinute != null && input.liveContextSource) {
-      state = setRunningContext(state, {
-        liveScoreHome: input.liveScoreHome, liveScoreAway: input.liveScoreAway,
-        liveMinute: input.liveMinute, liveContextSource: input.liveContextSource,
+    if (input.liveScoreHome != null && input.liveScoreAway != null && input.liveContextSource) {
+      state = input.liveMinute != null ? setRunningContext(state, {
+        liveScoreHome: input.liveScoreHome, liveScoreAway: input.liveScoreAway, liveMinute: input.liveMinute,
+        liveContextSource: input.liveContextSource,
         ...(input.liveContextObservedAt ? { liveContextObservedAt: input.liveContextObservedAt } : {})
-      });
+      }) : setManualRunningContext(state, {liveScoreHome:input.liveScoreHome,liveScoreAway:input.liveScoreAway,liveMinute:null});
     }
-    if (input.selectionCode && getSelectionCodes(state).includes(input.selectionCode)) state = selectBetSelection(state, input.selectionCode);
-    if (input.lineValue != null) state = setManualBetLine(state, String(input.lineValue));
+    const threshold=input.runningGoalThreshold ?? (input.runningWindow==='fixed_15'?0.5:undefined);
+    if (threshold) state=selectBetLinePreset(state,threshold);
     return state;
   }
   if (input.marketPeriod && MARKET_PERIODS.includes(input.marketPeriod)) state = selectBetPeriod(state, input.marketPeriod);

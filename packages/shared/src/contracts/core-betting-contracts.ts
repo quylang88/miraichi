@@ -5,6 +5,7 @@ import {
   type CreatableMarketType,
   type MarketPeriod,
   type RunningWindow,
+  type RunningGoalThreshold,
   type SelectionCode
 } from './structured-bet-selection.js';
 
@@ -45,10 +46,11 @@ export interface CreateOngoingBetInput {
   readonly marketType: CreatableMarketType;
   readonly customMarketLabel?: string;
   readonly selectionLabel?: string;
-  readonly selectionCode: SelectionCode;
+  readonly selectionCode?: SelectionCode;
   readonly marketPeriod?: MarketPeriod;
   readonly lineValue?: number | null;
   readonly runningWindow?: RunningWindow;
+  readonly runningGoalThreshold?: RunningGoalThreshold;
   readonly windowStartMinute?: number;
   readonly windowEndMinute?: number;
   readonly liveScoreHome?: number;

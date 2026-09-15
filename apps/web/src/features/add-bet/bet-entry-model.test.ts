@@ -76,11 +76,10 @@ describe('guided Add Bet entry model', () => {
     expect(toStructuredBetSelection(restoreBetEntryState({ marketType: 'custom' as string }))).toBeNull();
   });
 
-  it('builds a valid running selection only with window, live context and line', () => {
+  it('builds a fixed-window Running Over 0.5 with snapshot context', () => {
     let state = selectBetMarket(createBetEntryState(), 'running');
     state = selectRunningWindow(state, 'fixed_15', { startMinute: 45, endMinute: 60 });
-    state = selectBetSelection(state, 'over');
-    state = selectBetLinePreset(state, 0.75);
+    state = selectBetLinePreset(state, 0.5);
     state = setRunningContext(state, {
       liveScoreHome: 2, liveScoreAway: 1, liveMinute: 58,
       liveContextSource: 'snapshot', liveContextObservedAt: generatedAt
@@ -88,7 +87,7 @@ describe('guided Add Bet entry model', () => {
     expect(toStructuredBetSelection(state)).toEqual({
       marketType: 'running', runningWindow: 'fixed_15',
       windowStartMinute: 45, windowEndMinute: 60,
-      selectionCode: 'over', lineValue: 0.75,
+      runningGoalThreshold: 0.5,
       liveScoreHome: 2, liveScoreAway: 1, liveMinute: 58,
       liveContextSource: 'snapshot', liveContextObservedAt: generatedAt
     });
@@ -98,7 +97,17 @@ describe('guided Add Bet entry model', () => {
       liveMinute: state.liveMinute
     });
     expect(toStructuredBetSelection(state)).toMatchObject({
-      liveScoreHome: 2, liveScoreAway: 1, liveMinute: 58, liveContextSource: 'manual'
+      runningGoalThreshold: 0.5, liveScoreHome: 2, liveScoreAway: 1, liveMinute: 58, liveContextSource: 'manual'
     });
+  });
+
+  it('derives Running Over 0.75 from score without asking for a line or minute',()=>{
+    let state=selectBetMarket(createBetEntryState(),'running');
+    state=selectRunningWindow(state,'to_full_time');
+    state=selectBetLinePreset(state,0.75);
+    state=setManualRunningContext(state,{liveScoreHome:1,liveScoreAway:1,liveMinute:null});
+    expect(toStructuredBetSelection(state)).toEqual({marketType:'running',runningWindow:'to_full_time',runningGoalThreshold:0.75,liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual'});
+    expect(getSelectionCodes(state)).toEqual(['over']);
+    expect(getLinePresets(state)).toEqual([0.5,0.75]);
   });
 });

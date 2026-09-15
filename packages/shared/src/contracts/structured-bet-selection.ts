@@ -11,13 +11,15 @@ export type SelectionCode = typeof SELECTION_CODES[number];
 export type MarketPeriod = typeof MARKET_PERIODS[number];
 export type RunningWindow = typeof RUNNING_WINDOWS[number];
 export type LiveContextSource = typeof LIVE_CONTEXT_SOURCES[number];
+export type RunningGoalThreshold = 0.5 | 0.75;
 
 export interface StructuredBetSelection {
   readonly marketType: CreatableMarketType;
-  readonly selectionCode: SelectionCode;
+  readonly selectionCode?: SelectionCode;
   readonly marketPeriod?: MarketPeriod;
   readonly lineValue?: number | null;
   readonly runningWindow?: RunningWindow;
+  readonly runningGoalThreshold?: RunningGoalThreshold;
   readonly windowStartMinute?: number;
   readonly windowEndMinute?: number;
   readonly liveScoreHome?: number;
@@ -33,7 +35,8 @@ export type StructuredBetSelectionValidationResult =
 
 const STRUCTURED_DECLARATION_FIELDS = [
   'selectionCode', 'marketPeriod', 'runningWindow', 'windowStartMinute', 'windowEndMinute',
-  'liveScoreHome', 'liveScoreAway', 'liveMinute', 'liveContextSource', 'liveContextObservedAt'
+  'liveScoreHome', 'liveScoreAway', 'liveMinute', 'liveContextSource', 'liveContextObservedAt',
+  'runningGoalThreshold'
 ] as const;
 
 export function declaresStructuredBetSelection(input: unknown): boolean {
@@ -73,7 +76,7 @@ function validateNoLine(value: Record<string, unknown>, errors: string[]): void 
 
 function validateNoRunningFields(value: Record<string, unknown>, errors: string[]): void {
   const runningFields = [
-    'runningWindow', 'windowStartMinute', 'windowEndMinute', 'liveScoreHome', 'liveScoreAway',
+    'runningWindow', 'runningGoalThreshold', 'windowStartMinute', 'windowEndMinute', 'liveScoreHome', 'liveScoreAway',
     'liveMinute', 'liveContextSource', 'liveContextObservedAt'
   ];
   if (runningFields.some((field) => value[field] !== undefined)) {
@@ -82,17 +85,22 @@ function validateNoRunningFields(value: Record<string, unknown>, errors: string[
 }
 
 function validateRunning(value: Record<string, unknown>, errors: string[]): void {
-  if (!['over', 'under'].includes(String(value.selectionCode))) errors.push('selectionCode is invalid for running');
-  validateLine(value.lineValue, 0.25, 10, errors);
+  if (value.selectionCode !== undefined && value.selectionCode !== 'over') errors.push('selectionCode must be over for running');
   if (!RUNNING_WINDOWS.includes(value.runningWindow as RunningWindow)) errors.push('runningWindow is invalid');
-
-  const scoresAndMinute = [value.liveScoreHome, value.liveScoreAway, value.liveMinute];
-  if (!scoresAndMinute.every((item) => Number.isInteger(item) && Number(item) >= 0)) {
-    errors.push('running live context requires non-negative integer scores and minute');
+  if (!Number.isSafeInteger(value.liveScoreHome) || Number(value.liveScoreHome) < 0
+    || !Number.isSafeInteger(value.liveScoreAway) || Number(value.liveScoreAway) < 0) {
+    errors.push('running requires non-negative integer score for both teams');
     return;
   }
-  const minute = Number(value.liveMinute);
-  if (minute >= 90) errors.push('liveMinute must be before full-time');
+  const minute = value.liveMinute;
+  if (minute !== undefined && (!Number.isInteger(minute) || Number(minute) < 0 || Number(minute) >= 90)) {
+    errors.push('liveMinute must be an integer before full-time');
+  }
+  const derived = deriveRunningOver(value as unknown as StructuredBetSelection);
+  if (!derived) errors.push('runningGoalThreshold must be 0.5 or 0.75 (fixed_15 forces 0.5)');
+  else if (value.lineValue !== undefined && value.lineValue !== null && value.lineValue !== derived.lineValue) {
+    errors.push('lineValue contradicts the running score and goal threshold');
+  }
   if (!LIVE_CONTEXT_SOURCES.includes(value.liveContextSource as LiveContextSource)) {
     errors.push('liveContextSource is invalid');
   }
@@ -105,7 +113,7 @@ function validateRunning(value: Record<string, unknown>, errors: string[]): void
   }
   if (value.marketPeriod !== undefined) errors.push('marketPeriod is not allowed for running');
 
-  if (value.runningWindow === 'to_half_time' && minute >= 45) {
+  if (value.runningWindow === 'to_half_time' && minute !== undefined && Number(minute) >= 45) {
     errors.push('running half-time selection is closed');
   }
   if (value.runningWindow === 'fixed_15') {
@@ -113,12 +121,25 @@ function validateRunning(value: Record<string, unknown>, errors: string[]): void
     const end = value.windowEndMinute;
     if (!Number.isInteger(start) || !Number.isInteger(end) || FIXED_WINDOWS.get(Number(start)) !== end) {
       errors.push('fixed running window must be a supported 15-minute block');
-    } else if (minute >= Number(end)) {
+    } else if (minute !== undefined && Number(minute) >= Number(end)) {
       errors.push('fixed running window has already ended');
     }
   } else if (value.windowStartMinute !== undefined || value.windowEndMinute !== undefined) {
     errors.push('window minutes are only allowed for fixed_15');
   }
+}
+
+export function deriveRunningOver(selection: StructuredBetSelection):
+  { readonly selectionCode: 'over'; readonly runningGoalThreshold: RunningGoalThreshold; readonly lineValue: number } | null {
+  if (selection.marketType !== 'running') return null;
+  const threshold = selection.runningWindow === 'fixed_15' ? 0.5 : selection.runningGoalThreshold;
+  if (threshold !== 0.5 && threshold !== 0.75) return null;
+  if (selection.runningWindow === 'fixed_15' && selection.runningGoalThreshold !== undefined && selection.runningGoalThreshold !== 0.5) return null;
+  if (!Number.isSafeInteger(selection.liveScoreHome) || !Number.isSafeInteger(selection.liveScoreAway)) return null;
+  const lineValue = selection.runningWindow === 'fixed_15'
+    ? 0.5 : Number(selection.liveScoreHome) + Number(selection.liveScoreAway) + threshold;
+  if (!Number.isFinite(lineValue) || !isQuarterStep(lineValue)) return null;
+  return { selectionCode: 'over', runningGoalThreshold: threshold, lineValue };
 }
 
 export function validateStructuredBetSelection(input: unknown): StructuredBetSelectionValidationResult {
@@ -179,7 +200,7 @@ export function formatStructuredSelectionLabel(
   selection: StructuredBetSelection,
   teams: { readonly homeTeamName: string; readonly awayTeamName: string }
 ): string {
-  const side = selection.selectionCode === 'home'
+  const side = selection.marketType === 'running' ? 'Over' : selection.selectionCode === 'home'
     ? teams.homeTeamName
     : selection.selectionCode === 'away'
       ? teams.awayTeamName
@@ -202,5 +223,7 @@ export function formatStructuredSelectionLabel(
     : selection.runningWindow === 'to_full_time'
       ? 'FT'
       : `${selection.windowStartMinute}-${selection.windowEndMinute}`;
-  return `${side} ${lineText(selection.lineValue!)} · Running ${window} · ${selection.liveScoreHome}-${selection.liveScoreAway} @ ${selection.liveMinute}'`;
+  const lineValue = deriveRunningOver(selection)?.lineValue ?? selection.lineValue!;
+  const minute = selection.liveMinute === undefined ? '' : ` @ ${selection.liveMinute}'`;
+  return `${side} ${lineText(lineValue)} · Running ${window} · ${selection.liveScoreHome}-${selection.liveScoreAway}${minute}`;
 }

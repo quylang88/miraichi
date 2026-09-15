@@ -12,6 +12,7 @@ import type {
   LiveContextSource,
   MarketPeriod,
   RunningWindow,
+  RunningGoalThreshold,
   SelectionCode
 } from './structured-bet-selection.js';
 
@@ -34,6 +35,7 @@ export interface AddBetDraft {
   readonly marketPeriod?: MarketPeriod;
   readonly lineValue?: LineValue | null;
   readonly runningWindow?: RunningWindow;
+  readonly runningGoalThreshold?: RunningGoalThreshold;
   readonly windowStartMinute?: number;
   readonly windowEndMinute?: number;
   readonly liveScoreHome?: number;

@@ -73,6 +73,20 @@ describe('memory cloud persistence adapter', () => {
     expect(backup.bets).toMatchObject([structured]);
   });
 
+  it('imports and exports the derived Running threshold with absent placement minute',async()=>{
+    const adapter=createMemoryCloudPersistenceAdapter({now:fixedNow});
+    const fields={marketType:'running' as const,selectionCode:'over' as const,runningGoalThreshold:0.75 as const,lineValue:2.75,runningWindow:'to_full_time' as const,liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual' as const};
+    const draft={draftId:'threshold-draft',matchGroupId:'m',oddsFormat:'HK' as const,oddsValue:0.9,stakePoints:10,createdAt:fixedNow(),updatedAt:fixedNow(),...fields};
+    const bet={betId:'threshold-bet',ownerProfileId:'owner-primary',matchGroupId:'m',homeTeamName:'A',awayTeamName:'B',selectionLabel:'Over 2.75 · Running FT · 1-1',oddsFormat:'HK' as const,oddsValue:0.9,stakePoints:10,status:'pending' as const,createdAt:fixedNow(),updatedAt:fixedNow(),...fields};
+    await adapter.saveBetDraft('owner-primary',draft);await adapter.createBetRecord(bet);
+    const backup=await adapter.exportOwnerData('owner-primary',fixedNow());
+    const restored=createMemoryCloudPersistenceAdapter({now:fixedNow});
+    await restored.importOwnerData('owner-primary',backup);
+    expect((await restored.listBetDrafts('owner-primary'))[0]).toMatchObject(fields);
+    expect((await restored.listBetRecords('owner-primary'))[0]).toMatchObject(fields);
+    expect((await restored.listBetRecords('owner-primary'))[0]).not.toHaveProperty('liveMinute');
+  });
+
   it('reconciles signed manual ledger entries without betting advice', async () => {
     const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
     await adapter.createBankrollAccount({ accountId: 'account-001', ownerProfileId: 'owner-primary', label: 'Main', openingBalancePoints: 1000 });

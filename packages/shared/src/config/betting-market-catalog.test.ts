@@ -6,6 +6,7 @@ describe('structured betting market catalog', () => {
     expect(structuredBetMarketCatalog.markets.map((market) => market.marketType)).toEqual([
       '1X2', 'over_under', 'handicap', 'corners', 'running'
     ]);
+    expect(structuredBetMarketCatalog.markets.find((market)=>market.marketType==='running')?.selections).toEqual(['over']);
   });
 
   it('contains the approved common line presets', () => {

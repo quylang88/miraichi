@@ -45,18 +45,39 @@ describe('structured bet selection contract', () => {
   });
 
   it('requires a valid live context and target for running bets', () => {
-    valid({ marketType: 'running', selectionCode: 'over', lineValue: 0.75, runningWindow: 'to_half_time',
+    valid({ marketType: 'running', selectionCode: 'over', lineValue: 1.75, runningGoalThreshold: 0.75, runningWindow: 'to_half_time',
       liveScoreHome: 1, liveScoreAway: 0, liveMinute: 37, liveContextSource: 'snapshot',
       liveContextObservedAt: '2026-09-15T00:00:00.000Z' });
-    valid({ marketType: 'running', selectionCode: 'under', lineValue: 1.5, runningWindow: 'fixed_15',
+    valid({ marketType: 'running', selectionCode: 'over', lineValue: 0.5, runningWindow: 'fixed_15',
       windowStartMinute: 45, windowEndMinute: 60, liveScoreHome: 1, liveScoreAway: 1,
       liveMinute: 52, liveContextSource: 'manual' });
-    invalid({ marketType: 'running', selectionCode: 'over', lineValue: 1, runningWindow: 'to_full_time' }, 'live context');
-    invalid({ marketType: 'running', selectionCode: 'over', lineValue: 1, runningWindow: 'to_half_time',
+    invalid({ marketType: 'running', selectionCode: 'over', runningGoalThreshold: 0.5, runningWindow: 'to_full_time' }, 'score');
+    invalid({ marketType: 'running', selectionCode: 'over', runningGoalThreshold: 0.5, runningWindow: 'to_half_time',
       liveScoreHome: 0, liveScoreAway: 0, liveMinute: 45, liveContextSource: 'manual' }, 'half-time');
-    invalid({ marketType: 'running', selectionCode: 'over', lineValue: 1, runningWindow: 'fixed_15',
+    invalid({ marketType: 'running', selectionCode: 'over', runningWindow: 'fixed_15',
       windowStartMinute: 30, windowEndMinute: 45, liveScoreHome: 0, liveScoreAway: 0,
       liveMinute: 52, liveContextSource: 'manual' }, 'ended');
+  });
+
+  it('derives Running Over from score and goal threshold while allowing an omitted minute', () => {
+    const running = {marketType:'running',runningWindow:'to_full_time',runningGoalThreshold:0.75,
+      liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual'};
+    expect(validateStructuredBetSelection(running)).toEqual({ok:true});
+    expect(formatStructuredSelectionLabel(running as StructuredBetSelection,teams)).toBe('Over 2.75 · Running FT · 1-1');
+    invalid({...running,selectionCode:'under',lineValue:2.75},'selectionCode');
+    invalid({...running,selectionCode:'over',lineValue:0.75},'lineValue');
+    invalid({...running,runningGoalThreshold:0.25},'runningGoalThreshold');
+    invalid({...running,liveScoreHome:-1},'score');
+    invalid({...running,liveMinute:90},'liveMinute');
+  });
+
+  it('forces 0.5 on a fixed 15-minute interval and does not invent an entry minute', () => {
+    const fixed = {marketType:'running',runningWindow:'fixed_15',windowStartMinute:60,windowEndMinute:75,
+      liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual'};
+    expect(validateStructuredBetSelection(fixed)).toEqual({ok:true});
+    expect(formatStructuredSelectionLabel(fixed as StructuredBetSelection,teams)).toBe('Over 0.5 · Running 60-75 · 1-1');
+    invalid({...fixed,runningGoalThreshold:0.75},'runningGoalThreshold');
+    invalid({...fixed,liveMinute:75},'ended');
   });
 
   it('rejects custom and unsupported market values', () => {
@@ -65,10 +86,10 @@ describe('structured bet selection contract', () => {
 
   it('rejects fields that belong to another market shape', () => {
     invalid({ marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home', runningWindow: 'to_full_time' }, 'running fields');
-    invalid({ marketType: 'running', marketPeriod: 'full_time', selectionCode: 'over', lineValue: 1,
+    invalid({ marketType: 'running', marketPeriod: 'full_time', selectionCode: 'over', runningGoalThreshold: 0.5,
       runningWindow: 'to_full_time', liveScoreHome: 0, liveScoreAway: 0, liveMinute: 20,
       liveContextSource: 'manual' }, 'marketPeriod');
-    invalid({ marketType: 'running', selectionCode: 'over', lineValue: 1, runningWindow: 'to_full_time',
+    invalid({ marketType: 'running', selectionCode: 'over', runningGoalThreshold: 0.5, runningWindow: 'to_full_time',
       liveScoreHome: 0, liveScoreAway: 0, liveMinute: 20, liveContextSource: 'manual',
       liveContextObservedAt: '2026-09-15T00:00:00.000Z' }, 'manual context');
   });
@@ -86,8 +107,8 @@ describe('structured bet selection contract', () => {
     expect(formatStructuredSelectionLabel({ marketType: 'over_under', marketPeriod: 'full_time', selectionCode: 'over', lineValue: 3.25 }, teams)).toBe('Over 3.25 · FT');
     expect(formatStructuredSelectionLabel({ marketType: 'handicap', marketPeriod: 'first_half', selectionCode: 'away', lineValue: 0.5 }, teams)).toBe('Vietnam +0.5 · HT');
     expect(formatStructuredSelectionLabel({ marketType: 'corners', marketPeriod: 'full_time', selectionCode: 'under', lineValue: 9.5 }, teams)).toBe('Under 9.5 corners · FT');
-    expect(formatStructuredSelectionLabel({ marketType: 'running', selectionCode: 'over', lineValue: 0.75,
+    expect(formatStructuredSelectionLabel({ marketType: 'running', selectionCode: 'over', lineValue: 1.75, runningGoalThreshold: 0.75,
       runningWindow: 'to_full_time', liveScoreHome: 1, liveScoreAway: 0, liveMinute: 67,
-      liveContextSource: 'manual' }, teams)).toBe("Over 0.75 · Running FT · 1-0 @ 67'");
+      liveContextSource: 'manual' }, teams)).toBe("Over 1.75 · Running FT · 1-0 @ 67'");
   });
 });

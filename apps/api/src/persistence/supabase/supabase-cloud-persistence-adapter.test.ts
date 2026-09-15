@@ -134,6 +134,28 @@ describe('supabase cloud persistence adapter', () => {
     }]);
   });
 
+  it('round-trips derived Running goal thresholds without inventing a minute on draft and bet',async()=>{
+    const client=new FakeClient();const adapter=createSupabaseCloudPersistenceAdapter({client,ownerProfileId:'owner-primary'});
+    const now='2026-09-15T00:00:00.000Z';
+    await adapter.saveBetDraft('owner-primary',{draftId:'d',matchGroupId:'m',homeTeamName:'A',awayTeamName:'B',marketType:'running',selectionCode:'over',runningGoalThreshold:0.75,lineValue:2.75,runningWindow:'to_full_time',liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,createdAt:now,updatedAt:now});
+    await adapter.createBetRecord({betId:'b',ownerProfileId:'owner-primary',matchGroupId:'m',homeTeamName:'A',awayTeamName:'B',marketType:'running',selectionLabel:'Over 2.75 · Running FT · 1-1',selectionCode:'over',runningGoalThreshold:0.75,lineValue:2.75,runningWindow:'to_full_time',liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,status:'pending',createdAt:now,updatedAt:now});
+    const writes=client.calls.filter((call)=>call.text.includes('insert into miraichi_app.bet_'));
+    expect(writes).toHaveLength(2);
+    for(const write of writes){
+      expect(write.text).toContain('running_goal_threshold');
+      expect(write.values).toContain(0.75);
+      const indices=[...write.text.matchAll(/\$(\d+)/g)].map((match)=>Number(match[1]));
+      expect(write.values).toHaveLength(Math.max(...indices));
+    }
+    const base={market_type:'running',selection_code:'over',running_goal_threshold:'0.75',line_value:'2.75',running_window:'to_full_time',live_score_home:1,live_score_away:1,live_minute:null,live_context_source:'manual',selection_label:'Over 2.75 · Running FT · 1-1',odds_format:'HK',odds_value:'0.9',stake_points:'10',created_at:now,updated_at:now,tags:[]};
+    client.enqueueRows([{draft_id:'d',match_group_id:'m',...base}],[{bet_id:'b',owner_profile_id:'owner-primary',match_group_id:'m',home_team_name:'A',away_team_name:'B',status:'pending',...base}]);
+    const savedDraft=(await adapter.listBetDrafts('owner-primary'))[0];
+    const savedBet=(await adapter.listBetRecords('owner-primary'))[0];
+    expect(savedDraft).toMatchObject({runningGoalThreshold:0.75});
+    expect(savedBet).toMatchObject({runningGoalThreshold:0.75});
+    expect(savedBet).not.toHaveProperty('liveMinute');
+  });
+
   it('rejects owner mismatch before querying', async () => {
     const client = new FakeClient();
     const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
@@ -210,6 +232,16 @@ describe('supabase cloud persistence adapter', () => {
       const placeholders = [...write.text.matchAll(/\$(\d+)/g)].map((match) => Number(match[1]));
       expect(write.values).toHaveLength(Math.max(...placeholders));
     }
+  });
+
+  it('imports the derived Running threshold in both SQL backup collections',async()=>{
+    const client=new FakeClient();const adapter=createSupabaseCloudPersistenceAdapter({client,ownerProfileId:'owner-primary'});
+    const now='2026-09-15T00:00:00.000Z';
+    const running={marketType:'running' as const,selectionCode:'over' as const,runningGoalThreshold:0.75 as const,lineValue:2.75,runningWindow:'to_full_time' as const,liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual' as const};
+    await adapter.importOwnerData('owner-primary',{schemaVersion:'miraichi.cloud-backup.v2',ownerProfileId:'owner-primary',exportedAt:now,bankrollAccounts:[],bankrollLedgerEntries:[],disciplineConfigs:[],settlementEvents:[],drafts:[{draftId:'d',matchGroupId:'m',homeTeamName:'A',awayTeamName:'B',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,createdAt:now,updatedAt:now,...running}],bets:[{betId:'b',ownerProfileId:'owner-primary',matchGroupId:'m',homeTeamName:'A',awayTeamName:'B',selectionLabel:'Over 2.75 · Running FT · 1-1',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,status:'pending',createdAt:now,updatedAt:now,...running}]});
+    const writes=client.calls.filter((call)=>call.text.includes('insert into miraichi_app.bet_'));
+    expect(writes).toHaveLength(2);
+    for(const write of writes){expect(write.text).toContain('running_goal_threshold');expect(write.values.at(-1)).toBe(0.75);}
   });
 
   it('upserts discipline config including week_start_day', async () => {

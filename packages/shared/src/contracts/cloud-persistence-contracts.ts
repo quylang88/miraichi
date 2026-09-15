@@ -5,7 +5,7 @@ import type {
   PlanAdherence, PreBetEmotion, PreBetMotivation, SettlementType
 } from './core-betting-contracts.js';
 import type {
-  LiveContextSource, MarketPeriod, RunningWindow, SelectionCode
+  LiveContextSource, MarketPeriod, RunningWindow, RunningGoalThreshold, SelectionCode
 } from './structured-bet-selection.js';
 
 export type CloudPersistenceMode = 'disabled' | 'memory' | 'supabase';
@@ -26,6 +26,7 @@ export interface CloudBetRecord {
   marketType: '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom' | 'running';
   customMarketLabel?: string; selectionLabel: string; selectionCode?: SelectionCode;
   marketPeriod?: MarketPeriod; lineValue?: number | null; runningWindow?: RunningWindow;
+  runningGoalThreshold?: RunningGoalThreshold;
   windowStartMinute?: number; windowEndMinute?: number;
   liveScoreHome?: number; liveScoreAway?: number; liveMinute?: number;
   liveContextSource?: LiveContextSource; liveContextObservedAt?: string;

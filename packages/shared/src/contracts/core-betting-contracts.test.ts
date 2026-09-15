@@ -80,7 +80,7 @@ describe('core betting contracts', () => {
       ...bet, selectionCode: undefined
     }).ok).toBe(false);
     expect(validateCreateOngoingBetInput({
-      ...base, marketType: 'running', marketPeriod: undefined, selectionCode: 'over', lineValue: 0.75,
+      ...base, marketType: 'running', marketPeriod: undefined, selectionCode: 'over', lineValue: 1.75, runningGoalThreshold: 0.75,
       runningWindow: 'to_full_time', liveScoreHome: 1, liveScoreAway: 0, liveMinute: 55,
       liveContextSource: 'manual'
     })).toEqual({ ok: true });

@@ -15,6 +15,18 @@ async function createMemoryCloudPersistenceAdapter(){
   return adapter;
 }
 describe('bet routes',()=>{
+  it('derives the Running Over selection and line on the server and rejects contradictory client fields',async()=>{
+    const adapter=await createMemoryCloudPersistenceAdapter();await adapter.createBankrollAccount({accountId:'account-1',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});
+    const {selectionCode:_selection,marketPeriod:_period,...base}=record;
+    const running={...base,marketType:'running',runningWindow:'to_full_time',runningGoalThreshold:0.75,liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual',selectionLabel:'LIED'};
+    let out=response();await handleBets(request('POST','/api/v1/bets',running) as never,out as never,{adapter,ownerProfileId:'owner-primary'});
+    expect(out.statusCode).toBe(201);
+    expect(JSON.parse(out.body)).toMatchObject({selectionCode:'over',lineValue:2.75,runningGoalThreshold:0.75,selectionLabel:'Over 2.75 · Running FT · 1-1'});
+    for(const fields of [{selectionCode:'under'},{lineValue:0.75},{runningGoalThreshold:0.25}]){
+      out=response();await handleBets(request('POST','/api/v1/bets',{...running,...fields,betId:`bad-${Object.keys(fields)[0]}`}) as never,out as never,{adapter,ownerProfileId:'owner-primary'});
+      expect(out.statusCode).toBe(400);
+    }
+  });
   it('creates an emotion-only bet without adding motivation or plan on the server',async()=>{
     const adapter=await createMemoryCloudPersistenceAdapter();await adapter.createBankrollAccount({accountId:'account-1',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});
     const {preBetMotivation:_motivation,preBetPlanAdherence:_adherence,...simple}=record;

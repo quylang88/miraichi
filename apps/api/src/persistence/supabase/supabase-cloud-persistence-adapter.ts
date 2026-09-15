@@ -111,6 +111,7 @@ function mapDraft(row: Row): AddBetDraft {
     ...(row.market_period == null ? {} : { marketPeriod: text(row.market_period) as NonNullable<AddBetDraft['marketPeriod']> }),
     ...(row.line_value == null ? {} : { lineValue: number(row.line_value) }),
     ...(row.running_window == null ? {} : { runningWindow: text(row.running_window) as NonNullable<AddBetDraft['runningWindow']> }),
+    ...(row.running_goal_threshold == null ? {} : { runningGoalThreshold: number(row.running_goal_threshold) as NonNullable<AddBetDraft['runningGoalThreshold']> }),
     ...(row.window_start_minute == null ? {} : { windowStartMinute: number(row.window_start_minute) }),
     ...(row.window_end_minute == null ? {} : { windowEndMinute: number(row.window_end_minute) }),
     ...(row.live_score_home == null ? {} : { liveScoreHome: number(row.live_score_home) }),
@@ -139,6 +140,7 @@ function mapBet(row: Row): CloudBetRecord {
     ...(row.market_period == null ? {} : { marketPeriod: text(row.market_period) as NonNullable<CloudBetRecord['marketPeriod']> }),
     ...(row.line_value == null ? {} : { lineValue: number(row.line_value) }),
     ...(row.running_window == null ? {} : { runningWindow: text(row.running_window) as NonNullable<CloudBetRecord['runningWindow']> }),
+    ...(row.running_goal_threshold == null ? {} : { runningGoalThreshold: number(row.running_goal_threshold) as NonNullable<CloudBetRecord['runningGoalThreshold']> }),
     ...(row.window_start_minute == null ? {} : { windowStartMinute: number(row.window_start_minute) }),
     ...(row.window_end_minute == null ? {} : { windowEndMinute: number(row.window_end_minute) }),
     ...(row.live_score_home == null ? {} : { liveScoreHome: number(row.live_score_home) }),
@@ -226,13 +228,13 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
           market_type,custom_market_label,market_period,line_value,running_window,window_start_minute,window_end_minute,
           live_score_home,live_score_away,live_minute,live_context_source,live_context_observed_at,
           odds_format,odds_value,stake_points,pre_bet_emotion,pre_bet_motivation,pre_bet_plan_adherence,
-          pre_bet_note,notes,tags,created_at,updated_at
-        ) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)
+          pre_bet_note,notes,tags,created_at,updated_at,running_goal_threshold
+        ) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31)
         on conflict (owner_profile_id,draft_id) do update set
           match_group_id=excluded.match_group_id,home_team_name=excluded.home_team_name,away_team_name=excluded.away_team_name,
           selection_label=excluded.selection_label,selection_code=excluded.selection_code,market_type=excluded.market_type,
           custom_market_label=excluded.custom_market_label,market_period=excluded.market_period,line_value=excluded.line_value,
-          running_window=excluded.running_window,window_start_minute=excluded.window_start_minute,
+          running_window=excluded.running_window,running_goal_threshold=excluded.running_goal_threshold,window_start_minute=excluded.window_start_minute,
           window_end_minute=excluded.window_end_minute,live_score_home=excluded.live_score_home,
           live_score_away=excluded.live_score_away,live_minute=excluded.live_minute,
           live_context_source=excluded.live_context_source,live_context_observed_at=excluded.live_context_observed_at,
@@ -246,7 +248,8 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
         draft.windowEndMinute ?? null,draft.liveScoreHome ?? null,draft.liveScoreAway ?? null,draft.liveMinute ?? null,
         draft.liveContextSource ?? null,draft.liveContextObservedAt ?? null,draft.oddsFormat,draft.oddsValue,
         draft.stakePoints,draft.preBetEmotion ?? null,draft.preBetMotivation ?? null,draft.preBetPlanAdherence ?? null,
-        draft.preBetNote ?? null,draft.notes ?? null,jsonb(draft.tags ?? []),draft.createdAt,draft.updatedAt
+        draft.preBetNote ?? null,draft.notes ?? null,jsonb(draft.tags ?? []),draft.createdAt,draft.updatedAt,
+        draft.runningGoalThreshold ?? null
       ]);
       return result.rows[0] ? mapDraft(result.rows[0]) : clone(draft);
     },
@@ -262,8 +265,8 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
           live_context_observed_at,odds_format,odds_value,stake_points,status,settlement_note,manual_result_points,
           notes,tags,created_at,updated_at,bankroll_account_id,pre_bet_emotion,pre_bet_motivation,
           pre_bet_plan_adherence,pre_bet_note,discipline_snapshot,settlement_type,profit_loss_points,settled_at,
-          post_bet_plan_adherence,post_bet_lesson_note
-        ) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43) returning *`, [
+          post_bet_plan_adherence,post_bet_lesson_note,running_goal_threshold
+        ) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44) returning *`, [
         record.ownerProfileId,record.betId,record.matchGroupId,record.matchId ?? null,record.homeTeamName,
         record.awayTeamName,record.competitionLabel ?? null,record.seasonLabel ?? null,record.marketType,
         record.customMarketLabel ?? null,record.selectionLabel,record.selectionCode ?? null,record.marketPeriod ?? null,
@@ -275,7 +278,7 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
         record.preBetEmotion ?? null,record.preBetMotivation ?? null,record.preBetPlanAdherence ?? null,
         record.preBetNote ?? null,record.disciplineSnapshot ? jsonb(record.disciplineSnapshot) : null,
         record.settlementType ?? null,record.profitLossPoints ?? null,record.settledAt ?? null,
-        record.postBetPlanAdherence ?? null,record.postBetLessonNote ?? null
+        record.postBetPlanAdherence ?? null,record.postBetLessonNote ?? null,record.runningGoalThreshold ?? null
       ]);
       return result.rows[0] ? mapBet(result.rows[0]) : clone(record);
     },
@@ -317,15 +320,16 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
         market_type,custom_market_label,market_period,line_value,running_window,window_start_minute,window_end_minute,
         live_score_home,live_score_away,live_minute,live_context_source,live_context_observed_at,
         odds_format,odds_value,stake_points,pre_bet_emotion,pre_bet_motivation,pre_bet_plan_adherence,
-        pre_bet_note,notes,tags,created_at,updated_at
-      ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)`,[
+        pre_bet_note,notes,tags,created_at,updated_at,running_goal_threshold
+      ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31)`,[
         draft.draftId,owner,draft.matchGroupId,draft.homeTeamName??null,draft.awayTeamName??null,
         draft.selectionLabel??null,draft.selectionCode??null,draft.marketType,draft.customMarketLabel??null,
         draft.marketPeriod??null,draft.lineValue??null,draft.runningWindow??null,draft.windowStartMinute??null,
         draft.windowEndMinute??null,draft.liveScoreHome??null,draft.liveScoreAway??null,draft.liveMinute??null,
         draft.liveContextSource??null,draft.liveContextObservedAt??null,draft.oddsFormat,draft.oddsValue,
         draft.stakePoints,draft.preBetEmotion??null,draft.preBetMotivation??null,draft.preBetPlanAdherence??null,
-        draft.preBetNote??null,draft.notes??null,jsonb(draft.tags??[]),draft.createdAt,draft.updatedAt
+        draft.preBetNote??null,draft.notes??null,jsonb(draft.tags??[]),draft.createdAt,draft.updatedAt,
+        draft.runningGoalThreshold??null
       ]);
       for(const bet of envelope.bets) await tx.query(`insert into miraichi_app.bet_record (
         bet_id,owner_profile_id,match_group_id,match_id,home_team_name,away_team_name,competition_label,season_label,
@@ -334,8 +338,8 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
         live_context_observed_at,odds_format,odds_value,stake_points,status,settlement_note,manual_result_points,
         notes,tags,created_at,updated_at,bankroll_account_id,pre_bet_emotion,pre_bet_motivation,
         pre_bet_plan_adherence,pre_bet_note,discipline_snapshot,settlement_type,profit_loss_points,settled_at,
-        post_bet_plan_adherence,post_bet_lesson_note
-      ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43)`,[
+        post_bet_plan_adherence,post_bet_lesson_note,running_goal_threshold
+      ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44)`,[
         bet.betId,owner,bet.matchGroupId,bet.matchId??null,bet.homeTeamName,bet.awayTeamName,
         bet.competitionLabel??null,bet.seasonLabel??null,bet.marketType,bet.customMarketLabel??null,
         bet.selectionLabel,bet.selectionCode??null,bet.marketPeriod??null,bet.lineValue??null,
@@ -347,7 +351,7 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
         bet.disciplineSnapshot?jsonb(bet.disciplineSnapshot):null,bet.settlementType??(bet.status==='void'?'void':null),
         bet.profitLossPoints??bet.manualResultPoints??(bet.status==='void'?0:null),
         bet.settledAt??(bet.status==='void'?bet.updatedAt:null),bet.postBetPlanAdherence??null,
-        bet.postBetLessonNote??null
+        bet.postBetLessonNote??null,bet.runningGoalThreshold??null
       ]);
       for(const account of envelope.bankrollAccounts) await tx.query('insert into miraichi_app.bankroll_account (account_id,owner_profile_id,label,unit,opening_balance_points,current_balance_points,archived,created_at,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)',[account.accountId,owner,account.label,account.unit,account.openingBalancePoints,account.currentBalancePoints,account.archived,account.createdAt,account.updatedAt]);
       for(const entry of envelope.bankrollLedgerEntries) await tx.query('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,transfer_id,bet_id,settlement_event_id,effective_at,occurred_at,created_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',[entry.entryId,owner,entry.accountId,entry.entryType,entry.amountPoints,entry.note??null,entry.transferId??null,entry.betId??null,entry.settlementEventId??null,entry.effectiveAt??null,entry.occurredAt,entry.createdAt]);
