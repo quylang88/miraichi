@@ -91,6 +91,21 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(css).toMatch(/\.add-bet-team-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto\s+minmax\(0,\s*1fr\)/s);
   });
 
+  it('renders guided standard market controls without a free-text selection field', () => {
+    const html = renderAppShell({ activeTabId: 'bets', translate: createTranslator('vi') });
+    const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
+    for (const market of ['1X2', 'over_under', 'handicap', 'corners', 'running']) {
+      expect(html).toContain(`data-bet-market="${market}"`);
+    }
+    expect(html).not.toContain('data-bet-market="custom"');
+    expect(html).not.toContain('id="selection-field"');
+    expect(html).toContain('id="selection-code-field"');
+    expect(html).toContain('data-bet-period="full_time"');
+    expect(html).toContain('data-manual-bet-line');
+    expect(html).toContain('Khác');
+    expect(css).toMatch(/\.bet-choice\s*\{[^}]*min-height:\s*44px/s);
+  });
+
   it('starts isolated manual, quick, scoped, and edit sessions before opening Add Bet', () => {
     const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
     expect(shellSource).toContain("startAddBetSession(currentScreenName === 'today' ? 'quick' : 'manual'");

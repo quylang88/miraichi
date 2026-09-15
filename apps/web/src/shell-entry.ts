@@ -37,6 +37,21 @@ import {
   type AddBetFormElements,
   type AddBetSessionState
 } from './features/add-bet/add-bet-session.js';
+import {
+  createBetEntryState,
+  enableManualBetLine,
+  getLinePresets,
+  getSelectionCodes,
+  restoreBetEntryState,
+  selectBetLinePreset,
+  selectBetMarket,
+  selectBetPeriod,
+  selectBetSelection,
+  setManualBetLine,
+  toStructuredBetSelection,
+  type BetEntryState
+} from './features/add-bet/bet-entry-model.js';
+import type { CreatableMarketType, MarketPeriod, SelectionCode } from '@miraichi/shared';
 
 
 const root = document.getElementById('app-root');
@@ -84,6 +99,7 @@ let editingDraftId: string | null = null;
 let pendingOngoingDraftId: string | null = null;
 let disciplineCountdownTimer: number | null = null;
 let lastFocusedElement: HTMLElement | null = null;
+let betEntryState: BetEntryState = createBetEntryState();
 
 function getTargetTimezone(): string {
   const settings = settingsService.getSettings();
@@ -424,11 +440,9 @@ function updateAddFormState(): void {
     return;
   }
 
-  const formData = new FormData(addForm);
-  const market = formData.get('market-field');
   const odds = oddsField.value.trim();
   const stake = stakeField.value.trim();
-  saveDraftShell.disabled = !(market && odds && stake);
+  saveDraftShell.disabled = !(toStructuredBetSelection(betEntryState) && odds && stake);
 }
 
 function getAddBetFormElements(): AddBetFormElements | null {
@@ -446,6 +460,68 @@ function getAddBetFormElements(): AddBetFormElements | null {
   };
 }
 
+function createBetChoice(label: string, attribute: string, value: string, active: boolean): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `bet-choice${active ? ' active' : ''}`;
+  button.textContent = label;
+  button.setAttribute(attribute, value);
+  button.setAttribute('aria-pressed', String(active));
+  return button;
+}
+
+function renderBetEntryControls(): void {
+  const translate = createTranslator(settingsService.getSettings().locale);
+  const marketField = document.getElementById('market-field') as HTMLInputElement | null;
+  const periodField = document.getElementById('market-period-field') as HTMLInputElement | null;
+  const selectionField = document.getElementById('selection-code-field') as HTMLInputElement | null;
+  const lineField = document.getElementById('line-value-field') as HTMLInputElement | null;
+  if (marketField) marketField.value = betEntryState.marketType;
+  if (periodField) periodField.value = betEntryState.marketPeriod;
+  if (selectionField) selectionField.value = betEntryState.selectionCode;
+  if (lineField) lineField.value = betEntryState.lineValue == null ? '' : String(betEntryState.lineValue);
+
+  appRoot.querySelectorAll<HTMLButtonElement>('[data-bet-market]').forEach((button) => {
+    const active = button.dataset.betMarket === betEntryState.marketType;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  appRoot.querySelectorAll<HTMLButtonElement>('[data-bet-period]').forEach((button) => {
+    const active = button.dataset.betPeriod === betEntryState.marketPeriod;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+
+  const periodControl = document.getElementById('bet-period-control');
+  if (periodControl) periodControl.hidden = !betEntryState.marketType || betEntryState.marketType === 'running';
+  const selections = getSelectionCodes(betEntryState);
+  const selectionControl = document.getElementById('bet-selection-control');
+  if (selectionControl) selectionControl.hidden = selections.length === 0;
+  const selectionChoices = document.getElementById('bet-selection-choices');
+  selectionChoices?.replaceChildren(...selections.map((code) => createBetChoice(
+    translate(`selection.${code}`), 'data-bet-selection', code, betEntryState.selectionCode === code
+  )));
+
+  const lineControl = document.getElementById('bet-line-control');
+  if (lineControl) lineControl.hidden = !betEntryState.selectionCode || betEntryState.marketType === '1X2';
+  const linePresets = document.getElementById('bet-line-presets');
+  linePresets?.replaceChildren(...getLinePresets(betEntryState).map((line) => createBetChoice(
+    `${line > 0 && betEntryState.marketType === 'handicap' ? '+' : ''}${line}`,
+    'data-bet-line', String(line), !betEntryState.manualLineActive && betEntryState.lineValue === line
+  )));
+  const otherLine = appRoot.querySelector<HTMLButtonElement>('[data-manual-bet-line]');
+  if (otherLine) {
+    otherLine.classList.toggle('active', betEntryState.manualLineActive);
+    otherLine.setAttribute('aria-pressed', String(betEntryState.manualLineActive));
+  }
+  const manualLineControl = document.getElementById('manual-bet-line-control');
+  if (manualLineControl) manualLineControl.hidden = !betEntryState.manualLineActive;
+  const manualLine = document.getElementById('manual-bet-line-field') as HTMLInputElement | null;
+  if (manualLine && manualLine.value !== betEntryState.manualLineInput) manualLine.value = betEntryState.manualLineInput;
+  if (manualLine) manualLine.setAttribute('aria-invalid', String(betEntryState.manualLineActive && betEntryState.manualLineInput !== '' && betEntryState.lineValue === null));
+  updateAddFormState();
+}
+
 function activateAddBetSession(session: AddBetSessionState): void {
   editingDraftId = session.editingDraftId;
   currentOpenMatchId = session.matchId;
@@ -458,7 +534,8 @@ function activateAddBetSession(session: AddBetSessionState): void {
   pendingOngoingInput = null;
   pendingDisciplineChallenge = null;
   setText('discipline-feedback', '');
-  updateAddFormState();
+  betEntryState = createBetEntryState();
+  renderBetEntryControls();
 }
 
 // Removed updateMatchFilters as filtering is done dynamically in renderAppShell before rendering
@@ -588,8 +665,8 @@ function populateAddFormFromDraft(draft: AddBetDraft): void {
   };
   setValue('home-team', draft.homeTeamName);
   setValue('away-team', draft.awayTeamName);
-  setValue('market-field', draft.marketType);
-  setValue('selection-field', draft.selectionLabel);
+  betEntryState = restoreBetEntryState(draft);
+  renderBetEntryControls();
   setValue('odds-field', draft.oddsValue);
   setValue('stake-field', draft.stakePoints);
   setValue('emotion-field', draft.preBetEmotion);
@@ -603,15 +680,15 @@ function readOngoingBetInput(form: HTMLFormElement): CreateOngoingBetInput | nul
   const data = new FormData(form);
   const homeTeamName = String(data.get('home-team') ?? '').trim();
   const awayTeamName = String(data.get('away-team') ?? '').trim();
-  const marketType = String(data.get('market-field') ?? '');
-  const selectionLabel = String(data.get('selection-field') ?? '').trim();
+  const structuredSelection = toStructuredBetSelection(betEntryState);
   const oddsValue = Number(data.get('odds-field'));
   const stakePoints = Number(data.get('stake-field'));
   const preBetEmotion = String(data.get('emotion-field') ?? '');
   const preBetMotivation = String(data.get('motivation-field') ?? '');
   const preBetPlanAdherence = String(data.get('pre-bet-plan-adherence') ?? '');
   const preBetNote = String(data.get('note-field') ?? '').trim();
-  if (!homeTeamName || !awayTeamName || !marketType || !selectionLabel || !Number.isFinite(oddsValue) || oddsValue <= 0 || !Number.isFinite(stakePoints) || stakePoints <= 0 || !preBetEmotion || !preBetMotivation || !['yes', 'partly', 'no'].includes(preBetPlanAdherence)) return null;
+  if (!homeTeamName || !awayTeamName || !structuredSelection || !Number.isFinite(oddsValue) || oddsValue <= 0 || !Number.isFinite(stakePoints) || stakePoints <= 0 || !preBetEmotion || !preBetMotivation || !['yes', 'partly', 'no'].includes(preBetPlanAdherence)) return null;
+  if (!/^\d+(?:\.\d{1,4})?$/.test(String(data.get('odds-field')))) return null;
   if (!/^\d+(?:\.\d{1,2})?$/.test(String(data.get('stake-field')))) return null;
   const timestamp = new Date().toISOString();
   return {
@@ -619,7 +696,7 @@ function readOngoingBetInput(form: HTMLFormElement): CreateOngoingBetInput | nul
     matchGroupId: findDraft(editingDraftId)?.matchGroupId ?? (currentOpenMatchId || manualMatchGroupId(homeTeamName, awayTeamName)),
     ...(currentOpenMatchId ? { matchId: currentOpenMatchId } : {}),
     homeTeamName, awayTeamName,
-    marketType: marketType as CreateOngoingBetInput['marketType'], selectionLabel,
+    ...structuredSelection,
     oddsFormat: 'HK', oddsValue, stakePoints,
     preBetEmotion: preBetEmotion as CreateOngoingBetInput['preBetEmotion'],
     preBetMotivation: preBetMotivation as CreateOngoingBetInput['preBetMotivation'],
@@ -665,6 +742,36 @@ function updateSettlementPreview(): void {
 appRoot.addEventListener('click', (event) => {
   const eventTarget = event.target instanceof Element ? event.target : null;
   if (!eventTarget) {
+    return;
+  }
+  const marketChoice = eventTarget.closest<HTMLButtonElement>('[data-bet-market]');
+  if (marketChoice?.dataset.betMarket && !marketChoice.disabled) {
+    betEntryState = selectBetMarket(betEntryState, marketChoice.dataset.betMarket as CreatableMarketType);
+    renderBetEntryControls();
+    return;
+  }
+  const periodChoice = eventTarget.closest<HTMLButtonElement>('[data-bet-period]');
+  if (periodChoice?.dataset.betPeriod) {
+    betEntryState = selectBetPeriod(betEntryState, periodChoice.dataset.betPeriod as MarketPeriod);
+    renderBetEntryControls();
+    return;
+  }
+  const selectionChoice = eventTarget.closest<HTMLButtonElement>('[data-bet-selection]');
+  if (selectionChoice?.dataset.betSelection) {
+    betEntryState = selectBetSelection(betEntryState, selectionChoice.dataset.betSelection as SelectionCode);
+    renderBetEntryControls();
+    return;
+  }
+  const lineChoice = eventTarget.closest<HTMLButtonElement>('[data-bet-line]');
+  if (lineChoice?.dataset.betLine) {
+    betEntryState = selectBetLinePreset(betEntryState, Number(lineChoice.dataset.betLine));
+    renderBetEntryControls();
+    return;
+  }
+  if (eventTarget.closest('[data-manual-bet-line]')) {
+    betEntryState = enableManualBetLine(betEntryState);
+    renderBetEntryControls();
+    document.getElementById('manual-bet-line-field')?.focus();
     return;
   }
   if (eventTarget.closest('[data-live-toggle]')) {
@@ -1032,6 +1139,12 @@ appRoot.addEventListener('input', (event) => {
     return;
   }
 
+  if (target.id === 'manual-bet-line-field') {
+    betEntryState = setManualBetLine(betEntryState, target.value);
+    renderBetEntryControls();
+    return;
+  }
+
   if (target.closest('#add-form')) {
     updateAddFormState();
   }
@@ -1209,8 +1322,7 @@ appRoot.addEventListener('submit', (event) => {
   const action = ((event as SubmitEvent).submitter as HTMLButtonElement | null)?.value ?? 'draft';
   const homeTeamName = String(form.get('home-team') ?? '').trim();
   const awayTeamName = String(form.get('away-team') ?? '').trim();
-  const marketType = String(form.get('market-field') || '');
-  const selectionLabel = String(form.get('selection-field') || '').trim();
+  const structuredSelection = toStructuredBetSelection(betEntryState);
   const oddsValue = Number(form.get('odds-field'));
   const stakePoints = Number(form.get('stake-field'));
   const preBetEmotion = String(form.get('emotion-field') || '') as AddBetDraft['preBetEmotion'];
@@ -1218,14 +1330,14 @@ appRoot.addEventListener('submit', (event) => {
   const preBetPlanAdherence = String(form.get('pre-bet-plan-adherence') || '') as AddBetDraft['preBetPlanAdherence'];
   const notes = String(form.get('note-field') || '').trim();
   const translate = createTranslator(settingsService.getSettings().locale);
-  if (!homeTeamName || !awayTeamName || !marketType || !Number.isFinite(oddsValue) || !Number.isFinite(stakePoints) || stakePoints <= 0 || !/^\d+(?:\.\d{1,2})?$/.test(String(form.get('stake-field')))) {
+  if (!homeTeamName || !awayTeamName || !structuredSelection || !Number.isFinite(oddsValue) || oddsValue <= 0 || !/^\d+(?:\.\d{1,4})?$/.test(String(form.get('odds-field'))) || !Number.isFinite(stakePoints) || stakePoints <= 0 || !/^\d+(?:\.\d{1,2})?$/.test(String(form.get('stake-field')))) {
     setText('add-feedback', translate('error.validation_failed'));
     return;
   }
   const timestamp = new Date().toISOString();
   if (action === 'draft') {
     const existing = findDraft(editingDraftId);
-    const draft: AddBetDraft = { draftId: existing?.draftId ?? crypto.randomUUID(), matchGroupId: existing?.matchGroupId ?? (currentOpenMatchId || manualMatchGroupId(homeTeamName, awayTeamName)), homeTeamName, awayTeamName, ...(selectionLabel ? { selectionLabel } : {}), marketType: marketType as '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom', oddsFormat: 'HK', oddsValue, stakePoints, ...(preBetEmotion ? { preBetEmotion } : {}), ...(preBetMotivation ? { preBetMotivation } : {}), ...(preBetPlanAdherence ? { preBetPlanAdherence } : {}), ...(notes ? { preBetNote: notes, notes } : {}), createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp };
+    const draft: AddBetDraft = { draftId: existing?.draftId ?? crypto.randomUUID(), matchGroupId: existing?.matchGroupId ?? (currentOpenMatchId || manualMatchGroupId(homeTeamName, awayTeamName)), homeTeamName, awayTeamName, ...structuredSelection, oddsFormat: 'HK', oddsValue, stakePoints, ...(preBetEmotion ? { preBetEmotion } : {}), ...(preBetMotivation ? { preBetMotivation } : {}), ...(preBetPlanAdherence ? { preBetPlanAdherence } : {}), ...(notes ? { preBetNote: notes, notes } : {}), createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp };
     const save = existing ? updateCloudBetDraft(draft) : saveCloudBetDraft(draft);
     void save.then(async () => {
       closeSheets();

@@ -1377,6 +1377,70 @@ svg {
   text-transform: lowercase;
 }
 
+.bet-entry-group {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.bet-entry-group[hidden] {
+  display: none;
+}
+
+.bet-entry-group legend {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 680;
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.bet-choice-grid {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.bet-choice-grid.markets,
+.bet-choice-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bet-choice-grid.lines {
+  grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+}
+
+.bet-choice {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--text-subtle);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 680;
+  min-height: 44px;
+  min-width: 0;
+  padding: 8px 6px;
+}
+
+.bet-choice.active,
+.bet-choice[aria-pressed="true"] {
+  background: var(--surface-3);
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.bet-other-line {
+  margin-top: 6px;
+  width: 100%;
+}
+
+#manual-bet-line-control {
+  margin-top: 8px;
+}
+
 .metric-grid {
   margin-bottom: 16px;
 }
