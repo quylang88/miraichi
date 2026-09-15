@@ -128,6 +128,16 @@ void (async () => {
     const draft = { draftId: 'e2e-draft', matchGroupId: firstMatchId || 'match-e2e', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: timestamp, updatedAt: timestamp };
     const draftCreate = await fetch(`${apiBaseUrl}/api/v1/bet-drafts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
     assert(draftCreate.status === 201, 'POST /api/v1/bet-drafts creates a draft');
+    const { selectionCode: _selectionCode, marketPeriod: _marketPeriod, ...legacyDraft } = draft;
+    for (const [name, malformed] of [
+      ['legacy label-only', { ...legacyDraft, draftId: 'e2e-invalid-legacy', selectionLabel: 'Japan' }],
+      ['custom market', { ...draft, draftId: 'e2e-invalid-custom', marketType: 'custom' }],
+      ['invalid combination', { ...draft, draftId: 'e2e-invalid-combination', marketType: 'over_under', selectionCode: 'home', lineValue: 2.5 }],
+      ['legacy emotion', { ...draft, draftId: 'e2e-invalid-emotion', preBetEmotion: 'anxious' }]
+    ] as const) {
+      const malformedCreate = await fetch(`${apiBaseUrl}/api/v1/bet-drafts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(malformed) });
+      assert(malformedCreate.status === 400, `POST /api/v1/bet-drafts rejects ${name} payload`);
+    }
     const draftList = await fetch(`${apiBaseUrl}/api/v1/bet-drafts`);
     assert(draftList.ok && (await draftList.json() as unknown[]).length === 1, 'GET /api/v1/bet-drafts lists drafts');
 
@@ -137,6 +147,9 @@ void (async () => {
     const bet = { betId: 'e2e-bet', matchGroupId: firstMatchId || 'match-e2e', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, preBetEmotion: 'calm', preBetMotivation: 'planned_analysis', preBetPlanAdherence: 'yes', createdAt: timestamp };
     const betCreate = await fetch(`${apiBaseUrl}/api/v1/bets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bet) });
     assert(betCreate.status === 201, 'POST /api/v1/bets creates a bet record');
+    const { selectionCode: _betSelectionCode, marketPeriod: _betMarketPeriod, ...legacyBet } = bet;
+    const malformedBetCreate = await fetch(`${apiBaseUrl}/api/v1/bets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...legacyBet, betId: 'e2e-invalid-bet', selectionLabel: 'Japan' }) });
+    assert(malformedBetCreate.status === 400, 'POST /api/v1/bets rejects legacy label-only payload');
     const betPatch = await fetch(`${apiBaseUrl}/api/v1/bets?id=e2e-bet`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: 'integration update' }) });
     assert(betPatch.ok, 'PATCH /api/v1/bets updates an allowed field');
 

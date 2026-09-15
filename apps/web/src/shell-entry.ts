@@ -1279,7 +1279,7 @@ appRoot.addEventListener('input', (event) => {
 
   if (['live-score-home-field', 'live-score-away-field', 'live-minute-field'].includes(target.id)) {
     readManualRunningContext();
-    updateAddFormState();
+    renderBetEntryControls();
     return;
   }
 
