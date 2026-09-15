@@ -31,6 +31,18 @@ export type StructuredBetSelectionValidationResult =
   | { readonly ok: true }
   | { readonly ok: false; readonly errors: readonly string[] };
 
+const STRUCTURED_DECLARATION_FIELDS = [
+  'selectionCode', 'marketPeriod', 'runningWindow', 'windowStartMinute', 'windowEndMinute',
+  'liveScoreHome', 'liveScoreAway', 'liveMinute', 'liveContextSource', 'liveContextObservedAt'
+] as const;
+
+export function declaresStructuredBetSelection(input: unknown): boolean {
+  return isRecord(input) && (
+    input.marketType === 'running'
+    || STRUCTURED_DECLARATION_FIELDS.some((field) => Object.prototype.hasOwnProperty.call(input, field))
+  );
+}
+
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 const FIXED_WINDOWS = new Map([[0, 15], [15, 30], [30, 45], [45, 60], [60, 75], [75, 90]]);
 

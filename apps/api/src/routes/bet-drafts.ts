@@ -4,10 +4,12 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import type { CloudRouteDependencies } from './cloud-route-types.js';
 import { mapCloudError, sendError, sendJson } from './cloud-route-types.js';
 import { readJsonObjectRequest } from './json-body.js';
+import { normalizeDeclaredStructuredBetPayload } from './structured-bet-payload.js';
 
 function validOwner(payload:Record<string,unknown>,owner:string){return payload.ownerProfileId===undefined||payload.ownerProfileId===owner;}
 function draftFrom(payload:Record<string,unknown>,id?:string):AddBetDraft|null{
-  const value={...payload,draftId:id??payload.draftId} as unknown as Partial<AddBetDraft>;
+  const normalized=normalizeDeclaredStructuredBetPayload(payload);if(!normalized.ok)return null;
+  const value={...normalized.payload,draftId:id??payload.draftId} as unknown as Partial<AddBetDraft>;
   return isAddBetDraftReviewReady(value)?value as AddBetDraft:null;
 }
 export async function handleBetDrafts(req:IncomingMessage,res:ServerResponse,deps:CloudRouteDependencies):Promise<void>{

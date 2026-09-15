@@ -116,6 +116,10 @@ function hasFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+function decimalsAtMost(value: number, places: number): boolean {
+  return Math.abs(value * (10 ** places) - Math.round(value * (10 ** places))) < 1e-7;
+}
+
 export function cloneAddBetDraft(draft: AddBetDraft): AddBetDraft {
   const { tags, ...rest } = draft;
   return tags ? { ...rest, tags: [...tags] } : rest;
@@ -134,7 +138,9 @@ export function isAddBetDraftReviewReady(draft: Partial<AddBetDraft>): boolean {
     return false;
   }
 
-  if (!hasFiniteNumber(draft.oddsValue) || !hasFiniteNumber(draft.stakePoints)) {
+  if (draft.oddsFormat !== 'HK'
+    || !hasFiniteNumber(draft.oddsValue) || draft.oddsValue <= 0 || !decimalsAtMost(draft.oddsValue, 4)
+    || !hasFiniteNumber(draft.stakePoints) || draft.stakePoints <= 0 || !decimalsAtMost(draft.stakePoints, 2)) {
     return false;
   }
 

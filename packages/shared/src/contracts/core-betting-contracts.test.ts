@@ -49,6 +49,24 @@ describe('core betting contracts', () => {
     expect(validateCreateOngoingBetInput({ ...bet, preBetPlanAdherence: undefined }).ok).toBe(false);
   });
 
+  it('accepts declared structured input without a client label and rejects invalid combinations', () => {
+    const { selectionLabel: _selectionLabel, ...base } = bet;
+    expect(validateCreateOngoingBetInput({
+      ...base, marketType: 'over_under', marketPeriod: 'full_time', selectionCode: 'under', lineValue: 3.25
+    })).toEqual({ ok: true });
+    expect(validateCreateOngoingBetInput({
+      ...base, marketType: 'over_under', marketPeriod: 'full_time', selectionCode: 'draw', lineValue: 3.25
+    }).ok).toBe(false);
+    expect(validateCreateOngoingBetInput({
+      ...bet, marketPeriod: 'full_time'
+    }).ok).toBe(false);
+    expect(validateCreateOngoingBetInput({
+      ...base, marketType: 'running', selectionCode: 'over', lineValue: 0.75,
+      runningWindow: 'to_full_time', liveScoreHome: 1, liveScoreAway: 0, liveMinute: 55,
+      liveContextSource: 'manual'
+    })).toEqual({ ok: true });
+  });
+
   it('captures plan adherence before the bet and only accepts it as an optional legacy settlement fallback', () => {
     expect(validateSettlementCommand({
       settlementEventId: 'settlement-1', settlementType: 'full_win',

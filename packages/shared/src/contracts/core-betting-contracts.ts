@@ -1,3 +1,12 @@
+import {
+  declaresStructuredBetSelection,
+  validateStructuredBetSelection,
+  type LiveContextSource,
+  type MarketPeriod,
+  type RunningWindow,
+  type SelectionCode
+} from './structured-bet-selection.js';
+
 export const PRE_BET_EMOTIONS = Object.freeze(['calm', 'excited', 'frustrated', 'anxious', 'tired'] as const);
 export const PRE_BET_MOTIVATIONS = Object.freeze(['planned_analysis', 'familiar_market', 'chasing_loss', 'fomo', 'impulse', 'other'] as const);
 export const PLAN_ADHERENCE_VALUES = Object.freeze(['yes', 'partly', 'no'] as const);
@@ -32,10 +41,20 @@ export interface CreateOngoingBetInput {
   readonly homeTeamName: string;
   readonly awayTeamName: string;
   readonly competitionLabel?: string;
-  readonly marketType: '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom';
+  readonly marketType: '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom' | 'running';
   readonly customMarketLabel?: string;
-  readonly selectionLabel: string;
+  readonly selectionLabel?: string;
+  readonly selectionCode?: SelectionCode;
+  readonly marketPeriod?: MarketPeriod;
   readonly lineValue?: number | null;
+  readonly runningWindow?: RunningWindow;
+  readonly windowStartMinute?: number;
+  readonly windowEndMinute?: number;
+  readonly liveScoreHome?: number;
+  readonly liveScoreAway?: number;
+  readonly liveMinute?: number;
+  readonly liveContextSource?: LiveContextSource;
+  readonly liveContextObservedAt?: string;
   readonly oddsFormat: 'HK';
   readonly oddsValue: number;
   readonly stakePoints: number;
@@ -127,11 +146,17 @@ export function validateCreateOngoingBetInput(input: unknown): ContractValidatio
   if (typeof input !== 'object' || input === null || Array.isArray(input)) return { ok: false, errors: ['Input must be an object'] };
   const value = input as Partial<CreateOngoingBetInput>;
   const errors: string[] = [];
-  for (const key of ['betId', 'matchGroupId', 'homeTeamName', 'awayTeamName', 'selectionLabel'] as const) {
+  const structured = declaresStructuredBetSelection(input);
+  for (const key of ['betId', 'matchGroupId', 'homeTeamName', 'awayTeamName'] as const) {
     if (!text(value[key])) errors.push(`${key} is required`);
   }
+  if (!structured && !text(value.selectionLabel)) errors.push('selectionLabel is required');
   if (value.bankrollAccountId !== undefined && typeof value.bankrollAccountId !== 'string') errors.push('bankrollAccountId is invalid');
-  if (!['1X2', 'over_under', 'handicap', 'corners', 'custom'].includes(String(value.marketType))) errors.push('marketType is invalid');
+  if (!['1X2', 'over_under', 'handicap', 'corners', 'custom', 'running'].includes(String(value.marketType))) errors.push('marketType is invalid');
+  if (structured) {
+    const selectionValidation = validateStructuredBetSelection(input);
+    if (!selectionValidation.ok) errors.push(...selectionValidation.errors);
+  }
   if (value.oddsFormat !== 'HK') errors.push('oddsFormat must be HK');
   if (!finite(value.oddsValue) || value.oddsValue <= 0 || !decimalsAtMost(value.oddsValue, 4)) errors.push('oddsValue must be positive with at most 4 decimals');
   if (!finite(value.stakePoints) || value.stakePoints <= 0 || !decimalsAtMost(value.stakePoints, 2)) errors.push('stakePoints must be positive with at most 2 decimals');
