@@ -270,7 +270,7 @@ export function renderMatchesScreen(input: {
       })
     : '';
   return `<section class="${screenClass('matches', activeTabId)}" id="screen-matches" data-shell-tab-panel="matches" aria-labelledby="matches-title">
-    ${screenHeader(translate('matches.eyebrow'), translate('matches.title'), 'matches-title', `<button class="primary-button add-inline" type="button" data-open-manual-add>${escapeHtml(translate('matches.manualAdd'))}</button>`)}
+    ${screenHeader(translate('matches.eyebrow'), translate('matches.title'), 'matches-title')}
     <div class="action-row"><button class="${liveMode ? 'primary-button' : 'secondary-button'} live-toggle" type="button" data-live-toggle aria-pressed="${liveMode}">LIVE</button></div>
     ${liveMode ? renderLiveMatches(liveMatches, translate, timezone) : `
     <div class="date-navigator"><button id="date-prev-btn" class="nav-arrow-btn" type="button" aria-label="${escapeHtml(translate('matches.previousDay'))}">${backIcon}</button><div class="date-ribbon">${ribbon}</div><button id="date-next-btn" class="nav-arrow-btn" type="button" aria-label="${escapeHtml(translate('matches.nextDay'))}">${nextIcon}</button><button id="date-picker-btn" class="calendar-btn${isCalendarOpen ? ' active' : ''}" type="button" aria-label="${escapeHtml(translate('matches.pickDate'))}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button></div>

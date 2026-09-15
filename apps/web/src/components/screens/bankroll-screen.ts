@@ -101,7 +101,6 @@ function analytics(
         <span class="analytics-feature-tag">🧠 ${escapeHtml(translate('reports.featurePsychology'))}</span>
       </div>
       <div class="analytics-empty-actions">
-        <button type="button" class="primary-button" data-open-manual-add>${escapeHtml(translate('reports.recordBet'))}</button>
         <button type="button" class="secondary-button" data-tab-target="bets">${escapeHtml(translate('reports.viewBets'))}</button>
       </div>
     </section>`;

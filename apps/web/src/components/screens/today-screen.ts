@@ -87,7 +87,7 @@ export function renderTodayScreen(input: {
     : (cards || `<p class="empty-state">${escapeHtml(translate('bets.emptyOngoing'))}</p>`);
 
   return `<section class="${screenClass('today', activeTabId)}" id="screen-today" data-shell-tab-panel="today" aria-labelledby="today-title">
-    ${screenHeader(translate('today.eyebrow'), translate('today.title'), 'today-title', `<button class="primary-button add-inline" type="button" data-open-manual-add>${escapeHtml(translate('today.quickAdd'))}</button>`)}
+    ${screenHeader(translate('today.eyebrow'), translate('today.title'), 'today-title')}
     ${setupBannerHtml}
     ${metricsHtml}
     ${disciplineHtml}

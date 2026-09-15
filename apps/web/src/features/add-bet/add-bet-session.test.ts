@@ -16,7 +16,7 @@ function elements(): AddBetFormElements & { readonly controls: Array<{ value: st
 }
 
 describe('Add Bet session isolation', () => {
-  it('clears every field, feedback, validation state, and team locks', () => {
+  it('clears every field, feedback and validation while keeping team names locked', () => {
     const target = elements();
     target.homeTeam.readOnly = true;
     target.awayTeam.readOnly = true;
@@ -25,11 +25,11 @@ describe('Add Bet session isolation', () => {
 
     expect(target.controls.every((control) => control.value === '')).toBe(true);
     expect(target.feedback.textContent).toBe('');
-    expect(target.homeTeam.readOnly).toBe(false);
-    expect(target.awayTeam.readOnly).toBe(false);
+    expect(target.homeTeam.readOnly).toBe(true);
+    expect(target.awayTeam.readOnly).toBe(true);
   });
 
-  it('never carries scoped state into manual or quick sessions and only edit identifies a draft', () => {
+  it('locks selected canonical teams and locks legacy draft teams without carrying scoped state', () => {
     const target = elements();
     const scoped = startAddBetSession('scoped', {
       matchId: 'match-1', matchTitle: 'Japan vs Vietnam', homeTeamName: 'Japan', awayTeamName: 'Vietnam'
@@ -38,14 +38,13 @@ describe('Add Bet session isolation', () => {
     expect(target.homeTeam).toMatchObject({ value: 'Japan', readOnly: true });
     expect(target.awayTeam).toMatchObject({ value: 'Vietnam', readOnly: true });
 
-    const manual = startAddBetSession('manual', {}, target);
-    expect(manual).toEqual({ mode: 'manual', matchId: '', matchTitle: '', editingDraftId: null });
-    expect(target.homeTeam).toMatchObject({ value: '', readOnly: false });
-    expect(target.awayTeam).toMatchObject({ value: '', readOnly: false });
-
     target.controls[3]!.value = 'cached-again';
-    expect(startAddBetSession('quick', {}, target).matchId).toBe('');
+    const edit = startAddBetSession('edit', { draftId: 'draft-1' }, target);
+    expect(edit).toEqual({ mode: 'edit', matchId: '', matchTitle: '', editingDraftId: 'draft-1' });
+    expect(target.homeTeam).toMatchObject({ value: '', readOnly: true });
+    expect(target.awayTeam).toMatchObject({ value: '', readOnly: true });
     expect(target.controls[3]!.value).toBe('');
-    expect(startAddBetSession('edit', { draftId: 'draft-1' }, target).editingDraftId).toBe('draft-1');
+
+    expect(startAddBetSession('edit', { draftId: 'linked', matchId: 'match-1' }, target).matchId).toBe('match-1');
   });
 });

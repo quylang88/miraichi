@@ -1,4 +1,4 @@
-export type AddBetSessionMode = 'manual' | 'quick' | 'scoped' | 'edit';
+export type AddBetSessionMode = 'scoped' | 'edit';
 
 interface ResettableForm {
   reset(): void;
@@ -51,8 +51,8 @@ export function resetAddBetForm(elements: AddBetFormElements): void {
     control.removeAttribute('aria-invalid');
     control.removeAttribute('data-validation-error');
   }
-  setTeamLock(elements.homeTeam, false);
-  setTeamLock(elements.awayTeam, false);
+  setTeamLock(elements.homeTeam, true);
+  setTeamLock(elements.awayTeam, true);
   elements.feedback.textContent = '';
 }
 
@@ -70,7 +70,7 @@ export function startAddBetSession(
   }
   return {
     mode,
-    matchId: mode === 'scoped' ? context.matchId ?? '' : '',
+    matchId: context.matchId ?? '',
     matchTitle: mode === 'scoped' ? context.matchTitle ?? '' : '',
     editingDraftId: mode === 'edit' ? context.draftId ?? null : null
   };

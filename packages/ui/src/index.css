@@ -1372,6 +1372,11 @@ svg {
   min-width: 0;
 }
 
+#add-sheet .add-bet-team-row .field-input[readonly] {
+  background: var(--surface-2);
+  cursor: default;
+}
+
 .add-bet-versus {
   align-items: center;
   display: flex;

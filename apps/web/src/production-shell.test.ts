@@ -136,9 +136,10 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(css).toMatch(/@media\s*\(max-width:\s*900px\)[\s\S]*\.field-input,[\s\S]*\.field-select,[\s\S]*\.field-textarea[\s\S]*font-size:\s*16px/);
   });
 
-  it('starts isolated manual, quick, scoped, and edit sessions before opening Add Bet', () => {
+  it('starts isolated scoped and edit sessions before opening Add Bet', () => {
     const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
-    expect(shellSource).toContain("startAddBetSession(currentScreenName === 'today' ? 'quick' : 'manual'");
+    expect(shellSource).not.toContain("startAddBetSession('manual'");
+    expect(shellSource).not.toContain("startAddBetSession('quick'");
     expect(shellSource).toContain("startAddBetSession('scoped'");
     expect(shellSource).toContain("startAddBetSession('edit'");
     expect(shellSource).not.toContain("setText('add-summary-title'");
@@ -362,10 +363,25 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(shellSource).toContain('customRangeEnd = null');
   });
 
-  it('keeps manual Add Bet available when the match feed is unavailable', () => {
+  it('requires a selected match before Add Bet and locks both team controls without disabling FormData', () => {
     const html = renderAppShell({ activeTabId: 'matches', matchFeed: { status: 'unavailable', date: '2026-08-21', reason: 'offline', warnings: [], snapshot: { snapshotId: 's', generatedAt: '2026-08-21T00:00:00.000Z', importedAt: '2026-08-21T00:00:00.000Z', matchCount: 0, competitions: [], sources: [], freshness: 'missing', warnings: [] } } });
-    expect(html).toContain('data-open-manual-add');
-    expect(html).toContain('Manual Add Bet');
+    expect(html).not.toContain('data-open-manual-add');
+    expect(html).toContain('data-open-scoped-add');
+    expect(html).toMatch(/id="home-team"[^>]*readonly/);
+    expect(html).toMatch(/id="away-team"[^>]*readonly/);
+    expect(html).not.toMatch(/id="(?:home|away)-team"[^>]*disabled/);
+    const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
+    expect(css).toMatch(/#add-sheet \.add-bet-team-row \.field-input\[readonly\]\s*\{[^}]*background:\s*var\(--surface-2\)/s);
+    const source = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(source).not.toContain('[data-open-manual-add]');
+    expect(source).toContain('if (!currentOpenMatchId) return;');
+    expect(source).not.toContain('manualMatchGroupId(');
+  });
+
+  it('removes Today Quick Add and every unscoped add button across the four tabs', () => {
+    for (const tab of ['today', 'matches', 'bets', 'bankroll'] as const) {
+      expect(renderAppShell({ activeTabId: tab })).not.toContain('data-open-manual-add');
+    }
   });
 
   it('renders the Matches screen and contextual detail shell from the VI catalog', () => {
@@ -420,7 +436,7 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('data-analytics-empty');
     expect(html).toContain('No analytics data yet');
     expect(html).toContain('Performance trends, market win rates, and psychology insights will appear here once settled bets are recorded.');
-    expect(html).toContain('data-open-manual-add');
+    expect(html).not.toContain('data-open-manual-add');
     expect(html).toContain('data-tab-target="bets"');
     expect(html).not.toContain('No settled bets.');
 
@@ -433,7 +449,7 @@ describe('phase 9 cloud persistence workflows', () => {
       reportState: { status: 'ready', report: { period: { kind: 'this_week', startDate: '2026-08-25', endDate: '2026-08-31', timeZone: 'UTC' }, netProfitLossPoints: 0, totalSettledBets: 0, totalStakePoints: 0, averageStakePoints: 0, winRatePercent: 0, outcomes: { full_win: 0, half_win: 0, push: 0, void: 0, half_loss: 0, full_loss: 0, manual_adjustment: 0 }, daily: [], market: {}, psychology: { emotion: {}, motivation: {}, planAdherence: {} }, disciplineOverrideCount: 0 } }
     });
     expect(viHtml).toContain('Chưa có dữ liệu phân tích');
-    expect(viHtml).toContain('Ghi vé cược');
+    expect(viHtml).not.toContain('Ghi vé cược');
     expect(viHtml).toContain('Xem danh sách cược');
 
     const emptyBankrollAnalytics = renderAppShell({
@@ -524,7 +540,7 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('class="main-scroll"');
     expect(html).toContain('class="screen active" id="screen-today"');
     expect(html).toContain('class="metric-grid"');
-    expect(html).toContain('data-open-manual-add');
+    expect(html).not.toContain('data-open-manual-add');
     expect(html).toContain('id="screen-match-detail"');
     expect(html).toContain('data-open-match');
     expect(html).toContain('data-open-scoped-add');
@@ -842,7 +858,7 @@ describe('production shell match snapshot rendering', () => {
     });
     expect(unavailableHtml).toContain('Data update required');
     expect(unavailableHtml).not.toContain('Data status:');
-    expect(unavailableHtml).toContain('Match feed unavailable. Manual bet entry is still available.');
+    expect(unavailableHtml).toContain('Match feed unavailable. Select a match after data returns to record a new bet.');
     expect(unavailableHtml).not.toContain('Build it from canonical warehouse');
 
     const missingSnapshotHtml = renderAppShell({

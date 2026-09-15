@@ -120,9 +120,11 @@ async function assertHidden(page: Page, selector: string) {
   assert.equal(await page.locator(selector).getAttribute('aria-hidden'), 'true', `${selector} must be closed`);
 }
 
-async function assertFreshSession(page: Page) {
-  assert.equal(await page.locator('#home-team').inputValue(), '', 'new session clears home team');
-  assert.equal(await page.locator('#away-team').inputValue(), '', 'new session clears away team');
+async function assertFreshSession(page: Page, homeTeamName: string, awayTeamName: string) {
+  assert.equal(await page.locator('#home-team').inputValue(), homeTeamName, 'new session binds selected home team');
+  assert.equal(await page.locator('#away-team').inputValue(), awayTeamName, 'new session binds selected away team');
+  assert.equal(await page.locator('#home-team').isEditable(), false);
+  assert.equal(await page.locator('#away-team').isEditable(), false);
   assert.equal(await page.locator('#emotion-field').inputValue(), 'calm', 'new session emotion defaults to calm');
   assert.equal(await page.locator('[data-bet-market][aria-pressed="true"]').count(), 0, 'new session clears market');
   assert.equal(await page.locator('#selection-code-field').inputValue(), '', 'new session clears selection');
@@ -180,20 +182,18 @@ async function verifyZoomRuntime(page: Page) {
 async function runBrowserFlow(page: Page) {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.locator('[data-owner-session="authenticated"]').waitFor();
-  await page.locator('[data-primary-tab="bets"]').click();
-  await page.locator('#screen-bets [data-open-manual-add]').click();
-  await assertFreshSession(page);
-  await page.locator('#home-team').fill('Cached Home');
-  await page.locator('#away-team').fill('Cached Away');
+  assert.equal(await page.locator('[data-open-manual-add]').count(), 0, 'unscoped Add and Today Quick Add are removed');
+  await page.locator('[data-primary-tab="matches"]').click();
+  await page.locator('[data-match-id="match-structured-scheduled"][data-open-match]').click();
+  await page.locator('[data-open-scoped-add]').click();
+  await assertFreshSession(page, 'Scheduled Home', 'Scheduled Away');
   await page.locator('[data-bet-market="over_under"]').click();
   await page.locator('[data-bet-period="full_time"]').click();
   await page.locator('[data-bet-selection="over"]').click();
   await page.locator('[data-bet-line="2.5"]').click();
   await closeAdd(page);
-
-  await page.locator('[data-primary-tab="today"]').click();
-  await page.locator('#screen-today [data-open-manual-add]').click();
-  await assertFreshSession(page);
+  await page.locator('[data-open-scoped-add]').click();
+  await assertFreshSession(page, 'Scheduled Home', 'Scheduled Away');
   await page.setViewportSize({ width: 320, height: 568 });
   const teamRow = await page.locator('.add-bet-team-row').evaluate((row) => ({
     columns: getComputedStyle(row).gridTemplateColumns,
@@ -205,19 +205,13 @@ async function runBrowserFlow(page: Page) {
   await closeAdd(page);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator('[data-primary-tab="matches"]').click();
-  await page.locator('[data-match-id="match-structured-scheduled"][data-open-match]').click();
   await page.locator('[data-open-scoped-add]').click();
   assert.equal(await page.locator('#home-team').inputValue(), 'Scheduled Home');
   assert.equal(await page.locator('#away-team').inputValue(), 'Scheduled Away');
   assert.notEqual(await page.locator('#home-team').getAttribute('readonly'), null);
   await closeAdd(page);
-  await page.locator('#match-detail-back').click();
-  await page.locator('#screen-matches [data-open-manual-add]').click();
-  await assertFreshSession(page);
-
-  await page.locator('#home-team').fill('Manual Running Home');
-  await page.locator('#away-team').fill('Manual Running Away');
+  await page.locator('[data-open-scoped-add]').click();
+  await assertFreshSession(page, 'Scheduled Home', 'Scheduled Away');
   await page.locator('[data-bet-market="running"]').click();
   assert.equal(await page.locator('[data-running-context-source="manual"]').getAttribute('aria-pressed'), 'true');
   await page.locator('#live-score-home-field').fill('1');
@@ -227,6 +221,7 @@ async function runBrowserFlow(page: Page) {
   assert.equal(await page.locator('#live-minute-field').inputValue(), '22');
   await closeAdd(page);
 
+  await page.locator('#match-detail-back').click();
   await page.locator('[data-live-toggle]').click();
   await page.locator(`[data-live-match-id="${liveSnapshot.matches[0]!.matchId}"]`).waitFor();
   await page.locator(`[data-live-match-id="${liveSnapshot.matches[0]!.matchId}"][data-open-match]`).click();
@@ -246,6 +241,9 @@ async function runBrowserFlow(page: Page) {
   await page.locator('[data-edit-draft="structured-edit-draft"]').click();
   assert.equal(await page.locator('#home-team').inputValue(), 'Edit Home');
   assert.equal(await page.locator('#away-team').inputValue(), 'Edit Away');
+  assert.equal(await page.locator('#home-team').isEditable(), false);
+  assert.equal(await page.locator('#away-team').isEditable(), false);
+  assert.equal(await page.locator('#record-ongoing-bet').isDisabled(), true, 'unlinked legacy draft may be edited but cannot create an unlinked new bet');
   assert.equal(await page.locator('#emotion-field').inputValue(), 'excited');
   assert.equal(await page.locator('[data-bet-market="handicap"]').getAttribute('aria-pressed'), 'true');
   assert.equal(await page.locator('[data-bet-selection="away"]').getAttribute('aria-pressed'), 'true');
