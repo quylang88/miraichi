@@ -9,8 +9,13 @@ import {
   selectBetPeriod,
   selectBetSelection,
   setManualBetLine,
+  setManualRunningContext,
+  setRunningContext,
+  selectRunningWindow,
   toStructuredBetSelection
 } from './bet-entry-model.js';
+
+const generatedAt = '2026-09-15T02:00:00.000Z';
 
 describe('guided Add Bet entry model', () => {
   it('offers only valid selections and presets for the chosen market and period', () => {
@@ -56,5 +61,31 @@ describe('guided Add Bet entry model', () => {
       marketType: 'handicap', marketPeriod: 'first_half', selectionCode: 'away', lineValue: 0.25
     })).toMatchObject({ marketType: 'handicap', marketPeriod: 'first_half', selectionCode: 'away', lineValue: 0.25 });
     expect(toStructuredBetSelection(restoreBetEntryState({ marketType: 'custom' as string }))).toBeNull();
+  });
+
+  it('builds a valid running selection only with window, live context and line', () => {
+    let state = selectBetMarket(createBetEntryState(), 'running');
+    state = selectRunningWindow(state, 'fixed_15', { startMinute: 45, endMinute: 60 });
+    state = selectBetSelection(state, 'over');
+    state = selectBetLinePreset(state, 0.75);
+    state = setRunningContext(state, {
+      liveScoreHome: 2, liveScoreAway: 1, liveMinute: 58,
+      liveContextSource: 'snapshot', liveContextObservedAt: generatedAt
+    });
+    expect(toStructuredBetSelection(state)).toEqual({
+      marketType: 'running', runningWindow: 'fixed_15',
+      windowStartMinute: 45, windowEndMinute: 60,
+      selectionCode: 'over', lineValue: 0.75,
+      liveScoreHome: 2, liveScoreAway: 1, liveMinute: 58,
+      liveContextSource: 'snapshot', liveContextObservedAt: generatedAt
+    });
+    state = setManualRunningContext(state, {
+      liveScoreHome: state.liveScoreHome,
+      liveScoreAway: state.liveScoreAway,
+      liveMinute: state.liveMinute
+    });
+    expect(toStructuredBetSelection(state)).toMatchObject({
+      liveScoreHome: 2, liveScoreAway: 1, liveMinute: 58, liveContextSource: 'manual'
+    });
   });
 });

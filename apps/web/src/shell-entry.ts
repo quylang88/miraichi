@@ -38,6 +38,7 @@ import {
   type AddBetSessionState
 } from './features/add-bet/add-bet-session.js';
 import {
+  clearRunningContext,
   createBetEntryState,
   enableManualBetLine,
   getLinePresets,
@@ -47,11 +48,15 @@ import {
   selectBetMarket,
   selectBetPeriod,
   selectBetSelection,
+  selectRunningWindow,
+  setManualRunningContext,
   setManualBetLine,
+  setRunningContext,
   toStructuredBetSelection,
   type BetEntryState
 } from './features/add-bet/bet-entry-model.js';
-import type { CreatableMarketType, MarketPeriod, SelectionCode } from '@miraichi/shared';
+import { getAvailableRunningWindows, resolveRunningContext } from './features/add-bet/running-context-resolver.js';
+import type { CreatableMarketType, MarketPeriod, RunningWindow, SelectionCode } from '@miraichi/shared';
 
 
 const root = document.getElementById('app-root');
@@ -100,6 +105,7 @@ let pendingOngoingDraftId: string | null = null;
 let disciplineCountdownTimer: number | null = null;
 let lastFocusedElement: HTMLElement | null = null;
 let betEntryState: BetEntryState = createBetEntryState();
+let resolvedRunningMatchId = '';
 
 function getTargetTimezone(): string {
   const settings = settingsService.getSettings();
@@ -470,6 +476,51 @@ function createBetChoice(label: string, attribute: string, value: string, active
   return button;
 }
 
+function applyRunningSnapshotContext(): void {
+  if (betEntryState.marketType !== 'running') return;
+  if (liveMatchState.status !== 'ready') {
+    betEntryState = clearRunningContext(betEntryState);
+    resolvedRunningMatchId = '';
+    return;
+  }
+  const resolution = resolveRunningContext({
+    snapshot: liveMatchState.snapshot,
+    stale: liveMatchState.stale,
+    ...(currentOpenMatchId ? { matchId: currentOpenMatchId } : {}),
+    homeTeamName: (document.getElementById('home-team') as HTMLInputElement | null)?.value ?? '',
+    awayTeamName: (document.getElementById('away-team') as HTMLInputElement | null)?.value ?? ''
+  });
+  if (resolution.status === 'resolved') {
+    betEntryState = setRunningContext(betEntryState, {
+      liveScoreHome: resolution.liveScoreHome,
+      liveScoreAway: resolution.liveScoreAway,
+      liveMinute: resolution.liveMinute,
+      liveContextSource: 'snapshot',
+      liveContextObservedAt: resolution.observedAt
+    });
+    resolvedRunningMatchId = resolution.matchId;
+    return;
+  }
+  betEntryState = clearRunningContext(betEntryState);
+  resolvedRunningMatchId = '';
+}
+
+function readManualRunningContext(): void {
+  const value = (id: string): number | null => {
+    const raw = (document.getElementById(id) as HTMLInputElement | null)?.value.trim() ?? '';
+    const parsed = Number(raw);
+    return /^\d+$/.test(raw) && Number.isInteger(parsed) ? parsed : null;
+  };
+  const liveScoreHome = value('live-score-home-field');
+  const liveScoreAway = value('live-score-away-field');
+  const minute = value('live-minute-field');
+  betEntryState = setManualRunningContext(betEntryState, {
+    liveScoreHome: liveScoreHome !== null && liveScoreHome >= 0 ? liveScoreHome : null,
+    liveScoreAway: liveScoreAway !== null && liveScoreAway >= 0 ? liveScoreAway : null,
+    liveMinute: minute !== null && minute >= 0 && minute < 90 ? minute : null
+  });
+}
+
 function renderBetEntryControls(): void {
   const translate = createTranslator(settingsService.getSettings().locale);
   const marketField = document.getElementById('market-field') as HTMLInputElement | null;
@@ -492,8 +543,56 @@ function renderBetEntryControls(): void {
     button.setAttribute('aria-pressed', String(active));
   });
 
+  const isRunning = betEntryState.marketType === 'running';
+  const contextControl = document.getElementById('running-context-control');
+  if (contextControl) contextControl.hidden = !isRunning;
+  const contextReadonly = isRunning && betEntryState.liveContextSource === 'snapshot';
+  const syncRunningInput = (id: string, value: number | null): void => {
+    const input = document.getElementById(id) as HTMLInputElement | null;
+    if (!input) return;
+    input.readOnly = contextReadonly;
+    input.toggleAttribute('aria-readonly', contextReadonly);
+    if (contextReadonly || value !== null || input.value === '') input.value = value === null ? '' : String(value);
+  };
+  syncRunningInput('live-score-home-field', betEntryState.liveScoreHome);
+  syncRunningInput('live-score-away-field', betEntryState.liveScoreAway);
+  syncRunningInput('live-minute-field', betEntryState.liveMinute);
+  appRoot.querySelectorAll<HTMLButtonElement>('[data-running-context-source]').forEach((button) => {
+    const active = button.dataset.runningContextSource === betEntryState.liveContextSource;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  const contextFeedback = document.getElementById('running-context-feedback');
+  if (contextFeedback) contextFeedback.textContent = contextReadonly
+    ? translate('running.snapshotReady')
+    : isRunning
+      ? translate(betEntryState.liveScoreHome !== null && betEntryState.liveScoreAway !== null
+        && betEntryState.liveMinute !== null ? 'running.manualActive' : 'running.manualRequired')
+      : '';
+
+  const runningWindowControl = document.getElementById('running-window-control');
+  if (runningWindowControl) runningWindowControl.hidden = !isRunning;
+  const availability = getAvailableRunningWindows(betEntryState.liveMinute ?? -1);
+  appRoot.querySelectorAll<HTMLButtonElement>('[data-running-window]').forEach((button) => {
+    const runningWindow = button.dataset.runningWindow as RunningWindow;
+    const startMinute = Number(button.dataset.windowStart);
+    const endMinute = Number(button.dataset.windowEnd);
+    const available = runningWindow === 'to_half_time'
+      ? availability.toHalfTime
+      : runningWindow === 'to_full_time'
+        ? availability.toFullTime
+        : availability.fixed15.some((window) => window.startMinute === startMinute
+          && window.endMinute === endMinute && window.available);
+    const active = betEntryState.runningWindow === runningWindow
+      && (runningWindow !== 'fixed_15'
+        || (betEntryState.windowStartMinute === startMinute && betEntryState.windowEndMinute === endMinute));
+    button.disabled = !available;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+
   const periodControl = document.getElementById('bet-period-control');
-  if (periodControl) periodControl.hidden = !betEntryState.marketType || betEntryState.marketType === 'running';
+  if (periodControl) periodControl.hidden = !betEntryState.marketType || isRunning;
   const selections = getSelectionCodes(betEntryState);
   const selectionControl = document.getElementById('bet-selection-control');
   if (selectionControl) selectionControl.hidden = selections.length === 0;
@@ -535,6 +634,7 @@ function activateAddBetSession(session: AddBetSessionState): void {
   pendingDisciplineChallenge = null;
   setText('discipline-feedback', '');
   betEntryState = createBetEntryState();
+  resolvedRunningMatchId = '';
   renderBetEntryControls();
 }
 
@@ -666,6 +766,9 @@ function populateAddFormFromDraft(draft: AddBetDraft): void {
   setValue('home-team', draft.homeTeamName);
   setValue('away-team', draft.awayTeamName);
   betEntryState = restoreBetEntryState(draft);
+  resolvedRunningMatchId = draft.marketType === 'running' && draft.liveContextSource === 'snapshot'
+    ? draft.matchGroupId
+    : '';
   renderBetEntryControls();
   setValue('odds-field', draft.oddsValue);
   setValue('stake-field', draft.stakePoints);
@@ -691,10 +794,11 @@ function readOngoingBetInput(form: HTMLFormElement): CreateOngoingBetInput | nul
   if (!/^\d+(?:\.\d{1,4})?$/.test(String(data.get('odds-field')))) return null;
   if (!/^\d+(?:\.\d{1,2})?$/.test(String(data.get('stake-field')))) return null;
   const timestamp = new Date().toISOString();
+  const effectiveMatchId = currentOpenMatchId || resolvedRunningMatchId;
   return {
     betId: crypto.randomUUID(),
-    matchGroupId: findDraft(editingDraftId)?.matchGroupId ?? (currentOpenMatchId || manualMatchGroupId(homeTeamName, awayTeamName)),
-    ...(currentOpenMatchId ? { matchId: currentOpenMatchId } : {}),
+    matchGroupId: findDraft(editingDraftId)?.matchGroupId ?? (effectiveMatchId || manualMatchGroupId(homeTeamName, awayTeamName)),
+    ...(effectiveMatchId ? { matchId: effectiveMatchId } : {}),
     homeTeamName, awayTeamName,
     ...structuredSelection,
     oddsFormat: 'HK', oddsValue, stakePoints,
@@ -747,6 +851,34 @@ appRoot.addEventListener('click', (event) => {
   const marketChoice = eventTarget.closest<HTMLButtonElement>('[data-bet-market]');
   if (marketChoice?.dataset.betMarket && !marketChoice.disabled) {
     betEntryState = selectBetMarket(betEntryState, marketChoice.dataset.betMarket as CreatableMarketType);
+    resolvedRunningMatchId = '';
+    if (betEntryState.marketType === 'running') applyRunningSnapshotContext();
+    renderBetEntryControls();
+    return;
+  }
+  const runningSourceChoice = eventTarget.closest<HTMLButtonElement>('[data-running-context-source]');
+  if (runningSourceChoice?.dataset.runningContextSource === 'manual') {
+    betEntryState = setManualRunningContext(betEntryState, {
+      liveScoreHome: betEntryState.liveScoreHome,
+      liveScoreAway: betEntryState.liveScoreAway,
+      liveMinute: betEntryState.liveMinute
+    });
+    renderBetEntryControls();
+    document.getElementById('live-score-home-field')?.focus();
+    return;
+  }
+  if (runningSourceChoice?.dataset.runningContextSource === 'snapshot') {
+    applyRunningSnapshotContext();
+    renderBetEntryControls();
+    return;
+  }
+  const runningWindowChoice = eventTarget.closest<HTMLButtonElement>('[data-running-window]');
+  if (runningWindowChoice?.dataset.runningWindow && !runningWindowChoice.disabled) {
+    const runningWindow = runningWindowChoice.dataset.runningWindow as RunningWindow;
+    betEntryState = selectRunningWindow(betEntryState, runningWindow, runningWindow === 'fixed_15' ? {
+      startMinute: Number(runningWindowChoice.dataset.windowStart),
+      endMinute: Number(runningWindowChoice.dataset.windowEnd)
+    } : undefined);
     renderBetEntryControls();
     return;
   }
@@ -1145,6 +1277,12 @@ appRoot.addEventListener('input', (event) => {
     return;
   }
 
+  if (['live-score-home-field', 'live-score-away-field', 'live-minute-field'].includes(target.id)) {
+    readManualRunningContext();
+    updateAddFormState();
+    return;
+  }
+
   if (target.closest('#add-form')) {
     updateAddFormState();
   }
@@ -1165,6 +1303,14 @@ appRoot.addEventListener('input', (event) => {
 
 appRoot.addEventListener('change', (event) => {
   const target = event.target;
+  if (target instanceof HTMLInputElement
+    && ['home-team', 'away-team'].includes(target.id)
+    && betEntryState.marketType === 'running'
+    && betEntryState.liveContextSource !== 'manual') {
+    applyRunningSnapshotContext();
+    renderBetEntryControls();
+    return;
+  }
   if (target instanceof HTMLInputElement && target.name === 'filter-groupby') {
     activeFilters.groupby = target.value;
     updateMatchesScreenView();
@@ -1337,7 +1483,7 @@ appRoot.addEventListener('submit', (event) => {
   const timestamp = new Date().toISOString();
   if (action === 'draft') {
     const existing = findDraft(editingDraftId);
-    const draft: AddBetDraft = { draftId: existing?.draftId ?? crypto.randomUUID(), matchGroupId: existing?.matchGroupId ?? (currentOpenMatchId || manualMatchGroupId(homeTeamName, awayTeamName)), homeTeamName, awayTeamName, ...structuredSelection, oddsFormat: 'HK', oddsValue, stakePoints, ...(preBetEmotion ? { preBetEmotion } : {}), ...(preBetMotivation ? { preBetMotivation } : {}), ...(preBetPlanAdherence ? { preBetPlanAdherence } : {}), ...(notes ? { preBetNote: notes, notes } : {}), createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp };
+    const draft: AddBetDraft = { draftId: existing?.draftId ?? crypto.randomUUID(), matchGroupId: existing?.matchGroupId ?? (currentOpenMatchId || resolvedRunningMatchId || manualMatchGroupId(homeTeamName, awayTeamName)), homeTeamName, awayTeamName, ...structuredSelection, oddsFormat: 'HK', oddsValue, stakePoints, ...(preBetEmotion ? { preBetEmotion } : {}), ...(preBetMotivation ? { preBetMotivation } : {}), ...(preBetPlanAdherence ? { preBetPlanAdherence } : {}), ...(notes ? { preBetNote: notes, notes } : {}), createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp };
     const save = existing ? updateCloudBetDraft(draft) : saveCloudBetDraft(draft);
     void save.then(async () => {
       closeSheets();

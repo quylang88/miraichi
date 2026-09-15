@@ -1412,6 +1412,15 @@ svg {
   grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
 }
 
+.field-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.running-score-grid,
+.running-fixed-windows {
+  margin-top: 8px;
+}
+
 .bet-choice {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1430,6 +1439,11 @@ svg {
   background: var(--surface-3);
   border-color: var(--text-muted);
   color: var(--text);
+}
+
+.bet-choice:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
 }
 
 .bet-other-line {

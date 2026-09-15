@@ -106,6 +106,19 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(css).toMatch(/\.bet-choice\s*\{[^}]*min-height:\s*44px/s);
   });
 
+  it('renders running HT, FT, fixed-window and live-context controls', () => {
+    const html = renderAppShell({ activeTabId: 'bets', translate: createTranslator('vi') });
+    expect(html).toContain('data-bet-market="running" aria-pressed="false">');
+    expect(html).toContain('id="running-context-control"');
+    expect(html).toContain('data-running-window="to_half_time"');
+    expect(html).toContain('data-running-window="to_full_time"');
+    expect(html).toContain('data-running-window="fixed_15"');
+    expect(html).toContain('data-running-context-source="manual"');
+    expect(html).toContain('id="live-score-home-field"');
+    expect(html).toContain('id="live-minute-field"');
+    expect(html).toContain('Kèo rung');
+  });
+
   it('starts isolated manual, quick, scoped, and edit sessions before opening Add Bet', () => {
     const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
     expect(shellSource).toContain("startAddBetSession(currentScreenName === 'today' ? 'quick' : 'manual'");
