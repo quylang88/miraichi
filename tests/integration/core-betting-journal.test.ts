@@ -18,13 +18,19 @@ describe('core betting journal integration', () => {
   it('runs single-bankroll setup → warning → ongoing → settlement → report → V2 backup atomically', async () => {
     let now = '2026-08-21T01:00:00.000Z';
     const adapter = createMemoryCloudPersistenceAdapter({ now: () => now });
+    await adapter.upsertMatchSnapshot('owner-primary', { snapshotId: 'journal-fixture', generatedAt: now, importedAt: now, sources: [], matches: [{
+      id: 'match-journal', competition: { id: 'fixture-league', name: 'Fixture League', type: 'club', season: '2026' },
+      kickoffUtc: '2026-08-21T18:00:00.000Z', status: 'scheduled',
+      homeTeam: { id: 'team-a', name: 'A' }, awayTeam: { id: 'team-b', name: 'B' },
+      score: { home: null, away: null }, sourceRefs: [], updatedAt: now
+    }] });
     const deps = { adapter, ownerProfileId: 'owner-primary', now: () => new Date(now) };
     let out = response();
     await handleBankroll(request('POST', '/api/v1/bankroll/setup', { openingBalancePoints: 100, timeZone: 'Asia/Tokyo', weekStartDay: 'monday' }) as never, out as never, deps);
     expect(out.statusCode).toBe(201);
     expect(JSON.parse(out.body)).toMatchObject({ account: { accountId: 'bankroll-primary', openingBalancePoints: 100 }, disciplineConfig: { dailyStopLossPoints: null, weeklyStopLossPoints: null, bigBetThresholdPoints: null } });
 
-    const bet = { betId: 'b', matchGroupId: 'manual:a-b', homeTeamName: 'A', awayTeamName: 'B', marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 110, preBetEmotion: 'tilted', preBetMotivation: 'fomo', preBetPlanAdherence: 'partly', createdAt: now };
+    const bet = { betId: 'b', matchGroupId: 'match-journal', matchId: 'match-journal', homeTeamName: 'A', awayTeamName: 'B', marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 110, preBetEmotion: 'tilted', preBetMotivation: 'fomo', preBetPlanAdherence: 'partly', createdAt: now };
     out = response();
     await handleDiscipline(request('POST', '/api/v1/discipline-challenges', bet) as never, out as never, deps);
     const challenge = JSON.parse(out.body).challenge as { challengeId: string };

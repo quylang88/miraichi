@@ -6,6 +6,7 @@ import { readJsonObjectRequest } from './json-body.js';
 import { evaluateDisciplineAttempt, hashBetAttemptPayload } from '../services/discipline-service.js';
 import { getSingleBankrollAvailability, resolveSingleActiveBankroll, SingleBankrollError } from '../services/single-bankroll-service.js';
 import { normalizeDeclaredStructuredBetPayload } from './structured-bet-payload.js';
+import { resolveCanonicalBetMatch } from './canonical-bet-match.js';
 
 const PATCH_FIELDS=new Set(['notes','tags']);
 export async function handleBets(req:IncomingMessage,res:ServerResponse,deps:CloudRouteDependencies):Promise<void>{
@@ -16,8 +17,12 @@ export async function handleBets(req:IncomingMessage,res:ServerResponse,deps:Clo
     let payload;try{payload=await readJsonObjectRequest(req);}catch{return sendError(res,400,'invalid_json_body','Invalid JSON request body.');}
     if(payload.ownerProfileId!==undefined&&payload.ownerProfileId!==deps.ownerProfileId)return sendError(res,400,'invalid_cloud_record','Owner profile is server-controlled.');
     if(req.method==='POST'){
-      const inputValidation=validateCreateOngoingBetInput(payload);if(!inputValidation.ok)return sendError(res,400,'invalid_cloud_record',inputValidation.errors.join('; '));
-      const normalized=normalizeDeclaredStructuredBetPayload(payload);if(!normalized.ok)return sendError(res,400,'invalid_cloud_record',normalized.errors.join('; '));
+      if(payload.matchId!==payload.matchGroupId)return sendError(res,400,'invalid_cloud_record','Bet must be linked to the selected canonical match.');
+      const canonical=await resolveCanonicalBetMatch(deps,payload.matchId,payload.homeTeamName,payload.awayTeamName);
+      if(!canonical)return sendError(res,400,'invalid_cloud_record','Selected match or team identity is invalid.');
+      const input={...payload,...canonical};
+      const inputValidation=validateCreateOngoingBetInput(input);if(!inputValidation.ok)return sendError(res,400,'invalid_cloud_record',inputValidation.errors.join('; '));
+      const normalized=normalizeDeclaredStructuredBetPayload(input);if(!normalized.ok)return sendError(res,400,'invalid_cloud_record',normalized.errors.join('; '));
       let account;try{account=await resolveSingleActiveBankroll(deps.adapter,deps.ownerProfileId);}catch(error){if(error instanceof SingleBankrollError)return sendError(res,409,error.code,error.message);throw error;}
       if(typeof payload.bankrollAccountId==='string'&&payload.bankrollAccountId.trim()&&payload.bankrollAccountId!==account.accountId)return sendError(res,400,'invalid_cloud_record','Browser bankroll selection does not match the primary bankroll.');
       const currentTime=(deps.now??(()=>new Date()))().toISOString();const config=await deps.adapter.getDisciplineConfig(deps.ownerProfileId);

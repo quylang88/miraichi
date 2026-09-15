@@ -139,7 +139,7 @@ export function createPostgresEdgeApiHandler(
   const api = createApiHandler(defineApiRuntime({
     ownerAuthConfig: readOwnerAuthConfig(env),
     liveRefreshServiceAuthConfig: readLiveRefreshServiceAuthConfig(env),
-    cloudDependencies: { adapter, ownerProfileId: config.ownerProfileId },
+    cloudDependencies: { adapter, ownerProfileId: config.ownerProfileId, matchRepository },
     matchRepository,
     matchDetailDependencies: { repository: cloudRepository, coordinator: detailCoordinator },
     liveCoordinator,

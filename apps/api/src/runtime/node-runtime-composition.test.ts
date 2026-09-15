@@ -19,6 +19,7 @@ describe('Node API runtime composition', () => {
     });
 
     expect(result.runtime.cloudDependencies.ownerProfileId).toBe('owner-primary');
+    expect(result.runtime.cloudDependencies.matchRepository).toBe(result.runtime.matchRepository);
     expect(result.runtime.matchDetailDependencies.repository).toBe(result.runtime.matchRepository);
     expect(result.runtime.matchDetailDependencies.detailStore).toBeDefined();
     expect(result.runtime.matchDetailDependencies.queue).toBeUndefined();

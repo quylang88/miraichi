@@ -38,7 +38,6 @@ export function createNodeRuntimeComposition(options: {
   const client = cloudConfig.mode === 'supabase' && cloudConfig.databaseUrl
     ? createPostgresQueryClient(cloudConfig.databaseUrl, cloudConfig.databaseCa) : null;
   const cloudAdapter = client ? createSupabaseCloudPersistenceAdapter({client, ownerProfileId:cloudConfig.ownerProfileId}) : createCloudPersistenceAdapter(cloudConfig);
-  const cloudDependencies = { adapter: cloudAdapter, ownerProfileId: cloudConfig.ownerProfileId };
 
   const hostedWebMode = env.HOSTED_WEB_MODE?.trim() || 'disabled';
   if (hostedWebMode !== 'disabled' && hostedWebMode !== 'required') {
@@ -81,7 +80,7 @@ export function createNodeRuntimeComposition(options: {
   const runtime = defineApiRuntime({
     ownerAuthConfig,
     liveRefreshServiceAuthConfig,
-    cloudDependencies,
+    cloudDependencies: { adapter: cloudAdapter, ownerProfileId: cloudConfig.ownerProfileId, matchRepository },
     matchRepository,
     matchDetailDependencies: {
       repository: matchRepository,

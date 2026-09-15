@@ -144,7 +144,7 @@ void (async () => {
     const accountCreate = await fetch(`${apiBaseUrl}/api/v1/bankroll/setup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ openingBalancePoints: 100, timeZone: 'Asia/Tokyo', weekStartDay: 'monday' }) });
     assert(accountCreate.status === 201, 'POST /api/v1/bankroll/setup creates the primary points bankroll');
 
-    const bet = { betId: 'e2e-bet', matchGroupId: firstMatchId || 'match-e2e', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, preBetEmotion: 'calm', preBetMotivation: 'planned_analysis', preBetPlanAdherence: 'yes', createdAt: timestamp };
+    const bet = { betId: 'e2e-bet', matchGroupId: firstMatchId, matchId: firstMatchId, homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, preBetEmotion: 'calm', preBetMotivation: 'planned_analysis', preBetPlanAdherence: 'yes', createdAt: timestamp };
     const betCreate = await fetch(`${apiBaseUrl}/api/v1/bets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bet) });
     assert(betCreate.status === 201, 'POST /api/v1/bets creates a bet record');
     const { selectionCode: _betSelectionCode, marketPeriod: _betMarketPeriod, ...legacyBet } = bet;
