@@ -53,7 +53,7 @@ describe('running context resolver', () => {
     })).toMatchObject({ status: 'resolved', matchId: 'match-1' });
   });
 
-  it('refuses ambiguous, reversed, suspended, stale, and missing-minute snapshots', () => {
+  it('refuses ambiguous, reversed, suspended, and stale snapshots', () => {
     expect(resolveRunningContext({
       snapshot: snapshot([live(), live({ matchId: 'match-2' })]), stale: false,
       homeTeamName: 'Arsenal', awayTeamName: 'Chelsea'
@@ -70,10 +70,12 @@ describe('running context resolver', () => {
       snapshot: snapshot([live()]), stale: true, matchId: 'match-1',
       homeTeamName: 'Arsenal', awayTeamName: 'Chelsea'
     })).toEqual({ status: 'manual_required', reason: 'stale_snapshot' });
-    expect(resolveRunningContext({
-      snapshot: snapshot([live({ elapsedMinute: null })]), stale: false, matchId: 'match-1',
-      homeTeamName: 'Arsenal', awayTeamName: 'Chelsea'
-    })).toEqual({ status: 'manual_required', reason: 'missing_live_context' });
+  });
+
+  it('keeps an exact fresh snapshot readonly when score exists but minute is absent',()=>{
+    expect(resolveRunningContext({snapshot:snapshot([live({elapsedMinute:null})]),stale:false,matchId:'match-1',homeTeamName:'Arsenal',awayTeamName:'Chelsea'})).toEqual({
+      status:'resolved',matchId:'match-1',source:'snapshot',readonly:true,liveScoreHome:2,liveScoreAway:1,liveMinute:null,observedAt:generatedAt
+    });
   });
 
   it('closes HT/FT and elapsed 15-minute blocks from the current minute', () => {
@@ -86,5 +88,11 @@ describe('running context resolver', () => {
     expect(getAvailableRunningWindows(45)).toMatchObject({ toHalfTime: false, toFullTime: true });
     expect(getAvailableRunningWindows(90)).toMatchObject({ toHalfTime: false, toFullTime: false });
     expect(getAvailableRunningWindows(60).fixed15.find((item) => item.endMinute === 60)?.available).toBe(false);
+  });
+
+  it('keeps Running choices available without a minute and relies on manual settlement fallback',()=>{
+    const unknown=getAvailableRunningWindows(null);
+    expect(unknown).toMatchObject({toHalfTime:true,toFullTime:true});
+    expect(unknown.fixed15.every((window)=>window.available)).toBe(true);
   });
 });

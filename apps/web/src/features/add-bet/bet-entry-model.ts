@@ -105,7 +105,7 @@ export function selectRunningWindow(
 export function setRunningContext(state: BetEntryState, context: {
   readonly liveScoreHome: number;
   readonly liveScoreAway: number;
-  readonly liveMinute: number;
+  readonly liveMinute: number | null;
   readonly liveContextSource: LiveContextSource;
   readonly liveContextObservedAt?: string;
 }): BetEntryState {
@@ -216,11 +216,11 @@ export function restoreBetEntryState(input: {
       startMinute: input.windowStartMinute ?? -1, endMinute: input.windowEndMinute ?? -1
     });
     if (input.liveScoreHome != null && input.liveScoreAway != null && input.liveContextSource) {
-      state = input.liveMinute != null ? setRunningContext(state, {
-        liveScoreHome: input.liveScoreHome, liveScoreAway: input.liveScoreAway, liveMinute: input.liveMinute,
+      state = setRunningContext(state, {
+        liveScoreHome: input.liveScoreHome, liveScoreAway: input.liveScoreAway, liveMinute: input.liveMinute ?? null,
         liveContextSource: input.liveContextSource,
         ...(input.liveContextObservedAt ? { liveContextObservedAt: input.liveContextObservedAt } : {})
-      }) : setManualRunningContext(state, {liveScoreHome:input.liveScoreHome,liveScoreAway:input.liveScoreAway,liveMinute:null});
+      });
     }
     const threshold=input.runningGoalThreshold ?? (input.runningWindow==='fixed_15'?0.5:undefined);
     if (threshold) state=selectBetLinePreset(state,threshold);

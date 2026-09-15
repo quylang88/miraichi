@@ -110,4 +110,9 @@ describe('guided Add Bet entry model', () => {
     expect(getSelectionCodes(state)).toEqual(['over']);
     expect(getLinePresets(state)).toEqual([0.5,0.75]);
   });
+  it('restores snapshot score provenance even when the provider has no minute',()=>{
+    const state=restoreBetEntryState({marketType:'running',runningWindow:'to_full_time',runningGoalThreshold:0.5,liveScoreHome:1,liveScoreAway:0,liveContextSource:'snapshot',liveContextObservedAt:generatedAt});
+    expect(state).toMatchObject({liveScoreHome:1,liveScoreAway:0,liveMinute:null,liveContextSource:'snapshot',liveContextObservedAt:generatedAt});
+    expect(toStructuredBetSelection(state)).toEqual({marketType:'running',runningWindow:'to_full_time',runningGoalThreshold:0.5,liveScoreHome:1,liveScoreAway:0,liveContextSource:'snapshot',liveContextObservedAt:generatedAt});
+  });
 });

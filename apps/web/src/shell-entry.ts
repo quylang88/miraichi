@@ -569,12 +569,20 @@ function renderBetEntryControls(): void {
     ? translate('running.snapshotReady')
     : isRunning
       ? translate(betEntryState.liveScoreHome !== null && betEntryState.liveScoreAway !== null
-        && betEntryState.liveMinute !== null ? 'running.manualActive' : 'running.manualRequired')
+        ? 'running.manualActive' : 'running.manualRequired')
       : '';
+  const settlementGuidance = document.getElementById('running-settlement-guidance');
+  if (settlementGuidance) settlementGuidance.textContent = !isRunning || !betEntryState.runningWindow
+    ? '' : betEntryState.runningWindow !== 'fixed_15'
+      ? translate('running.autoScoreReady')
+      : translate(betEntryState.liveMinute === null
+        ? 'running.fixedNeedsMinute'
+        : betEntryState.windowStartMinute !== null && betEntryState.liveMinute > betEntryState.windowStartMinute
+          ? 'running.fixedStartedManual' : 'running.fixedNeedsEvents');
 
   const runningWindowControl = document.getElementById('running-window-control');
   if (runningWindowControl) runningWindowControl.hidden = !isRunning;
-  const availability = getAvailableRunningWindows(betEntryState.liveMinute ?? -1);
+  const availability = getAvailableRunningWindows(betEntryState.liveMinute);
   appRoot.querySelectorAll<HTMLButtonElement>('[data-running-window]').forEach((button) => {
     const runningWindow = button.dataset.runningWindow as RunningWindow;
     const startMinute = Number(button.dataset.windowStart);
@@ -597,14 +605,14 @@ function renderBetEntryControls(): void {
   if (periodControl) periodControl.hidden = !betEntryState.marketType || isRunning;
   const selections = getSelectionCodes(betEntryState);
   const selectionControl = document.getElementById('bet-selection-control');
-  if (selectionControl) selectionControl.hidden = selections.length === 0;
+  if (selectionControl) selectionControl.hidden = isRunning || selections.length === 0;
   const selectionChoices = document.getElementById('bet-selection-choices');
   selectionChoices?.replaceChildren(...selections.map((code) => createBetChoice(
     translate(`selection.${code}`), 'data-bet-selection', code, betEntryState.selectionCode === code
   )));
 
   const lineControl = document.getElementById('bet-line-control');
-  if (lineControl) lineControl.hidden = !betEntryState.selectionCode || betEntryState.marketType === '1X2';
+  if (lineControl) lineControl.hidden = isRunning || !betEntryState.selectionCode || betEntryState.marketType === '1X2';
   const linePresets = document.getElementById('bet-line-presets');
   linePresets?.replaceChildren(...getLinePresets(betEntryState).map((line) => createBetChoice(
     `${line > 0 && betEntryState.marketType === 'handicap' ? '+' : ''}${line}`,
@@ -620,6 +628,17 @@ function renderBetEntryControls(): void {
   const manualLine = document.getElementById('manual-bet-line-field') as HTMLInputElement | null;
   if (manualLine && manualLine.value !== betEntryState.manualLineInput) manualLine.value = betEntryState.manualLineInput;
   if (manualLine) manualLine.setAttribute('aria-invalid', String(betEntryState.manualLineActive && betEntryState.manualLineInput !== '' && betEntryState.lineValue === null));
+  const thresholdControl = document.getElementById('running-threshold-control');
+  if (thresholdControl) thresholdControl.hidden = !isRunning || !betEntryState.runningWindow;
+  appRoot.querySelectorAll<HTMLButtonElement>('[data-running-threshold]').forEach((button) => {
+    const threshold = Number(button.dataset.runningThreshold);
+    const fixed = betEntryState.runningWindow === 'fixed_15';
+    button.hidden = fixed && threshold !== 0.5;
+    button.disabled = fixed;
+    const active = betEntryState.runningGoalThreshold === threshold;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
   updateAddFormState();
 }
 
@@ -881,6 +900,12 @@ appRoot.addEventListener('click', (event) => {
   const periodChoice = eventTarget.closest<HTMLButtonElement>('[data-bet-period]');
   if (periodChoice?.dataset.betPeriod) {
     betEntryState = selectBetPeriod(betEntryState, periodChoice.dataset.betPeriod as MarketPeriod);
+    renderBetEntryControls();
+    return;
+  }
+  const runningThresholdChoice = eventTarget.closest<HTMLButtonElement>('[data-running-threshold]');
+  if (runningThresholdChoice?.dataset.runningThreshold && !runningThresholdChoice.disabled) {
+    betEntryState = selectBetLinePreset(betEntryState, Number(runningThresholdChoice.dataset.runningThreshold));
     renderBetEntryControls();
     return;
   }

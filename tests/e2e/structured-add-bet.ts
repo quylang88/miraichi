@@ -224,10 +224,34 @@ async function runBrowserFlow(page: Page) {
   await page.locator('[data-bet-market="running"]').click();
   assert.equal(await page.locator('[data-running-context-source="manual"]').getAttribute('aria-pressed'), 'true');
   await page.locator('#live-score-home-field').fill('1');
-  await page.locator('#live-score-away-field').fill('0');
-  await page.locator('#live-minute-field').fill('22');
+  await page.locator('#live-score-away-field').fill('1');
+  assert.equal(await page.locator('#live-minute-field').inputValue(), '');
+  assert.equal(await page.locator('[data-running-window="to_half_time"]').isDisabled(), false);
+  assert.equal(await page.locator('[data-running-window="to_full_time"]').isDisabled(), false);
+  assert.equal(await page.locator('[data-running-window="fixed_15"]:not([disabled])').count(), 6);
+  await page.locator('[data-running-window="to_full_time"]').click();
+  assert.equal(await page.locator('#bet-selection-control').isHidden(), true, 'Running does not ask for selection');
+  assert.equal(await page.locator('#bet-line-control').isHidden(), true, 'Running does not ask for a free line');
+  assert.equal(await page.locator('#running-threshold-control').isVisible(), true);
+  await page.locator('[data-running-threshold="0.75"]').click();
+  await page.setViewportSize({width:320,height:568});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Running controls fit 320px');
+  assert.ok((await page.locator('[data-running-threshold="0.75"]').boundingBox())!.height>=44);
+  await page.locator('#odds-field').fill('0.9');
+  await page.locator('#stake-field').fill('5');
+  await page.locator('#save-draft-shell').click();
+  await assertHidden(page, '#add-sheet');
+  const runningDraft=drafts.find((draft)=>draft.marketType==='running'&&draft.draftId!==seededDraft.draftId);
+  assert.deepEqual({selectionCode:runningDraft?.selectionCode,lineValue:runningDraft?.lineValue,liveMinute:runningDraft?.liveMinute,runningGoalThreshold:runningDraft?.runningGoalThreshold},
+    {selectionCode:undefined,lineValue:undefined,liveMinute:undefined,runningGoalThreshold:0.75});
+  await page.locator('[data-open-scoped-add]').click();
+  await page.locator('[data-bet-market="running"]').click();
+  await page.locator('#live-score-home-field').fill('1');
+  await page.locator('#live-score-away-field').fill('1');
   await page.locator('[data-running-window="fixed_15"][data-window-start="15"]').click();
-  assert.equal(await page.locator('#live-minute-field').inputValue(), '22');
+  assert.equal(await page.locator('[data-running-threshold="0.5"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.locator('[data-running-threshold="0.75"]').isHidden(), true);
+  assert.match(await page.locator('#running-settlement-guidance').textContent()??'',/manual settlement/);
   await closeAdd(page);
 
   await page.locator('#match-detail-back').click();
@@ -243,6 +267,11 @@ async function runBrowserFlow(page: Page) {
   assert.notEqual(await page.locator('#live-minute-field').getAttribute('readonly'), null);
   assert.equal(await page.locator('[data-running-window="fixed_15"][data-window-start="45"]').isDisabled(), true);
   assert.equal(await page.locator('[data-running-window="fixed_15"][data-window-start="60"]').isDisabled(), false);
+  await page.locator('[data-running-window="fixed_15"][data-window-start="60"]').click();
+  assert.match(await page.locator('#running-settlement-guidance').textContent()??'',/started before placement/);
+  await page.setViewportSize({width:844,height:390});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Running controls fit landscape');
+  await page.setViewportSize({width:390,height:844});
   await closeAdd(page);
 
   await page.locator('[data-primary-tab="bets"]').click();

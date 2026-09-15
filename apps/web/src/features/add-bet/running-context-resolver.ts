@@ -12,12 +12,12 @@ export type RunningContextResolution =
       readonly readonly: true;
       readonly liveScoreHome: number;
       readonly liveScoreAway: number;
-      readonly liveMinute: number;
+      readonly liveMinute: number | null;
       readonly observedAt: string;
     }
   | {
       readonly status: 'manual_required';
-      readonly reason: 'stale_snapshot' | 'match_not_found' | 'ambiguous_match' | 'match_not_live' | 'missing_live_context';
+      readonly reason: 'stale_snapshot' | 'match_not_found' | 'ambiguous_match' | 'match_not_live';
     };
 
 export interface ResolveRunningContextInput {
@@ -37,7 +37,6 @@ function isEligible(match: PublicLiveMatchOverlay): boolean {
 }
 
 function resolved(match: PublicLiveMatchOverlay): RunningContextResolution {
-  if (match.elapsedMinute === null) return { status: 'manual_required', reason: 'missing_live_context' };
   return {
     status: 'resolved', matchId: match.matchId, source: 'snapshot', readonly: true,
     liveScoreHome: match.score.home, liveScoreAway: match.score.away,
@@ -64,18 +63,19 @@ export function resolveRunningContext(input: ResolveRunningContextInput): Runnin
   return resolved(matches[0]!);
 }
 
-export function getAvailableRunningWindows(liveMinute: number): {
+export function getAvailableRunningWindows(liveMinute: number | null): {
   readonly toHalfTime: boolean;
   readonly toFullTime: boolean;
   readonly fixed15: readonly { readonly startMinute: number; readonly endMinute: number; readonly available: boolean }[];
 } {
-  const validMinute = Number.isInteger(liveMinute) && liveMinute >= 0 && liveMinute < 90;
+  const missingMinute = liveMinute === null;
+  const validMinute = liveMinute !== null && Number.isInteger(liveMinute) && liveMinute >= 0 && liveMinute < 90;
   return {
-    toHalfTime: validMinute && liveMinute < 45,
-    toFullTime: validMinute,
+    toHalfTime: missingMinute || (validMinute && liveMinute < 45),
+    toFullTime: missingMinute || validMinute,
     fixed15: structuredBetMarketCatalog.runningWindows.map((window) => ({
       ...window,
-      available: validMinute && liveMinute < window.endMinute
+      available: missingMinute || (validMinute && liveMinute < window.endMinute)
     }))
   };
 }

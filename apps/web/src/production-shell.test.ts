@@ -131,7 +131,15 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('data-running-window="fixed_15"');
     expect(html).toContain('data-running-context-source="manual"');
     expect(html).toContain('id="live-score-home-field"');
-    expect(html).toContain('id="live-minute-field"');
+    expect(html).toMatch(/id="live-score-home-field"[^>]*required/);
+    expect(html).toMatch(/id="live-score-away-field"[^>]*required/);
+    expect(html).toMatch(/id="live-minute-field"[^>]*>/);
+    expect(html).not.toMatch(/id="live-minute-field"[^>]*required/);
+    expect(html).toContain('id="running-threshold-control"');
+    expect(html).toContain('data-running-threshold="0.5"');
+    expect(html).toContain('data-running-threshold="0.75"');
+    expect(html).toContain('Phút (không bắt buộc)');
+    expect(html).toContain('id="running-settlement-guidance"');
     expect(html).toContain('Kèo rung');
   });
 
