@@ -770,9 +770,7 @@ function populateAddFormFromDraft(draft: AddBetDraft): void {
   renderBetEntryControls();
   setValue('odds-field', draft.oddsValue);
   setValue('stake-field', draft.stakePoints);
-  setValue('emotion-field', draft.preBetEmotion);
-  setValue('motivation-field', draft.preBetMotivation);
-  setValue('pre-bet-plan-adherence', draft.preBetPlanAdherence);
+  setValue('emotion-field', draft.preBetEmotion ?? 'calm');
   setValue('note-field', draft.preBetNote ?? draft.notes);
   updateAddFormState();
 }
@@ -785,15 +783,14 @@ function readOngoingBetInput(form: HTMLFormElement): CreateOngoingBetInput | nul
   const oddsValue = Number(data.get('odds-field'));
   const stakePoints = Number(data.get('stake-field'));
   const preBetEmotion = String(data.get('emotion-field') ?? '');
-  const preBetMotivation = String(data.get('motivation-field') ?? '');
-  const preBetPlanAdherence = String(data.get('pre-bet-plan-adherence') ?? '');
   const preBetNote = String(data.get('note-field') ?? '').trim();
-  if (!homeTeamName || !awayTeamName || !structuredSelection || !Number.isFinite(oddsValue) || oddsValue <= 0 || !Number.isFinite(stakePoints) || stakePoints <= 0 || !preBetEmotion || !preBetMotivation || !['yes', 'partly', 'no'].includes(preBetPlanAdherence)) return null;
+  if (!homeTeamName || !awayTeamName || !structuredSelection || !Number.isFinite(oddsValue) || oddsValue <= 0 || !Number.isFinite(stakePoints) || stakePoints <= 0 || !preBetEmotion) return null;
   if (!/^\d+(?:\.\d{1,4})?$/.test(String(data.get('odds-field')))) return null;
   if (!/^\d+(?:\.\d{1,2})?$/.test(String(data.get('stake-field')))) return null;
   const timestamp = new Date().toISOString();
   const effectiveMatchId = currentOpenMatchId || resolvedRunningMatchId;
   if (!effectiveMatchId) return null;
+  const legacyDraft = findDraft(editingDraftId);
   return {
     betId: crypto.randomUUID(),
     matchGroupId: findDraft(editingDraftId)?.matchGroupId ?? effectiveMatchId,
@@ -802,8 +799,8 @@ function readOngoingBetInput(form: HTMLFormElement): CreateOngoingBetInput | nul
     ...structuredSelection,
     oddsFormat: 'HK', oddsValue, stakePoints,
     preBetEmotion: preBetEmotion as CreateOngoingBetInput['preBetEmotion'],
-    preBetMotivation: preBetMotivation as CreateOngoingBetInput['preBetMotivation'],
-    preBetPlanAdherence: preBetPlanAdherence as CreateOngoingBetInput['preBetPlanAdherence'],
+    ...(legacyDraft?.preBetMotivation ? { preBetMotivation: legacyDraft.preBetMotivation } : {}),
+    ...(legacyDraft?.preBetPlanAdherence ? { preBetPlanAdherence: legacyDraft.preBetPlanAdherence } : {}),
     ...(preBetNote ? { preBetNote } : {}), createdAt: timestamp
   };
 }
@@ -1006,7 +1003,7 @@ appRoot.addEventListener('click', (event) => {
     const record = betRecordsState.status === 'ready' ? [...betRecordsState.pending, ...betRecordsState.settled].find((bet) => bet.betId === selectedSettlementBetId) : undefined;
     const legacyField = document.getElementById('legacy-plan-adherence-field');
     const legacySelect = document.getElementById('plan-adherence') as HTMLSelectElement | null;
-    const needsLegacyAdherence = Boolean(record && !record.preBetPlanAdherence && !record.postBetPlanAdherence);
+    const needsLegacyAdherence = Boolean(record && !record.selectionCode && !record.preBetPlanAdherence && !record.postBetPlanAdherence);
     if (legacyField) legacyField.hidden = !needsLegacyAdherence;
     if (legacySelect) { legacySelect.required = needsLegacyAdherence; legacySelect.value = ''; }
     updateSettlementPreview();
@@ -1436,7 +1433,7 @@ appRoot.addEventListener('submit', (event) => {
     const adjustmentReason = String(form.get('adjustmentReason') ?? '').trim();
     const profitLossPoints = Number(form.get('profitLossPoints'));
     const record = betRecordsState.status === 'ready' ? [...betRecordsState.pending, ...betRecordsState.settled].find((bet) => bet.betId === selectedSettlementBetId) : undefined;
-    const needsLegacyAdherence = Boolean(record && !record.preBetPlanAdherence && !record.postBetPlanAdherence);
+    const needsLegacyAdherence = Boolean(record && !record.selectionCode && !record.preBetPlanAdherence && !record.postBetPlanAdherence);
     if (!record || !settlementType || (needsLegacyAdherence && !['yes', 'partly', 'no'].includes(planAdherence))) return;
     const correctionEventId = record.status === 'settled' ? selectedSettlementTimeline.at(-1)?.settlementEventId : undefined;
     if (record.status === 'settled' && !correctionEventId) {
@@ -1467,8 +1464,6 @@ appRoot.addEventListener('submit', (event) => {
   const oddsValue = Number(form.get('odds-field'));
   const stakePoints = Number(form.get('stake-field'));
   const preBetEmotion = String(form.get('emotion-field') || '') as AddBetDraft['preBetEmotion'];
-  const preBetMotivation = String(form.get('motivation-field') || '') as AddBetDraft['preBetMotivation'];
-  const preBetPlanAdherence = String(form.get('pre-bet-plan-adherence') || '') as AddBetDraft['preBetPlanAdherence'];
   const notes = String(form.get('note-field') || '').trim();
   const translate = createTranslator(settingsService.getSettings().locale);
   if ((!currentOpenMatchId && !editingDraftId) || !homeTeamName || !awayTeamName || !structuredSelection || !Number.isFinite(oddsValue) || oddsValue <= 0 || !/^\d+(?:\.\d{1,4})?$/.test(String(form.get('odds-field'))) || !Number.isFinite(stakePoints) || stakePoints <= 0 || !/^\d+(?:\.\d{1,2})?$/.test(String(form.get('stake-field')))) {
@@ -1478,7 +1473,7 @@ appRoot.addEventListener('submit', (event) => {
   const timestamp = new Date().toISOString();
   if (action === 'draft') {
     const existing = findDraft(editingDraftId);
-    const draft: AddBetDraft = { draftId: existing?.draftId ?? crypto.randomUUID(), matchGroupId: existing?.matchGroupId ?? currentOpenMatchId, homeTeamName, awayTeamName, ...structuredSelection, oddsFormat: 'HK', oddsValue, stakePoints, ...(preBetEmotion ? { preBetEmotion } : {}), ...(preBetMotivation ? { preBetMotivation } : {}), ...(preBetPlanAdherence ? { preBetPlanAdherence } : {}), ...(notes ? { preBetNote: notes, notes } : {}), createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp };
+    const draft: AddBetDraft = { draftId: existing?.draftId ?? crypto.randomUUID(), matchGroupId: existing?.matchGroupId ?? currentOpenMatchId, homeTeamName, awayTeamName, ...structuredSelection, oddsFormat: 'HK', oddsValue, stakePoints, ...(preBetEmotion ? { preBetEmotion } : {}), ...(existing?.preBetMotivation ? { preBetMotivation: existing.preBetMotivation } : {}), ...(existing?.preBetPlanAdherence ? { preBetPlanAdherence: existing.preBetPlanAdherence } : {}), ...(notes ? { preBetNote: notes, notes } : {}), createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp };
     const save = existing ? updateCloudBetDraft(draft) : saveCloudBetDraft(draft);
     void save.then(async () => {
       closeSheets();

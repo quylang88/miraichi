@@ -27,7 +27,7 @@ export async function handleBets(req:IncomingMessage,res:ServerResponse,deps:Clo
       if(typeof payload.bankrollAccountId==='string'&&payload.bankrollAccountId.trim()&&payload.bankrollAccountId!==account.accountId)return sendError(res,400,'invalid_cloud_record','Browser bankroll selection does not match the primary bankroll.');
       const currentTime=(deps.now??(()=>new Date()))().toISOString();const config=await deps.adapter.getDisciplineConfig(deps.ownerProfileId);
       const availability=await getSingleBankrollAvailability(deps.adapter,deps.ownerProfileId,account);
-      const evaluation=evaluateDisciplineAttempt({config,stakePoints:Number(payload.stakePoints),availableBalancePoints:availability.availableBalancePoints,preBetMotivation:payload.preBetMotivation as CreateOngoingBetInput['preBetMotivation'],settlementEvents:await deps.adapter.listBetSettlementEvents(deps.ownerProfileId),at:currentTime});
+      const evaluation=evaluateDisciplineAttempt({config,stakePoints:Number(payload.stakePoints),availableBalancePoints:availability.availableBalancePoints,...(payload.preBetMotivation === undefined ? {} : {preBetMotivation:payload.preBetMotivation as NonNullable<CreateOngoingBetInput['preBetMotivation']>}),settlementEvents:await deps.adapter.listBetSettlementEvents(deps.ownerProfileId),at:currentTime});
       let acknowledgedAt:string|undefined;
       if(evaluation.triggeredRules.length>0){
         const challengeId=typeof payload.disciplineChallengeId==='string'?payload.disciplineChallengeId:'';const challenge=challengeId?await deps.adapter.findDisciplineChallenge(deps.ownerProfileId,challengeId):null;

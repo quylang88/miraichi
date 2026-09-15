@@ -30,6 +30,25 @@ function enqueueSnapshotStatusRows(client: FakeClient): void {
 }
 
 describe('supabase cloud persistence adapter', () => {
+  it('maps NULL adherence as absent and imports an absent value as SQL NULL', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    client.enqueueRows([{settlement_event_id:'s', owner_profile_id:'owner-primary', bet_id:'b', bankroll_account_id:'a', settlement_type:'full_win', plan_adherence:null, calculated_profit_loss_points:'9', ledger_delta_points:'9', effective_at:'2026-09-15T00:00:00.000Z', occurred_at:'2026-09-15T00:00:00.000Z'}]);
+    const listed = await adapter.listBetSettlementEvents('owner-primary','b');
+    expect(listed[0]).not.toHaveProperty('planAdherence');
+    await adapter.importOwnerData('owner-primary', {
+      schemaVersion:'miraichi.cloud-backup.v2', exportedAt:'2026-09-15T00:00:00.000Z', ownerProfileId:'owner-primary',
+      drafts:[], bets:[], bankrollAccounts:[], bankrollLedgerEntries:[], disciplineConfigs:[],
+      settlementEvents:[{settlementEventId:'s',ownerProfileId:'owner-primary',betId:'b',bankrollAccountId:'a',settlementType:'full_win',calculatedProfitLossPoints:9,ledgerDeltaPoints:9,effectiveAt:'2026-09-15T00:00:00.000Z',occurredAt:'2026-09-15T00:00:00.000Z'}]
+    });
+    const write=client.calls.find((call)=>call.text.includes('insert into miraichi_app.bet_settlement_event'))!;
+    expect(write.values[5]).toBeNull();
+    client.enqueueRows([], [], [], [], [], [{settlement_event_id:'s',owner_profile_id:'owner-primary',bet_id:'b',bankroll_account_id:'a',settlement_type:'full_win',plan_adherence:null,calculated_profit_loss_points:'9',ledger_delta_points:'9',effective_at:'2026-09-15T00:00:00.000Z',occurred_at:'2026-09-15T00:00:00.000Z'}]);
+    const exported=await adapter.exportOwnerData('owner-primary','2026-09-15T00:00:00.000Z');
+    expect(exported.schemaVersion).toBe('miraichi.cloud-backup.v2');
+    if (exported.schemaVersion !== 'miraichi.cloud-backup.v2') throw new Error('V2 backup required');
+    expect(exported.settlementEvents[0]).not.toHaveProperty('planAdherence');
+  });
   it('uses parameterized owner-scoped bet queries', async () => {
     const client = new FakeClient();
     const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary', now: () => '2026-07-02T00:00:00.000Z' });

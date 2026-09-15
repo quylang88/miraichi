@@ -245,10 +245,16 @@ async function runBrowserFlow(page: Page) {
   assert.equal(await page.locator('#away-team').isEditable(), false);
   assert.equal(await page.locator('#record-ongoing-bet').isDisabled(), true, 'unlinked legacy draft may be edited but cannot create an unlinked new bet');
   assert.equal(await page.locator('#emotion-field').inputValue(), 'excited');
+  assert.equal(await page.locator('#motivation-field').count(), 0);
+  assert.equal(await page.locator('#pre-bet-plan-adherence').count(), 0);
   assert.equal(await page.locator('[data-bet-market="handicap"]').getAttribute('aria-pressed'), 'true');
   assert.equal(await page.locator('[data-bet-selection="away"]').getAttribute('aria-pressed'), 'true');
   assert.equal(await page.locator('#line-value-field').inputValue(), '0.25');
   await verifyZoomRuntime(page);
+  await page.locator('#save-draft-shell').click();
+  await assertHidden(page, '#add-sheet');
+  assert.equal(drafts.find((draft) => draft.draftId === seededDraft.draftId)?.preBetMotivation, 'familiar_market', 'editing a legacy draft preserves its motivation');
+  assert.equal(drafts.find((draft) => draft.draftId === seededDraft.draftId)?.preBetPlanAdherence, 'yes', 'editing a legacy draft preserves its plan adherence');
 }
 
 async function run() {

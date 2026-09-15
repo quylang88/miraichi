@@ -81,6 +81,22 @@ describe('production PWA shell configuration', () => {
 });
 
 describe('phase 9 cloud persistence workflows', () => {
+  it('asks only for an emotion with a calm default on new Add Bet', () => {
+    for (const locale of ['vi', 'en'] as const) {
+      const html = renderAppShell({ activeTabId: 'bets', translate: createTranslator(locale) });
+      expect(html).toContain('id="emotion-field"');
+      expect(html).toContain('<option value="calm" selected>');
+      expect(html).not.toContain('id="motivation-field"');
+      expect(html).not.toContain('id="pre-bet-plan-adherence"');
+    }
+  });
+  it('does not silently erase legacy psychology when an existing draft is edited or recorded', () => {
+    const source = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(source).toContain('existing?.preBetMotivation');
+    expect(source).toContain('existing?.preBetPlanAdherence');
+    expect(source).toContain('legacyDraft?.preBetMotivation');
+    expect(source).toContain('legacyDraft?.preBetPlanAdherence');
+  });
   it('renders one stable Home vs Away row without duplicated manual-match summaries', () => {
     const html = renderAppShell({ activeTabId: 'bets' });
     const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
@@ -121,7 +137,7 @@ describe('phase 9 cloud persistence workflows', () => {
 
   it('defaults new bets to calm and exposes only three emotions', () => {
     const html = renderAppShell({ activeTabId: 'bets', translate: createTranslator('vi') });
-    const emotion = html.slice(html.indexOf('id="emotion-field"'), html.indexOf('id="motivation-field"'));
+    const emotion = html.slice(html.indexOf('id="emotion-field"'), html.indexOf('id="note-field"'));
     expect(emotion).toContain('<option value="calm" selected>Bình tĩnh</option>');
     expect(emotion).toContain('<option value="excited">Hưng phấn</option>');
     expect(emotion).toContain('<option value="tilted">Mất kiểm soát</option>');
@@ -181,7 +197,7 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('name="home-team"');
     expect(html).toContain('id="record-ongoing-bet"');
     expect(html).not.toContain('id="account-field"');
-    expect(html).toContain('id="pre-bet-plan-adherence"');
+    expect(html).not.toContain('id="pre-bet-plan-adherence"');
     expect(html).toContain('id="settlement-form"');
     expect(html).toContain('id="legacy-plan-adherence-field" hidden');
   });

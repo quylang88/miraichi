@@ -5,6 +5,16 @@ import { handleBetSettlements } from './bet-settlements.js';
 const req=(body:unknown,method='POST')=>{const value=Readable.from([JSON.stringify(body)]) as Readable&{method:string;url:string};value.method=method;value.url='/api/v1/bets/b/settlements';return value;};
 const res=()=>({statusCode:0,body:'',writeHead(code:number){this.statusCode=code;},end(body?:unknown){this.body=String(body??'');}});
 describe('bet settlement route',()=>{
+  it('settles an emotion-only structured bet without a legacy plan prompt or fabricated event field',async()=>{
+    const adapter=createMemoryCloudPersistenceAdapter();
+    await adapter.createBankrollAccount({accountId:'a',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});
+    await adapter.createBetRecord({betId:'b',ownerProfileId:'owner-primary',matchGroupId:'m',bankrollAccountId:'a',homeTeamName:'A',awayTeamName:'B',marketType:'1X2',marketPeriod:'full_time',selectionCode:'home',selectionLabel:'A · FT',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,status:'pending',preBetEmotion:'calm',createdAt:'2026-08-21T00:00:00.000Z',updatedAt:'2026-08-21T00:00:00.000Z'});
+    const out=res();await handleBetSettlements(req({settlementEventId:'simple',settlementType:'half_loss',effectiveAt:'2026-08-21T01:00:00.000Z'}) as never,out as never,{adapter,ownerProfileId:'owner-primary'});
+    expect(out.statusCode).toBe(201);
+    const result=JSON.parse(out.body);
+    expect(result).toMatchObject({record:{profitLossPoints:-5},account:{currentBalancePoints:95}});
+    expect(result.event).not.toHaveProperty('planAdherence');
+  });
   it('settles through the API transaction boundary',async()=>{const adapter=createMemoryCloudPersistenceAdapter({now:()=> '2026-08-21T01:00:00.000Z'});await adapter.createBankrollAccount({accountId:'a',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});await adapter.createBetRecord({betId:'b',ownerProfileId:'owner-primary',matchGroupId:'m',bankrollAccountId:'a',homeTeamName:'A',awayTeamName:'B',marketType:'1X2',selectionLabel:'A',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,status:'pending',preBetEmotion:'calm',preBetMotivation:'planned_analysis',createdAt:'2026-08-21T00:00:00.000Z',updatedAt:'2026-08-21T00:00:00.000Z'});const out=res();await handleBetSettlements(req({settlementEventId:'s',settlementType:'full_win',planAdherence:'yes',effectiveAt:'2026-08-21T01:00:00.000Z'}) as never,out as never,{adapter,ownerProfileId:'owner-primary',now:()=>new Date('2026-08-21T01:00:00.000Z')});expect(out.statusCode).toBe(201);expect(JSON.parse(out.body)).toMatchObject({record:{profitLossPoints:9},account:{currentBalancePoints:109}});});
   it('returns the append-only settlement timeline for the selected bet', async () => {
     const adapter=createMemoryCloudPersistenceAdapter();

@@ -16,6 +16,13 @@ async function createMemoryCloudPersistenceAdapter(){
   return adapter;
 }
 describe('bet draft routes',()=>{
+  it('round-trips a simple draft without adding optional motivation or plan',async()=>{
+    const adapter=await createMemoryCloudPersistenceAdapter();const out=response();
+    await handleBetDrafts(request('POST','/api/v1/bet-drafts',{...draft,preBetEmotion:'calm'}) as never,out as never,{adapter,ownerProfileId:'owner-primary'});
+    expect(out.statusCode).toBe(201);
+    expect(JSON.parse(out.body)).not.toHaveProperty('preBetMotivation');
+    expect(JSON.parse(out.body)).not.toHaveProperty('preBetPlanAdherence');
+  });
   it('rejects unknown canonical group IDs and client-supplied team substitutions on POST',async()=>{
     const adapter=await createMemoryCloudPersistenceAdapter();
     for(const payload of [{...draft,matchGroupId:'missing'},{...draft,homeTeamName:'Vietnam',awayTeamName:'Japan'},{...draft,awayTeamName:'Other'}]){

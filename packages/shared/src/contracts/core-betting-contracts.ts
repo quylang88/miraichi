@@ -60,8 +60,8 @@ export interface CreateOngoingBetInput {
   readonly oddsValue: number;
   readonly stakePoints: number;
   readonly preBetEmotion: PreBetEmotion;
-  readonly preBetMotivation: PreBetMotivation;
-  readonly preBetPlanAdherence: PlanAdherence;
+  readonly preBetMotivation?: PreBetMotivation;
+  readonly preBetPlanAdherence?: PlanAdherence;
   readonly preBetNote?: string;
   readonly notes?: string;
   readonly createdAt: string;
@@ -89,7 +89,7 @@ export interface SettlementCommand {
 }
 
 export interface BetSettlementEvent extends Omit<SettlementCommand, 'planAdherence'> {
-  readonly planAdherence: PlanAdherence;
+  readonly planAdherence?: PlanAdherence;
   readonly ownerProfileId: string;
   readonly betId: string;
   readonly bankrollAccountId: string;
@@ -162,8 +162,8 @@ export function validateCreateOngoingBetInput(input: unknown): ContractValidatio
   if (!finite(value.oddsValue) || value.oddsValue <= 0 || !decimalsAtMost(value.oddsValue, 4)) errors.push('oddsValue must be positive with at most 4 decimals');
   if (!finite(value.stakePoints) || value.stakePoints <= 0 || !decimalsAtMost(value.stakePoints, 2)) errors.push('stakePoints must be positive with at most 2 decimals');
   if (!PRE_BET_EMOTIONS.includes(value.preBetEmotion as PreBetEmotion)) errors.push('preBetEmotion is invalid');
-  if (!PRE_BET_MOTIVATIONS.includes(value.preBetMotivation as PreBetMotivation)) errors.push('preBetMotivation is invalid');
-  if (!PLAN_ADHERENCE_VALUES.includes(value.preBetPlanAdherence as PlanAdherence)) errors.push('preBetPlanAdherence is invalid');
+  if (value.preBetMotivation !== undefined && !PRE_BET_MOTIVATIONS.includes(value.preBetMotivation as PreBetMotivation)) errors.push('preBetMotivation is invalid');
+  if (value.preBetPlanAdherence !== undefined && !PLAN_ADHERENCE_VALUES.includes(value.preBetPlanAdherence as PlanAdherence)) errors.push('preBetPlanAdherence is invalid');
   if (!text(value.createdAt) || !ISO.test(value.createdAt)) errors.push('createdAt must be an ISO datetime');
   return errors.length ? { ok: false, errors } : { ok: true };
 }
@@ -193,7 +193,7 @@ export function validateBetSettlementEvent(input: unknown): ContractValidationRe
   for (const key of ['ownerProfileId', 'betId', 'bankrollAccountId'] as const) {
     if (!text(value[key])) errors.push(`${key} is required`);
   }
-  if (!PLAN_ADHERENCE_VALUES.includes(value.planAdherence as PlanAdherence)) errors.push('planAdherence is required');
+  if (value.planAdherence !== undefined && !PLAN_ADHERENCE_VALUES.includes(value.planAdherence as PlanAdherence)) errors.push('planAdherence is invalid');
   if (!finite(value.calculatedProfitLossPoints)) errors.push('calculatedProfitLossPoints must be finite');
   if (!finite(value.ledgerDeltaPoints)) errors.push('ledgerDeltaPoints must be finite');
   if (!text(value.occurredAt) || !ISO.test(value.occurredAt)) errors.push('occurredAt must be an ISO datetime');

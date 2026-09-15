@@ -15,6 +15,14 @@ async function createMemoryCloudPersistenceAdapter(){
   return adapter;
 }
 describe('bet routes',()=>{
+  it('creates an emotion-only bet without adding motivation or plan on the server',async()=>{
+    const adapter=await createMemoryCloudPersistenceAdapter();await adapter.createBankrollAccount({accountId:'account-1',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});
+    const {preBetMotivation:_motivation,preBetPlanAdherence:_adherence,...simple}=record;
+    const out=response();await handleBets(request('POST','/api/v1/bets',simple) as never,out as never,{adapter,ownerProfileId:'owner-primary'});
+    expect(out.statusCode).toBe(201);
+    expect(JSON.parse(out.body)).not.toHaveProperty('preBetMotivation');
+    expect(JSON.parse(out.body)).not.toHaveProperty('preBetPlanAdherence');
+  });
   it('rejects unlinked, unknown, reversed or mismatched client team identities',async()=>{
     const adapter=await createMemoryCloudPersistenceAdapter();
     await adapter.createBankrollAccount({accountId:'account-1',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});

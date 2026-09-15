@@ -47,7 +47,7 @@ describe('core betting contracts', () => {
     expect(validateDisciplineConfig({ ...config, weekStartDay: null as never }).ok).toBe(false);
   });
 
-  it('requires complete manual bet psychology and precise numeric input while account binding stays server-side', () => {
+  it('retains optional legacy bet psychology and precise numeric input while account binding stays server-side', () => {
     expect(validateCreateOngoingBetInput(bet)).toEqual({ ok: true });
     const { bankrollAccountId: _account, ...withoutAccount } = bet;
     expect(validateCreateOngoingBetInput(withoutAccount)).toEqual({ ok: true });
@@ -55,7 +55,14 @@ describe('core betting contracts', () => {
     expect(validateCreateOngoingBetInput({ ...bet, stakePoints: 10.123 }).ok).toBe(false);
     expect(validateCreateOngoingBetInput({ ...bet, oddsValue: 0.12345 }).ok).toBe(false);
     expect(validateCreateOngoingBetInput({ ...bet, preBetMotivation: 'winning_system' }).ok).toBe(false);
-    expect(validateCreateOngoingBetInput({ ...bet, preBetPlanAdherence: undefined }).ok).toBe(false);
+    expect(validateCreateOngoingBetInput({ ...bet, preBetPlanAdherence: undefined }).ok).toBe(true);
+  });
+
+  it('accepts emotion-only entry without inventing motivation or plan adherence', () => {
+    const { preBetMotivation: _motivation, preBetPlanAdherence: _adherence, ...simple } = bet;
+    expect(validateCreateOngoingBetInput(simple)).toEqual({ ok: true });
+    expect(validateCreateOngoingBetInput({ ...simple, preBetMotivation: 'winning_system' }).ok).toBe(false);
+    expect(validateCreateOngoingBetInput({ ...simple, preBetPlanAdherence: 'always' }).ok).toBe(false);
   });
 
   it('accepts declared structured input without a client label and rejects invalid combinations', () => {
@@ -105,6 +112,14 @@ describe('core betting contracts', () => {
       effectiveAt: '2026-08-21T01:00:00.000Z', occurredAt: '2026-08-21T01:00:00.000Z'
     };
     expect(validateBetSettlementEvent(event)).toEqual({ ok: true });
-    expect(validateBetSettlementEvent({ ...event, planAdherence: undefined }).ok).toBe(false);
+    expect(validateBetSettlementEvent({ ...event, planAdherence: undefined }).ok).toBe(true);
+  });
+
+  it('persists a settlement event with genuinely absent plan adherence', () => {
+    expect(validateBetSettlementEvent({
+      settlementEventId: 'simple-1', ownerProfileId: 'owner-primary', betId: 'bet-1', bankrollAccountId: 'account-1',
+      settlementType: 'full_win', calculatedProfitLossPoints: 9, ledgerDeltaPoints: 9,
+      effectiveAt: '2026-08-21T01:00:00.000Z', occurredAt: '2026-08-21T01:00:00.000Z'
+    })).toEqual({ ok: true });
   });
 });

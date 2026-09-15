@@ -8,6 +8,7 @@ const event = (id:string,effectiveAt:string,delta:number):BetSettlementEvent => 
 describe('discipline service',()=>{
   it('keeps a planned attempt below available balance clear without numeric discipline config',()=>{
     expect(evaluateDisciplineAttempt({config:null,stakePoints:10,availableBalancePoints:100,preBetMotivation:'planned_analysis',settlementEvents:[],at:'2026-08-21T00:00:00.000Z'})).toEqual({triggeredRules:[],dailyProfitLossPoints:0,weeklyProfitLossPoints:0});
+    expect(evaluateDisciplineAttempt({config:null,stakePoints:101,availableBalancePoints:100,settlementEvents:[],at:'2026-08-21T00:00:00.000Z'}).triggeredRules).toEqual(['overexposure']);
   });
 
   it('challenges risky motivation and overexposure even without numeric discipline config',()=>{

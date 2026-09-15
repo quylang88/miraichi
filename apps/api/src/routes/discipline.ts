@@ -25,7 +25,7 @@ export async function handleDiscipline(req:IncomingMessage,res:ServerResponse,de
       let account;try{account=await resolveSingleActiveBankroll(deps.adapter,deps.ownerProfileId);}catch(error){if(error instanceof SingleBankrollError)return sendError(res,409,error.code,error.message);throw error;}
       const availability=await getSingleBankrollAvailability(deps.adapter,deps.ownerProfileId,account);
       const config=await deps.adapter.getDisciplineConfig(deps.ownerProfileId);
-      const evaluation=evaluateDisciplineAttempt({config,stakePoints:Number(payload.stakePoints),availableBalancePoints:availability.availableBalancePoints,preBetMotivation:payload.preBetMotivation as CreateOngoingBetInput['preBetMotivation'],settlementEvents:await deps.adapter.listBetSettlementEvents(deps.ownerProfileId),at:now()});
+      const evaluation=evaluateDisciplineAttempt({config,stakePoints:Number(payload.stakePoints),availableBalancePoints:availability.availableBalancePoints,...(payload.preBetMotivation === undefined ? {} : {preBetMotivation:payload.preBetMotivation as NonNullable<CreateOngoingBetInput['preBetMotivation']>}),settlementEvents:await deps.adapter.listBetSettlementEvents(deps.ownerProfileId),at:now()});
       if(evaluation.triggeredRules.length===0)return sendJson(res,200,{required:false,evaluation});
       const challenge=buildDisciplineChallenge({challengeId:randomUUID(),ownerProfileId:deps.ownerProfileId,payload,config,evaluation,now:now()});
       await deps.adapter.createDisciplineChallenge(challenge);return sendJson(res,201,{required:true,challenge});
