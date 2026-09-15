@@ -41,6 +41,38 @@ describe('memory cloud persistence adapter', () => {
     expect(await adapter.listBetRecords('owner-primary')).toMatchObject([{ status: 'settled', manualResultPoints: 9 }]);
   });
 
+  it('preserves normalized selection and live context in memory and backup export', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    const structured = {
+      marketType: 'running' as const,
+      selectionCode: 'under' as const,
+      selectionLabel: 'Running 60-75 Under 0.75',
+      lineValue: 0.75,
+      runningWindow: 'fixed_15' as const,
+      windowStartMinute: 60,
+      windowEndMinute: 75,
+      liveScoreHome: 1,
+      liveScoreAway: 1,
+      liveMinute: 62,
+      liveContextSource: 'manual' as const
+    };
+    await adapter.saveBetDraft('owner-primary', {
+      draftId: 'draft-running', matchGroupId: 'match-live', oddsFormat: 'HK', oddsValue: 0.86,
+      stakePoints: 8, createdAt: fixedNow(), updatedAt: fixedNow(), ...structured
+    } as never);
+    await adapter.createBetRecord({
+      betId: 'bet-running', ownerProfileId: 'owner-primary', matchGroupId: 'match-live',
+      homeTeamName: 'A', awayTeamName: 'B', oddsFormat: 'HK', oddsValue: 0.86,
+      stakePoints: 8, status: 'pending', createdAt: fixedNow(), updatedAt: fixedNow(), ...structured
+    } as never);
+
+    expect(await adapter.listBetDrafts('owner-primary')).toMatchObject([structured]);
+    expect(await adapter.listBetRecords('owner-primary')).toMatchObject([structured]);
+    const backup = await adapter.exportOwnerData('owner-primary', fixedNow());
+    expect(backup.drafts).toMatchObject([structured]);
+    expect(backup.bets).toMatchObject([structured]);
+  });
+
   it('reconciles signed manual ledger entries without betting advice', async () => {
     const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
     await adapter.createBankrollAccount({ accountId: 'account-001', ownerProfileId: 'owner-primary', label: 'Main', openingBalancePoints: 1000 });

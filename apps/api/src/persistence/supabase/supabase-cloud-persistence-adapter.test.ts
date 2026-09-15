@@ -51,6 +51,70 @@ describe('supabase cloud persistence adapter', () => {
     expect(writes[1]?.values).toContain('yes');
   });
 
+  it('round-trips normalized selection and running context through draft and bet writes', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    const timestamps = {
+      createdAt: '2026-09-15T10:00:00.000Z',
+      updatedAt: '2026-09-15T10:00:00.000Z'
+    };
+    const draft = {
+      draftId: 'running-draft', matchGroupId: 'match-live', homeTeamName: 'A', awayTeamName: 'B',
+      marketType: 'running', selectionCode: 'over', selectionLabel: 'Running FT Over 1.25', lineValue: 1.25,
+      runningWindow: 'to_full_time', liveScoreHome: 1, liveScoreAway: 0, liveMinute: 58,
+      liveContextSource: 'snapshot', liveContextObservedAt: '2026-09-15T09:59:30.000Z',
+      oddsFormat: 'HK', oddsValue: 0.92, stakePoints: 10, ...timestamps
+    };
+    const bet = {
+      betId: 'running-bet', ownerProfileId: 'owner-primary', ...draft,
+      status: 'pending'
+    };
+
+    await adapter.saveBetDraft('owner-primary', draft as never);
+    await adapter.createBetRecord(bet as never);
+
+    const writes = client.calls.filter((call) => call.text.includes('insert into miraichi_app.bet_'));
+    expect(writes).toHaveLength(2);
+    for (const write of writes) {
+      for (const column of [
+        'selection_code', 'market_period', 'running_window', 'window_start_minute',
+        'window_end_minute', 'live_score_home', 'live_score_away', 'live_minute',
+        'live_context_source', 'live_context_observed_at'
+      ]) expect(write.text).toContain(column);
+      expect(write.values).toEqual(expect.arrayContaining([
+        'over', 'to_full_time', 1, 0, 58, 'snapshot', '2026-09-15T09:59:30.000Z'
+      ]));
+      const placeholders = [...write.text.matchAll(/\$(\d+)/g)].map((match) => Number(match[1]));
+      expect(write.values).toHaveLength(Math.max(...placeholders));
+    }
+
+    const databaseFields = {
+      market_type: 'running', selection_code: 'over', selection_label: 'Running FT Over 1.25',
+      line_value: '1.25', market_period: null, running_window: 'to_full_time',
+      window_start_minute: null, window_end_minute: null, live_score_home: 1,
+      live_score_away: 0, live_minute: 58, live_context_source: 'snapshot',
+      live_context_observed_at: '2026-09-15T09:59:30.000Z', odds_format: 'HK',
+      odds_value: '0.92', stake_points: '10', created_at: timestamps.createdAt,
+      updated_at: timestamps.updatedAt, tags: []
+    };
+    client.enqueueRows(
+      [{ draft_id: 'running-draft', match_group_id: 'match-live', ...databaseFields }],
+      [{ bet_id: 'running-bet', owner_profile_id: 'owner-primary', match_group_id: 'match-live',
+        home_team_name: 'A', away_team_name: 'B', status: 'pending', ...databaseFields }]
+    );
+
+    expect(await adapter.listBetDrafts('owner-primary')).toMatchObject([{
+      selectionCode: 'over', runningWindow: 'to_full_time', liveScoreHome: 1,
+      liveScoreAway: 0, liveMinute: 58, liveContextSource: 'snapshot',
+      liveContextObservedAt: '2026-09-15T09:59:30.000Z'
+    }]);
+    expect(await adapter.listBetRecords('owner-primary')).toMatchObject([{
+      selectionCode: 'over', runningWindow: 'to_full_time', liveScoreHome: 1,
+      liveScoreAway: 0, liveMinute: 58, liveContextSource: 'snapshot',
+      liveContextObservedAt: '2026-09-15T09:59:30.000Z'
+    }]);
+  });
+
   it('rejects owner mismatch before querying', async () => {
     const client = new FakeClient();
     const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
@@ -95,6 +159,38 @@ describe('supabase cloud persistence adapter', () => {
     expect(envelope).toMatchObject({ schemaVersion: 'miraichi.cloud-backup.v2', disciplineConfigs: [], settlementEvents: [] });
     expect(client.calls.some((call) => call.text.includes('discipline_config'))).toBe(true);
     expect(client.calls.some((call) => call.text.includes('bet_settlement_event'))).toBe(true);
+  });
+
+  it('imports structured draft and bet context without dropping backup fields', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    const structured = {
+      marketType: 'running' as const, selectionCode: 'under' as const,
+      selectionLabel: "Under 0.75 · Running 60-75 · 1-1 @ 62'", lineValue: 0.75,
+      runningWindow: 'fixed_15' as const, windowStartMinute: 60, windowEndMinute: 75,
+      liveScoreHome: 1, liveScoreAway: 1, liveMinute: 62, liveContextSource: 'manual' as const
+    };
+    await adapter.importOwnerData('owner-primary', {
+      schemaVersion: 'miraichi.cloud-backup.v2', exportedAt: '2026-09-15T10:00:00.000Z',
+      ownerProfileId: 'owner-primary', bankrollAccounts: [], bankrollLedgerEntries: [],
+      disciplineConfigs: [], settlementEvents: [],
+      drafts: [{ draftId: 'd', matchGroupId: 'm', oddsFormat: 'HK', oddsValue: 0.8,
+        stakePoints: 5, createdAt: '2026-09-15T10:00:00.000Z', updatedAt: '2026-09-15T10:00:00.000Z', ...structured }],
+      bets: [{ betId: 'b', ownerProfileId: 'owner-primary', matchGroupId: 'm',
+        homeTeamName: 'A', awayTeamName: 'B', oddsFormat: 'HK', oddsValue: 0.8, stakePoints: 5,
+        status: 'pending', createdAt: '2026-09-15T10:00:00.000Z', updatedAt: '2026-09-15T10:00:00.000Z', ...structured }]
+    });
+
+    const writes = client.calls.filter((call) => call.text.includes('insert into miraichi_app.bet_'));
+    expect(client.transactions).toBe(1);
+    expect(writes).toHaveLength(2);
+    expect(writes.every((write) => write.text.includes('selection_code'))).toBe(true);
+    expect(writes.every((write) => write.text.includes('running_window'))).toBe(true);
+    expect(writes.every((write) => write.values.includes(62))).toBe(true);
+    for (const write of writes) {
+      const placeholders = [...write.text.matchAll(/\$(\d+)/g)].map((match) => Number(match[1]));
+      expect(write.values).toHaveLength(Math.max(...placeholders));
+    }
   });
 
   it('upserts discipline config including week_start_day', async () => {

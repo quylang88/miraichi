@@ -2,11 +2,17 @@ import type {
   BetRecordEnvelope,
   IsoDateTimeString,
   LineValue,
-  MarketType,
   MatchGroupId,
-  OddsFormat
+  OddsFormat,
+  PersistedMarketType
 } from './betting-domain-contracts.js';
 import type { PlanAdherence, PreBetEmotion, PreBetMotivation } from './core-betting-contracts.js';
+import type {
+  LiveContextSource,
+  MarketPeriod,
+  RunningWindow,
+  SelectionCode
+} from './structured-bet-selection.js';
 
 export type { IsoDateTimeString, MatchGroupId } from './betting-domain-contracts.js';
 
@@ -21,9 +27,19 @@ export interface AddBetDraft {
   readonly homeTeamName?: string;
   readonly awayTeamName?: string;
   readonly selectionLabel?: string;
-  readonly marketType: MarketType;
+  readonly marketType: PersistedMarketType;
   readonly customMarketLabel?: string;
+  readonly selectionCode?: SelectionCode;
+  readonly marketPeriod?: MarketPeriod;
   readonly lineValue?: LineValue | null;
+  readonly runningWindow?: RunningWindow;
+  readonly windowStartMinute?: number;
+  readonly windowEndMinute?: number;
+  readonly liveScoreHome?: number;
+  readonly liveScoreAway?: number;
+  readonly liveMinute?: number;
+  readonly liveContextSource?: LiveContextSource;
+  readonly liveContextObservedAt?: IsoDateTimeString;
   readonly oddsFormat: OddsFormat;
   readonly oddsValue: number;
   readonly stakePoints: number;

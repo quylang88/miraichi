@@ -106,8 +106,19 @@ function mapDraft(row: Row): AddBetDraft {
     ...(row.home_team_name == null ? {} : { homeTeamName: text(row.home_team_name) }),
     ...(row.away_team_name == null ? {} : { awayTeamName: text(row.away_team_name) }),
     ...(row.selection_label == null ? {} : { selectionLabel: text(row.selection_label) }),
+    ...(row.selection_code == null ? {} : { selectionCode: text(row.selection_code) as NonNullable<AddBetDraft['selectionCode']> }),
     ...(row.custom_market_label == null ? {} : { customMarketLabel: text(row.custom_market_label) }),
-    ...(row.line_value == null ? {} : { lineValue: number(row.line_value) }), oddsFormat: 'HK', oddsValue: number(row.odds_value),
+    ...(row.market_period == null ? {} : { marketPeriod: text(row.market_period) as NonNullable<AddBetDraft['marketPeriod']> }),
+    ...(row.line_value == null ? {} : { lineValue: number(row.line_value) }),
+    ...(row.running_window == null ? {} : { runningWindow: text(row.running_window) as NonNullable<AddBetDraft['runningWindow']> }),
+    ...(row.window_start_minute == null ? {} : { windowStartMinute: number(row.window_start_minute) }),
+    ...(row.window_end_minute == null ? {} : { windowEndMinute: number(row.window_end_minute) }),
+    ...(row.live_score_home == null ? {} : { liveScoreHome: number(row.live_score_home) }),
+    ...(row.live_score_away == null ? {} : { liveScoreAway: number(row.live_score_away) }),
+    ...(row.live_minute == null ? {} : { liveMinute: number(row.live_minute) }),
+    ...(row.live_context_source == null ? {} : { liveContextSource: text(row.live_context_source) as NonNullable<AddBetDraft['liveContextSource']> }),
+    ...(row.live_context_observed_at == null ? {} : { liveContextObservedAt: dateText(row.live_context_observed_at) }),
+    oddsFormat: 'HK', oddsValue: number(row.odds_value),
     stakePoints: number(row.stake_points),
     ...(row.pre_bet_emotion == null ? {} : { preBetEmotion: text(row.pre_bet_emotion) as NonNullable<AddBetDraft['preBetEmotion']> }),
     ...(row.pre_bet_motivation == null ? {} : { preBetMotivation: text(row.pre_bet_motivation) as NonNullable<AddBetDraft['preBetMotivation']> }),
@@ -123,7 +134,19 @@ function mapBet(row: Row): CloudBetRecord {
     ...(row.match_id == null ? {} : { matchId: text(row.match_id) }), homeTeamName: text(row.home_team_name), awayTeamName: text(row.away_team_name),
     ...(row.competition_label == null ? {} : { competitionLabel: text(row.competition_label) }), ...(row.season_label == null ? {} : { seasonLabel: text(row.season_label) }),
     marketType: text(row.market_type) as CloudBetRecord['marketType'], ...(row.custom_market_label == null ? {} : { customMarketLabel: text(row.custom_market_label) }),
-    selectionLabel: text(row.selection_label), ...(row.line_value == null ? {} : { lineValue: number(row.line_value) }), oddsFormat: 'HK', oddsValue: number(row.odds_value),
+    selectionLabel: text(row.selection_label),
+    ...(row.selection_code == null ? {} : { selectionCode: text(row.selection_code) as NonNullable<CloudBetRecord['selectionCode']> }),
+    ...(row.market_period == null ? {} : { marketPeriod: text(row.market_period) as NonNullable<CloudBetRecord['marketPeriod']> }),
+    ...(row.line_value == null ? {} : { lineValue: number(row.line_value) }),
+    ...(row.running_window == null ? {} : { runningWindow: text(row.running_window) as NonNullable<CloudBetRecord['runningWindow']> }),
+    ...(row.window_start_minute == null ? {} : { windowStartMinute: number(row.window_start_minute) }),
+    ...(row.window_end_minute == null ? {} : { windowEndMinute: number(row.window_end_minute) }),
+    ...(row.live_score_home == null ? {} : { liveScoreHome: number(row.live_score_home) }),
+    ...(row.live_score_away == null ? {} : { liveScoreAway: number(row.live_score_away) }),
+    ...(row.live_minute == null ? {} : { liveMinute: number(row.live_minute) }),
+    ...(row.live_context_source == null ? {} : { liveContextSource: text(row.live_context_source) as NonNullable<CloudBetRecord['liveContextSource']> }),
+    ...(row.live_context_observed_at == null ? {} : { liveContextObservedAt: dateText(row.live_context_observed_at) }),
+    oddsFormat: 'HK', oddsValue: number(row.odds_value),
     stakePoints: number(row.stake_points), status: text(row.status) as CloudBetRecord['status'],
     ...(row.settlement_note == null ? {} : { settlementNote: text(row.settlement_note) }), ...(row.manual_result_points == null ? {} : { manualResultPoints: number(row.manual_result_points) }),
     ...(row.bankroll_account_id == null ? {} : { bankrollAccountId: text(row.bankroll_account_id) }),
@@ -195,10 +218,67 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
   };
   return {
     getStatus: async () => { try { await client.query('select 1 as ok'); return { provider: 'supabase-postgres', mode: 'supabase', state: 'ready', checkedAt: now() }; } catch { return { provider: 'supabase-postgres', mode: 'supabase', state: 'unavailable', checkedAt: now(), message: 'Cloud database is unavailable.' }; } },
-    saveBetDraft: async (owner, draft) => { assertOwner(owner); const result = await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.bet_draft (draft_id,owner_profile_id,match_group_id,home_team_name,away_team_name,selection_label,market_type,custom_market_label,line_value,odds_format,odds_value,stake_points,pre_bet_emotion,pre_bet_motivation,pre_bet_plan_adherence,pre_bet_note,notes,tags,created_at,updated_at) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) on conflict (owner_profile_id,draft_id) do update set match_group_id=excluded.match_group_id,home_team_name=excluded.home_team_name,away_team_name=excluded.away_team_name,selection_label=excluded.selection_label,market_type=excluded.market_type,custom_market_label=excluded.custom_market_label,line_value=excluded.line_value,odds_value=excluded.odds_value,stake_points=excluded.stake_points,pre_bet_emotion=excluded.pre_bet_emotion,pre_bet_motivation=excluded.pre_bet_motivation,pre_bet_plan_adherence=excluded.pre_bet_plan_adherence,pre_bet_note=excluded.pre_bet_note,notes=excluded.notes,tags=excluded.tags,updated_at=excluded.updated_at returning *`, [owner,draft.draftId,draft.matchGroupId,draft.homeTeamName ?? null,draft.awayTeamName ?? null,draft.selectionLabel ?? null,draft.marketType,draft.customMarketLabel ?? null,draft.lineValue ?? null,draft.oddsFormat,draft.oddsValue,draft.stakePoints,draft.preBetEmotion ?? null,draft.preBetMotivation ?? null,draft.preBetPlanAdherence ?? null,draft.preBetNote ?? null,draft.notes ?? null,jsonb(draft.tags ?? []),draft.createdAt,draft.updatedAt]); return result.rows[0] ? mapDraft(result.rows[0]) : clone(draft); },
+    saveBetDraft: async (owner, draft) => {
+      assertOwner(owner);
+      const result = await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing)
+        insert into miraichi_app.bet_draft (
+          draft_id,owner_profile_id,match_group_id,home_team_name,away_team_name,selection_label,selection_code,
+          market_type,custom_market_label,market_period,line_value,running_window,window_start_minute,window_end_minute,
+          live_score_home,live_score_away,live_minute,live_context_source,live_context_observed_at,
+          odds_format,odds_value,stake_points,pre_bet_emotion,pre_bet_motivation,pre_bet_plan_adherence,
+          pre_bet_note,notes,tags,created_at,updated_at
+        ) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)
+        on conflict (owner_profile_id,draft_id) do update set
+          match_group_id=excluded.match_group_id,home_team_name=excluded.home_team_name,away_team_name=excluded.away_team_name,
+          selection_label=excluded.selection_label,selection_code=excluded.selection_code,market_type=excluded.market_type,
+          custom_market_label=excluded.custom_market_label,market_period=excluded.market_period,line_value=excluded.line_value,
+          running_window=excluded.running_window,window_start_minute=excluded.window_start_minute,
+          window_end_minute=excluded.window_end_minute,live_score_home=excluded.live_score_home,
+          live_score_away=excluded.live_score_away,live_minute=excluded.live_minute,
+          live_context_source=excluded.live_context_source,live_context_observed_at=excluded.live_context_observed_at,
+          odds_format=excluded.odds_format,odds_value=excluded.odds_value,stake_points=excluded.stake_points,
+          pre_bet_emotion=excluded.pre_bet_emotion,pre_bet_motivation=excluded.pre_bet_motivation,
+          pre_bet_plan_adherence=excluded.pre_bet_plan_adherence,pre_bet_note=excluded.pre_bet_note,
+          notes=excluded.notes,tags=excluded.tags,updated_at=excluded.updated_at returning *`, [
+        owner,draft.draftId,draft.matchGroupId,draft.homeTeamName ?? null,draft.awayTeamName ?? null,
+        draft.selectionLabel ?? null,draft.selectionCode ?? null,draft.marketType,draft.customMarketLabel ?? null,
+        draft.marketPeriod ?? null,draft.lineValue ?? null,draft.runningWindow ?? null,draft.windowStartMinute ?? null,
+        draft.windowEndMinute ?? null,draft.liveScoreHome ?? null,draft.liveScoreAway ?? null,draft.liveMinute ?? null,
+        draft.liveContextSource ?? null,draft.liveContextObservedAt ?? null,draft.oddsFormat,draft.oddsValue,
+        draft.stakePoints,draft.preBetEmotion ?? null,draft.preBetMotivation ?? null,draft.preBetPlanAdherence ?? null,
+        draft.preBetNote ?? null,draft.notes ?? null,jsonb(draft.tags ?? []),draft.createdAt,draft.updatedAt
+      ]);
+      return result.rows[0] ? mapDraft(result.rows[0]) : clone(draft);
+    },
     listBetDrafts: async (owner) => { assertOwner(owner); const result = await client.query<Row>('select * from miraichi_app.bet_draft where owner_profile_id = $1 order by updated_at desc', [owner]); return result.rows.map(mapDraft); },
     deleteBetDraft: async (owner,id) => { assertOwner(owner); return (await client.query('delete from miraichi_app.bet_draft where owner_profile_id = $1 and draft_id = $2',[owner,id])).rowCount > 0; },
-    createBetRecord: async (record) => { assertOwner(record.ownerProfileId); const result = await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.bet_record (bet_id,owner_profile_id,match_group_id,match_id,home_team_name,away_team_name,competition_label,season_label,market_type,custom_market_label,selection_label,line_value,odds_format,odds_value,stake_points,status,settlement_note,manual_result_points,notes,tags,created_at,updated_at,bankroll_account_id,pre_bet_emotion,pre_bet_motivation,pre_bet_plan_adherence,pre_bet_note,discipline_snapshot,settlement_type,profit_loss_points,settled_at,post_bet_plan_adherence,post_bet_lesson_note) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33) returning *`, [record.ownerProfileId,record.betId,record.matchGroupId,record.matchId ?? null,record.homeTeamName,record.awayTeamName,record.competitionLabel ?? null,record.seasonLabel ?? null,record.marketType,record.customMarketLabel ?? null,record.selectionLabel,record.lineValue ?? null,record.oddsFormat,record.oddsValue,record.stakePoints,record.status,record.settlementNote ?? null,record.manualResultPoints ?? null,record.notes ?? null,jsonb(record.tags ?? []),record.createdAt,record.updatedAt,record.bankrollAccountId ?? null,record.preBetEmotion ?? null,record.preBetMotivation ?? null,record.preBetPlanAdherence ?? null,record.preBetNote ?? null,record.disciplineSnapshot ? jsonb(record.disciplineSnapshot) : null,record.settlementType ?? null,record.profitLossPoints ?? null,record.settledAt ?? null,record.postBetPlanAdherence ?? null,record.postBetLessonNote ?? null]); return result.rows[0] ? mapBet(result.rows[0]) : clone(record); },
+    createBetRecord: async (record) => {
+      assertOwner(record.ownerProfileId);
+      const result = await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing)
+        insert into miraichi_app.bet_record (
+          bet_id,owner_profile_id,match_group_id,match_id,home_team_name,away_team_name,competition_label,season_label,
+          market_type,custom_market_label,selection_label,selection_code,market_period,line_value,running_window,
+          window_start_minute,window_end_minute,live_score_home,live_score_away,live_minute,live_context_source,
+          live_context_observed_at,odds_format,odds_value,stake_points,status,settlement_note,manual_result_points,
+          notes,tags,created_at,updated_at,bankroll_account_id,pre_bet_emotion,pre_bet_motivation,
+          pre_bet_plan_adherence,pre_bet_note,discipline_snapshot,settlement_type,profit_loss_points,settled_at,
+          post_bet_plan_adherence,post_bet_lesson_note
+        ) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43) returning *`, [
+        record.ownerProfileId,record.betId,record.matchGroupId,record.matchId ?? null,record.homeTeamName,
+        record.awayTeamName,record.competitionLabel ?? null,record.seasonLabel ?? null,record.marketType,
+        record.customMarketLabel ?? null,record.selectionLabel,record.selectionCode ?? null,record.marketPeriod ?? null,
+        record.lineValue ?? null,record.runningWindow ?? null,record.windowStartMinute ?? null,
+        record.windowEndMinute ?? null,record.liveScoreHome ?? null,record.liveScoreAway ?? null,record.liveMinute ?? null,
+        record.liveContextSource ?? null,record.liveContextObservedAt ?? null,record.oddsFormat,record.oddsValue,
+        record.stakePoints,record.status,record.settlementNote ?? null,record.manualResultPoints ?? null,
+        record.notes ?? null,jsonb(record.tags ?? []),record.createdAt,record.updatedAt,record.bankrollAccountId ?? null,
+        record.preBetEmotion ?? null,record.preBetMotivation ?? null,record.preBetPlanAdherence ?? null,
+        record.preBetNote ?? null,record.disciplineSnapshot ? jsonb(record.disciplineSnapshot) : null,
+        record.settlementType ?? null,record.profitLossPoints ?? null,record.settledAt ?? null,
+        record.postBetPlanAdherence ?? null,record.postBetLessonNote ?? null
+      ]);
+      return result.rows[0] ? mapBet(result.rows[0]) : clone(record);
+    },
     listBetRecords: async (owner) => { assertOwner(owner); return (await client.query<Row>('select * from miraichi_app.bet_record where owner_profile_id = $1 order by updated_at desc',[owner])).rows.map(mapBet); },
     updateBetRecord: async (record) => { assertOwner(record.ownerProfileId); const result = await client.query<Row>('update miraichi_app.bet_record set status=$3,settlement_note=$4,manual_result_points=$5,notes=$6,tags=$7,updated_at=$8,bankroll_account_id=$9,pre_bet_emotion=$10,pre_bet_motivation=$11,pre_bet_plan_adherence=$12,pre_bet_note=$13,discipline_snapshot=$14,settlement_type=$15,profit_loss_points=$16,settled_at=$17,post_bet_plan_adherence=$18,post_bet_lesson_note=$19 where owner_profile_id=$1 and bet_id=$2 returning *',[record.ownerProfileId,record.betId,record.status,record.settlementNote ?? null,record.manualResultPoints ?? null,record.notes ?? null,jsonb(record.tags ?? []),record.updatedAt,record.bankrollAccountId ?? null,record.preBetEmotion ?? null,record.preBetMotivation ?? null,record.preBetPlanAdherence ?? null,record.preBetNote ?? null,record.disciplineSnapshot ? jsonb(record.disciplineSnapshot) : null,record.settlementType ?? null,record.profitLossPoints ?? null,record.settledAt ?? null,record.postBetPlanAdherence ?? null,record.postBetLessonNote ?? null]); if (!result.rows[0]) throw new Error('Bet record not found'); return mapBet(result.rows[0]); },
     getDisciplineConfig: async (owner) => { assertOwner(owner); const row=(await client.query<Row>('select * from miraichi_app.discipline_config where owner_profile_id=$1',[owner])).rows[0]; return row ? mapDisciplineConfig(row) : null; },
@@ -232,8 +312,43 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
     finishLiveRefresh: async (owner,input:FinishLiveRefreshInput) => { assertOwner(owner);if(!Number.isFinite(Date.parse(input.completedAt)))throw new Error('Live refresh completion timestamp is invalid');if(input.outcome==='succeeded')assertValidLiveMatchSnapshot(input.snapshot);await client.transaction(async(tx)=>{const errorCode=input.outcome==='failed'?sanitizeLiveRefreshErrorCode(input.errorCode):null;const updated=await tx.query<Row>(`update miraichi_app.live_refresh_state set status=$3,last_success_at=case when $3='succeeded' then $4 else last_success_at end,last_completed_at=$4,last_error_code=$5,lease_id=null,lease_acquired_at=null,lease_expires_at=null,updated_at=$4 where owner_profile_id=$1 and lease_id=$2 and status='running' and last_attempt_at <= $4 and lease_expires_at > $4 returning owner_profile_id`,[owner,input.leaseId,input.outcome,input.completedAt,errorCode]);if(!updated.rows[0])throw new Error('Live refresh lease is no longer owned or expired');if(input.outcome==='succeeded')await tx.query(`insert into miraichi_app.live_match_snapshot (owner_profile_id,snapshot_id,schema_version,generated_at,overlay_json,updated_at) values ($1,$2,$3,$4,$5,$6) on conflict (owner_profile_id) do update set snapshot_id=excluded.snapshot_id,schema_version=excluded.schema_version,generated_at=excluded.generated_at,overlay_json=excluded.overlay_json,updated_at=excluded.updated_at`,[owner,input.snapshot.snapshotId,input.snapshot.schemaVersion,input.snapshot.generatedAt,jsonb(input.snapshot),input.completedAt]);}); },
     exportOwnerData: async (owner,exportedAt): Promise<CloudBackupEnvelope> => { assertOwner(owner); return {schemaVersion:'miraichi.cloud-backup.v2',exportedAt,ownerProfileId:owner,drafts:[...(await client.query<Row>('select * from miraichi_app.bet_draft where owner_profile_id=$1 order by draft_id',[owner])).rows.map(mapDraft)],bets:[...(await client.query<Row>('select * from miraichi_app.bet_record where owner_profile_id=$1 order by bet_id',[owner])).rows.map(mapBet)],bankrollAccounts:[...(await client.query<Row>('select * from miraichi_app.bankroll_account where owner_profile_id=$1 order by account_id',[owner])).rows.map(mapAccount)],bankrollLedgerEntries:[...(await client.query<Row>('select * from miraichi_app.bankroll_ledger_entry where owner_profile_id=$1 order by entry_id',[owner])).rows.map(mapLedger)],disciplineConfigs:[...(await client.query<Row>('select * from miraichi_app.discipline_config where owner_profile_id=$1',[owner])).rows.map(mapDisciplineConfig)],settlementEvents:[...(await client.query<Row>('select * from miraichi_app.bet_settlement_event where owner_profile_id=$1 order by settlement_event_id',[owner])).rows.map(mapSettlementEvent)]}; },
     importOwnerData: async (owner,envelope) => { assertOwner(owner); if(envelope.ownerProfileId!==owner) throw new Error('Backup owner mismatch'); await client.transaction(async (tx)=>{
-      for(const draft of envelope.drafts) await tx.query('insert into miraichi_app.bet_draft (draft_id,owner_profile_id,match_group_id,home_team_name,away_team_name,selection_label,market_type,odds_format,odds_value,stake_points,pre_bet_emotion,pre_bet_motivation,pre_bet_plan_adherence,pre_bet_note,created_at,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)',[draft.draftId,owner,draft.matchGroupId,draft.homeTeamName??null,draft.awayTeamName??null,draft.selectionLabel??null,draft.marketType,draft.oddsFormat,draft.oddsValue,draft.stakePoints,draft.preBetEmotion??null,draft.preBetMotivation??null,draft.preBetPlanAdherence??null,draft.preBetNote??null,draft.createdAt,draft.updatedAt]);
-      for(const bet of envelope.bets) await tx.query('insert into miraichi_app.bet_record (bet_id,owner_profile_id,match_group_id,home_team_name,away_team_name,market_type,selection_label,odds_format,odds_value,stake_points,status,created_at,updated_at,bankroll_account_id,pre_bet_emotion,pre_bet_motivation,pre_bet_plan_adherence,pre_bet_note,discipline_snapshot,settlement_type,profit_loss_points,settled_at,post_bet_plan_adherence,post_bet_lesson_note) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)',[bet.betId,owner,bet.matchGroupId,bet.homeTeamName,bet.awayTeamName,bet.marketType,bet.selectionLabel,bet.oddsFormat,bet.oddsValue,bet.stakePoints,bet.status,bet.createdAt,bet.updatedAt,bet.bankrollAccountId??null,bet.preBetEmotion??null,bet.preBetMotivation??null,bet.preBetPlanAdherence??null,bet.preBetNote??null,bet.disciplineSnapshot?jsonb(bet.disciplineSnapshot):null,bet.settlementType??(bet.status==='void'?'void':null),bet.profitLossPoints??bet.manualResultPoints??(bet.status==='void'?0:null),bet.settledAt??(bet.status==='void'?bet.updatedAt:null),bet.postBetPlanAdherence??null,bet.postBetLessonNote??null]);
+      for(const draft of envelope.drafts) await tx.query(`insert into miraichi_app.bet_draft (
+        draft_id,owner_profile_id,match_group_id,home_team_name,away_team_name,selection_label,selection_code,
+        market_type,custom_market_label,market_period,line_value,running_window,window_start_minute,window_end_minute,
+        live_score_home,live_score_away,live_minute,live_context_source,live_context_observed_at,
+        odds_format,odds_value,stake_points,pre_bet_emotion,pre_bet_motivation,pre_bet_plan_adherence,
+        pre_bet_note,notes,tags,created_at,updated_at
+      ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)`,[
+        draft.draftId,owner,draft.matchGroupId,draft.homeTeamName??null,draft.awayTeamName??null,
+        draft.selectionLabel??null,draft.selectionCode??null,draft.marketType,draft.customMarketLabel??null,
+        draft.marketPeriod??null,draft.lineValue??null,draft.runningWindow??null,draft.windowStartMinute??null,
+        draft.windowEndMinute??null,draft.liveScoreHome??null,draft.liveScoreAway??null,draft.liveMinute??null,
+        draft.liveContextSource??null,draft.liveContextObservedAt??null,draft.oddsFormat,draft.oddsValue,
+        draft.stakePoints,draft.preBetEmotion??null,draft.preBetMotivation??null,draft.preBetPlanAdherence??null,
+        draft.preBetNote??null,draft.notes??null,jsonb(draft.tags??[]),draft.createdAt,draft.updatedAt
+      ]);
+      for(const bet of envelope.bets) await tx.query(`insert into miraichi_app.bet_record (
+        bet_id,owner_profile_id,match_group_id,match_id,home_team_name,away_team_name,competition_label,season_label,
+        market_type,custom_market_label,selection_label,selection_code,market_period,line_value,running_window,
+        window_start_minute,window_end_minute,live_score_home,live_score_away,live_minute,live_context_source,
+        live_context_observed_at,odds_format,odds_value,stake_points,status,settlement_note,manual_result_points,
+        notes,tags,created_at,updated_at,bankroll_account_id,pre_bet_emotion,pre_bet_motivation,
+        pre_bet_plan_adherence,pre_bet_note,discipline_snapshot,settlement_type,profit_loss_points,settled_at,
+        post_bet_plan_adherence,post_bet_lesson_note
+      ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43)`,[
+        bet.betId,owner,bet.matchGroupId,bet.matchId??null,bet.homeTeamName,bet.awayTeamName,
+        bet.competitionLabel??null,bet.seasonLabel??null,bet.marketType,bet.customMarketLabel??null,
+        bet.selectionLabel,bet.selectionCode??null,bet.marketPeriod??null,bet.lineValue??null,
+        bet.runningWindow??null,bet.windowStartMinute??null,bet.windowEndMinute??null,bet.liveScoreHome??null,
+        bet.liveScoreAway??null,bet.liveMinute??null,bet.liveContextSource??null,bet.liveContextObservedAt??null,
+        bet.oddsFormat,bet.oddsValue,bet.stakePoints,bet.status,bet.settlementNote??null,bet.manualResultPoints??null,
+        bet.notes??null,jsonb(bet.tags??[]),bet.createdAt,bet.updatedAt,bet.bankrollAccountId??null,
+        bet.preBetEmotion??null,bet.preBetMotivation??null,bet.preBetPlanAdherence??null,bet.preBetNote??null,
+        bet.disciplineSnapshot?jsonb(bet.disciplineSnapshot):null,bet.settlementType??(bet.status==='void'?'void':null),
+        bet.profitLossPoints??bet.manualResultPoints??(bet.status==='void'?0:null),
+        bet.settledAt??(bet.status==='void'?bet.updatedAt:null),bet.postBetPlanAdherence??null,
+        bet.postBetLessonNote??null
+      ]);
       for(const account of envelope.bankrollAccounts) await tx.query('insert into miraichi_app.bankroll_account (account_id,owner_profile_id,label,unit,opening_balance_points,current_balance_points,archived,created_at,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)',[account.accountId,owner,account.label,account.unit,account.openingBalancePoints,account.currentBalancePoints,account.archived,account.createdAt,account.updatedAt]);
       for(const entry of envelope.bankrollLedgerEntries) await tx.query('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,transfer_id,bet_id,settlement_event_id,effective_at,occurred_at,created_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',[entry.entryId,owner,entry.accountId,entry.entryType,entry.amountPoints,entry.note??null,entry.transferId??null,entry.betId??null,entry.settlementEventId??null,entry.effectiveAt??null,entry.occurredAt,entry.createdAt]);
       if(envelope.schemaVersion==='miraichi.cloud-backup.v2'){

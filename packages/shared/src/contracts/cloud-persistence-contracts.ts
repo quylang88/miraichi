@@ -4,6 +4,9 @@ import type {
   BetSettlementEvent, DisciplineChallenge, DisciplineConfig, DisciplineSnapshot,
   PlanAdherence, PreBetEmotion, PreBetMotivation, SettlementType
 } from './core-betting-contracts.js';
+import type {
+  LiveContextSource, MarketPeriod, RunningWindow, SelectionCode
+} from './structured-bet-selection.js';
 
 export type CloudPersistenceMode = 'disabled' | 'memory' | 'supabase';
 export type CloudPersistenceState = 'unconfigured' | 'ready' | 'unavailable';
@@ -20,8 +23,12 @@ export interface CloudPersistenceStatus {
 export interface CloudBetRecord {
   betId: string; ownerProfileId: string; matchGroupId: string; matchId?: string | null;
   homeTeamName: string; awayTeamName: string; competitionLabel?: string; seasonLabel?: string;
-  marketType: '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom';
-  customMarketLabel?: string; selectionLabel: string; lineValue?: number | null;
+  marketType: '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom' | 'running';
+  customMarketLabel?: string; selectionLabel: string; selectionCode?: SelectionCode;
+  marketPeriod?: MarketPeriod; lineValue?: number | null; runningWindow?: RunningWindow;
+  windowStartMinute?: number; windowEndMinute?: number;
+  liveScoreHome?: number; liveScoreAway?: number; liveMinute?: number;
+  liveContextSource?: LiveContextSource; liveContextObservedAt?: string;
   oddsFormat: 'HK'; oddsValue: number; stakePoints: number;
   status: 'pending' | 'settled' | 'void'; settlementNote?: string;
   manualResultPoints?: number | null; notes?: string; tags?: readonly string[];
@@ -130,7 +137,7 @@ export function validateCloudBetRecord(input: unknown): CloudValidationResult {
   const errors = findForbiddenFields(input).map((field) => `Forbidden field: ${field}`);
   const requiredText = ['betId', 'ownerProfileId', 'matchGroupId', 'homeTeamName', 'awayTeamName', 'selectionLabel', 'createdAt', 'updatedAt'];
   requiredText.forEach((key) => { if (!hasText(input[key])) errors.push(`${key} is required`); });
-  if (!['1X2', 'over_under', 'handicap', 'corners', 'custom'].includes(String(input.marketType))) errors.push('marketType is invalid');
+  if (!['1X2', 'over_under', 'handicap', 'corners', 'custom', 'running'].includes(String(input.marketType))) errors.push('marketType is invalid');
   if (input.oddsFormat !== 'HK') errors.push('oddsFormat must be HK');
   if (!finite(input.oddsValue)) errors.push('oddsValue must be finite');
   if (!finite(input.stakePoints)) errors.push('stakePoints must be finite');

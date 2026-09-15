@@ -16,6 +16,7 @@ export interface OddsValueFields {
 }
 
 export type MarketType = '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom';
+export type PersistedMarketType = MarketType | 'running';
 export type LineValue = number;
 export type NonStandardLinePolicy = 'warning_only';
 
