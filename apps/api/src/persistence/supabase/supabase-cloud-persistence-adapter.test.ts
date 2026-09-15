@@ -156,6 +156,32 @@ describe('supabase cloud persistence adapter', () => {
     expect(savedBet).not.toHaveProperty('liveMinute');
   });
 
+  it('maps and conditionally marks durable manual settlement review fields',async()=>{
+    const client=new FakeClient();const adapter=createSupabaseCloudPersistenceAdapter({client,ownerProfileId:'owner-primary'});
+    const row={bet_id:'b',owner_profile_id:'owner-primary',match_group_id:'m',home_team_name:'A',away_team_name:'B',market_type:'1X2',selection_label:'A · FT',odds_format:'HK',odds_value:'0.9',stake_points:'10',status:'pending',settlement_review_status:'manual_required',settlement_review_reason:'missing_detail',settlement_evidence_at:'2026-09-16T01:00:00.000Z',created_at:'2026-09-15T00:00:00.000Z',updated_at:'2026-09-16T01:00:00.000Z',tags:[]};
+    client.enqueueRows([row],[row]);
+    expect((await adapter.listBetRecords('owner-primary'))[0]).toMatchObject({settlementReviewStatus:'manual_required',settlementReviewReason:'missing_detail',settlementEvidenceAt:'2026-09-16T01:00:00.000Z'});
+    expect(await adapter.markBetSettlementManualReview({ownerProfileId:'owner-primary',betId:'b',reason:'missing_detail',evidenceAt:'2026-09-16T01:00:00.000Z',updatedAt:'2026-09-16T01:00:00.000Z'})).toMatchObject({settlementReviewReason:'missing_detail'});
+    const update=client.calls.at(-1)!;
+    expect(update.text).toContain("status='pending'");
+    expect(update.text).toContain('settlement_review_status');
+    expect(update.values).toEqual(['owner-primary','b','missing_detail','2026-09-16T01:00:00.000Z','2026-09-16T01:00:00.000Z']);
+  });
+
+  it('locks the current bet before checking settlement idempotency',async()=>{
+    const client=new FakeClient();const adapter=createSupabaseCloudPersistenceAdapter({client,ownerProfileId:'owner-primary',now:()=> '2026-09-16T01:00:00.000Z'});
+    const betRow={bet_id:'b',owner_profile_id:'owner-primary',match_group_id:'m',home_team_name:'A',away_team_name:'B',market_type:'1X2',selection_label:'A · FT',odds_format:'HK',odds_value:'0.9',stake_points:'10',status:'pending',created_at:'2026-09-15T00:00:00.000Z',updated_at:'2026-09-15T00:00:00.000Z',tags:[]};
+    const eventRow={settlement_event_id:'auto-settlement:b',owner_profile_id:'owner-primary',bet_id:'b',bankroll_account_id:'a',settlement_type:'full_win',calculated_profit_loss_points:'9',ledger_delta_points:'9',effective_at:'2026-09-16T00:30:00.000Z',occurred_at:'2026-09-16T01:00:00.000Z'};
+    const settledRow={...betRow,status:'settled',settlement_type:'full_win',profit_loss_points:'9',settled_at:'2026-09-16T00:30:00.000Z',settlement_review_status:'auto_settled',settlement_evidence_at:'2026-09-16T00:30:00.000Z',updated_at:'2026-09-16T01:00:00.000Z'};
+    const ledgerRow={entry_id:'settlement:auto-settlement:b',owner_profile_id:'owner-primary',account_id:'a',entry_type:'bet_settlement',amount_points:'9',bet_id:'b',settlement_event_id:'auto-settlement:b',effective_at:'2026-09-16T00:30:00.000Z',occurred_at:'2026-09-16T01:00:00.000Z',created_at:'2026-09-16T01:00:00.000Z'};
+    const accountRow={account_id:'a',owner_profile_id:'owner-primary',label:'Main',opening_balance_points:'100',current_balance_points:'109',archived:false,created_at:'2026-09-15T00:00:00.000Z',updated_at:'2026-09-16T01:00:00.000Z'};
+    client.enqueueRows([betRow],[],[eventRow],[settledRow],[ledgerRow],[accountRow]);
+    await adapter.applyBetSettlement({record:{betId:'b',ownerProfileId:'owner-primary',matchGroupId:'m',homeTeamName:'A',awayTeamName:'B',marketType:'1X2',selectionLabel:'A · FT',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,status:'settled',settlementType:'full_win',profitLossPoints:9,settledAt:'2026-09-16T00:30:00.000Z',settlementReviewStatus:'auto_settled',settlementEvidenceAt:'2026-09-16T00:30:00.000Z',createdAt:'2026-09-15T00:00:00.000Z',updatedAt:'2026-09-16T01:00:00.000Z'},event:{settlementEventId:'auto-settlement:b',ownerProfileId:'owner-primary',betId:'b',bankrollAccountId:'a',settlementType:'full_win',calculatedProfitLossPoints:9,ledgerDeltaPoints:9,effectiveAt:'2026-09-16T00:30:00.000Z',occurredAt:'2026-09-16T01:00:00.000Z'},ledgerEntry:{entryId:'settlement:auto-settlement:b',ownerProfileId:'owner-primary',accountId:'a',entryType:'bet_settlement',amountPoints:9,betId:'b',settlementEventId:'auto-settlement:b',effectiveAt:'2026-09-16T00:30:00.000Z',occurredAt:'2026-09-16T01:00:00.000Z'}});
+    expect(client.calls[0]?.text.toLowerCase()).toContain('for update');
+    expect(client.calls[1]?.text).toContain('bet_settlement_event');
+    expect(client.calls[3]?.text).toContain('settlement_review_status');
+  });
+
   it('rejects owner mismatch before querying', async () => {
     const client = new FakeClient();
     const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
@@ -238,10 +264,12 @@ describe('supabase cloud persistence adapter', () => {
     const client=new FakeClient();const adapter=createSupabaseCloudPersistenceAdapter({client,ownerProfileId:'owner-primary'});
     const now='2026-09-15T00:00:00.000Z';
     const running={marketType:'running' as const,selectionCode:'over' as const,runningGoalThreshold:0.75 as const,lineValue:2.75,runningWindow:'to_full_time' as const,liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual' as const};
-    await adapter.importOwnerData('owner-primary',{schemaVersion:'miraichi.cloud-backup.v2',ownerProfileId:'owner-primary',exportedAt:now,bankrollAccounts:[],bankrollLedgerEntries:[],disciplineConfigs:[],settlementEvents:[],drafts:[{draftId:'d',matchGroupId:'m',homeTeamName:'A',awayTeamName:'B',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,createdAt:now,updatedAt:now,...running}],bets:[{betId:'b',ownerProfileId:'owner-primary',matchGroupId:'m',homeTeamName:'A',awayTeamName:'B',selectionLabel:'Over 2.75 · Running FT · 1-1',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,status:'pending',createdAt:now,updatedAt:now,...running}]});
+    await adapter.importOwnerData('owner-primary',{schemaVersion:'miraichi.cloud-backup.v2',ownerProfileId:'owner-primary',exportedAt:now,bankrollAccounts:[],bankrollLedgerEntries:[],disciplineConfigs:[],settlementEvents:[],drafts:[{draftId:'d',matchGroupId:'m',homeTeamName:'A',awayTeamName:'B',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,createdAt:now,updatedAt:now,...running}],bets:[{betId:'b',ownerProfileId:'owner-primary',matchGroupId:'m',homeTeamName:'A',awayTeamName:'B',selectionLabel:'Over 2.75 · Running FT · 1-1',oddsFormat:'HK',oddsValue:0.9,stakePoints:10,status:'pending',settlementReviewStatus:'manual_required',settlementReviewReason:'missing_detail',settlementEvidenceAt:now,createdAt:now,updatedAt:now,...running}]});
     const writes=client.calls.filter((call)=>call.text.includes('insert into miraichi_app.bet_'));
     expect(writes).toHaveLength(2);
-    for(const write of writes){expect(write.text).toContain('running_goal_threshold');expect(write.values.at(-1)).toBe(0.75);}
+    for(const write of writes){expect(write.text).toContain('running_goal_threshold');expect(write.values.at(write.text.includes('settlement_review_status')?-4:-1)).toBe(0.75);}
+    const betWrite=writes.find((write)=>write.text.includes('settlement_review_status'))!;
+    expect(betWrite.values).toEqual(expect.arrayContaining(['manual_required','missing_detail',now]));
   });
 
   it('upserts discipline config including week_start_day', async () => {

@@ -13,6 +13,14 @@ export const PRE_BET_EMOTIONS = Object.freeze(['calm', 'excited', 'tilted'] as c
 export const PRE_BET_MOTIVATIONS = Object.freeze(['planned_analysis', 'familiar_market', 'chasing_loss', 'fomo', 'impulse', 'other'] as const);
 export const PLAN_ADHERENCE_VALUES = Object.freeze(['yes', 'partly', 'no'] as const);
 export const SETTLEMENT_TYPES = Object.freeze(['full_win', 'half_win', 'push', 'void', 'half_loss', 'full_loss', 'manual_adjustment'] as const);
+export const SETTLEMENT_REVIEW_STATUSES = Object.freeze(['manual_required', 'auto_settled'] as const);
+export const AUTOMATIC_SETTLEMENT_REVIEW_REASONS = Object.freeze([
+  'missing_match_link', 'missing_match', 'invalid_match', 'match_not_completed', 'match_identity_mismatch',
+  'invalid_selection', 'missing_detail', 'invalid_detail', 'stale_detail', 'incomplete_detail',
+  'contradictory_detail', 'contradictory_score', 'extra_time_ambiguous', 'missing_half_time_score',
+  'missing_corner_totals', 'missing_placement_minute', 'fixed_window_started', 'incomplete_goal_events',
+  'invalid_goal_events'
+] as const);
 export const DISCIPLINE_RULE_TYPES = Object.freeze(['big_bet', 'daily_stop_loss', 'weekly_stop_loss', 'overexposure', 'risky_motivation'] as const);
 export const WEEK_START_DAYS = Object.freeze(['monday', 'sunday'] as const);
 
@@ -20,6 +28,8 @@ export type PreBetEmotion = typeof PRE_BET_EMOTIONS[number];
 export type PreBetMotivation = typeof PRE_BET_MOTIVATIONS[number];
 export type PlanAdherence = typeof PLAN_ADHERENCE_VALUES[number];
 export type SettlementType = typeof SETTLEMENT_TYPES[number];
+export type SettlementReviewStatus = typeof SETTLEMENT_REVIEW_STATUSES[number];
+export type AutomaticSettlementReviewReason = typeof AUTOMATIC_SETTLEMENT_REVIEW_REASONS[number];
 export type DisciplineRuleType = typeof DISCIPLINE_RULE_TYPES[number];
 export type WeekStartDay = typeof WEEK_START_DAYS[number];
 

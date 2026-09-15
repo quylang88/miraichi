@@ -9,31 +9,10 @@ import {
   validateStructuredBetSelection,
   type StructuredBetSelection
 } from '../contracts/structured-bet-selection.js';
-import type { SettlementType } from '../contracts/core-betting-contracts.js';
+import type { AutomaticSettlementReviewReason, SettlementType } from '../contracts/core-betting-contracts.js';
 import type { CloudBetRecord } from '../contracts/cloud-persistence-contracts.js';
 
 export type AutomaticSettlementType = Exclude<SettlementType, 'void' | 'manual_adjustment'>;
-
-export type AutomaticSettlementReviewReason =
-  | 'missing_match_link'
-  | 'missing_match'
-  | 'invalid_match'
-  | 'match_not_completed'
-  | 'match_identity_mismatch'
-  | 'invalid_selection'
-  | 'missing_detail'
-  | 'invalid_detail'
-  | 'stale_detail'
-  | 'incomplete_detail'
-  | 'contradictory_detail'
-  | 'contradictory_score'
-  | 'extra_time_ambiguous'
-  | 'missing_half_time_score'
-  | 'missing_corner_totals'
-  | 'missing_placement_minute'
-  | 'fixed_window_started'
-  | 'incomplete_goal_events'
-  | 'invalid_goal_events';
 
 export interface StructuredBetOutcomeEvidence {
   readonly matchId: string;

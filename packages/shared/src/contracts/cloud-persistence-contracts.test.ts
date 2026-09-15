@@ -29,6 +29,25 @@ describe('cloud persistence contracts', () => {
     })).toMatchObject({ ok: false });
   });
 
+  it('validates settlement review state as one coherent projection', () => {
+    const base = {
+      betId: 'bet-001', ownerProfileId: 'owner-primary', matchGroupId: 'match-group-001',
+      homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan',
+      oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10,
+      createdAt: '2026-09-16T00:00:00.000Z', updatedAt: '2026-09-16T00:00:00.000Z'
+    };
+    expect(validateCloudBetRecord({ ...base, status: 'pending', settlementReviewStatus: 'manual_required',
+      settlementReviewReason: 'missing_detail', settlementEvidenceAt: '2026-09-16T00:00:00.000Z' })).toEqual({ ok: true });
+    expect(validateCloudBetRecord({ ...base, status: 'settled', settlementReviewStatus: 'auto_settled',
+      settlementEvidenceAt: '2026-09-16T00:00:00.000Z' })).toEqual({ ok: true });
+    for (const invalid of [
+      { status: 'settled', settlementReviewStatus: 'manual_required', settlementReviewReason: 'missing_detail', settlementEvidenceAt: '2026-09-16T00:00:00.000Z' },
+      { status: 'pending', settlementReviewStatus: 'manual_required', settlementReviewReason: 'invented', settlementEvidenceAt: '2026-09-16T00:00:00.000Z' },
+      { status: 'pending', settlementReviewStatus: 'manual_required', settlementReviewReason: 'missing_detail' },
+      { status: 'settled', settlementReviewStatus: 'auto_settled', settlementReviewReason: 'missing_detail', settlementEvidenceAt: 'bad' }
+    ]) expect(validateCloudBetRecord({ ...base, ...invalid })).toMatchObject({ ok: false });
+  });
+
   it('accepts signed manual ledger amounts but no risk fields', () => {
     expect(validateBankrollLedgerEntry({
       entryId: 'entry-001', ownerProfileId: 'owner-primary', accountId: 'account-001',

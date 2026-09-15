@@ -4,7 +4,7 @@ import type {
   ApplyBetSettlementInput, ApplyBetSettlementResult, BankrollTransferResult, BetSettlementEvent,
   CreateBankrollAccountInput, CreateBankrollLedgerEntryInput, CreateBankrollTransferInput, DisciplineChallenge, DisciplineConfig, LocalDataSnapshotStatus,
   AcquireLiveRefreshLeaseInput, FinishLiveRefreshInput, LiveMatchSnapshot, LiveRefreshState,
-  LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery, UpdateBankrollAccountInput
+  LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery, MarkBetSettlementManualReviewInput, UpdateBankrollAccountInput
 } from '@miraichi/shared/src/contracts/index.js';
 
 export interface CloudPersistenceAdapter {
@@ -15,6 +15,7 @@ export interface CloudPersistenceAdapter {
   createBetRecord(record: CloudBetRecord): Promise<CloudBetRecord>;
   listBetRecords(ownerProfileId: string): Promise<readonly CloudBetRecord[]>;
   updateBetRecord(record: CloudBetRecord): Promise<CloudBetRecord>;
+  markBetSettlementManualReview(input: MarkBetSettlementManualReviewInput): Promise<CloudBetRecord | null>;
   getDisciplineConfig(ownerProfileId: string): Promise<DisciplineConfig | null>;
   upsertDisciplineConfig(config: DisciplineConfig): Promise<DisciplineConfig>;
   createDisciplineChallenge(challenge: DisciplineChallenge): Promise<DisciplineChallenge>;

@@ -4,7 +4,7 @@ import {
   type BankrollTransferResult, type BetSettlementEvent, type CloudBackupEnvelope, type CloudBetRecord, type CloudMatchSnapshot, type CreateBankrollAccountInput,
   type CreateBankrollLedgerEntryInput, type CreateBankrollTransferInput, type DisciplineChallenge, type DisciplineConfig, type LocalDataSnapshotStatus, type LocalMatch,
   type AcquireLiveRefreshLeaseInput, type FinishLiveRefreshInput, type LiveMatchSnapshot, type LiveRefreshState,
-  type LocalMatchSnapshotQuery, type UpdateBankrollAccountInput
+  type LocalMatchSnapshotQuery, type MarkBetSettlementManualReviewInput, type UpdateBankrollAccountInput
 } from '@miraichi/shared/src/contracts/index.js';
 import { assertValidLiveMatchSnapshot, sanitizeLiveRefreshErrorCode } from '@miraichi/shared/src/contracts/live-match-contracts.js';
 import type { CloudPersistenceAdapter } from './cloud-persistence-adapter.js';
@@ -64,6 +64,19 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
       if (!bets.has(id)) throw new Error('Bet record not found');
       bets.set(id, clone(record)); return clone(record);
     },
+    markBetSettlementManualReview: async (input: MarkBetSettlementManualReviewInput) => {
+      const id = key(input.ownerProfileId, input.betId); const current = bets.get(id);
+      if (!current) throw new Error('Bet record not found');
+      if (current.status !== 'pending') return null;
+      const reviewed: CloudBetRecord = {
+        ...current,
+        settlementReviewStatus: 'manual_required',
+        settlementReviewReason: input.reason,
+        settlementEvidenceAt: input.evidenceAt,
+        updatedAt: input.updatedAt
+      };
+      bets.set(id, clone(reviewed)); return clone(reviewed);
+    },
     getDisciplineConfig: async (owner) => clone(disciplineConfigs.get(owner) ?? null),
     upsertDisciplineConfig: async (config) => {
       const normalized: DisciplineConfig = { ...clone(config), weekStartDay: config.weekStartDay ?? 'monday' };
@@ -85,6 +98,8 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
       const eventId = key(input.event.ownerProfileId, input.event.settlementEventId);
       const existingEvent = settlementEvents.get(eventId);
       if (existingEvent) {
+        if (existingEvent.betId !== input.event.betId || existingEvent.bankrollAccountId !== input.event.bankrollAccountId
+          || existingEvent.settlementType !== input.event.settlementType) throw new Error('Settlement idempotency conflict');
         const existingRecord = bets.get(key(input.record.ownerProfileId, input.record.betId));
         const existingEntry = ledger.get(key(input.ledgerEntry.ownerProfileId, input.ledgerEntry.entryId));
         const existingAccount = accounts.get(key(input.record.ownerProfileId, input.event.bankrollAccountId));
@@ -92,7 +107,9 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
         return { record: clone(existingRecord), event: clone(existingEvent), ledgerEntry: clone(existingEntry), account: clone(existingAccount) };
       }
       const betId = key(input.record.ownerProfileId, input.record.betId);
-      if (!bets.has(betId)) throw new Error('Bet record not found');
+      const currentBet = bets.get(betId);
+      if (!currentBet) throw new Error('Bet record not found');
+      if (currentBet.status !== 'pending' && !input.event.correctsSettlementEventId) throw new Error('Bet is already settled');
       const accountId = key(input.record.ownerProfileId, input.event.bankrollAccountId); const account = accounts.get(accountId);
       if (!account) throw new Error('Bankroll account not found');
       const ledgerId = key(input.ledgerEntry.ownerProfileId, input.ledgerEntry.entryId);

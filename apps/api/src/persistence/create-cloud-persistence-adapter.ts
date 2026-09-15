@@ -21,6 +21,7 @@ export function createCloudPersistenceAdapter(config: CloudPersistenceConfig): C
     }),
     saveBetDraft: unavailable, listBetDrafts: unavailable, deleteBetDraft: unavailable,
     createBetRecord: unavailable, listBetRecords: unavailable, updateBetRecord: unavailable,
+    markBetSettlementManualReview: unavailable,
     getDisciplineConfig: unavailable, upsertDisciplineConfig: unavailable,
     createDisciplineChallenge: unavailable, findDisciplineChallenge: unavailable,
     consumeDisciplineChallenge: unavailable, applyBetSettlement: unavailable,

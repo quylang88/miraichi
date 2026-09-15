@@ -132,6 +132,44 @@ describe('memory cloud persistence adapter', () => {
     expect(first.account.currentBalancePoints).toBe(109);
     expect(second.account.currentBalancePoints).toBe(109);
     expect(await adapter.listBetSettlementEvents('owner-primary', 'b')).toHaveLength(1);
+    const conflicting = {
+      record: { ...settled, settlementType: 'full_loss' as const, profitLossPoints: -10 },
+      event: { ...event, settlementEventId: 's-conflict', settlementType: 'full_loss' as const, calculatedProfitLossPoints: -10, ledgerDeltaPoints: -10 },
+      ledgerEntry: { ...ledger, entryId: 'settlement:s-conflict', settlementEventId: 's-conflict', amountPoints: -10 }
+    };
+    await expect(adapter.applyBetSettlement(conflicting)).rejects.toThrow('already settled');
+    expect((await adapter.listBankrollAccounts('owner-primary'))[0]?.currentBalancePoints).toBe(109);
+    expect(await adapter.listBetSettlementEvents('owner-primary', 'b')).toHaveLength(1);
+  });
+
+  it('persists manual-review state in backups without overwriting a settled owner result', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    const bet = {
+      betId: 'review-bet', ownerProfileId: 'owner-primary', matchGroupId: 'm', matchId: 'match-1',
+      homeTeamName: 'A', awayTeamName: 'B', marketType: '1X2' as const, selectionLabel: 'A · FT',
+      selectionCode: 'home' as const, marketPeriod: 'full_time' as const, oddsFormat: 'HK' as const,
+      oddsValue: 0.9, stakePoints: 10, status: 'pending' as const, createdAt: fixedNow(), updatedAt: fixedNow()
+    };
+    await adapter.createBetRecord(bet);
+    const reviewed = await adapter.markBetSettlementManualReview({
+      ownerProfileId: 'owner-primary', betId: 'review-bet', reason: 'missing_detail',
+      evidenceAt: '2026-09-16T01:00:00.000Z', updatedAt: '2026-09-16T01:00:00.000Z'
+    });
+    expect(reviewed).toMatchObject({
+      status: 'pending', settlementReviewStatus: 'manual_required',
+      settlementReviewReason: 'missing_detail', settlementEvidenceAt: '2026-09-16T01:00:00.000Z'
+    });
+    const restored = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await restored.importOwnerData('owner-primary', await adapter.exportOwnerData('owner-primary', fixedNow()));
+    expect((await restored.listBetRecords('owner-primary'))[0]).toMatchObject({ settlementReviewReason: 'missing_detail' });
+    const { settlementReviewStatus: _reviewStatus, settlementReviewReason: _reviewReason,
+      settlementEvidenceAt: _evidenceAt, ...resolved } = reviewed!;
+    await adapter.updateBetRecord({ ...resolved, status: 'settled', settlementType: 'full_win', profitLossPoints: 9 });
+    await expect(adapter.markBetSettlementManualReview({
+      ownerProfileId: 'owner-primary', betId: 'review-bet', reason: 'stale_detail',
+      evidenceAt: '2026-09-16T02:00:00.000Z', updatedAt: '2026-09-16T02:00:00.000Z'
+    })).resolves.toBeNull();
+    expect((await adapter.listBetRecords('owner-primary'))[0]).toMatchObject({ settlementType: 'full_win', profitLossPoints: 9 });
   });
 
   it('transfers points with linked entries in one operation', async () => {

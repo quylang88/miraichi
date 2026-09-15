@@ -2,8 +2,9 @@ import type { AddBetDraft } from './add-bet-draft-contracts.js';
 import type { LocalMatch, LocalMatchSourceRef } from './local-match-contracts.js';
 import type {
   BetSettlementEvent, DisciplineChallenge, DisciplineConfig, DisciplineSnapshot,
-  PlanAdherence, PreBetEmotion, PreBetMotivation, SettlementType
+  AutomaticSettlementReviewReason, PlanAdherence, PreBetEmotion, PreBetMotivation, SettlementReviewStatus, SettlementType
 } from './core-betting-contracts.js';
+import { AUTOMATIC_SETTLEMENT_REVIEW_REASONS, SETTLEMENT_REVIEW_STATUSES } from './core-betting-contracts.js';
 import type {
   LiveContextSource, MarketPeriod, RunningWindow, RunningGoalThreshold, SelectionCode
 } from './structured-bet-selection.js';
@@ -37,6 +38,8 @@ export interface CloudBetRecord {
   preBetEmotion?: PreBetEmotion; preBetMotivation?: PreBetMotivation; preBetPlanAdherence?: PlanAdherence; preBetNote?: string;
   disciplineSnapshot?: DisciplineSnapshot;
   settlementType?: SettlementType; profitLossPoints?: number | null; settledAt?: string;
+  settlementReviewStatus?: SettlementReviewStatus; settlementReviewReason?: AutomaticSettlementReviewReason;
+  settlementEvidenceAt?: string;
   postBetPlanAdherence?: PlanAdherence; postBetLessonNote?: string;
   createdAt: string; updatedAt: string;
 }
@@ -81,6 +84,14 @@ export interface ApplyBetSettlementInput {
   record: CloudBetRecord;
   event: BetSettlementEvent;
   ledgerEntry: CreateBankrollLedgerEntryInput;
+}
+
+export interface MarkBetSettlementManualReviewInput {
+  ownerProfileId: string;
+  betId: string;
+  reason: AutomaticSettlementReviewReason;
+  evidenceAt: string;
+  updatedAt: string;
 }
 
 export interface ApplyBetSettlementResult {
@@ -144,6 +155,22 @@ export function validateCloudBetRecord(input: unknown): CloudValidationResult {
   if (!finite(input.stakePoints)) errors.push('stakePoints must be finite');
   if (input.preBetPlanAdherence !== undefined && !['yes', 'partly', 'no'].includes(String(input.preBetPlanAdherence))) errors.push('preBetPlanAdherence is invalid');
   if (!['pending', 'settled', 'void'].includes(String(input.status))) errors.push('status is invalid');
+  if (input.settlementReviewStatus == null) {
+    if (input.settlementReviewReason != null || input.settlementEvidenceAt != null) errors.push('settlement review fields require a status');
+  } else if (!SETTLEMENT_REVIEW_STATUSES.includes(input.settlementReviewStatus as SettlementReviewStatus)) {
+    errors.push('settlementReviewStatus is invalid');
+  } else {
+    if (!hasText(input.settlementEvidenceAt) || !ISO.test(input.settlementEvidenceAt)) errors.push('settlementEvidenceAt must be ISO datetime');
+    if (input.settlementReviewStatus === 'manual_required') {
+      if (input.status !== 'pending') errors.push('manual settlement review requires a pending bet');
+      if (!AUTOMATIC_SETTLEMENT_REVIEW_REASONS.includes(input.settlementReviewReason as AutomaticSettlementReviewReason)) {
+        errors.push('settlementReviewReason is invalid');
+      }
+    } else {
+      if (input.status !== 'settled') errors.push('automatic settlement review requires a settled bet');
+      if (input.settlementReviewReason != null) errors.push('automatic settlement must not retain a manual review reason');
+    }
+  }
   if (hasText(input.createdAt) && !ISO.test(input.createdAt)) errors.push('createdAt must be ISO datetime');
   if (hasText(input.updatedAt) && !ISO.test(input.updatedAt)) errors.push('updatedAt must be ISO datetime');
   return errors.length ? { ok: false, errors } : { ok: true };

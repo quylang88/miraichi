@@ -1,15 +1,18 @@
 import {
   calculateHkSettlementProfitLoss, validateSettlementCommand,
-  type ApplyBetSettlementResult, type BetSettlementEvent, type CloudBetRecord, type SettlementCommand
+  type ApplyBetSettlementResult, type BetSettlementEvent, type CloudBetRecord, type SettlementCommand,
+  type StructuredBetOutcome
 } from '@miraichi/shared';
 import type { CloudPersistenceAdapter } from '../persistence/cloud-persistence-adapter.js';
 
-export async function settleBet({adapter,ownerProfileId,betId,command,now}:{
+export async function settleBet({adapter,ownerProfileId,betId,command,now,automaticReview}:{
   readonly adapter:CloudPersistenceAdapter;readonly ownerProfileId:string;readonly betId:string;
   readonly command:SettlementCommand;readonly now:string;
+  readonly automaticReview?:{readonly matchId:string;readonly evidenceAt:string};
 }):Promise<ApplyBetSettlementResult>{
   const validation=validateSettlementCommand(command);if(!validation.ok)throw new Error(validation.errors.join('; '));
   const record=(await adapter.listBetRecords(ownerProfileId)).find((item)=>item.betId===betId);if(!record)throw new Error('Bet record not found');
+  if (automaticReview && record.matchId !== automaticReview.matchId) throw new Error('Automatic settlement evidence does not match the bet');
   if(!record.bankrollAccountId)throw new Error('An assigned bankroll account is required before settlement');
   const planAdherence=record.preBetPlanAdherence??record.postBetPlanAdherence??command.planAdherence;
   if(!planAdherence&&!record.selectionCode)throw new Error('Legacy bet plan adherence is required before settlement');
@@ -23,6 +26,18 @@ export async function settleBet({adapter,ownerProfileId,betId,command,now}:{
   const ledgerDelta=Number((calculated-previous).toFixed(4));
   const effectiveAt=correctedEvent?.effectiveAt??command.effectiveAt;
   const event:BetSettlementEvent={...command,...(planAdherence?{planAdherence}:{}),ownerProfileId,betId,bankrollAccountId:record.bankrollAccountId,calculatedProfitLossPoints:calculated,ledgerDeltaPoints:ledgerDelta,effectiveAt,occurredAt:now};
-  const updated:CloudBetRecord={...record,status:'settled',settlementType:command.settlementType,profitLossPoints:calculated,settledAt:record.settledAt??effectiveAt,...(planAdherence?{postBetPlanAdherence:planAdherence}:{}),...(command.lessonNote?{postBetLessonNote:command.lessonNote}:{}),updatedAt:now};
+  const {settlementReviewStatus:_reviewStatus,settlementReviewReason:_reviewReason,settlementEvidenceAt:_evidenceAt,...unreviewed}=record;
+  const updated:CloudBetRecord={...unreviewed,status:'settled',settlementType:command.settlementType,profitLossPoints:calculated,settledAt:record.settledAt??effectiveAt,...(planAdherence?{postBetPlanAdherence:planAdherence}:{}),...(command.lessonNote?{postBetLessonNote:command.lessonNote}:{}),...(automaticReview?{settlementReviewStatus:'auto_settled',settlementEvidenceAt:automaticReview.evidenceAt}:{}),updatedAt:now};
   return adapter.applyBetSettlement({record:updated,event,ledgerEntry:{entryId:`settlement:${command.settlementEventId}`,ownerProfileId,accountId:record.bankrollAccountId,entryType:command.correctsSettlementEventId?'bet_settlement_correction':'bet_settlement',amountPoints:ledgerDelta,betId,settlementEventId:command.settlementEventId,effectiveAt,occurredAt:now,...(command.adjustmentReason?{note:command.adjustmentReason}:{})}});
+}
+
+export function automaticSettlementEventId(betId:string):string{return `auto-settlement:${betId}`;}
+
+export async function settleBetAutomatically({adapter,ownerProfileId,betId,outcome,now}:{
+  readonly adapter:CloudPersistenceAdapter;readonly ownerProfileId:string;readonly betId:string;
+  readonly outcome:StructuredBetOutcome;readonly now:string;
+}):Promise<ApplyBetSettlementResult>{
+  if(outcome.status!=='settled')throw new Error('Automatic settlement requires a settled outcome');
+  const evidenceAt=outcome.evidence.detailUpdatedAt??outcome.evidence.matchUpdatedAt;
+  return settleBet({adapter,ownerProfileId,betId,command:{settlementEventId:automaticSettlementEventId(betId),settlementType:outcome.settlementType,effectiveAt:evidenceAt},now,automaticReview:{matchId:outcome.evidence.matchId,evidenceAt}});
 }
