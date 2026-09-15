@@ -83,3 +83,28 @@ export const v1MarketCatalog = {
     }
   ]
 } as const satisfies MarketCatalog;
+
+export const structuredBetMarketCatalog = Object.freeze({
+  catalogId: 'v2-structured-betting-market-catalog',
+  markets: Object.freeze([
+    { marketType: '1X2', periods: ['full_time', 'first_half'], selections: ['home', 'draw', 'away'] },
+    { marketType: 'over_under', periods: ['full_time', 'first_half'], selections: ['over', 'under'] },
+    { marketType: 'handicap', periods: ['full_time', 'first_half'], selections: ['home', 'away'] },
+    { marketType: 'corners', periods: ['full_time', 'first_half'], selections: ['over', 'under'] },
+    { marketType: 'running', windows: ['to_half_time', 'to_full_time', 'fixed_15'], selections: ['over', 'under'] }
+  ] as const),
+  linePresets: Object.freeze({
+    goalsFullTime: Object.freeze([1.5, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5]),
+    halfTimeAndRunning: Object.freeze([0.5, 0.75, 1, 1.25, 1.5]),
+    handicap: Object.freeze([-1.5, -1.25, -1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]),
+    corners: Object.freeze([7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11])
+  }),
+  runningWindows: Object.freeze([
+    { startMinute: 0, endMinute: 15 },
+    { startMinute: 15, endMinute: 30 },
+    { startMinute: 30, endMinute: 45 },
+    { startMinute: 45, endMinute: 60 },
+    { startMinute: 60, endMinute: 75 },
+    { startMinute: 75, endMinute: 90 }
+  ] as const)
+});
