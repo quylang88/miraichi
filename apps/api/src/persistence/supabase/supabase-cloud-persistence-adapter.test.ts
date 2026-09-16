@@ -58,6 +58,16 @@ describe('supabase cloud persistence adapter', () => {
     expect(client.calls[0]?.values).toEqual(['owner-primary']);
   });
 
+  it('bounds pending bets by exact match ids and owner in PostgreSQL', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    await adapter.listPendingBetRecordsByMatchIds('owner-primary', ['match-1', 'match-2'], 50);
+    expect(client.calls[0]?.text).toContain("status='pending'");
+    expect(client.calls[0]?.text).toContain('match_id=any($2::text[])');
+    expect(client.calls[0]?.text).toContain('limit $3');
+    expect(client.calls[0]?.values).toEqual(['owner-primary', ['match-1', 'match-2'], 50]);
+  });
+
   it('persists pre-bet plan adherence on drafts and ongoing records', async () => {
     const client = new FakeClient();
     const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary', now: () => '2026-09-01T00:00:00.000Z' });

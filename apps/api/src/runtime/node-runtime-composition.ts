@@ -20,6 +20,7 @@ import { createGuardedProviderClients } from './guarded-provider-clients.js';
 import { HostedMatchDetailCoordinator } from '../detail/hosted-match-detail.js';
 import { PostgresHostedMatchDetailStore } from '../detail/hosted-match-detail-store.js';
 import { fetchSelectedMatchDetail } from '../detail/match-detail-source.js';
+import { TerminalBetReconciliationCoordinator } from '../services/terminal-bet-reconciliation.js';
 
 export interface NodeRuntimeComposition {
   readonly runtime: ApiRuntime;
@@ -58,6 +59,11 @@ export function createNodeRuntimeComposition(options: {
   const clients = client ? createGuardedProviderClients(client, cloudConfig.ownerProfileId, widgetTimeoutMs) : null;
   const detailCoordinator = client && clients ? new HostedMatchDetailCoordinator(new PostgresHostedMatchDetailStore(client, cloudConfig.ownerProfileId),
     (input) => fetchSelectedMatchDetail({...input,fotmob:clients.detail,sportscore:clients.widget})) : null;
+  const terminalReconciler = detailCoordinator ? new TerminalBetReconciliationCoordinator({
+    ownerProfileId: cloudConfig.ownerProfileId,
+    persistence: cloudAdapter,
+    detailReader: detailCoordinator
+  }) : null;
   const liveCoordinator = new LiveRefreshCoordinator({
     ownerProfileId: cloudConfig.ownerProfileId,
     persistence: cloudAdapter,
@@ -85,7 +91,7 @@ export function createNodeRuntimeComposition(options: {
     matchDetailDependencies: {
       repository: matchRepository,
       detailStore: new LocalMatchDetailStore({ dataRoot }),
-      ...(detailCoordinator ? {coordinator:detailCoordinator} : {})
+      ...(detailCoordinator && terminalReconciler ? {coordinator:detailCoordinator,terminalReconciler} : {})
     },
     liveCoordinator,
     ...(env.CORS_ALLOWED_ORIGIN?.trim() ? { allowedOrigin: env.CORS_ALLOWED_ORIGIN.trim() } : {})

@@ -2,12 +2,14 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { toProviderNeutralLocalMatch, validateLocalMatchDetail, type LocalMatchDetail } from '@miraichi/shared';
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
 import type { HostedMatchDetailCoordinator } from '../detail/hosted-match-detail.js';
+import type { TerminalBetReconciliationCoordinator } from '../services/terminal-bet-reconciliation.js';
 export interface MatchDetailStore {getDetail(matchId:string):Promise<LocalMatchDetail|null>}
 export interface MatchDetailQueue {enqueue(matchId:string):Promise<{status:string}>}
 export interface MatchDetailRouteDependencies {
   repository?:MatchSnapshotRepository;
   detailStore?:MatchDetailStore;
   coordinator?:Pick<HostedMatchDetailCoordinator,'read'|'refresh'>;
+  terminalReconciler?:Pick<TerminalBetReconciliationCoordinator,'reconcile'>;
   /** Legacy injection compatibility only. Detail routes never enqueue work. */
   queue?:MatchDetailQueue;
   dataRoot?:string;
@@ -45,6 +47,9 @@ export async function handleMatchDetail(req:IncomingMessage,res:ServerResponse,d
     if(!detail) {error(404,'match_not_found','Match was not found.');return;}
     const publicDetail=sanitize(detail);
     if(!validateLocalMatchDetail(publicDetail).ok || publicDetail.match.id!==id) throw new Error('Invalid detail response');
+    if(refresh && detail.status==='completed' && detail.refresh?.lastSuccessAt && deps.terminalReconciler) {
+      try {await deps.terminalReconciler.reconcile([detail.match]);} catch { /* Detail publication remains successful. */ }
+    }
     send(200,publicDetail);
   } catch(failure) {
     const status=typeof failure==='object' && failure!==null && 'statusCode' in failure && failure.statusCode===503?503:500;

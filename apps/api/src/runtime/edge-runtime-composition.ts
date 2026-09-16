@@ -33,6 +33,7 @@ import { createGuardedProviderClients } from './guarded-provider-clients.js';
 import { HostedMatchDetailCoordinator } from '../detail/hosted-match-detail.js';
 import { PostgresHostedMatchDetailStore } from '../detail/hosted-match-detail-store.js';
 import { fetchSelectedMatchDetail } from '../detail/match-detail-source.js';
+import { TerminalBetReconciliationCoordinator } from '../services/terminal-bet-reconciliation.js';
 
 export { createPostgresJsQueryClient } from '../persistence/supabase/postgres-js-query-client.js';
 
@@ -121,8 +122,14 @@ export function createPostgresEdgeApiHandler(
   const liveMode = readLiveDataMode(env);
   const timeoutMs = Number(env.SPORTSCORE_WIDGET_TIMEOUT_MS?.trim() || 8_000);
   const clients = createGuardedProviderClients(client, config.ownerProfileId, timeoutMs, fetcher);
-  const detailCoordinator = new HostedMatchDetailCoordinator(new PostgresHostedMatchDetailStore(client, config.ownerProfileId),
+  const detailStore = new PostgresHostedMatchDetailStore(client, config.ownerProfileId);
+  const detailCoordinator = new HostedMatchDetailCoordinator(detailStore,
     (input) => fetchSelectedMatchDetail({ ...input, fotmob: clients.detail, sportscore: clients.widget }));
+  const terminalReconciler = new TerminalBetReconciliationCoordinator({
+    ownerProfileId: config.ownerProfileId,
+    persistence: adapter,
+    detailReader: detailCoordinator
+  });
   const liveCoordinator = new LiveRefreshCoordinator({
     ownerProfileId: config.ownerProfileId,
     persistence: adapter,
@@ -134,14 +141,15 @@ export function createPostgresEdgeApiHandler(
     store: new PostgresHostedProviderStore(client, config.ownerProfileId),
     currentClient: clients.current,
     dailyClient: clients.daily,
-    maxCurrentRequests: Number(env.MIRAICHI_CURRENT_REFRESH_BATCH_SIZE || 3)
+    maxCurrentRequests: Number(env.MIRAICHI_CURRENT_REFRESH_BATCH_SIZE || 3),
+    terminalReconciler
   }));
   const api = createApiHandler(defineApiRuntime({
     ownerAuthConfig: readOwnerAuthConfig(env),
     liveRefreshServiceAuthConfig: readLiveRefreshServiceAuthConfig(env),
     cloudDependencies: { adapter, ownerProfileId: config.ownerProfileId, matchRepository },
     matchRepository,
-    matchDetailDependencies: { repository: cloudRepository, coordinator: detailCoordinator },
+    matchDetailDependencies: { repository: cloudRepository, coordinator: detailCoordinator, terminalReconciler },
     liveCoordinator,
     ...(env.MIRAICHI_PUBLIC_ORIGIN?.trim() ? { allowedOrigin: env.MIRAICHI_PUBLIC_ORIGIN.trim() } : {})
   }));

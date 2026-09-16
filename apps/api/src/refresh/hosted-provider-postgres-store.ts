@@ -25,15 +25,20 @@ export class PostgresHostedProviderStore implements HostedProviderStore {
     return { id, startedAt, revision: Number(row.revision), state: row.state_json as ProviderState };
   }
 
-  async readMatches(scope: { competitionIds?: readonly string[]; dueAt?: string }): Promise<LocalMatch[]> {
+  async readMatches(scope: { competitionIds?: readonly string[]; matchIds?: readonly string[]; dueAt?: string }): Promise<LocalMatch[]> {
     return this.read(this.client, scope);
   }
 
-  private async read(client: PostgresQueryClient, scope: { competitionIds?: readonly string[]; dueAt?: string }): Promise<LocalMatch[]> {
+  private async read(client: PostgresQueryClient, scope: { competitionIds?: readonly string[]; matchIds?: readonly string[]; dueAt?: string }): Promise<LocalMatch[]> {
     if (scope.dueAt) {
       const result = await client.query(`select * from miraichi_app.match_record where owner_profile_id=$1
         and status='scheduled' and kickoff_utc > $2::timestamptz-interval '4 hours'
         and kickoff_utc <= $2::timestamptz-interval '105 minutes' order by kickoff_utc limit 2000`, [this.owner, scope.dueAt]);
+      return result.rows.map(mapCloudMatchRow);
+    }
+    if (scope.matchIds?.length) {
+      const result = await client.query(`select * from miraichi_app.match_record where owner_profile_id=$1
+        and id=any($2::text[]) order by id`, [this.owner, scope.matchIds]);
       return result.rows.map(mapCloudMatchRow);
     }
     if (!scope.competitionIds?.length) return [];

@@ -23,6 +23,6 @@ export interface ProviderLease {
 }
 export interface HostedProviderStore {
   acquire(): Promise<ProviderLease | null>;
-  readMatches(scope: { competitionIds?: readonly string[]; dueAt?: string }): Promise<LocalMatch[]>;
+  readMatches(scope: { competitionIds?: readonly string[]; matchIds?: readonly string[]; dueAt?: string }): Promise<LocalMatch[]>;
   finish(lease: ProviderLease, state: ProviderState, deltas: readonly CanonicalWarehouseSnapshot[]): Promise<string | null>;
 }

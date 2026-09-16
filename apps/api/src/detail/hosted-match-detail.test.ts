@@ -15,6 +15,13 @@ function setup() {
   return {store,fetchDetail,coordinator:new HostedMatchDetailCoordinator(store,fetchDetail)};
 }
 describe('hosted detail explicit refresh', () => {
+  it('exposes only identity-validated cache without acquiring a lease or calling a source', async () => {
+    const t=setup();
+    await expect(t.coordinator.readCached(match.id)).resolves.toEqual(detail);
+    expect(t.store.acquire).not.toHaveBeenCalled(); expect(t.fetchDetail).not.toHaveBeenCalled();
+    t.store.read.mockResolvedValue({...await t.store.read(),detail:null} as never);
+    await expect(t.coordinator.readCached(match.id)).resolves.toBeNull();
+  });
   it('reads the last good cache without acquiring a lease or calling a source', async () => {
     const t=setup(); const result=await t.coordinator.read(match.id);
     expect(result?.refresh?.outcome).toBe('cached'); expect(result?.events).toEqual(detail.events);

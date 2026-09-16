@@ -10,6 +10,9 @@ function response(value:DetailRead,outcome:MatchDetailRefreshState['outcome']):L
 }
 export class HostedMatchDetailCoordinator {
   constructor(private readonly store:HostedMatchDetailStore,private readonly fetchDetail:typeof fetchSelectedMatchDetail=fetchSelectedMatchDetail) {}
+  async readCached(id:string):Promise<LocalMatchDetail|null> {
+    return (await this.store.read(id))?.detail??null;
+  }
   async read(id:string):Promise<LocalMatchDetail|null> {
     const value=await this.store.read(id);
     return value?response(value,value.detail?'cached':'unavailable'):null;

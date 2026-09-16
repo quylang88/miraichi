@@ -6,13 +6,14 @@ import type { FotMobSeasonResponse } from '../../../worker/src/sources/fotmob/fo
 import type { FotMobDailyRequest, FotMobDailyResponse } from '../../../worker/src/sources/fotmob/fotmob-daily-client.js';
 import { capturedCanonicalMatch, capturedDailyLeague, crossLeagueTargets } from '../../../../tests/fixtures/cross-league-score-live.js';
 
-async function setup() {
+async function setup(terminalReconciler?: { reconcile(matches: readonly import('@miraichi/shared').LocalMatch[]): Promise<unknown> }) {
   const module = await import('./hosted-provider-refresh.js').catch(() => null);
   expect(module?.HostedProviderRefresh).toBeTypeOf('function');
   if (!module) throw new Error('Hosted provider runner missing');
   let state: ProviderState = { current: {}, dates: {}, matches: {}, circuits: {} };
   let revision = 0;
-  const finish = vi.fn<HostedProviderStore['finish']>(async (_lease, next, _deltas) => { state = structuredClone(next); revision++; return null; });
+  let publication: string | null = null;
+  const finish = vi.fn<HostedProviderStore['finish']>(async (_lease, next, _deltas) => { state = structuredClone(next); revision++; return publication; });
   const store: HostedProviderStore = {
     acquire: vi.fn(async () => ({ id: 'lease', revision, startedAt: '2026-09-09T12:00:00.000Z', state: structuredClone(state) })),
     readMatches: vi.fn(async () => []), finish
@@ -24,8 +25,10 @@ async function setup() {
   let clock = new Date('2026-09-09T12:00:00.000Z');
   const runner = new module.HostedProviderRefresh({ store, registry: COMPETITION_SOURCE_REGISTRY,
     currentClient: { getSeasonMatches: current }, dailyClient: { getDailyMatches: daily },
-    now: () => clock, sleep: async () => undefined });
-  return { runner, store, finish, current, daily, state: () => state, setClock: (iso: string) => { clock = new Date(iso); } };
+    now: () => clock, sleep: async () => undefined, ...(terminalReconciler ? { terminalReconciler } : {}) });
+  return { runner, store, finish, current, daily, state: () => state,
+    setPublication: (value: string | null) => { publication = value; },
+    setClock: (iso: string) => { clock = new Date(iso); } };
 }
 
 describe('hosted provider refresh', () => {
@@ -108,5 +111,23 @@ describe('hosted provider refresh', () => {
     expect(deltas.flatMap((delta) => delta.matches).map((match) => match.matchId)).toEqual(['match-1']);
     expect(test.state().matches['fotmob-unofficial|match-2']?.nextCheckAt).toBe('2026-09-09T12:02:00.000Z');
     expect(await test.runner.run('terminal')).toMatchObject({ requests: 0 });
+  });
+
+  it('reconciles only after terminal publication and does not let a failed bet block the published result', async () => {
+    const reconcile = vi.fn(async () => { throw new Error('one bet failed'); });
+    const test = await setup({ reconcile });
+    test.setPublication('hosted-lease');
+    const target = crossLeagueTargets[0];
+    const scheduled = capturedCanonicalMatch(target);
+    const completed = { ...scheduled, status: 'completed' as const, score: { home: 0, away: 2 }, updatedAt: '2026-09-11T03:00:00.000Z' };
+    vi.mocked(test.store.readMatches).mockImplementation(async (scope) => 'matchIds' in scope ? [completed] : [scheduled]);
+    test.setClock('2026-09-11T03:00:00.000Z');
+    test.daily.mockResolvedValue({ status: 'modified', rawText: '{}', payload: {
+      date: '20260911', leagues: [capturedDailyLeague(target)]
+    } });
+
+    await expect(test.runner.run('terminal')).resolves.toMatchObject({ outcome: 'refreshed', publications: 1, snapshotId: 'hosted-lease' });
+    expect(test.store.readMatches).toHaveBeenLastCalledWith({ matchIds: [target.id] });
+    expect(reconcile).toHaveBeenCalledWith([completed]);
   });
 });

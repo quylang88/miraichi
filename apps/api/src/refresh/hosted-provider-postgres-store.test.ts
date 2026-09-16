@@ -48,4 +48,15 @@ describe('Postgres provider publication fence', () => {
     expect(sql).toContain('on conflict (owner_profile_id)');
     expect(sql).toContain('lease_expires_at <= clock_timestamp()');
   });
+  it('reads only published terminal ids inside the configured owner boundary', async () => {
+    const module = await import('./hosted-provider-postgres-store.js');
+    const query = vi.fn(async () => ({ rows: [], rowCount: 0 }));
+    const client: PostgresQueryClient = { query: query as PostgresQueryClient['query'], transaction: async (run) => run(client) };
+    await new module.PostgresHostedProviderStore(client, 'owner-primary').readMatches({ matchIds: ['match-2', 'match-1'] });
+    expect(query).toHaveBeenCalledTimes(1);
+    const [sql, values] = query.mock.calls[0] as unknown as [string, readonly unknown[]];
+    expect(sql).toContain('owner_profile_id=$1');
+    expect(sql).toContain('id=any($2::text[])');
+    expect(values).toEqual(['owner-primary', ['match-2', 'match-1']]);
+  });
 });

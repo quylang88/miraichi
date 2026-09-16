@@ -14,6 +14,7 @@ export interface CloudPersistenceAdapter {
   deleteBetDraft(ownerProfileId: string, draftId: string): Promise<boolean>;
   createBetRecord(record: CloudBetRecord): Promise<CloudBetRecord>;
   listBetRecords(ownerProfileId: string): Promise<readonly CloudBetRecord[]>;
+  listPendingBetRecordsByMatchIds(ownerProfileId: string, matchIds: readonly string[], limit: number): Promise<readonly CloudBetRecord[]>;
   updateBetRecord(record: CloudBetRecord): Promise<CloudBetRecord>;
   markBetSettlementManualReview(input: MarkBetSettlementManualReviewInput): Promise<CloudBetRecord | null>;
   getDisciplineConfig(ownerProfileId: string): Promise<DisciplineConfig | null>;

@@ -59,6 +59,13 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
       bets.set(id, clone(record)); return clone(record);
     },
     listBetRecords: async (owner) => valuesFor(bets, owner).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+    listPendingBetRecordsByMatchIds: async (owner, matchIds, limit) => {
+      const ids = new Set(matchIds);
+      return valuesFor(bets, owner)
+        .filter((bet) => bet.status === 'pending' && Boolean(bet.matchId) && ids.has(bet.matchId!))
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.betId.localeCompare(b.betId))
+        .slice(0, limit);
+    },
     updateBetRecord: async (record) => {
       const id = key(record.ownerProfileId, record.betId);
       if (!bets.has(id)) throw new Error('Bet record not found');

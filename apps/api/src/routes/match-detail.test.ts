@@ -8,6 +8,7 @@ const detail=adaptFotMobDetail({match,payload:fotmobDetailFixture,providerMatchI
 function dependencies() {
   return {repository:{findById:vi.fn(async()=>match),listMatches:vi.fn(),getStatus:vi.fn()},
     detailStore:{getDetail:vi.fn(async()=>null)},queue:{enqueue:vi.fn()},
+    terminalReconciler:{reconcile:vi.fn(async()=>({examined:1,settled:1,manualRequired:0,failed:0}))},
     coordinator:{read:vi.fn(async()=>({...detail,refresh:{outcome:'cached',lastSuccessAt:detail.updatedAt,retryAfterSeconds:0}})),
       refresh:vi.fn(async()=>({...detail,refresh:{outcome:'refreshed',lastSuccessAt:detail.updatedAt,retryAfterSeconds:60}}))}};
 }
@@ -27,7 +28,14 @@ describe('explicit owner match detail route',()=>{
     const deps=dependencies(); const out=await call(`/api/v1/matches/detail/refresh?id=${match.id}`,'POST',deps);
     expect(out.statusCode).toBe(200); expect(out.payload.refresh.outcome).toBe('refreshed');
     expect(deps.coordinator.refresh).toHaveBeenCalledExactlyOnceWith(match.id); expect(deps.coordinator.read).not.toHaveBeenCalled();
+    expect(deps.terminalReconciler.reconcile).toHaveBeenCalledExactlyOnceWith([detail.match]);
     expect(validateLocalMatchDetail(out.payload).ok).toBe(true);
+  });
+  it('keeps a successful detail refresh available when settlement retry fails',async()=>{
+    const deps=dependencies(); deps.terminalReconciler.reconcile.mockRejectedValue(new Error('settlement retry failed'));
+    const out=await call(`/api/v1/matches/detail/refresh?id=${match.id}`,'POST',deps);
+    expect(out.statusCode).toBe(200); expect(out.payload.refresh.outcome).toBe('refreshed');
+    expect(deps.terminalReconciler.reconcile).toHaveBeenCalledTimes(1);
   });
   it.each([['/api/v1/matches/detail','POST'],['/api/v1/matches/detail/refresh','GET'],['/api/v1/matches/detail','DELETE']])('rejects the wrong method for %s',async(path,method)=>{
     const deps=dependencies(); expect((await call(`${path}?id=${match.id}`,method,deps)).statusCode).toBe(405);

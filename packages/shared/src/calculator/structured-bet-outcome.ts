@@ -111,6 +111,7 @@ function inspectDetail(match: LocalMatch, detail: LocalMatchDetail): AutomaticSe
   if (detail.status !== 'completed' || detail.match.status !== 'completed') return 'match_not_completed';
   if (Date.parse(detail.updatedAt) < Date.parse(match.updatedAt)
     || warningMatches(detail, ['stale'])) return 'stale_detail';
+  if (warningMatches(detail, ['partial_detail'])) return 'incomplete_detail';
   if (!sameScore(detail.match.score, match.score)) return 'contradictory_score';
   if (detail.enrichment) {
     if (detail.enrichment.observedStatus !== 'completed') return 'contradictory_detail';

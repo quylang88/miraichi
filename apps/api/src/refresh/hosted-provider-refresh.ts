@@ -11,6 +11,7 @@ import { buildFotMobTerminalPlan } from '../../../worker/src/sources/fotmob/fotm
 import { fotMobDateKey, fotMobMatchKey, FOTMOB_RESULT_LEDGER_SCHEMA_VERSION } from '../../../worker/src/sources/fotmob/fotmob-result-ledger-contract.js';
 import { toCanonicalWarehouse } from '../../../worker/src/sources/shared/hosted-canonical.js';
 import type { HostedProviderStore, ProviderLease, ProviderState } from './hosted-provider-store.js';
+import type { LocalMatch } from '@miraichi/shared';
 
 export type ProviderRefreshKind = 'current' | 'terminal';
 export interface ProviderRefreshResult {
@@ -28,6 +29,7 @@ interface Options {
   now?: () => Date;
   sleep?: (ms: number) => Promise<void>;
   maxCurrentRequests?: number;
+  terminalReconciler?: { reconcile(matches: readonly LocalMatch[]): Promise<unknown> };
 }
 
 const isoAfter = (now: Date, minutes: number) => new Date(now.getTime() + minutes * 60_000).toISOString();
@@ -62,6 +64,19 @@ export class HostedProviderRefresh {
       else await this.terminal(lease, deltas, result);
       result.snapshotId = await this.options.store.finish(lease, lease.state, deltas);
       result.publications = result.snapshotId ? 1 : 0;
+      if (kind === 'terminal' && result.snapshotId) {
+        const matchIds = [...new Set(deltas.flatMap((delta) => delta.matches
+          .filter((match) => match.status === 'completed')
+          .map((match) => match.matchId)))];
+        if (matchIds.length && this.options.terminalReconciler) {
+          try {
+            const published = await this.options.store.readMatches({ matchIds });
+            await this.options.terminalReconciler.reconcile(published.filter((match) => match.status === 'completed'));
+          } catch {
+            // Settlement is downstream of a fenced publication and must never roll it back.
+          }
+        }
+      }
     } catch {
       // The lease expires naturally if DB publication fails. No checkpoint can commit alone.
       result.outcome = 'failed';
