@@ -210,6 +210,12 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('id="legacy-plan-adherence-field" hidden');
   });
 
+  it('wires the manual-review evidence retry without hiding manual settlement', () => {
+    const shellEntrySource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellEntrySource).toContain("eventTarget.closest<HTMLElement>('[data-refresh-settlement-evidence]')");
+    expect(shellEntrySource).toContain('retryAutomaticSettlementEvidence');
+  });
+
   it('renders real bankroll summaries, discipline nulls, and report analytics without forbidden metrics', () => {
     const html = renderAppShell({
       activeTabId: 'bankroll', bankrollView: 'discipline',

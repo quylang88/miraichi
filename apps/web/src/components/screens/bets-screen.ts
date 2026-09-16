@@ -24,13 +24,23 @@ function betCard(record: CloudBetRecord, bankroll: BankrollViewState, translate:
   ].filter(Boolean).join(' · ');
   const warnings = (record.disciplineSnapshot?.triggeredRules ?? []).map((rule) => translate(`rule.${rule}`, rule));
   const pnl = record.profitLossPoints ?? record.manualResultPoints;
+  const review = record.settlementReviewStatus === 'manual_required'
+    ? `<section class="settlement-review warning" data-settlement-review="manual_required" role="status"><div class="settlement-review-title">${escapeHtml(translate('settlementReview.manualRequired'))}</div><p>${escapeHtml(translate(`settlementReview.reason.${record.settlementReviewReason}`, record.settlementReviewReason ?? translate('settlementReview.reason.unknown')))}</p><p>${escapeHtml(translate('settlementReview.manualAction'))}</p></section>`
+    : record.settlementReviewStatus === 'auto_settled'
+      ? `<div class="settlement-review success" data-settlement-review="auto_settled" role="status">${escapeHtml(translate('settlementReview.autoSettled'))}</div>`
+      : settled
+        ? `<div class="settlement-review" data-settlement-review="settled" role="status">${escapeHtml(translate('settlementReview.ownerSettled'))}</div>`
+        : `<div class="settlement-review" data-settlement-review="pending" role="status">${escapeHtml(translate('settlementReview.pending'))}</div>`;
+  const action = settled
+    ? `<button class="text-button" type="button" data-open-settled-detail="${escapeHtml(record.betId)}">${escapeHtml(translate('bets.correct'))}</button>`
+    : `${record.settlementReviewStatus === 'manual_required' && record.matchId
+      ? `<button class="secondary-button" type="button" data-refresh-settlement-evidence="${escapeHtml(record.matchId)}">${escapeHtml(translate('settlementReview.refreshEvidence'))}</button>` : ''}<button class="primary-button add-inline" type="button" data-open-settlement="${escapeHtml(record.betId)}">${escapeHtml(translate(record.settlementReviewStatus === 'manual_required' ? 'settlementReview.settleManually' : 'bets.settle'))}</button>`;
   return `<article class="bet-row bet-card" data-bet-id="${escapeHtml(record.betId)}">
     <div class="row-split"><div><div class="row-title">${escapeHtml(record.selectionLabel)}</div><div class="row-meta">${escapeHtml(record.homeTeamName)} vs ${escapeHtml(record.awayTeamName)} · ${escapeHtml(record.marketType)}</div></div>${pnl == null ? '' : `<span class="ledger-state ${pnl < 0 ? 'negative' : 'positive'}">${pnl > 0 ? '+' : ''}${pnl} pts</span>`}</div>
     <div class="bet-facts"><span>${record.stakePoints} pts @ ${record.oddsValue}</span>${psychology ? `<span>${escapeHtml(psychology)}</span>` : ''}</div>
     ${warnings.length ? `<div class="discipline-warning">${escapeHtml(translate('bets.warnings'))}: ${escapeHtml(warnings.join(', '))}</div>` : ''}
-    <div class="action-row">${settled
-      ? `<button class="text-button" type="button" data-open-settled-detail="${escapeHtml(record.betId)}">${escapeHtml(translate('bets.correct'))}</button>`
-      : `<button class="primary-button add-inline" type="button" data-open-settlement="${escapeHtml(record.betId)}">${escapeHtml(translate('bets.settle'))}</button>`}</div>
+    ${review}
+    <div class="action-row">${action}</div>
   </article>`;
 }
 

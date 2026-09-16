@@ -32,6 +32,7 @@ import { refreshLiveMatches, type LiveMatchViewState } from './services/live-mat
 import { createLiveMode, retainLastGoodLive } from './live/live-mode.js';
 import { createLiveRefreshLifecycle } from './live/live-refresh-lifecycle.js';
 import { bindPullDownRefresh } from './live/pull-down-refresh.js';
+import { retryAutomaticSettlementEvidence } from './features/settlement/settlement-evidence-refresh.js';
 import {
   startAddBetSession,
   type AddBetFormElements,
@@ -1017,6 +1018,16 @@ appRoot.addEventListener('click', (event) => {
     updateUrl('bankroll');
     bankrollView = 'overview';
     updateBankrollScreenView();
+    return;
+  }
+
+  const settlementEvidenceTarget = eventTarget.closest<HTMLElement>('[data-refresh-settlement-evidence]');
+  if (settlementEvidenceTarget) {
+    const matchId = settlementEvidenceTarget.dataset.refreshSettlementEvidence;
+    if (!matchId) return;
+    settlementEvidenceTarget.setAttribute('disabled', '');
+    void retryAutomaticSettlementEvidence({ matchId, reloadBets: refreshBetRecords })
+      .catch(() => { settlementEvidenceTarget.removeAttribute('disabled'); });
     return;
   }
 

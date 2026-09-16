@@ -1746,6 +1746,37 @@ svg {
   padding: 8px;
 }
 
+.settlement-review {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 9px 10px;
+}
+
+.settlement-review.warning {
+  background: var(--accent-color-warning-soft);
+  border-color: rgba(255, 159, 10, 0.24);
+  color: var(--accent-color-warning);
+}
+
+.settlement-review.success {
+  background: rgba(48, 209, 88, 0.08);
+  border-color: rgba(48, 209, 88, 0.22);
+  color: var(--accent-color-success);
+}
+
+.settlement-review p {
+  margin: 4px 0 0;
+}
+
+.settlement-review-title {
+  color: var(--text);
+  font-weight: 760;
+}
+
 .discipline-meter {
   background: var(--surface-3);
   border-radius: 999px;
