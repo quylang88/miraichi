@@ -149,7 +149,7 @@ const serviceWorkerPath = path.join(ROOT_DIR, 'apps/web/public/service-worker.ts
 if (fs.existsSync(serviceWorkerPath)) {
   const content = fs.readFileSync(serviceWorkerPath, 'utf8');
   const requiredCacheMarkers = [
-    "miraichi-shell-v15-structured-add-bet",
+    "miraichi-shell-v17-manual-add",
     "/apps/web/src/auth-bootstrap.js",
     "/apps/web/src/pwa/register-service-worker.js",
     "/packages/ui/src/index.css"

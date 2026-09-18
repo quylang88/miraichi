@@ -5,7 +5,7 @@ import type { CloudRouteDependencies } from './cloud-route-types.js';
 import { mapCloudError, sendError, sendJson } from './cloud-route-types.js';
 import { readJsonObjectRequest } from './json-body.js';
 import { normalizeDeclaredStructuredBetPayload } from './structured-bet-payload.js';
-import { resolveCanonicalBetMatch } from './canonical-bet-match.js';
+import { isManualBetMatchGroupId, resolveCanonicalBetMatch, resolveManualBetMatch } from './canonical-bet-match.js';
 
 function validOwner(payload:Record<string,unknown>,owner:string){return payload.ownerProfileId===undefined||payload.ownerProfileId===owner;}
 function draftFrom(payload:Record<string,unknown>,id?:string):AddBetDraft|null{
@@ -24,7 +24,9 @@ export async function handleBetDrafts(req:IncomingMessage,res:ServerResponse,dep
     if(payload.matchId!==undefined)return sendError(res,400,'invalid_cloud_record','Draft uses the canonical matchGroupId, not a separate matchId.');
     let normalizedPayload=payload;
     if(req.method==='POST'){
-      const canonical=await resolveCanonicalBetMatch(deps,payload.matchGroupId,payload.homeTeamName,payload.awayTeamName);
+      const canonical=isManualBetMatchGroupId(payload.matchGroupId)
+        ? resolveManualBetMatch(payload.matchGroupId,payload.matchId,payload.homeTeamName,payload.awayTeamName)
+        : await resolveCanonicalBetMatch(deps,payload.matchGroupId,payload.homeTeamName,payload.awayTeamName);
       if(!canonical)return sendError(res,400,'invalid_cloud_record','Selected match or team identity is invalid.');
       normalizedPayload={...payload,...canonical};
     }else{

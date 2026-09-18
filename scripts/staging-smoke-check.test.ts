@@ -43,6 +43,9 @@ function createFetchStub(responsesByUrl: Record<string, TestResponse>) {
 }
 
 describe('staging smoke check helpers', () => {
+  it('pins the deployed Manual Add shell cache generation', () => {
+    expect(DEFAULT_PHASE_5_12_CACHE_MARKER).toBe('miraichi-shell-v17-manual-add');
+  });
   it('normalizes base URLs and rejects empty URLs', () => {
     expect(normalizeBaseUrl('https://example.pages.dev/')).toBe('https://example.pages.dev');
     expect(() => normalizeBaseUrl('   ')).toThrow('Staging URL is required');

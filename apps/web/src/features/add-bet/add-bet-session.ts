@@ -1,4 +1,4 @@
-export type AddBetSessionMode = 'scoped' | 'edit';
+export type AddBetSessionMode = 'manual' | 'scoped' | 'edit';
 
 interface ResettableForm {
   reset(): void;
@@ -67,6 +67,9 @@ export function startAddBetSession(
     elements.awayTeam.value = context.awayTeamName ?? '';
     setTeamLock(elements.homeTeam, true);
     setTeamLock(elements.awayTeam, true);
+  } else if (mode === 'manual' || !context.matchId) {
+    setTeamLock(elements.homeTeam, false);
+    setTeamLock(elements.awayTeam, false);
   }
   return {
     mode,

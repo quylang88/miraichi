@@ -1,6 +1,6 @@
 import { pathToFileURL } from 'url';
 
-export const DEFAULT_PHASE_5_12_CACHE_MARKER = 'miraichi-shell-v8-static-attribution';
+export const DEFAULT_PHASE_5_12_CACHE_MARKER = 'miraichi-shell-v17-manual-add';
 
 type SmokeFetchResponse = {
   ok: boolean;

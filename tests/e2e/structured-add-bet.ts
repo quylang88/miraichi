@@ -117,6 +117,7 @@ async function closeAdd(page: Page) {
 }
 
 async function assertHidden(page: Page, selector: string) {
+  await page.locator(selector).waitFor({ state: 'hidden' });
   assert.equal(await page.locator(selector).getAttribute('aria-hidden'), 'true', `${selector} must be closed`);
 }
 
@@ -191,7 +192,19 @@ async function verifyZoomRuntime(page: Page) {
 async function runBrowserFlow(page: Page) {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.locator('[data-owner-session="authenticated"]').waitFor();
-  assert.equal(await page.locator('[data-open-manual-add]').count(), 0, 'unscoped Add and Today Quick Add are removed');
+  assert.equal(await page.locator('#screen-today [data-open-manual-add]').count(), 0, 'Today Quick Add is removed');
+  assert.equal(await page.locator('#screen-bets [data-open-manual-add]').count(), 1, 'Bets keeps Manual Add');
+  await page.locator('[data-primary-tab="bets"]').click();
+  await page.locator('#screen-bets [data-open-manual-add]').click();
+  assert.equal(await page.locator('#home-team').isEditable(), true);
+  assert.equal(await page.locator('#away-team').isEditable(), true);
+  await page.locator('#home-team').fill('Grass League Home');
+  await page.locator('#away-team').fill('Grass League Away');
+  await closeAdd(page);
+  await page.locator('#screen-bets [data-open-manual-add]').click();
+  assert.equal(await page.locator('#home-team').inputValue(), '', 'manual session clears cached home team');
+  assert.equal(await page.locator('#away-team').inputValue(), '', 'manual session clears cached away team');
+  await closeAdd(page);
   await page.locator('[data-primary-tab="matches"]').click();
   await page.locator('[data-match-id="match-structured-scheduled"][data-open-match]').click();
   await page.locator('[data-open-scoped-add]').click();
@@ -279,9 +292,9 @@ async function runBrowserFlow(page: Page) {
   await page.locator('[data-edit-draft="structured-edit-draft"]').click();
   assert.equal(await page.locator('#home-team').inputValue(), 'Edit Home');
   assert.equal(await page.locator('#away-team').inputValue(), 'Edit Away');
-  assert.equal(await page.locator('#home-team').isEditable(), false);
-  assert.equal(await page.locator('#away-team').isEditable(), false);
-  assert.equal(await page.locator('#record-ongoing-bet').isDisabled(), true, 'unlinked legacy draft may be edited but cannot create an unlinked new bet');
+  assert.equal(await page.locator('#home-team').isEditable(), true);
+  assert.equal(await page.locator('#away-team').isEditable(), true);
+  assert.equal(await page.locator('#record-ongoing-bet').isDisabled(), false, 'manual draft remains recordable without a canonical match');
   assert.equal(await page.locator('#emotion-field').inputValue(), 'excited');
   assert.equal(await page.locator('#motivation-field').count(), 0);
   assert.equal(await page.locator('#pre-bet-plan-adherence').count(), 0);
@@ -320,6 +333,6 @@ async function run() {
 }
 
 void run().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : 'Structured Add Bet browser gate failed');
+  console.error(error instanceof Error ? error.stack : 'Structured Add Bet browser gate failed');
   process.exitCode = 1;
 });

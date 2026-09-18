@@ -9,7 +9,7 @@ function worker() {
   const cache = { addAll: vi.fn(async (_urls: string[]) => undefined), match: vi.fn(async (_url: string) => cached), put: vi.fn(async () => undefined) };
   const caches = {
     open: vi.fn(async () => cache), match: vi.fn(async () => cached),
-    keys: vi.fn(async () => ['miraichi-shell-v13-daily-live', 'another-app-cache', 'miraichi-shell-v14-instant-startup', 'miraichi-shell-v15-structured-add-bet']),
+    keys: vi.fn(async () => ['miraichi-shell-v13-daily-live', 'another-app-cache', 'miraichi-shell-v14-instant-startup', 'miraichi-shell-v15-structured-add-bet', 'miraichi-shell-v16-evidence-settlement']),
     delete: vi.fn(async () => true)
   };
   const fetch = vi.fn(async () => new Response('network'));
@@ -35,7 +35,7 @@ describe('installed startup cache', () => {
   it('precaches both self-contained script entries and the shell stylesheet', async () => {
     const { lifecycle, cache, caches } = worker();
     await lifecycle('install');
-    expect(caches.open).toHaveBeenCalledWith('miraichi-shell-v15-structured-add-bet');
+    expect(caches.open).toHaveBeenCalledWith('miraichi-shell-v17-manual-add');
     expect(cache.addAll.mock.calls[0]?.[0]).toEqual(expect.arrayContaining([
       '/', '/index.html', '/apps/web/src/auth-bootstrap.js',
       '/apps/web/src/pwa/register-service-worker.js', '/packages/ui/src/index.css'
@@ -63,7 +63,9 @@ describe('installed startup cache', () => {
     await lifecycle('activate');
     expect(caches.delete.mock.calls).toEqual([
       ['miraichi-shell-v13-daily-live'],
-      ['miraichi-shell-v14-instant-startup']
+      ['miraichi-shell-v14-instant-startup'],
+      ['miraichi-shell-v15-structured-add-bet'],
+      ['miraichi-shell-v16-evidence-settlement']
     ]);
   });
 });

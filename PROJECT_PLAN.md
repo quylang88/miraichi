@@ -2,9 +2,11 @@
 
 ## Current State
 
-- **Status**: Daily LIVE recovery is deployed to Frankfurt Edge version 19 and verified on staging.
-  Two unmocked browser checks at `2026-09-12T14:46:34.543Z` and `2026-09-12T14:50:37.507Z` each rendered 30 active matches across 13 leagues with scores independently confirmed from the daily source, without opening detail. Later score and halftime changes were observed.
-  The full local staging gate and fresh hosted browser/scheduler/PWA gates pass. The owner explicitly authorized committing the entire current diff locally after successful staging verification, including existing UI edits; push remains unapproved. Legacy identity reconciliation remains outside this correction.
+- **Status**: The owner correction is deployed to Frankfurt Edge version 26 and Cloudflare Worker
+  `fc867def-cd30-4237-978d-7090f068cb99`. Today Quick Add is removed, while Bets retains a clean
+  Manual Add flow for matches outside the canonical feed. Local release gates, real scoped and
+  manual draft round-trips, owner/auth/redaction, Chromium/WebKit cache-v17/layout checks, scheduler
+  checks and final owner-data cleanup are green. No production promotion or push occurred.
 - **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
 - **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
 - **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
@@ -44,7 +46,7 @@
 - **Completed phase**: `phase:staging Daily LIVE recovery` — owner reopened the empty LIVE defect on 2026-09-12 and requested direct staging verification. Plan: `docs/superpowers/plans/2026-09-12-daily-live-recovery.md`; ADR-0054 records reuse of existing FotMob daily data in the independent LIVE overlay. The full staging gate passes 161 unit files / 985 tests, integration/PWA/build, actual Edge auth/Postgres runtime, provider SQL and artifact checks. The real browser gate failed on the old empty LIVE, then passed twice after deployment with real score changes. The final hosted scheduler and Chromium/WebKit PWA gates pass.
 - **Completed phase**: `phase:quality-up ui-ux-improve PWA instant startup` — owner reopened slow installed-app startup on 2026-09-13 and explicitly authorized the fix, deployment, verification, and local commit on existing Frankfurt staging. Follow `docs/superpowers/plans/2026-09-13-pwa-instant-startup.md`; preserve owner authentication and private-data boundaries.
 - **Active phase**: `phase:quality-up ui-ux-improve Structured Add Bet` — owner approved sequential reviewed TDD slices on 2026-09-15 for clean manual/quick/scoped entry sessions, normalized market selections including Running HT/FT/fixed 15-minute windows, simplified emotion, and maximum practical PWA zoom constraints. Delivery includes local verification and existing Frankfurt staging; each green reviewed slice receives one local commit. Follow `docs/superpowers/plans/2026-09-15-structured-add-bet.md`. Push and production promotion remain unapproved.
-- **Active continuation**: `phase:quality-up ui-ux-improve Evidence-gated Bet Settlement` — owner requested locked canonical teams, removal of unscoped/Today Quick Add, less pre-bet psychology, HT corner presets, score-led Running Over, and automatic settlement only when match evidence is sufficient. Follow `docs/superpowers/plans/2026-09-15-add-bet-settlement-quality-up.md` sequentially. The prior Structured Add Bet Slice 11 iPhone check and its uncommitted acceptance evidence remain pending; neither automatic detail requests nor production/push is approved.
+- **Active continuation**: `phase:quality-up ui-ux-improve Evidence-gated Bet Settlement` — owner requested locked canonical teams, removal of Today Quick Add, retained Manual Add for unlisted matches, less pre-bet psychology, HT corner presets, score-led Running Over, and automatic settlement only when match evidence is sufficient. Follow `docs/superpowers/plans/2026-09-15-add-bet-settlement-quality-up.md` sequentially. Neither automatic detail requests nor production/push is approved.
 - **Match-detail local exit gate (2026-09-10)**: reviewed slices and integration correction through
   `98cee02` pass `verify:staging` (157 files / 796 unit tests, complete integration/endpoint/PWA and
   static build), actual detail PostgreSQL smoke, actual Edge runtime auth/Postgres smoke, module
@@ -58,11 +60,80 @@
 - **Lazy match-detail state**: **DELIVERED TO STAGING on 2026-09-10** through research, reviewed
   TDD slices and Frankfurt E2E, retaining canonical IDs and nullable factual fields.
   Existing source approvals apply; no paid source, bypass, historical hydration or production action.
-- **Promotion state**: Frankfurt Edge Function version 19 is ACTIVE; Cloudflare Worker
-  `1bacf8ed-fbca-45fc-93de-ddfff0386b6e` serves the current UI and PWA cache `miraichi-shell-v13-daily-live` on staging.
-  Three refresh jobs and four Vault names pass the hosted gate at `2026-09-12T14:49:55.752Z`.
-  Final owner acceptance, Tokyo project creation, and production promotion remain pending; no push was performed for this correction.
+- **Promotion state**: Frankfurt Edge Function version 26 is ACTIVE with bundle SHA-256
+  `3b8a77ff5717bb1f519333b9edf320cd1b2b60e93f7e3a7d0f86500571c2ca92`; Cloudflare Worker
+  `fc867def-cd30-4237-978d-7090f068cb99` serves 100% of staging traffic with PWA cache
+  `miraichi-shell-v17-manual-add`. Eighteen migrations, three refresh jobs, and four Vault names are
+  present. The aggregate hosted gate passed at `2026-09-18T04:36:48.478Z`; the previous Edge v25
+  SHA and Worker `96f8a771-4419-4c67-9c67-4760dff43749` remain the recorded rollback baseline.
+  Push, Tokyo creation, and production remain pending.
 - **Current lifecycle source of truth**: this file.
+
+## Structured Add Bet — 2026-09-15 staging candidate
+
+- **Delivered**: clean manual/quick/scoped sessions; one-row Home vs Away; guided 1X2,
+  Over/Under, handicap, corners and Running HT/FT/fixed-15 selection; canonical server labels;
+  strict new-entry validation; three-state emotion with calm default; and best-effort PWA zoom
+  constraints. Legacy Custom records remain readable but cannot be created.
+- **Local evidence**: `pnpm run verify:staging` passes 171 unit files / 1,040 tests plus all
+  integration, endpoint, structured browser, PWA, lint, typecheck, audit and static-build gates.
+  Local PostgreSQL migration/transaction smoke, actual Edge runtime `--scope all`, module graph,
+  and Cloudflare artifact verification pass. The reviewed artifact inventory is 72 production
+  modules, 692,397 bytes total, with largest file 202,550 bytes.
+- **Hosted evidence**: two forward migrations were the only pending migrations and are now applied.
+  A real owner UI flow created an Over 2.5 FT draft, received the server-generated canonical label,
+  read it back from PostgreSQL and removed it. Structured fixture flow, ten Chromium/WebKit layout
+  cases, both installed-cache checks, static/API smoke, match detail, owner auth/redaction and all
+  three scheduler deliveries pass; the restored aggregate gate completed at
+  `2026-09-15T07:56:15.805Z`.
+- **Data safety**: final audit shows one pre-existing draft, zero E2E drafts, zero bets, zero ledger
+  entries and zero Running records. Four Vault names and three scheduler jobs remain active. No
+  production, push, schema reset, owner-record deletion, or unapproved provider flow occurred.
+- **Rollback evidence**: pre-task Worker `79fac467-a2d0-43d8-b25a-6c06ef89feaf` and Edge v19
+  source at commit `674176a` were retained. Jobs were reduced from three to zero; the Worker was
+  restored to 100%, and the exact Edge bundle was redeployed as v21 with its original SHA-256
+  `de1351239a5cb1a725186b0b1acb6e227e487960a258b0c7488c22bb6a593491`. Direct Edge denial,
+  gateway health and all nine baseline cache-v14/static/API checks passed. Candidate Edge v22,
+  Worker, and the same three jobs were then restored and the full hosted gates rerun successfully.
+- **Remaining limit**: desktop WebKit is not an installed iPhone PWA. The owner must still test
+  focus, double-tap, pinch, rotation and close/reopen from Home Screen. Web constraints are
+  best-effort and reduce accessibility; they cannot guarantee that iOS will never zoom.
+
+## Evidence-gated Bet Settlement — 2026-09-17 staging candidate
+
+- **Delivered**: exact canonical match binding with locked Home/Away; removal of Today Quick Add;
+  retained clean Manual Add in Bets for unlisted matches; optional legacy-only Motivation/Plan; corrected HT corner presets;
+  score-led Running Over 0.5/0.75; and evidence-gated automatic settlement with visible manual
+  fallback. No automatic provider detail request or silent correction of settled ledger data.
+- **Local evidence**: `pnpm run verify:staging` passes 178 unit files / 1,116 tests plus all
+  integration, endpoint, browser/PWA, lint, typecheck, audit and build gates. PostgreSQL rollback,
+  Edge graph/runtime and the 74-module Cloudflare artifact gate pass.
+- **Hosted evidence**: three additive migrations are applied and all 18 migration versions match.
+  Edge v26 / Worker `fc867def-cd30-4237-978d-7090f068cb99` pass static/API smoke, canonical locked
+  and unlinked manual draft create/read/delete, owner auth/redaction, match detail/manual-review fixtures,
+  PWA layout, cache v17 and all three scheduler deliveries. Final audit retains exactly the one
+  pre-existing draft and zero bet, ledger, Running, Custom-create or legacy-emotion records.
+- **Rollback evidence**: jobs were paused at zero; prior Worker `dcf92724-1f08-4c3e-b877-3d6cebba2137`
+  and Edge SHA `a43b5a3d8acbd9306ee85b8f7fbbda115d1fd1b956d43082ca863ba158e293db`
+  served healthy traffic on the additive schema. Candidate Edge SHA
+  `395bf413b558ff3148b4db6398bef14e0f589f86bcc05e2129109b3861519296`, Worker and three jobs were
+  restored; the owner flow passed again with unchanged owner-data counts.
+- **Remaining limit**: the owner passed the physical installed-iPhone zoom/orientation/reopen
+  checks on stale cache v15. No final closeout commit, push or production promotion is allowed
+  until the same installed app upgrades to v16 and visibly shows the corrected Add Bet UI.
+- **Installed-PWA correction**: owner feedback exposed that the phase reused cache v15, so an
+  existing Home Screen install could keep the previous Structured Add Bet shell even though the
+  staging origin already served byte-identical current modules. TDD rotated the shell to
+  `miraichi-shell-v16-evidence-settlement`, explicitly deletes v15 during activation, and deployed
+  Worker `96f8a771-4419-4c67-9c67-4760dff43749`. Fresh hosted Chromium/WebKit cache and the
+  complete Structured Add Bet staging browser flow pass. Existing-iPhone upgrade visibility still
+  requires the owner's close/reopen confirmation.
+- **Manual Add owner correction**: the owner clarified that only Today Quick Add should be removed.
+  Bets now exposes Manual Add for unlisted matches; every manual session resets and unlocks team
+  names, while canonical scoped Add keeps both names readonly. The API accepts only strict
+  `manual:*` groups without `matchId`, still validates structured markets, and server-generates the
+  label. Cache v17 forces installed-shell delivery. A real staging manual draft was created, read
+  back without `matchId`, and deleted; final owner-data counts are unchanged.
 
 ## Daily LIVE recovery — 2026-09-12 staging report
 

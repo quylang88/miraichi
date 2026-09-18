@@ -35,10 +35,19 @@ describe('bet routes',()=>{
     expect(JSON.parse(out.body)).not.toHaveProperty('preBetMotivation');
     expect(JSON.parse(out.body)).not.toHaveProperty('preBetPlanAdherence');
   });
+  it('creates a structured manual bet without pretending it has canonical match evidence',async()=>{
+    const adapter=await createMemoryCloudPersistenceAdapter();await adapter.createBankrollAccount({accountId:'account-1',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});
+    const out=response();await handleBets(request('POST','/api/v1/bets',{...record,betId:'manual-bet',matchGroupId:'manual:manual-bet',matchId:undefined,homeTeamName:'Grass Home',awayTeamName:'Grass Away'}) as never,out as never,{adapter,ownerProfileId:'owner-primary'});
+    expect(out.statusCode).toBe(201);
+    expect(JSON.parse(out.body)).toMatchObject({matchGroupId:'manual:manual-bet',homeTeamName:'Grass Home',awayTeamName:'Grass Away'});
+    expect(JSON.parse(out.body)).not.toHaveProperty('matchId');
+  });
   it('rejects unlinked, unknown, reversed or mismatched client team identities',async()=>{
     const adapter=await createMemoryCloudPersistenceAdapter();
     await adapter.createBankrollAccount({accountId:'account-1',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});
-    for(const [index,payload] of [{...record,matchId:undefined},{...record,matchId:'missing'},{...record,homeTeamName:'Vietnam',awayTeamName:'Japan'},{...record,awayTeamName:'Other'}].entries()){
+    for(const [index,payload] of [{...record,matchId:undefined},{...record,matchId:'missing'},{...record,homeTeamName:'Vietnam',awayTeamName:'Japan'},{...record,awayTeamName:'Other'},
+      {...record,matchGroupId:'manual:',matchId:undefined},{...record,matchGroupId:'manual:same',matchId:undefined,homeTeamName:'Same',awayTeamName:'Same'},
+      {...record,matchGroupId:'manual:linked',matchId:'match-1',homeTeamName:'Grass Home',awayTeamName:'Grass Away'}].entries()){
       const out=response();await handleBets(request('POST','/api/v1/bets',{...payload,betId:`bad-${index}`}) as never,out as never,{adapter,ownerProfileId:'owner-primary'});
       expect(out.statusCode).toBe(400);
       expect(JSON.parse(out.body).error.code).toBe('invalid_cloud_record');

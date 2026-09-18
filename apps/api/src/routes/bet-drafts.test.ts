@@ -30,9 +30,17 @@ describe('bet draft routes',()=>{
     expect(JSON.parse(out.body)).not.toHaveProperty('preBetMotivation');
     expect(JSON.parse(out.body)).not.toHaveProperty('preBetPlanAdherence');
   });
+  it('creates a structured manual draft for a match outside the canonical feed',async()=>{
+    const adapter=await createMemoryCloudPersistenceAdapter();const out=response();
+    await handleBetDrafts(request('POST','/api/v1/bet-drafts',{...draft,draftId:'manual-draft',matchGroupId:'manual:manual-draft',homeTeamName:'Grass Home',awayTeamName:'Grass Away'}) as never,out as never,{adapter,ownerProfileId:'owner-primary'});
+    expect(out.statusCode).toBe(201);
+    expect(JSON.parse(out.body)).toMatchObject({matchGroupId:'manual:manual-draft',homeTeamName:'Grass Home',awayTeamName:'Grass Away'});
+  });
   it('rejects unknown canonical group IDs and client-supplied team substitutions on POST',async()=>{
     const adapter=await createMemoryCloudPersistenceAdapter();
-    for(const payload of [{...draft,matchGroupId:'missing'},{...draft,homeTeamName:'Vietnam',awayTeamName:'Japan'},{...draft,awayTeamName:'Other'}]){
+    for(const payload of [{...draft,matchGroupId:'missing'},{...draft,homeTeamName:'Vietnam',awayTeamName:'Japan'},{...draft,awayTeamName:'Other'},
+      {...draft,matchGroupId:'manual:'},{...draft,matchGroupId:'manual:same',homeTeamName:'Same',awayTeamName:'Same'},
+      {...draft,matchGroupId:'manual:linked',matchId:'match-1',homeTeamName:'Grass Home',awayTeamName:'Grass Away'}]){
       const out=response();await handleBetDrafts(request('POST','/api/v1/bet-drafts',payload) as never,out as never,{adapter,ownerProfileId:'owner-primary'});
       expect(out.statusCode).toBe(400);
       expect(JSON.parse(out.body).error.code).toBe('invalid_cloud_record');

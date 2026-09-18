@@ -23,6 +23,8 @@ export async function runStagingOwnerFlow(): Promise<void> {
   page.setDefaultTimeout(25_000);
   let phase = 'root';
   let authenticated = false;
+  let structuredDraftId: string | undefined;
+  let manualDraftId: string | undefined;
   let fixtureCalls = 0;
   const networkChecks: Promise<void>[] = [];
   const pendingChecks = new Map<number, { path: string; step: string }>();
@@ -86,6 +88,72 @@ export async function runStagingOwnerFlow(): Promise<void> {
       await page.locator(`[data-primary-tab="${tab}"]`).click();
       await page.locator(`#screen-${tab}.active`).waitFor({ state: 'visible' });
     }
+    phase = 'structured draft round-trip';
+    await page.locator('[data-primary-tab="matches"]').click();
+    const boundMatch = page.locator('#screen-matches [data-match-row]').first();
+    await boundMatch.waitFor();
+    const boundMatchId = await boundMatch.getAttribute('data-match-id');
+    const boundHomeTeam = await boundMatch.getAttribute('data-home-team');
+    const boundAwayTeam = await boundMatch.getAttribute('data-away-team');
+    gate(Boolean(boundMatchId && boundHomeTeam && boundAwayTeam), 'structured draft match identity');
+    await boundMatch.click();
+    await page.locator('#screen-match-detail [data-open-scoped-add]').click();
+    gate(await page.locator('#home-team').inputValue() === boundHomeTeam
+      && await page.locator('#away-team').inputValue() === boundAwayTeam
+      && !await page.locator('#home-team').isEditable()
+      && !await page.locator('#away-team').isEditable(), 'structured draft locked match binding');
+    await page.locator('[data-bet-market="over_under"]').click();
+    await page.locator('[data-bet-period="full_time"]').click();
+    await page.locator('[data-bet-selection="over"]').click();
+    await page.locator('[data-bet-line="2.5"]').click();
+    await page.locator('#odds-field').fill('0.91');
+    await page.locator('#stake-field').fill('1');
+    const [createdDraft] = await Promise.all([
+      page.waitForResponse((response) => response.url().endsWith('/api/v1/bet-drafts') && response.request().method() === 'POST'),
+      page.locator('#save-draft-shell').click()
+    ]);
+    gate(createdDraft.status() === 201, 'structured draft create');
+    const createdDraftBody = await createdDraft.json() as Record<string, unknown>;
+    structuredDraftId = String(createdDraftBody.draftId ?? '');
+    gate(Boolean(structuredDraftId)
+      && createdDraftBody.matchGroupId === boundMatchId
+      && createdDraftBody.marketType === 'over_under'
+      && createdDraftBody.marketPeriod === 'full_time'
+      && createdDraftBody.selectionCode === 'over'
+      && createdDraftBody.lineValue === 2.5
+      && createdDraftBody.selectionLabel === 'Over 2.5 · FT', 'structured draft canonical round-trip');
+    const listedDrafts = await (await context.request.get('/api/v1/bet-drafts')).json() as Record<string, unknown>[];
+    gate(listedDrafts.some((draft) => draft.draftId === structuredDraftId
+      && draft.selectionLabel === 'Over 2.5 · FT'), 'structured draft persisted');
+    phase = 'manual draft round-trip';
+    await page.locator('[data-primary-tab="bets"]').click();
+    await page.locator('#screen-bets [data-open-manual-add]').click();
+    gate(await page.locator('#home-team').isEditable() && await page.locator('#away-team').isEditable(),
+      'manual draft team inputs editable');
+    await page.locator('#home-team').fill('Grass League Home');
+    await page.locator('#away-team').fill('Grass League Away');
+    await page.locator('[data-bet-market="1X2"]').click();
+    await page.locator('[data-bet-period="full_time"]').click();
+    await page.locator('[data-bet-selection="home"]').click();
+    await page.locator('#odds-field').fill('0.85');
+    await page.locator('#stake-field').fill('1');
+    const [createdManualDraft] = await Promise.all([
+      page.waitForResponse((response) => response.url().endsWith('/api/v1/bet-drafts') && response.request().method() === 'POST'),
+      page.locator('#save-draft-shell').click()
+    ]);
+    gate(createdManualDraft.status() === 201, 'manual draft create');
+    const createdManualBody = await createdManualDraft.json() as Record<string, unknown>;
+    manualDraftId = String(createdManualBody.draftId ?? '');
+    gate(Boolean(manualDraftId)
+      && String(createdManualBody.matchGroupId ?? '').startsWith('manual:')
+      && !('matchId' in createdManualBody)
+      && createdManualBody.homeTeamName === 'Grass League Home'
+      && createdManualBody.awayTeamName === 'Grass League Away'
+      && createdManualBody.selectionLabel === 'Grass League Home · FT', 'manual draft canonical round-trip');
+    const draftsAfterManual = await (await context.request.get('/api/v1/bet-drafts')).json() as Record<string, unknown>[];
+    gate(draftsAfterManual.some((draft) => draft.draftId === manualDraftId
+      && String(draft.matchGroupId ?? '').startsWith('manual:')
+      && !('matchId' in draft)), 'manual draft persisted without canonical match');
     phase = 'real LIVE';
     await page.locator('[data-primary-tab="matches"]').click();
     await page.locator('#filter-panel-toggle-btn').click();
@@ -122,6 +190,9 @@ export async function runStagingOwnerFlow(): Promise<void> {
     });
     phase = 'deterministic live rows';
     console.log(JSON.stringify({ gate: 'hosted-browser', stage: phase }));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('[data-owner-session="authenticated"]').waitFor();
+    await page.locator('[data-primary-tab="matches"]').click();
     await page.getByRole('button', { name: 'LIVE', exact: true }).click();
     await page.locator('[data-live-match-id="match-e2e-browser-2"]').waitFor();
     gate(await page.locator('#screen-matches [data-match-row]').count() === 3, 'only live/halftime/suspended rows');
@@ -140,6 +211,13 @@ export async function runStagingOwnerFlow(): Promise<void> {
     phase = 'match detail';
     console.log(JSON.stringify({ gate: 'hosted-browser', stage: phase }));
     await runStagingMatchDetail(page);
+    phase = 'structured draft cleanup';
+    gate((await context.request.delete(`/api/v1/bet-drafts?id=${encodeURIComponent(structuredDraftId)}`)).status() === 204,
+      'structured draft cleanup');
+    structuredDraftId = undefined;
+    gate((await context.request.delete(`/api/v1/bet-drafts?id=${encodeURIComponent(manualDraftId)}`)).status() === 204,
+      'manual draft cleanup');
+    manualDraftId = undefined;
     phase = 'logout';
     console.log(JSON.stringify({ gate: 'hosted-browser', stage: phase }));
     gate((await context.request.post('/api/v1/auth/logout', { headers: { origin } })).status() === 204, 'logout');
@@ -155,7 +233,9 @@ export async function runStagingOwnerFlow(): Promise<void> {
       })]);
     } finally { clearTimeout(auditTimer); }
     gate(!networkFailure, 'network locators/headers/secrets redacted');
-    console.log(JSON.stringify({ gate: 'hosted-browser', status: 'passed', origin, realOwnerFlow: true, deterministicLiveStates: true, ownerDataCreated: false }));
+    console.log(JSON.stringify({ gate: 'hosted-browser', status: 'passed', origin, realOwnerFlow: true,
+      structuredDraftRoundTrip: true, manualDraftRoundTrip: true,
+      deterministicLiveStates: true, ownerDataRetained: false }));
   } catch (error) {
     console.log(JSON.stringify({ gate: 'hosted-browser-diagnostic', phase, fixtureCalls,
       pendingChecks: [...pendingChecks.values()],
@@ -170,8 +250,29 @@ export async function runStagingOwnerFlow(): Promise<void> {
     const detail = error instanceof Error && error.message.startsWith('Hosted gate failed:') ? ` (${error.message})` : '';
     throw new Error(`Hosted browser gate failed during ${phase}${detail}`);
   } finally {
+    let cleanupError: unknown;
     try {
-      if (authenticated) gate((await context.request.post('/api/v1/auth/logout', { headers: { origin } })).status() === 204, 'finally logout cleanup');
+      if (authenticated && structuredDraftId) {
+        try {
+          gate((await context.request.delete(`/api/v1/bet-drafts?id=${encodeURIComponent(structuredDraftId)}`)).status() === 204,
+            'structured draft finally cleanup');
+          structuredDraftId = undefined;
+        } catch (error) { cleanupError = error; }
+      }
+      if (authenticated && manualDraftId) {
+        try {
+          gate((await context.request.delete(`/api/v1/bet-drafts?id=${encodeURIComponent(manualDraftId)}`)).status() === 204,
+            'manual draft finally cleanup');
+          manualDraftId = undefined;
+        } catch (error) { cleanupError ??= error; }
+      }
+      if (authenticated) {
+        try {
+          gate((await context.request.post('/api/v1/auth/logout', { headers: { origin } })).status() === 204,
+            'finally logout cleanup');
+        } catch (error) { cleanupError ??= error; }
+      }
+      if (cleanupError) throw cleanupError;
     } finally {
       try { await context.close(); } finally { await browser.close(); }
     }

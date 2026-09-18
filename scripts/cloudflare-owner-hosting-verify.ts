@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const CLOUDFLARE_MAX_FILES = 20_000;
 const CLOUDFLARE_MAX_FILE_BYTES = 25 * 1024 * 1024;
-const CURRENT_BASELINE_FILE_COUNT = 67;
+const CURRENT_BASELINE_FILE_COUNT = 74;
 
 export interface StaticArtifactInventory {
   readonly fileCount: number;

@@ -67,6 +67,7 @@ export function renderBetsScreen(input: {
   const segment = (value: BetRecordFilter, key: string) => `<button class="${filter === value ? 'active' : ''}" type="button" role="tab" aria-selected="${filter === value}" data-bet-filter="${value}">${escapeHtml(translate(key))}</button>`;
   return `<section class="${screenClass('bets', activeTabId)}" id="screen-bets" data-shell-tab-panel="bets" aria-labelledby="bets-title">
     ${screenHeader(translate('bets.eyebrow'), translate('bets.title'), 'bets-title')}
+    <div class="action-row"><button class="primary-button add-inline" type="button" data-open-manual-add>${escapeHtml(translate('matches.manualAdd'))}</button></div>
     <div class="segmented three" role="tablist" aria-label="${escapeHtml(translate('bets.title'))}">${segment('ongoing', 'bets.ongoing')}${segment('drafts', 'bets.drafts')}${segment('settled', 'bets.settled')}</div>
     <div class="stack">${records(state, filter, bankroll, translate)}</div>
   </section>`;

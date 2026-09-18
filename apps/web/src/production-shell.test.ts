@@ -162,7 +162,7 @@ describe('phase 9 cloud persistence workflows', () => {
 
   it('starts isolated scoped and edit sessions before opening Add Bet', () => {
     const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
-    expect(shellSource).not.toContain("startAddBetSession('manual'");
+    expect(shellSource).toContain("startAddBetSession('manual'");
     expect(shellSource).not.toContain("startAddBetSession('quick'");
     expect(shellSource).toContain("startAddBetSession('scoped'");
     expect(shellSource).toContain("startAddBetSession('edit'");
@@ -393,9 +393,10 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(shellSource).toContain('customRangeEnd = null');
   });
 
-  it('requires a selected match before Add Bet and locks both team controls without disabling FormData', () => {
+  it('locks scoped team controls while retaining one manual entry action in Bets', () => {
     const html = renderAppShell({ activeTabId: 'matches', matchFeed: { status: 'unavailable', date: '2026-08-21', reason: 'offline', warnings: [], snapshot: { snapshotId: 's', generatedAt: '2026-08-21T00:00:00.000Z', importedAt: '2026-08-21T00:00:00.000Z', matchCount: 0, competitions: [], sources: [], freshness: 'missing', warnings: [] } } });
-    expect(html).not.toContain('data-open-manual-add');
+    expect(html).toContain('id="screen-bets"');
+    expect(html).toContain('data-open-manual-add');
     expect(html).toContain('data-open-scoped-add');
     expect(html).toMatch(/id="home-team"[^>]*readonly/);
     expect(html).toMatch(/id="away-team"[^>]*readonly/);
@@ -403,15 +404,15 @@ describe('phase 9 cloud persistence workflows', () => {
     const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
     expect(css).toMatch(/#add-sheet \.add-bet-team-row \.field-input\[readonly\]\s*\{[^}]*background:\s*var\(--surface-2\)/s);
     const source = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
-    expect(source).not.toContain('[data-open-manual-add]');
+    expect(source).toContain("eventTarget.closest('[data-open-manual-add]')");
     expect(source).toContain('if (!currentOpenMatchId) return;');
-    expect(source).not.toContain('manualMatchGroupId(');
+    expect(source).toContain("startAddBetSession('manual'");
   });
 
-  it('removes Today Quick Add and every unscoped add button across the four tabs', () => {
-    for (const tab of ['today', 'matches', 'bets', 'bankroll'] as const) {
-      expect(renderAppShell({ activeTabId: tab })).not.toContain('data-open-manual-add');
-    }
+  it('removes only Today Quick Add and keeps Manual Add in Bets', () => {
+    const html = renderAppShell({ activeTabId: 'today' });
+    expect(html).not.toMatch(/id="screen-today"[\s\S]*?data-open-manual-add[\s\S]*?id="screen-matches"/);
+    expect(html).toMatch(/id="screen-bets"[\s\S]*?data-open-manual-add/);
   });
 
   it('renders the Matches screen and contextual detail shell from the VI catalog', () => {
@@ -466,7 +467,8 @@ describe('phase 9 cloud persistence workflows', () => {
     expect(html).toContain('data-analytics-empty');
     expect(html).toContain('No analytics data yet');
     expect(html).toContain('Performance trends, market win rates, and psychology insights will appear here once settled bets are recorded.');
-    expect(html).not.toContain('data-open-manual-add');
+    expect(html).not.toMatch(/id="screen-today"[\s\S]*?data-open-manual-add[\s\S]*?id="screen-matches"/);
+    expect(html).toMatch(/id="screen-bets"[\s\S]*?data-open-manual-add/);
     expect(html).toContain('data-tab-target="bets"');
     expect(html).not.toContain('No settled bets.');
 
@@ -570,7 +572,8 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('class="main-scroll"');
     expect(html).toContain('class="screen active" id="screen-today"');
     expect(html).toContain('class="metric-grid"');
-    expect(html).not.toContain('data-open-manual-add');
+    expect(html).not.toMatch(/id="screen-today"[\s\S]*?data-open-manual-add[\s\S]*?id="screen-matches"/);
+    expect(html).toMatch(/id="screen-bets"[\s\S]*?data-open-manual-add/);
     expect(html).toContain('id="screen-match-detail"');
     expect(html).toContain('data-open-match');
     expect(html).toContain('data-open-scoped-add');

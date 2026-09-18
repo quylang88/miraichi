@@ -36,6 +36,7 @@ import { retryAutomaticSettlementEvidence } from './features/settlement/settleme
 import {
   startAddBetSession,
   type AddBetFormElements,
+  type AddBetSessionMode,
   type AddBetSessionState
 } from './features/add-bet/add-bet-session.js';
 import {
@@ -107,6 +108,7 @@ let disciplineCountdownTimer: number | null = null;
 let lastFocusedElement: HTMLElement | null = null;
 let betEntryState: BetEntryState = createBetEntryState();
 let resolvedRunningMatchId = '';
+let addBetSessionMode: AddBetSessionMode | null = null;
 
 function getTargetTimezone(): string {
   const settings = settingsService.getSettings();
@@ -433,6 +435,7 @@ function closeSheets(): void {
   pendingOngoingDraftId = null;
   pendingOngoingInput = null;
   pendingDisciplineChallenge = null;
+  addBetSessionMode = null;
   lastFocusedElement?.focus();
   lastFocusedElement = null;
 }
@@ -451,7 +454,9 @@ function updateAddFormState(): void {
   const odds = oddsField.value.trim();
   const stake = stakeField.value.trim();
   saveDraftShell.disabled = !(toStructuredBetSelection(betEntryState) && odds && stake);
-  if (recordOngoing) recordOngoing.disabled = !currentOpenMatchId;
+  if (recordOngoing) recordOngoing.disabled = !currentOpenMatchId
+    && addBetSessionMode !== 'manual'
+    && !(addBetSessionMode === 'edit' && editingDraftId !== null);
 }
 
 function getAddBetFormElements(): AddBetFormElements | null {
@@ -644,6 +649,7 @@ function renderBetEntryControls(): void {
 }
 
 function activateAddBetSession(session: AddBetSessionState): void {
+  addBetSessionMode = session.mode;
   editingDraftId = session.editingDraftId;
   currentOpenMatchId = session.matchId;
   currentOpenMatchTitle = session.matchTitle;
@@ -808,13 +814,16 @@ function readOngoingBetInput(form: HTMLFormElement): CreateOngoingBetInput | nul
   if (!/^\d+(?:\.\d{1,4})?$/.test(String(data.get('odds-field')))) return null;
   if (!/^\d+(?:\.\d{1,2})?$/.test(String(data.get('stake-field')))) return null;
   const timestamp = new Date().toISOString();
-  const effectiveMatchId = currentOpenMatchId || resolvedRunningMatchId;
-  if (!effectiveMatchId) return null;
   const legacyDraft = findDraft(editingDraftId);
+  const betId = crypto.randomUUID();
+  const unlinkedDraft = legacyDraft?.matchGroupId.startsWith('manual:') === true;
+  const effectiveMatchId = unlinkedDraft ? '' : currentOpenMatchId || resolvedRunningMatchId;
+  const matchGroupId = legacyDraft?.matchGroupId || effectiveMatchId || `manual:${betId}`;
+  if (!effectiveMatchId && addBetSessionMode !== 'manual' && !unlinkedDraft) return null;
   return {
-    betId: crypto.randomUUID(),
-    matchGroupId: findDraft(editingDraftId)?.matchGroupId ?? effectiveMatchId,
-    matchId: effectiveMatchId,
+    betId,
+    matchGroupId,
+    ...(effectiveMatchId ? { matchId: effectiveMatchId } : {}),
     homeTeamName, awayTeamName,
     ...structuredSelection,
     oddsFormat: 'HK', oddsValue, stakePoints,
@@ -1242,6 +1251,14 @@ appRoot.addEventListener('click', (event) => {
     return;
   }
 
+  if (eventTarget.closest('[data-open-manual-add]')) {
+    const elements = getAddBetFormElements();
+    if (!elements) return;
+    activateAddBetSession(startAddBetSession('manual', {}, elements));
+    openSheet('add');
+    return;
+  }
+
   const openSheetTarget = eventTarget.closest<HTMLElement>('[data-open-sheet]');
   if (openSheetTarget) {
     if (openSheetTarget.dataset.openSheet === 'review') {
@@ -1502,14 +1519,16 @@ appRoot.addEventListener('submit', (event) => {
   const preBetEmotion = String(form.get('emotion-field') || '') as AddBetDraft['preBetEmotion'];
   const notes = String(form.get('note-field') || '').trim();
   const translate = createTranslator(settingsService.getSettings().locale);
-  if ((!currentOpenMatchId && !editingDraftId) || !homeTeamName || !awayTeamName || !structuredSelection || !Number.isFinite(oddsValue) || oddsValue <= 0 || !/^\d+(?:\.\d{1,4})?$/.test(String(form.get('odds-field'))) || !Number.isFinite(stakePoints) || stakePoints <= 0 || !/^\d+(?:\.\d{1,2})?$/.test(String(form.get('stake-field')))) {
+  if ((!currentOpenMatchId && !editingDraftId && addBetSessionMode !== 'manual') || !homeTeamName || !awayTeamName || !structuredSelection || !Number.isFinite(oddsValue) || oddsValue <= 0 || !/^\d+(?:\.\d{1,4})?$/.test(String(form.get('odds-field'))) || !Number.isFinite(stakePoints) || stakePoints <= 0 || !/^\d+(?:\.\d{1,2})?$/.test(String(form.get('stake-field')))) {
     setText('add-feedback', translate('error.validation_failed'));
     return;
   }
   const timestamp = new Date().toISOString();
   if (action === 'draft') {
     const existing = findDraft(editingDraftId);
-    const draft: AddBetDraft = { draftId: existing?.draftId ?? crypto.randomUUID(), matchGroupId: existing?.matchGroupId ?? currentOpenMatchId, homeTeamName, awayTeamName, ...structuredSelection, oddsFormat: 'HK', oddsValue, stakePoints, ...(preBetEmotion ? { preBetEmotion } : {}), ...(existing?.preBetMotivation ? { preBetMotivation: existing.preBetMotivation } : {}), ...(existing?.preBetPlanAdherence ? { preBetPlanAdherence: existing.preBetPlanAdherence } : {}), ...(notes ? { preBetNote: notes, notes } : {}), createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp };
+    const draftId = existing?.draftId ?? crypto.randomUUID();
+    const linkedMatchId = currentOpenMatchId || resolvedRunningMatchId;
+    const draft: AddBetDraft = { draftId, matchGroupId: existing?.matchGroupId ?? (linkedMatchId || `manual:${draftId}`), homeTeamName, awayTeamName, ...structuredSelection, oddsFormat: 'HK', oddsValue, stakePoints, ...(preBetEmotion ? { preBetEmotion } : {}), ...(existing?.preBetMotivation ? { preBetMotivation: existing.preBetMotivation } : {}), ...(existing?.preBetPlanAdherence ? { preBetPlanAdherence: existing.preBetPlanAdherence } : {}), ...(notes ? { preBetNote: notes, notes } : {}), createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp };
     const save = existing ? updateCloudBetDraft(draft) : saveCloudBetDraft(draft);
     void save.then(async () => {
       closeSheets();

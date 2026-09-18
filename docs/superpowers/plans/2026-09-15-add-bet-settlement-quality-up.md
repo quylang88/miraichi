@@ -172,3 +172,74 @@ Provider fixtures in tests are deterministic, not live-source evidence.
 
 Stop at the first RED/GREEN/review/rollback failure. A manual-required outcome is safe behavior,
 not a test failure; silent financial guesses are forbidden.
+
+## Slice 11 execution evidence — 2026-09-17
+
+- Local release/staging verification is green: 178 Vitest files / 1,116 tests, integration and
+  endpoint suites, Structured Add Bet and settlement browser gates, Chromium/WebKit PWA checks,
+  lint, typecheck, audits and static build. The automatic-settlement PostgreSQL smoke exercised
+  constraints, rollback and cleanup. Edge build/module graph/runtime auth and Postgres scopes pass.
+  The reviewed Cloudflare artifact contains 74 production modules, 729,317 bytes total, with a
+  214,119-byte largest file.
+- Exactly three additive migrations (`optional_pre_bet_psychology`, `running_goal_threshold`, and
+  `automatic_settlement_review`) were pending and are now applied in Frankfurt. All 18 local and
+  remote migration versions match. The pre/post audit remains one pre-existing draft, zero bets,
+  zero ledger entries, zero Running records, zero Custom creates and zero legacy emotions.
+- Candidate Edge v25 is ACTIVE with SHA-256
+  `395bf413b558ff3148b4db6398bef14e0f589f86bcc05e2129109b3861519296`. Cloudflare Worker
+  `8805cccd-0655-412d-a498-4538e2252261` serves 100% of staging traffic. The hosted owner flow
+  binds a real canonical match, confirms locked teams, round-trips and cleans a structured draft,
+  verifies detail/manual-review fixtures, auth/logout/redaction and retains no test owner data.
+  The aggregate owner/scheduler gate passed at `2026-09-17T01:31:09.203Z`; all three controlled
+  deliveries returned valid fresh/refreshed outcomes. Hosted 320px/390px/landscape and cache-v15
+  checks pass in Chromium and WebKit; cold/install/reopen and Chromium offline startup pass.
+- Rollback was exercised with jobs at zero. Worker
+  `dcf92724-1f08-4c3e-b877-3d6cebba2137` and the pre-phase Edge bundle from commit `5007fb2`
+  were restored; Edge v24 reproduced the recorded baseline SHA-256
+  `a43b5a3d8acbd9306ee85b8f7fbbda115d1fd1b956d43082ca863ba158e293db`, and gateway/API smoke
+  remained green on the additive schema. Candidate Edge/Worker were then restored, owner flow
+  passed again, three jobs were re-enabled, and data counts were unchanged.
+- Operational finding: `.secrets/cloudflare.bootstrap.secret.env` contained an obsolete gateway
+  token. The first candidate Worker therefore returned 401 from Edge and was rejected by smoke.
+  Deployment was corrected using the current token source in `.secrets/edge.staging.env`; no token
+  value or digest is committed. Future staging deployment must not use the obsolete bootstrap file.
+- Remaining owner-only gate: desktop WebKit cannot certify an installed iPhone Home Screen app.
+  Focus, double-tap, pinch, rotation and close/reopen still require physical-device confirmation.
+  The closeout commit remains withheld until that check passes; zoom control remains best-effort.
+
+## Owner-feedback correction — installed PWA cache
+
+- Owner feedback proved the installed iPhone still rendered the earlier Structured Add Bet shell.
+  Direct SHA-256 comparison showed the staging origin already served the current local shell,
+  catalog and app-shell bytes; the deployment itself was present. The defect was reuse of
+  `miraichi-shell-v15-structured-add-bet`, so an existing installation had no service-worker/cache
+  generation change to trigger delivery of the later UI.
+- RED: the service-worker test expected v16 while install still opened v15. GREEN: use
+  `miraichi-shell-v16-evidence-settlement`, delete v15 on activation, and update smoke/PWA/browser
+  gates. `verify:staging` remains green at 178 files / 1,116 tests; Cloudflare artifact verification
+  passes 74 modules / 729,318 bytes.
+- Worker `96f8a771-4419-4c67-9c67-4760dff43749` now serves 100% of staging traffic. Static/API
+  smoke, hosted Chromium/WebKit cache-v16 checks and the complete Structured Add Bet staging flow
+  pass. Edge v25 and all persistence remain unchanged. The prior Worker
+  `8805cccd-0655-412d-a498-4538e2252261` remains the rollback baseline.
+- The owner's earlier five-point zoom result validates the unchanged zoom controls, but it was
+  observed on the stale v15 shell. Final closeout still requires confirmation that close/reopen
+  upgrades the installed app and displays the corrected Add Bet/corner UI.
+
+## Owner-feedback correction — retain Manual Add
+
+- The owner clarified that only Today Quick Add is unnecessary. Removing Manual Add from Bets was
+  a requirement error because unlisted lower-league matches still need entry.
+- RED covered an absent Bets Manual Add action, cached manual sessions, locked manual team fields,
+  and API rejection of a structured `manual:*` draft/bet without `matchId`.
+- GREEN restores Manual Add only in Bets. Manual and unlinked legacy-draft sessions reset and allow
+  Home/Away editing; scoped sessions remain bound to one canonical `matchId` with readonly teams.
+  The API strictly validates manual group IDs and team names, retains structured market validation,
+  and never accepts a `matchId` on a manual record.
+- PWA cache advances to `miraichi-shell-v17-manual-add`. Frankfurt Edge v26 and Worker
+  `fc867def-cd30-4237-978d-7090f068cb99` pass static/API smoke, hosted structured flow,
+  Chromium/WebKit cache/layout checks, real scoped and manual draft round-trips, scheduler checks,
+  and cleanup audit. The audit retains one pre-existing draft and zero bet/ledger/test records.
+- Previous Edge v25 SHA `395bf413b558ff3148b4db6398bef14e0f589f86bcc05e2129109b3861519296`
+  and Worker `96f8a771-4419-4c67-9c67-4760dff43749` remain the rollback baseline. No migration,
+  push, or production action occurred.

@@ -139,7 +139,9 @@ describe('Cloudflare to Supabase Edge owner flow integration', () => {
     const draft = await call('/api/v1/bet-drafts', {
       method: 'POST', headers: { ...authorizedHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        draftId: 'draft-edge-1', matchGroupId: canonical.id, marketType: '1X2',
+        draftId: 'draft-edge-1', matchGroupId: canonical.id,
+        homeTeamName: canonical.homeTeam.name, awayTeamName: canonical.awayTeam.name,
+        marketType: '1X2', marketPeriod: 'full_time', selectionCode: 'home',
         oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 5,
         createdAt: now, updatedAt: now
       })

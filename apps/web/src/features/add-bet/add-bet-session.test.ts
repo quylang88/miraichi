@@ -29,7 +29,7 @@ describe('Add Bet session isolation', () => {
     expect(target.awayTeam.readOnly).toBe(true);
   });
 
-  it('locks selected canonical teams and locks legacy draft teams without carrying scoped state', () => {
+  it('locks selected canonical teams and keeps an unlinked manual draft editable', () => {
     const target = elements();
     const scoped = startAddBetSession('scoped', {
       matchId: 'match-1', matchTitle: 'Japan vs Vietnam', homeTeamName: 'Japan', awayTeamName: 'Vietnam'
@@ -41,10 +41,22 @@ describe('Add Bet session isolation', () => {
     target.controls[3]!.value = 'cached-again';
     const edit = startAddBetSession('edit', { draftId: 'draft-1' }, target);
     expect(edit).toEqual({ mode: 'edit', matchId: '', matchTitle: '', editingDraftId: 'draft-1' });
-    expect(target.homeTeam).toMatchObject({ value: '', readOnly: true });
-    expect(target.awayTeam).toMatchObject({ value: '', readOnly: true });
+    expect(target.homeTeam).toMatchObject({ value: '', readOnly: false });
+    expect(target.awayTeam).toMatchObject({ value: '', readOnly: false });
     expect(target.controls[3]!.value).toBe('');
 
     expect(startAddBetSession('edit', { draftId: 'linked', matchId: 'match-1' }, target).matchId).toBe('match-1');
+  });
+
+  it('starts a clean manual session with editable team names', () => {
+    const target = elements();
+    target.homeTeam.value = 'Cached Home';
+    target.awayTeam.value = 'Cached Away';
+
+    const manual = startAddBetSession('manual', {}, target);
+
+    expect(manual).toEqual({ mode: 'manual', matchId: '', matchTitle: '', editingDraftId: null });
+    expect(target.homeTeam).toMatchObject({ value: '', readOnly: false });
+    expect(target.awayTeam).toMatchObject({ value: '', readOnly: false });
   });
 });

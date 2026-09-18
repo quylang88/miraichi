@@ -2,7 +2,7 @@
 
 export {};
 
-const CACHE_NAME = 'miraichi-shell-v15-structured-add-bet';
+const CACHE_NAME = 'miraichi-shell-v17-manual-add';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
