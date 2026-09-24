@@ -136,7 +136,7 @@ describe('owner-local season hydration runtime', () => {
       requestsAttempted: 1,
       requestsSucceeded: 1,
       hydrationTargetsCompleted: 1,
-      executableCurrentCompetitionCount: 45
+      executableCurrentCompetitionCount: 59
     });
     const snapshot = await readServingMatchStoreSnapshot(path.join(activeRoot, 'serving'));
     expect(snapshot.matches.some((match) => match.homeTeam.name === 'Bootstrap Home')).toBe(true);

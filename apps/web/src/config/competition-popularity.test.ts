@@ -6,11 +6,19 @@ import {
 } from './competition-popularity.js';
 
 describe('competition popularity ranking configuration', () => {
-  it('contains exactly 50 ranked competitions with unique sequential ranks', () => {
-    expect(COMPETITION_POPULARITY_RANKING).toHaveLength(50);
+  it('contains all club and current national-team competitions with unique sequential ranks', () => {
+    expect(COMPETITION_POPULARITY_RANKING).toHaveLength(64);
     const ranks = COMPETITION_POPULARITY_RANKING.map((c) => c.rank);
-    const expectedRanks = Array.from({ length: 50 }, (_, i) => i + 1);
+    const expectedRanks = Array.from({ length: 64 }, (_, i) => i + 1);
     expect(ranks).toEqual(expectedRanks);
+    expect(COMPETITION_POPULARITY_RANKING.map((entry) => entry.id)).toEqual(expect.arrayContaining([
+      'uefa-nations-league-a',
+      'concacaf-nations-league',
+      'fifa-asean-cup',
+      'fifa-u20-womens-world-cup',
+      'asian-games-football',
+      'afc-asian-cup'
+    ]));
   });
 
   it('ranks Premier League and Champions League higher than Austrian Bundesliga', () => {
@@ -20,9 +28,18 @@ describe('competition popularity ranking configuration', () => {
 
     expect(uclRank).toBe(1);
     expect(eplRank).toBe(2);
-    expect(austrianRank).toBe(35);
+    expect(austrianRank).toBeGreaterThan(35);
     expect(uclRank).toBeLessThan(austrianRank);
     expect(eplRank).toBeLessThan(austrianRank);
+  });
+
+  it('does not bury major national-team competitions below secondary club leagues', () => {
+    expect(getCompetitionPopularityRank('UEFA Nations League A'))
+      .toBeLessThan(getCompetitionPopularityRank('Championship'));
+    expect(getCompetitionPopularityRank('AFC Asian Cup'))
+      .toBeLessThan(getCompetitionPopularityRank('Ligue 2'));
+    expect(getCompetitionPopularityRank('FIFA ASEAN Cup'))
+      .toBeLessThan(getCompetitionPopularityRank('Ligue 2'));
   });
 
   it('correctly compares competitions by popularity order', () => {

@@ -4,6 +4,8 @@
 
 - Verification date: **2026-08-31**.
 - Canonical target: 50 competitions in registry order.
+- This file retains the original 50-club baseline. The separately verified national-team expansion
+  is recorded in `docs/data/fotmob-national-team-coverage-matrix.md`.
 - FotMob mapping evidence: `https://www.fotmob.com/api/data/allLeagues` and the exact season URL
   `https://www.fotmob.com/api/data/leagues?id={FotMob ID}&ccode3={CCODE}&season={provider season}`.
 - ESPN mapping evidence: `https://sports.core.api.espn.com/v2/sports/soccer/leagues?limit=1000`.

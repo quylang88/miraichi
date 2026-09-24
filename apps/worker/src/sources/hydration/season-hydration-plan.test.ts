@@ -24,9 +24,9 @@ describe('provider-neutral season hydration planner', () => {
       pastSeasons: 2,
       checkpoints: new Map(),
       blockedKeys: new Set(),
-      maxRequests: 50
+      maxRequests: 100
     });
-    expect(plan.targets).toHaveLength(45);
+    expect(plan.targets).toHaveLength(59);
     expect(plan.targets.every((target) => target.seasonOffset === 0)).toBe(true);
     expect(plan.targets[0]).toMatchObject({
       providerSeason: '2026/2027',
@@ -45,6 +45,30 @@ describe('provider-neutral season hydration planner', () => {
     ).season).toBe('2026-27');
   });
 
+  it('uses a verified current-edition override for non-annual tournaments', () => {
+    const asianCup = COMPETITION_SOURCE_REGISTRY.find((entry) => (
+      entry.competitionId === 'afc-asian-cup'
+    ))!;
+
+    expect(resolveCompetitionSeason(asianCup, '2026-09-24')).toMatchObject({
+      season: '2027',
+      startDate: '2027-01-07',
+      endDate: '2027-02-05',
+      seasonOffset: 0
+    });
+    expect(planSeasonHydrationBatch({
+      registry: [asianCup],
+      referenceDate: '2026-09-24',
+      pastSeasons: 0,
+      checkpoints: new Map(),
+      blockedKeys: new Set(),
+      maxRequests: 1
+    }).targets[0]).toMatchObject({
+      season: '2027',
+      providerSeason: '2027'
+    });
+  });
+
   it('does not cross the current-season barrier while one current target is deferred', () => {
     const currentTargets = planSeasonHydrationBatch({
       registry: COMPETITION_SOURCE_REGISTRY,
@@ -52,7 +76,7 @@ describe('provider-neutral season hydration planner', () => {
       pastSeasons: 2,
       checkpoints: new Map(),
       blockedKeys: new Set(),
-      maxRequests: 50
+      maxRequests: 100
     }).targets;
     const blocked = currentTargets[0]!;
     const checkpoints = new Map(currentTargets.slice(1).map((target) => [
@@ -66,7 +90,7 @@ describe('provider-neutral season hydration planner', () => {
       pastSeasons: 2,
       checkpoints,
       blockedKeys: new Set([blocked.key]),
-      maxRequests: 50
+      maxRequests: 100
     });
     expect(plan.targets).toEqual([]);
     expect(plan.blockedBySeasonOffset).toBe(0);
@@ -79,7 +103,7 @@ describe('provider-neutral season hydration planner', () => {
       pastSeasons: 0,
       checkpoints: new Map(),
       blockedKeys: new Set(),
-      maxRequests: 50
+      maxRequests: 100
     }).targets;
 
     const plan = planSeasonHydrationBatch({
@@ -88,7 +112,7 @@ describe('provider-neutral season hydration planner', () => {
       pastSeasons: 0,
       checkpoints: new Map(),
       blockedKeys: new Set([currentTargets[0]!.key]),
-      maxRequests: 50
+      maxRequests: 100
     });
 
     expect(plan.targets).toEqual([]);
@@ -102,7 +126,7 @@ describe('provider-neutral season hydration planner', () => {
       pastSeasons: 2,
       checkpoints: new Map(),
       blockedKeys: new Set(),
-      maxRequests: 50
+      maxRequests: 100
     }).targets;
     const checkpoints = new Map(current.map((target) => [
       target.key,
@@ -148,7 +172,7 @@ describe('provider-neutral season hydration planner', () => {
       pastSeasons: 2,
       checkpoints: new Map(),
       blockedKeys: new Set(),
-      maxRequests: 50
+      maxRequests: 100
     }).targets;
     const checkpoints = new Map(current.map((target) => [
       target.key,
@@ -161,7 +185,7 @@ describe('provider-neutral season hydration planner', () => {
       pastSeasons: 2,
       checkpoints,
       blockedKeys: new Set(),
-      maxRequests: 50
+      maxRequests: 100
     }).targets;
 
     expect(past.map((target) => [
@@ -184,7 +208,7 @@ describe('provider-neutral season hydration planner', () => {
       pastSeasons: 0,
       checkpoints: new Map(),
       blockedKeys: new Set(),
-      maxRequests: 50
+      maxRequests: 100
     }).targets;
     const checkpoints = new Map(initial.map((target, index) => [
       target.key,

@@ -47,6 +47,16 @@
 - **Completed phase**: `phase:quality-up ui-ux-improve PWA instant startup` — owner reopened slow installed-app startup on 2026-09-13 and explicitly authorized the fix, deployment, verification, and local commit on existing Frankfurt staging. Follow `docs/superpowers/plans/2026-09-13-pwa-instant-startup.md`; preserve owner authentication and private-data boundaries.
 - **Active phase**: `phase:quality-up ui-ux-improve Structured Add Bet` — owner approved sequential reviewed TDD slices on 2026-09-15 for clean manual/quick/scoped entry sessions, normalized market selections including Running HT/FT/fixed 15-minute windows, simplified emotion, and maximum practical PWA zoom constraints. Delivery includes local verification and existing Frankfurt staging; each green reviewed slice receives one local commit. Follow `docs/superpowers/plans/2026-09-15-structured-add-bet.md`. Push and production promotion remain unapproved.
 - **Active continuation**: `phase:quality-up ui-ux-improve Evidence-gated Bet Settlement` — owner requested locked canonical teams, removal of Today Quick Add, retained Manual Add for unlisted matches, less pre-bet psychology, HT corner presets, score-led Running Over, and automatic settlement only when match evidence is sufficient. Follow `docs/superpowers/plans/2026-09-15-add-bet-settlement-quality-up.md` sequentially. Neither automatic detail requests nor production/push is approved.
+- **Completed phase**: `phase:staging National-team current competition coverage` — the owner approved
+  current/upcoming national-team expansion, Frankfurt staging deployment, hosted verification, and
+  a local commit on 2026-09-24. Fourteen exact FotMob competition/edition bindings were added
+  without fake SportScore identities or historical hydration. Local staging gates pass 178 unit
+  files / 1,165 tests plus 55 season integration tests and the complete integration/PWA/static
+  build chain. Frankfurt Edge v27 SHA `b1ed71b70f7fb55bc0bc95b74c7bdf8837022cd00207a55f72f72159908087f4`
+  and Cloudflare Worker `62fac25e-e956-426e-8778-6f81cdb4ca3e` serve 100% of staging traffic.
+  Hosted browser, detail, scheduler, auth/redaction, owner-data cleanup, and all 59 current
+  checkpoints pass. The serving database contains 12,236 matches across 59 competitions, including
+  all 14 national-team entries. No push or production promotion occurred.
 - **Match-detail local exit gate (2026-09-10)**: reviewed slices and integration correction through
   `98cee02` pass `verify:staging` (157 files / 796 unit tests, complete integration/endpoint/PWA and
   static build), actual detail PostgreSQL smoke, actual Edge runtime auth/Postgres smoke, module

@@ -46,6 +46,15 @@ export function resolveCompetitionSeason(
   if (!Number.isInteger(seasonOffset) || seasonOffset < 0) {
     throw new Error('Season hydration offset must be a non-negative integer.');
   }
+  if (seasonOffset === 0 && entry.currentEdition) {
+    return {
+      competitionEntry: entry,
+      season: entry.currentEdition.canonicalSeason,
+      startDate: entry.currentEdition.startDate,
+      endDate: entry.currentEdition.endDate,
+      seasonOffset
+    };
+  }
   const year = Number(referenceDate.slice(0, 4));
   if (entry.seasonCycle === 'calendar-year') {
     const seasonYear = year - seasonOffset;

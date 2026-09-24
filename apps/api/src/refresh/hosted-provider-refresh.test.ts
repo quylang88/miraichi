@@ -82,8 +82,8 @@ describe('hosted provider refresh', () => {
   });
   it('honors the 24h TTL and ETag 304 without publishing', async () => {
     const test = await setup();
-    for (let batch = 0; batch < 5; batch++) await test.runner.run('current');
-    expect(test.current).toHaveBeenCalledTimes(45);
+    for (let batch = 0; batch < 7; batch++) await test.runner.run('current');
+    expect(test.current).toHaveBeenCalledTimes(59);
     expect(await test.runner.run('current')).toMatchObject({ outcome: 'fresh', requests: 0 });
     test.setClock('2026-09-10T12:00:00.000Z');
     test.current.mockResolvedValue({ status: 'not_modified', etag: '"v1"' });

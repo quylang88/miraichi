@@ -5,6 +5,7 @@ import {
 } from './sportscore-source-registry.js';
 
 export const SOURCE_REGISTRY_VALIDATED_AT = '2026-08-31' as const;
+export const NATIONAL_TEAM_REGISTRY_VALIDATED_AT = '2026-09-24' as const;
 export const OPENFOOTBALL_VERIFIED_TREE_SHA =
   '4e4146c901b62bcafa1b6deabb7e4a3fccdc9b1f' as const;
 
@@ -24,6 +25,13 @@ export type EndpointKind =
   | 'none';
 export type CoverageStatus = 'supported' | 'partial' | 'unsupported';
 export type SourceExecutionStatus = 'enabled' | 'disabled' | 'pending-owner' | 'not-implemented';
+export type CompetitionSourceGroup = SportScoreCompetitionGroup | 'national_team';
+
+export interface CurrentCompetitionEdition {
+  canonicalSeason: string;
+  startDate: string;
+  endDate: string;
+}
 
 export interface SourceRecordCoverage {
   total: number;
@@ -51,7 +59,7 @@ export interface CompetitionSourceEntry {
   competitionId: string;
   competitionName: string;
   country: string;
-  group: SportScoreCompetitionGroup;
+  group: CompetitionSourceGroup;
   competitionType: SportScoreCompetitionType;
   sourceTimezone: string;
   seasonCycle: SeasonCycle;
@@ -61,6 +69,7 @@ export interface CompetitionSourceEntry {
   detailSource: SeasonSourceId | 'none';
   externalCompetitionId: string | null;
   endpointKind: EndpointKind;
+  currentEdition?: CurrentCompetitionEdition;
   sourceBindings: {
     fixture?: CompetitionSourceBinding;
     result?: CompetitionSourceBinding;
@@ -81,6 +90,19 @@ interface FotMobMapping {
   currentProviderSeason?: string;
   espn?: string;
   currentAvailable?: boolean;
+  currentCanonicalSeason?: string;
+  mappingValidatedAt?: string;
+}
+
+interface NationalTeamCompetitionIdentity {
+  competitionId: string;
+  competitionName: string;
+  country: string;
+  group: 'national_team';
+  competitionType: 'national-team';
+  sourceTimezone: string;
+  seasonCycle: SeasonCycle;
+  currentEdition: CurrentCompetitionEdition;
 }
 
 interface OpenFootballMapping {
@@ -145,8 +167,39 @@ const FOTMOB_MAPPINGS: Readonly<Record<string, FotMobMapping>> = Object.freeze({
   'ita-coppa-italia': fm(141, 'ITA', 'supported', 'ita.coppa_italia'),
   'fra-coupe-de-france': fm(134, 'FRA', 'partial', 'fra.coupe_de_france', undefined, false),
   'por-taca-de-portugal': fm(186, 'POR', 'partial', 'por.taca.portugal'),
-  'ned-knvb-beker': fm(235, 'NED', 'partial', 'ned.cup', undefined, false)
+  'ned-knvb-beker': fm(235, 'NED', 'partial', 'ned.cup', undefined, false),
+  'uefa-nations-league-a': nationalFm(9806, 'supported', '2026/2027', '2026-27'),
+  'uefa-nations-league-b': nationalFm(9807, 'supported', '2026/2027', '2026-27'),
+  'uefa-nations-league-c': nationalFm(9808, 'supported', '2026/2027', '2026-27'),
+  'uefa-nations-league-d': nationalFm(9809, 'supported', '2026/2027', '2026-27'),
+  'concacaf-nations-league': nationalFm(9821, 'supported', '2026/2027', '2026-27'),
+  'fifa-asean-cup': nationalFm(13287, 'supported', '2026', '2026'),
+  'fifa-u20-womens-world-cup': nationalFm(10369, 'supported', '2026', '2026'),
+  'asian-games-football': nationalFm(9833, 'supported', '2026', '2026'),
+  'caf-afcon-qualification': nationalFm(10608, 'supported', '2026/2027', '2026-27'),
+  'uefa-u21-qualification': nationalFm(10437, 'supported', '2025/2026', '2025-26'),
+  'fifa-u17-world-cup': nationalFm(306, 'partial', '2026', '2026'),
+  'fifa-womens-world-cup-qualification-uefa': nationalFm(10357, 'supported', '2026', '2026'),
+  'fifa-womens-world-cup-qualification-concacaf': nationalFm(10358, 'partial', '2026', '2026'),
+  'afc-asian-cup': nationalFm(290, 'supported', '2027', '2027')
 });
+
+const NATIONAL_TEAM_COMPETITIONS: readonly NationalTeamCompetitionIdentity[] = Object.freeze([
+  nationalTeam('uefa-nations-league-a', 'UEFA Nations League A', 'Europe', 'cross-year', '2026-27', '2026-09-24', '2027-06-13'),
+  nationalTeam('uefa-nations-league-b', 'UEFA Nations League B', 'Europe', 'cross-year', '2026-27', '2026-09-24', '2027-03-30'),
+  nationalTeam('uefa-nations-league-c', 'UEFA Nations League C', 'Europe', 'cross-year', '2026-27', '2026-09-25', '2027-03-30'),
+  nationalTeam('uefa-nations-league-d', 'UEFA Nations League D', 'Europe', 'cross-year', '2026-27', '2026-09-24', '2026-11-16'),
+  nationalTeam('concacaf-nations-league', 'CONCACAF Nations League', 'North and Central America', 'cross-year', '2026-27', '2026-09-23', '2027-03-31'),
+  nationalTeam('fifa-asean-cup', 'FIFA ASEAN Cup', 'Southeast Asia', 'calendar-year', '2026', '2026-09-24', '2026-10-05'),
+  nationalTeam('fifa-u20-womens-world-cup', "FIFA U-20 Women's World Cup", 'World', 'calendar-year', '2026', '2026-09-05', '2026-09-27'),
+  nationalTeam('asian-games-football', 'Asian Games Football', 'Asia', 'calendar-year', '2026', '2026-09-15', '2026-09-26'),
+  nationalTeam('caf-afcon-qualification', 'Africa Cup of Nations Qualification', 'Africa', 'cross-year', '2026-27', '2026-03-25', '2027-03-28'),
+  nationalTeam('uefa-u21-qualification', 'UEFA U21 Championship Qualification', 'Europe', 'cross-year', '2025-26', '2025-06-05', '2026-10-06'),
+  nationalTeam('fifa-u17-world-cup', 'FIFA U-17 World Cup', 'World', 'calendar-year', '2026', '2026-11-19', '2026-12-13'),
+  nationalTeam('fifa-womens-world-cup-qualification-uefa', "FIFA Women's World Cup Qualification UEFA", 'Europe', 'calendar-year', '2026', '2026-03-03', '2026-12-05'),
+  nationalTeam('fifa-womens-world-cup-qualification-concacaf', "FIFA Women's World Cup Qualification CONCACAF", 'North and Central America', 'calendar-year', '2026', '2026-11-27', '2026-11-28'),
+  nationalTeam('afc-asian-cup', 'AFC Asian Cup', 'Asia', 'calendar-year', '2027', '2027-01-07', '2027-02-05')
+]);
 
 const OPENFOOTBALL_MAPPINGS: Readonly<Record<string, OpenFootballMapping>> = Object.freeze({
   'eng-premier-league': openFootball('en.1.json', ['2026-27', '2025-26', '2024-25'], 380, 380),
@@ -203,12 +256,14 @@ const CALENDAR_YEAR_COMPETITION_IDS = new Set([
 ]);
 
 export const COMPETITION_SOURCE_REGISTRY: readonly CompetitionSourceEntry[] = Object.freeze(
-  SPORTSCORE_COMPETITION_REGISTRY.map((identity) => {
+  [...SPORTSCORE_COMPETITION_REGISTRY, ...NATIONAL_TEAM_COMPETITIONS].map((identity) => {
     const mapping = FOTMOB_MAPPINGS[identity.competitionId];
     if (!mapping) throw new Error(`Missing FotMob mapping for ${identity.competitionId}.`);
-    const seasonCycle: SeasonCycle = CALENDAR_YEAR_COMPETITION_IDS.has(identity.competitionId)
-      ? 'calendar-year'
-      : 'cross-year';
+    const seasonCycle: SeasonCycle = 'seasonCycle' in identity
+      ? identity.seasonCycle
+      : CALENDAR_YEAR_COMPETITION_IDS.has(identity.competitionId)
+        ? 'calendar-year'
+        : 'cross-year';
     const fixture = fotMobBinding(mapping, seasonCycle, 'fixture');
     const result = fotMobBinding(mapping, seasonCycle, 'result');
     const detail = fotMobBinding(mapping, seasonCycle, 'detail');
@@ -239,6 +294,7 @@ export const COMPETITION_SOURCE_REGISTRY: readonly CompetitionSourceEntry[] = Ob
       detailSource: 'fotmob-unofficial',
       externalCompetitionId: String(mapping.id),
       endpointKind: 'season-api',
+      ...('currentEdition' in identity ? { currentEdition: identity.currentEdition } : {}),
       sourceBindings: Object.freeze({
         fixture,
         result,
@@ -272,6 +328,26 @@ export function validateCompetitionSourceRegistry(
     validateBindingConsistency(entry, 'result', errors, prefix);
     validateBindingConsistency(entry, 'detail', errors, prefix);
     const fixture = entry.sourceBindings.fixture;
+    if (fixture?.sourceId === 'fotmob-unofficial') {
+      const expectedValidationDate = entry.competitionType === 'national-team'
+        ? NATIONAL_TEAM_REGISTRY_VALIDATED_AT
+        : SOURCE_REGISTRY_VALIDATED_AT;
+      if (fixture.mappingValidatedAt !== expectedValidationDate) {
+        errors.push(`${prefix}.sourceBindings.fixture.mappingValidatedAt does not match competition type`);
+      }
+    }
+    if (entry.currentEdition) {
+      const { canonicalSeason, startDate, endDate } = entry.currentEdition;
+      if (!/^\d{4}(?:-\d{2})?$/u.test(canonicalSeason)) {
+        errors.push(`${prefix}.currentEdition.canonicalSeason is invalid`);
+      }
+      if (!isCalendarDate(startDate) || !isCalendarDate(endDate) || startDate > endDate) {
+        errors.push(`${prefix}.currentEdition date window is invalid`);
+      }
+      if (!fixture?.providerSeasonByCanonicalSeason?.[canonicalSeason]) {
+        errors.push(`${prefix}.currentEdition must have an exact provider-season mapping`);
+      }
+    }
     if ((fixture?.externalCompetitionId ?? null) !== entry.externalCompetitionId) {
       errors.push(`${prefix}.externalCompetitionId must match fixture binding`);
     }
@@ -296,7 +372,9 @@ function fm(
   status: Exclude<CoverageStatus, 'unsupported'>,
   espn?: string,
   currentProviderSeason?: string,
-  currentAvailable = true
+  currentAvailable = true,
+  currentCanonicalSeason?: string,
+  mappingValidatedAt: string = SOURCE_REGISTRY_VALIDATED_AT
 ): FotMobMapping {
   return Object.freeze({
     id,
@@ -304,7 +382,48 @@ function fm(
     status,
     ...(espn === undefined ? {} : { espn }),
     ...(currentProviderSeason === undefined ? {} : { currentProviderSeason }),
-    currentAvailable
+    currentAvailable,
+    ...(currentCanonicalSeason === undefined ? {} : { currentCanonicalSeason }),
+    mappingValidatedAt
+  });
+}
+
+function nationalFm(
+  id: number,
+  status: Exclude<CoverageStatus, 'unsupported'>,
+  currentProviderSeason: string,
+  currentCanonicalSeason: string
+): FotMobMapping {
+  return fm(
+    id,
+    'INT',
+    status,
+    undefined,
+    currentProviderSeason,
+    true,
+    currentCanonicalSeason,
+    NATIONAL_TEAM_REGISTRY_VALIDATED_AT
+  );
+}
+
+function nationalTeam(
+  competitionId: string,
+  competitionName: string,
+  country: string,
+  seasonCycle: SeasonCycle,
+  canonicalSeason: string,
+  startDate: string,
+  endDate: string
+): NationalTeamCompetitionIdentity {
+  return Object.freeze({
+    competitionId,
+    competitionName,
+    country,
+    group: 'national_team',
+    competitionType: 'national-team',
+    sourceTimezone: 'UTC',
+    seasonCycle,
+    currentEdition: Object.freeze({ canonicalSeason, startDate, endDate })
   });
 }
 
@@ -316,7 +435,8 @@ function fotMobBinding(
   const providerSeasons = providerSeasonMap(
     seasonCycle,
     mapping.currentProviderSeason,
-    mapping.currentAvailable !== false
+    mapping.currentAvailable !== false,
+    mapping.currentCanonicalSeason
   );
   const availableCanonicalSeasons = Object.keys(providerSeasons);
   const endpoint = capability === 'fixture'
@@ -340,7 +460,7 @@ function fotMobBinding(
     externalCountryCode: mapping.ccode,
     ...endpoint,
     verificationUrl: 'https://www.fotmob.com/api/data/allLeagues',
-    mappingValidatedAt: SOURCE_REGISTRY_VALIDATED_AT,
+    mappingValidatedAt: mapping.mappingValidatedAt ?? SOURCE_REGISTRY_VALIDATED_AT,
     availableCanonicalSeasons: Object.freeze(availableCanonicalSeasons),
     providerSeasonByCanonicalSeason: Object.freeze(providerSeasons),
     executionStatus: 'enabled',
@@ -351,8 +471,12 @@ function fotMobBinding(
 function providerSeasonMap(
   seasonCycle: SeasonCycle,
   currentProviderSeason: string | undefined,
-  currentAvailable: boolean
+  currentAvailable: boolean,
+  currentCanonicalSeason?: string
 ): Record<string, string> {
+  if (currentCanonicalSeason && currentProviderSeason) {
+    return { [currentCanonicalSeason]: currentProviderSeason };
+  }
   if (!currentAvailable) {
     return currentProviderSeason === '2025' || seasonCycle === 'calendar-year'
       ? { '2025': currentProviderSeason ?? '2025' }
@@ -463,7 +587,8 @@ function validateBinding(
     }
   }
   if (binding.sourceId === 'fotmob-unofficial') {
-    if (binding.mappingValidatedAt !== SOURCE_REGISTRY_VALIDATED_AT) {
+    if (binding.mappingValidatedAt !== SOURCE_REGISTRY_VALIDATED_AT
+      && binding.mappingValidatedAt !== NATIONAL_TEAM_REGISTRY_VALIDATED_AT) {
       errors.push(`${prefix}.mappingValidatedAt is stale`);
     }
     if (!Number.isSafeInteger(binding.externalNumericId) || binding.externalNumericId! < 1) {
@@ -478,4 +603,10 @@ function validateBinding(
       }
     }
   }
+}
+
+function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/u.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
 }
