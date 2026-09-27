@@ -3,8 +3,9 @@ import type {
   BetSettlementEvent, CloudBackupEnvelope, CloudBetRecord, CloudMatchSnapshot, CreateBankrollAccountInput, CreateBankrollLedgerEntryInput,
   CreateBankrollTransferInput, DisciplineChallenge, DisciplineConfig, LocalDataSnapshotStatus, LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery,
   UpdateBankrollAccountInput, AcquireLiveRefreshLeaseInput, FinishLiveRefreshInput, LiveMatchSnapshot, LiveRefreshState,
-  MarkBetSettlementManualReviewInput
+  MarkBetSettlementManualReviewInput, OwnerProfileBackup
 } from '@miraichi/shared/src/contracts/index.js';
+import { createCloudBackupEnvelopeV3, verifyCloudBackupEnvelopeV3 } from '@miraichi/shared/src/contracts/index.js';
 import { assertValidLiveMatchSnapshot, sanitizeLiveRefreshErrorCode } from '@miraichi/shared/src/contracts/live-match-contracts.js';
 import type { CloudPersistenceAdapter } from '../cloud-persistence-adapter.js';
 import type { PostgresQueryClient } from './postgres-query-client.js';
@@ -20,6 +21,19 @@ const optionalText = (value: unknown) => value == null ? undefined : String(valu
 const dateText = (value: unknown) => value instanceof Date ? value.toISOString() : text(value);
 const jsonb = (value: unknown): PostgresJsonParameter => postgresJson(value);
 const MATCH_UPSERT_BATCH_SIZE = 500;
+
+function mapOwnerProfile(row: Row): OwnerProfileBackup {
+  const settings = typeof row.settings === 'object' && row.settings !== null && !Array.isArray(row.settings)
+    ? structuredClone(row.settings as Record<string, unknown>)
+    : {};
+  return {
+    ownerProfileId: text(row.id),
+    label: text(row.label),
+    settings,
+    createdAt: dateText(row.created_at),
+    updatedAt: dateText(row.updated_at)
+  };
+}
 
 function matchUpsertRow(match: LocalMatch): Row {
   return {
@@ -324,8 +338,24 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
     getLiveRefreshState: async (owner) => { assertOwner(owner); const row=(await client.query<Row>('select * from miraichi_app.live_refresh_state where owner_profile_id=$1',[owner])).rows[0]; return row ? mapLiveRefreshState(row) : null; },
     acquireLiveRefreshLease: async (owner,input:AcquireLiveRefreshLeaseInput) => { assertOwner(owner); const acquiredAt=Date.parse(input.acquiredAt);const expiresAt=Date.parse(input.expiresAt);if(!Number.isFinite(acquiredAt)||!Number.isFinite(expiresAt)||expiresAt<=acquiredAt)throw new Error('Live refresh lease timestamps are invalid');const result=await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.live_refresh_state (owner_profile_id,status,reason,last_attempt_at,last_success_at,last_completed_at,last_error_code,lease_id,lease_acquired_at,lease_expires_at,updated_at) values ($1,'running',$3,$4,null,null,null,$2,$4,$5,$4) on conflict (owner_profile_id) do update set status='running',reason=excluded.reason,last_attempt_at=excluded.last_attempt_at,last_error_code=null,lease_id=excluded.lease_id,lease_acquired_at=excluded.lease_acquired_at,lease_expires_at=excluded.lease_expires_at,updated_at=excluded.updated_at where miraichi_app.live_refresh_state.last_attempt_at + case when miraichi_app.live_refresh_state.last_error_code='upstream_blocked' then interval '15 minutes' else interval '60 seconds' end <= excluded.last_attempt_at and (miraichi_app.live_refresh_state.lease_expires_at is null or miraichi_app.live_refresh_state.lease_expires_at <= excluded.last_attempt_at) returning owner_profile_id`,[owner,input.leaseId,input.reason,input.acquiredAt,input.expiresAt]);return result.rows.length===1; },
     finishLiveRefresh: async (owner,input:FinishLiveRefreshInput) => { assertOwner(owner);if(!Number.isFinite(Date.parse(input.completedAt)))throw new Error('Live refresh completion timestamp is invalid');if(input.outcome==='succeeded')assertValidLiveMatchSnapshot(input.snapshot);await client.transaction(async(tx)=>{const errorCode=input.outcome==='failed'?sanitizeLiveRefreshErrorCode(input.errorCode):null;const updated=await tx.query<Row>(`update miraichi_app.live_refresh_state set status=$3,last_success_at=case when $3='succeeded' then $4 else last_success_at end,last_completed_at=$4,last_error_code=$5,lease_id=null,lease_acquired_at=null,lease_expires_at=null,updated_at=$4 where owner_profile_id=$1 and lease_id=$2 and status='running' and last_attempt_at <= $4 and lease_expires_at > $4 returning owner_profile_id`,[owner,input.leaseId,input.outcome,input.completedAt,errorCode]);if(!updated.rows[0])throw new Error('Live refresh lease is no longer owned or expired');if(input.outcome==='succeeded')await tx.query(`insert into miraichi_app.live_match_snapshot (owner_profile_id,snapshot_id,schema_version,generated_at,overlay_json,updated_at) values ($1,$2,$3,$4,$5,$6) on conflict (owner_profile_id) do update set snapshot_id=excluded.snapshot_id,schema_version=excluded.schema_version,generated_at=excluded.generated_at,overlay_json=excluded.overlay_json,updated_at=excluded.updated_at`,[owner,input.snapshot.snapshotId,input.snapshot.schemaVersion,input.snapshot.generatedAt,jsonb(input.snapshot),input.completedAt]);}); },
-    exportOwnerData: async (owner,exportedAt): Promise<CloudBackupEnvelope> => { assertOwner(owner); return {schemaVersion:'miraichi.cloud-backup.v2',exportedAt,ownerProfileId:owner,drafts:[...(await client.query<Row>('select * from miraichi_app.bet_draft where owner_profile_id=$1 order by draft_id',[owner])).rows.map(mapDraft)],bets:[...(await client.query<Row>('select * from miraichi_app.bet_record where owner_profile_id=$1 order by bet_id',[owner])).rows.map(mapBet)],bankrollAccounts:[...(await client.query<Row>('select * from miraichi_app.bankroll_account where owner_profile_id=$1 order by account_id',[owner])).rows.map(mapAccount)],bankrollLedgerEntries:[...(await client.query<Row>('select * from miraichi_app.bankroll_ledger_entry where owner_profile_id=$1 order by entry_id',[owner])).rows.map(mapLedger)],disciplineConfigs:[...(await client.query<Row>('select * from miraichi_app.discipline_config where owner_profile_id=$1',[owner])).rows.map(mapDisciplineConfig)],settlementEvents:[...(await client.query<Row>('select * from miraichi_app.bet_settlement_event where owner_profile_id=$1 order by settlement_event_id',[owner])).rows.map(mapSettlementEvent)]}; },
-    importOwnerData: async (owner,envelope) => { assertOwner(owner); if(envelope.ownerProfileId!==owner) throw new Error('Backup owner mismatch'); await client.transaction(async (tx)=>{
+    exportOwnerData: async (owner,exportedAt): Promise<CloudBackupEnvelope> => {
+      assertOwner(owner);
+      const ownerRow=(await client.query<Row>('select * from miraichi_app.app_profile where id=$1',[owner])).rows[0];
+      return createCloudBackupEnvelopeV3({
+        exportedAt,ownerProfileId:owner,ownerProfile:ownerRow?mapOwnerProfile(ownerRow):null,
+        drafts:[...(await client.query<Row>('select * from miraichi_app.bet_draft where owner_profile_id=$1 order by draft_id',[owner])).rows.map(mapDraft)],
+        bets:[...(await client.query<Row>('select * from miraichi_app.bet_record where owner_profile_id=$1 order by bet_id',[owner])).rows.map(mapBet)],
+        bankrollAccounts:[...(await client.query<Row>('select * from miraichi_app.bankroll_account where owner_profile_id=$1 order by account_id',[owner])).rows.map(mapAccount)],
+        bankrollLedgerEntries:[...(await client.query<Row>('select * from miraichi_app.bankroll_ledger_entry where owner_profile_id=$1 order by entry_id',[owner])).rows.map(mapLedger)],
+        disciplineConfigs:[...(await client.query<Row>('select * from miraichi_app.discipline_config where owner_profile_id=$1',[owner])).rows.map(mapDisciplineConfig)],
+        settlementEvents:[...(await client.query<Row>('select * from miraichi_app.bet_settlement_event where owner_profile_id=$1 order by settlement_event_id',[owner])).rows.map(mapSettlementEvent)]
+      });
+    },
+    importOwnerData: async (owner,envelope) => { assertOwner(owner); if(envelope.ownerProfileId!==owner) throw new Error('Backup owner mismatch'); if(envelope.schemaVersion==='miraichi.cloud-backup.v3'&&!await verifyCloudBackupEnvelopeV3(envelope))throw new Error('Backup payload hash mismatch'); await client.transaction(async (tx)=>{
+      const hasDurableData=envelope.drafts.length+envelope.bets.length+envelope.bankrollAccounts.length+envelope.bankrollLedgerEntries.length+(envelope.schemaVersion==='miraichi.cloud-backup.v1'?0:envelope.disciplineConfigs.length+envelope.settlementEvents.length)>0;
+      if(envelope.schemaVersion==='miraichi.cloud-backup.v3'&&envelope.ownerProfile){const profile=envelope.ownerProfile;await tx.query('insert into miraichi_app.app_profile (id,label,settings,created_at,updated_at) values ($1,$2,$3,$4,$5) on conflict (id) do update set label=excluded.label,settings=excluded.settings,created_at=excluded.created_at,updated_at=excluded.updated_at',[owner,profile.label,jsonb(profile.settings),profile.createdAt,profile.updatedAt]);}
+      else if(hasDurableData)await tx.query('insert into miraichi_app.app_profile (id,label,created_at,updated_at) values ($1,$1,$2,$2) on conflict (id) do nothing',[owner,envelope.exportedAt]);
+      for(const account of envelope.bankrollAccounts) await tx.query('insert into miraichi_app.bankroll_account (account_id,owner_profile_id,label,unit,opening_balance_points,current_balance_points,archived,created_at,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)',[account.accountId,owner,account.label,account.unit,account.openingBalancePoints,account.currentBalancePoints,account.archived,account.createdAt,account.updatedAt]);
       for(const draft of envelope.drafts) await tx.query(`insert into miraichi_app.bet_draft (
         draft_id,owner_profile_id,match_group_id,home_team_name,away_team_name,selection_label,selection_code,
         market_type,custom_market_label,market_period,line_value,running_window,window_start_minute,window_end_minute,
@@ -366,15 +396,14 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
         bet.postBetLessonNote??null,bet.runningGoalThreshold??null,bet.settlementReviewStatus??null,
         bet.settlementReviewReason??null,bet.settlementEvidenceAt??null
       ]);
-      for(const account of envelope.bankrollAccounts) await tx.query('insert into miraichi_app.bankroll_account (account_id,owner_profile_id,label,unit,opening_balance_points,current_balance_points,archived,created_at,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)',[account.accountId,owner,account.label,account.unit,account.openingBalancePoints,account.currentBalancePoints,account.archived,account.createdAt,account.updatedAt]);
-      for(const entry of envelope.bankrollLedgerEntries) await tx.query('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,transfer_id,bet_id,settlement_event_id,effective_at,occurred_at,created_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',[entry.entryId,owner,entry.accountId,entry.entryType,entry.amountPoints,entry.note??null,entry.transferId??null,entry.betId??null,entry.settlementEventId??null,entry.effectiveAt??null,entry.occurredAt,entry.createdAt]);
-      if(envelope.schemaVersion==='miraichi.cloud-backup.v2'){
+      if(envelope.schemaVersion==='miraichi.cloud-backup.v2'||envelope.schemaVersion==='miraichi.cloud-backup.v3'){
         for(const config of envelope.disciplineConfigs) await tx.query('insert into miraichi_app.discipline_config (owner_profile_id,daily_stop_loss_points,weekly_stop_loss_points,big_bet_threshold_points,time_zone,week_start_day,cooldown_seconds,version,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)',[owner,config.dailyStopLossPoints,config.weeklyStopLossPoints,config.bigBetThresholdPoints,config.timeZone,config.weekStartDay ?? 'monday',config.cooldownSeconds,config.version,config.updatedAt]);
         for(const event of envelope.settlementEvents) await tx.query('insert into miraichi_app.bet_settlement_event (settlement_event_id,owner_profile_id,bet_id,bankroll_account_id,settlement_type,plan_adherence,lesson_note,profit_loss_points,adjustment_reason,calculated_profit_loss_points,ledger_delta_points,effective_at,occurred_at,corrects_settlement_event_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)',[event.settlementEventId,owner,event.betId,event.bankrollAccountId,event.settlementType,event.planAdherence??null,event.lessonNote??null,event.profitLossPoints??null,event.adjustmentReason??null,event.calculatedProfitLossPoints,event.ledgerDeltaPoints,event.effectiveAt,event.occurredAt,event.correctsSettlementEventId??null]);
       }
+      for(const entry of envelope.bankrollLedgerEntries) await tx.query('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,transfer_id,bet_id,settlement_event_id,effective_at,occurred_at,created_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',[entry.entryId,owner,entry.accountId,entry.entryType,entry.amountPoints,entry.note??null,entry.transferId??null,entry.betId??null,entry.settlementEventId??null,entry.effectiveAt??null,entry.occurredAt,entry.createdAt]);
     }); },
     recordBackupExport: async (receipt) => { assertOwner(receipt.ownerProfileId); await client.query('insert into miraichi_app.backup_export_log (export_id,owner_profile_id,schema_version,exported_at,sha256,record_counts) values ($1,$2,$3,$4,$5,$6)',[receipt.exportId,receipt.ownerProfileId,receipt.schemaVersion,receipt.exportedAt,receipt.sha256,jsonb(receipt.recordCounts)]); },
-    listBackupExports: async (owner) => { assertOwner(owner); const result=await client.query<Row>('select * from miraichi_app.backup_export_log where owner_profile_id=$1 order by exported_at desc',[owner]); return result.rows.map((row)=>({exportId:text(row.export_id),ownerProfileId:text(row.owner_profile_id),schemaVersion:(text(row.schema_version)==='miraichi.cloud-backup.v2'?'miraichi.cloud-backup.v2':'miraichi.cloud-backup.v1'),exportedAt:dateText(row.exported_at),sha256:text(row.sha256),recordCounts:row.record_counts as BackupExportReceipt['recordCounts']})); }
+    listBackupExports: async (owner) => { assertOwner(owner); const result=await client.query<Row>('select * from miraichi_app.backup_export_log where owner_profile_id=$1 order by exported_at desc',[owner]); return result.rows.map((row)=>{const schema=text(row.schema_version);return{exportId:text(row.export_id),ownerProfileId:text(row.owner_profile_id),schemaVersion:(schema==='miraichi.cloud-backup.v3'?'miraichi.cloud-backup.v3':schema==='miraichi.cloud-backup.v2'?'miraichi.cloud-backup.v2':'miraichi.cloud-backup.v1'),exportedAt:dateText(row.exported_at),sha256:text(row.sha256),recordCounts:row.record_counts as BackupExportReceipt['recordCounts']};}); }
   };
 }
 

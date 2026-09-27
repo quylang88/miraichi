@@ -1,16 +1,18 @@
 import {
+  createCloudBackupEnvelopeV3,
   getLocalDateFromUtc,
   type AddBetDraft, type ApplyBetSettlementInput, type BackupExportReceipt, type BankrollAccount, type BankrollLedgerEntry,
   type BankrollTransferResult, type BetSettlementEvent, type CloudBackupEnvelope, type CloudBetRecord, type CloudMatchSnapshot, type CreateBankrollAccountInput,
   type CreateBankrollLedgerEntryInput, type CreateBankrollTransferInput, type DisciplineChallenge, type DisciplineConfig, type LocalDataSnapshotStatus, type LocalMatch,
   type AcquireLiveRefreshLeaseInput, type FinishLiveRefreshInput, type LiveMatchSnapshot, type LiveRefreshState,
-  type LocalMatchSnapshotQuery, type MarkBetSettlementManualReviewInput, type UpdateBankrollAccountInput
+  type LocalMatchSnapshotQuery, type MarkBetSettlementManualReviewInput, type OwnerProfileBackup, type UpdateBankrollAccountInput,
+  verifyCloudBackupEnvelopeV3
 } from '@miraichi/shared/src/contracts/index.js';
 import { assertValidLiveMatchSnapshot, sanitizeLiveRefreshErrorCode } from '@miraichi/shared/src/contracts/live-match-contracts.js';
 import type { CloudPersistenceAdapter } from './cloud-persistence-adapter.js';
 import { classifyMatchSnapshotFreshness } from '../match-snapshot-freshness.js';
 
-export interface MemoryCloudPersistenceOptions { now?: () => string }
+export interface MemoryCloudPersistenceOptions { now?: () => string; ownerProfile?: OwnerProfileBackup }
 const clone = <T>(value: T): T => structuredClone(value);
 
 export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersistenceOptions = {}): CloudPersistenceAdapter {
@@ -26,6 +28,8 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
   const receipts = new Map<string, BackupExportReceipt>();
   const liveSnapshots = new Map<string, LiveMatchSnapshot>();
   const liveRefreshStates = new Map<string, LiveRefreshState>();
+  const ownerProfiles = new Map<string, OwnerProfileBackup>();
+  if (options.ownerProfile) ownerProfiles.set(options.ownerProfile.ownerProfileId, clone(options.ownerProfile));
   const key = (owner: string, id: string) => `${owner}:${id}`;
   const valuesFor = <T>(map: Map<string, T>, owner: string): T[] =>
     [...map.entries()].filter(([id]) => id.startsWith(`${owner}:`)).map(([, value]) => clone(value));
@@ -234,18 +238,46 @@ export function createMemoryCloudPersistenceAdapter(options: MemoryCloudPersiste
         lease: null
       });
     },
-    exportOwnerData: async (owner, exportedAt) => ({
-      schemaVersion: 'miraichi.cloud-backup.v2', exportedAt, ownerProfileId: owner,
-      drafts: valuesFor(drafts, owner), bets: valuesFor(bets, owner), bankrollAccounts: valuesFor(accounts, owner), bankrollLedgerEntries: valuesFor(ledger, owner),
-      disciplineConfigs: disciplineConfigs.has(owner) ? [clone(disciplineConfigs.get(owner)!)] : [], settlementEvents: valuesFor(settlementEvents, owner)
-    }),
+    exportOwnerData: async (owner, exportedAt) => {
+      const ownerDrafts = valuesFor(drafts, owner);
+      const ownerBets = valuesFor(bets, owner);
+      const ownerAccounts = valuesFor(accounts, owner);
+      const ownerLedger = valuesFor(ledger, owner);
+      const ownerDiscipline = disciplineConfigs.has(owner) ? [clone(disciplineConfigs.get(owner)!)] : [];
+      const ownerSettlements = valuesFor(settlementEvents, owner);
+      const hasDurableData = ownerDrafts.length + ownerBets.length + ownerAccounts.length + ownerLedger.length
+        + ownerDiscipline.length + ownerSettlements.length > 0;
+      const ownerProfile = clone(ownerProfiles.get(owner) ?? (hasDurableData ? {
+        ownerProfileId: owner, label: owner, settings: {}, createdAt: exportedAt, updatedAt: exportedAt
+      } : null));
+      return createCloudBackupEnvelopeV3({
+        exportedAt, ownerProfileId: owner, ownerProfile,
+        drafts: ownerDrafts, bets: ownerBets, bankrollAccounts: ownerAccounts,
+        bankrollLedgerEntries: ownerLedger, disciplineConfigs: ownerDiscipline,
+        settlementEvents: ownerSettlements
+      });
+    },
     importOwnerData: async (owner, envelope: CloudBackupEnvelope) => {
       if (envelope.ownerProfileId !== owner) throw new Error('Backup owner mismatch');
+      if (envelope.schemaVersion === 'miraichi.cloud-backup.v3'
+        && !await verifyCloudBackupEnvelopeV3(envelope)) throw new Error('Backup payload hash mismatch');
+      const duplicate = envelope.drafts.some((item) => drafts.has(key(owner, item.draftId)))
+        || envelope.bets.some((item) => bets.has(key(owner, item.betId)))
+        || envelope.bankrollAccounts.some((item) => accounts.has(key(owner, item.accountId)))
+        || envelope.bankrollLedgerEntries.some((item) => ledger.has(key(owner, item.entryId)))
+        || (envelope.schemaVersion !== 'miraichi.cloud-backup.v1'
+          && (envelope.disciplineConfigs.some(() => disciplineConfigs.has(owner))
+            || envelope.settlementEvents.some((item) => settlementEvents.has(key(owner, item.settlementEventId)))));
+      if (duplicate) throw new Error('Backup contains duplicate identities');
+      if (envelope.schemaVersion === 'miraichi.cloud-backup.v3' && envelope.ownerProfile) {
+        ownerProfiles.set(owner, clone(envelope.ownerProfile));
+      }
       envelope.drafts.forEach((item) => drafts.set(key(owner, item.draftId), clone(item)));
       envelope.bets.forEach((item) => bets.set(key(owner, item.betId), clone(item)));
       envelope.bankrollAccounts.forEach((item) => accounts.set(key(owner, item.accountId), clone(item)));
       envelope.bankrollLedgerEntries.forEach((item) => ledger.set(key(owner, item.entryId), clone(item)));
-      if (envelope.schemaVersion === 'miraichi.cloud-backup.v2') {
+      if (envelope.schemaVersion === 'miraichi.cloud-backup.v2'
+        || envelope.schemaVersion === 'miraichi.cloud-backup.v3') {
         envelope.disciplineConfigs.forEach((item) => disciplineConfigs.set(owner, clone({ ...item, weekStartDay: item.weekStartDay ?? 'monday' })));
         envelope.settlementEvents.forEach((item) => settlementEvents.set(key(owner, item.settlementEventId), clone(item)));
       }

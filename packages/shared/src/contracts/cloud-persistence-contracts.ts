@@ -116,12 +116,218 @@ export interface CloudBackupEnvelopeV2 {
   settlementEvents: BetSettlementEvent[];
 }
 
-export type CloudBackupEnvelope = CloudBackupEnvelopeV1 | CloudBackupEnvelopeV2;
+export interface OwnerProfileBackup {
+  ownerProfileId: string;
+  label: string;
+  settings: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CloudBackupRecordCounts {
+  ownerProfiles: 0 | 1;
+  betDrafts: number;
+  bets: number;
+  bankrollAccounts: number;
+  bankrollLedgerEntries: number;
+  disciplineConfigs: number;
+  settlementEvents: number;
+}
+
+export interface CloudBackupEnvelopeV3 {
+  schemaVersion: 'miraichi.cloud-backup.v3';
+  exportedAt: string;
+  ownerProfileId: string;
+  ownerProfile: OwnerProfileBackup | null;
+  drafts: AddBetDraft[];
+  bets: CloudBetRecord[];
+  bankrollAccounts: BankrollAccount[];
+  bankrollLedgerEntries: BankrollLedgerEntry[];
+  disciplineConfigs: DisciplineConfig[];
+  settlementEvents: BetSettlementEvent[];
+  recordCounts: CloudBackupRecordCounts;
+  payloadSha256: string;
+}
+
+export type CreateCloudBackupEnvelopeV3Input = Omit<
+  CloudBackupEnvelopeV3,
+  'schemaVersion' | 'recordCounts' | 'payloadSha256'
+>;
+
+export type CloudBackupEnvelope = CloudBackupEnvelopeV1 | CloudBackupEnvelopeV2 | CloudBackupEnvelopeV3;
 
 export interface BackupExportReceipt {
-  exportId: string; ownerProfileId: string; schemaVersion: 'miraichi.cloud-backup.v1' | 'miraichi.cloud-backup.v2';
+  exportId: string; ownerProfileId: string; schemaVersion: CloudBackupEnvelope['schemaVersion'];
   exportedAt: string; sha256: string;
-  recordCounts: { betDrafts: number; bets: number; bankrollAccounts: number; bankrollLedgerEntries: number; disciplineConfigs?: number; settlementEvents?: number };
+  recordCounts: { ownerProfiles?: 0 | 1; betDrafts: number; bets: number; bankrollAccounts: number; bankrollLedgerEntries: number; disciplineConfigs?: number; settlementEvents?: number };
+}
+
+function canonicalJson(value: unknown): string {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return JSON.stringify(value);
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) throw new Error('Backup payload contains a non-finite number');
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (isObject(value)) {
+    const entries = Object.entries(value)
+      .filter(([, nested]) => nested !== undefined)
+      .sort(([left], [right]) => left.localeCompare(right));
+    return `{${entries.map(([key, nested]) => `${JSON.stringify(key)}:${canonicalJson(nested)}`).join(',')}}`;
+  }
+  throw new Error('Backup payload contains a non-JSON value');
+}
+
+function assertUniqueIds<T>(values: readonly T[], idFor: (value: T) => string, label: string): void {
+  const ids = new Set<string>();
+  for (const value of values) {
+    const id = idFor(value);
+    if (ids.has(id)) throw new Error(`Backup contains duplicate ${label} ID: ${id}`);
+    ids.add(id);
+  }
+}
+
+function orderSettlementEvents(events: readonly BetSettlementEvent[]): BetSettlementEvent[] {
+  const byId = new Map(events.map((event) => [event.settlementEventId, event]));
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const ordered: BetSettlementEvent[] = [];
+
+  const visit = (event: BetSettlementEvent): void => {
+    if (visited.has(event.settlementEventId)) return;
+    if (visiting.has(event.settlementEventId)) {
+      throw new Error(`Backup settlement correction cycle at: ${event.settlementEventId}`);
+    }
+    visiting.add(event.settlementEventId);
+    if (event.correctsSettlementEventId) {
+      const corrected = byId.get(event.correctsSettlementEventId);
+      if (!corrected) throw new Error(`Backup settlement event references unknown correction target: ${event.correctsSettlementEventId}`);
+      visit(corrected);
+    }
+    visiting.delete(event.settlementEventId);
+    visited.add(event.settlementEventId);
+    ordered.push(event);
+  };
+
+  for (const event of [...events].sort((left, right) => left.settlementEventId.localeCompare(right.settlementEventId))) {
+    visit(event);
+  }
+  return ordered;
+}
+
+function normalizeV3Payload(input: CreateCloudBackupEnvelopeV3Input): CreateCloudBackupEnvelopeV3Input {
+  return {
+    exportedAt: input.exportedAt,
+    ownerProfileId: input.ownerProfileId,
+    ownerProfile: input.ownerProfile ? structuredClone(input.ownerProfile) : null,
+    drafts: [...input.drafts].sort((left, right) => left.draftId.localeCompare(right.draftId)),
+    bets: [...input.bets].sort((left, right) => left.betId.localeCompare(right.betId)),
+    bankrollAccounts: [...input.bankrollAccounts].sort((left, right) => left.accountId.localeCompare(right.accountId)),
+    bankrollLedgerEntries: [...input.bankrollLedgerEntries].sort((left, right) => left.entryId.localeCompare(right.entryId)),
+    disciplineConfigs: [...input.disciplineConfigs].sort((left, right) => left.ownerProfileId.localeCompare(right.ownerProfileId)),
+    settlementEvents: orderSettlementEvents(input.settlementEvents)
+  };
+}
+
+function countsFor(input: CreateCloudBackupEnvelopeV3Input): CloudBackupRecordCounts {
+  return {
+    ownerProfiles: input.ownerProfile ? 1 : 0,
+    betDrafts: input.drafts.length,
+    bets: input.bets.length,
+    bankrollAccounts: input.bankrollAccounts.length,
+    bankrollLedgerEntries: input.bankrollLedgerEntries.length,
+    disciplineConfigs: input.disciplineConfigs.length,
+    settlementEvents: input.settlementEvents.length
+  };
+}
+
+function assertV3OwnerBoundary(input: CreateCloudBackupEnvelopeV3Input): void {
+  if (!hasText(input.ownerProfileId)) throw new Error('Backup owner profile ID is required');
+  const durableCount = input.drafts.length + input.bets.length + input.bankrollAccounts.length
+    + input.bankrollLedgerEntries.length + input.disciplineConfigs.length + input.settlementEvents.length;
+  if (!input.ownerProfile && durableCount > 0) throw new Error('Backup owner profile is required for durable owner data');
+  if (input.ownerProfile) {
+    if (input.ownerProfile.ownerProfileId !== input.ownerProfileId) throw new Error('Backup owner profile mismatch');
+    if (!hasText(input.ownerProfile.label) || !ISO.test(input.ownerProfile.createdAt) || !ISO.test(input.ownerProfile.updatedAt)
+      || !isObject(input.ownerProfile.settings)) throw new Error('Backup owner profile is invalid');
+  }
+  for (const owned of [...input.bets, ...input.bankrollAccounts, ...input.bankrollLedgerEntries,
+    ...input.disciplineConfigs, ...input.settlementEvents]) {
+    if (owned.ownerProfileId !== input.ownerProfileId) throw new Error('Backup collection owner mismatch');
+  }
+
+  assertUniqueIds(input.drafts, (draft) => draft.draftId, 'draft');
+  assertUniqueIds(input.bets, (bet) => bet.betId, 'bet');
+  assertUniqueIds(input.bankrollAccounts, (account) => account.accountId, 'bankroll account');
+  assertUniqueIds(input.bankrollLedgerEntries, (entry) => entry.entryId, 'bankroll ledger entry');
+  assertUniqueIds(input.disciplineConfigs, (config) => config.ownerProfileId, 'discipline config');
+  assertUniqueIds(input.settlementEvents, (event) => event.settlementEventId, 'settlement event');
+
+  const accountIds = new Set(input.bankrollAccounts.map((account) => account.accountId));
+  const betIds = new Set(input.bets.map((bet) => bet.betId));
+  const settlementEventIds = new Set(input.settlementEvents.map((event) => event.settlementEventId));
+  for (const bet of input.bets) {
+    if (bet.bankrollAccountId && !accountIds.has(bet.bankrollAccountId)) {
+      throw new Error(`Backup bet references unknown bankroll account: ${bet.bankrollAccountId}`);
+    }
+  }
+  for (const entry of input.bankrollLedgerEntries) {
+    if (!accountIds.has(entry.accountId)) throw new Error(`Backup ledger entry references unknown bankroll account: ${entry.accountId}`);
+    if (entry.betId && !betIds.has(entry.betId)) throw new Error(`Backup ledger entry references unknown bet: ${entry.betId}`);
+    if (entry.settlementEventId && !settlementEventIds.has(entry.settlementEventId)) {
+      throw new Error(`Backup ledger entry references unknown settlement event: ${entry.settlementEventId}`);
+    }
+  }
+  for (const event of input.settlementEvents) {
+    if (!betIds.has(event.betId)) throw new Error(`Backup settlement event references unknown bet: ${event.betId}`);
+    if (!accountIds.has(event.bankrollAccountId)) {
+      throw new Error(`Backup settlement event references unknown bankroll account: ${event.bankrollAccountId}`);
+    }
+  }
+  orderSettlementEvents(input.settlementEvents);
+}
+
+async function sha256Utf8(value: string): Promise<string> {
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export function canonicalCloudBackupV3Payload(envelope: CloudBackupEnvelopeV3): string {
+  const { schemaVersion: _schemaVersion, recordCounts: _recordCounts, payloadSha256: _payloadSha256, ...input } = envelope;
+  const normalized = normalizeV3Payload(input);
+  return canonicalJson({
+    schemaVersion: 'miraichi.cloud-backup.v3',
+    ...normalized,
+    recordCounts: countsFor(normalized)
+  });
+}
+
+export async function createCloudBackupEnvelopeV3(
+  input: CreateCloudBackupEnvelopeV3Input
+): Promise<CloudBackupEnvelopeV3> {
+  assertV3OwnerBoundary(input);
+  const normalized = normalizeV3Payload(input);
+  const withoutHash = {
+    schemaVersion: 'miraichi.cloud-backup.v3' as const,
+    ...normalized,
+    recordCounts: countsFor(normalized)
+  };
+  const payloadSha256 = await sha256Utf8(canonicalJson(withoutHash));
+  return { ...withoutHash, payloadSha256 };
+}
+
+export async function verifyCloudBackupEnvelopeV3(envelope: CloudBackupEnvelopeV3): Promise<boolean> {
+  try {
+    const { payloadSha256, schemaVersion: _schemaVersion, recordCounts, ...input } = envelope;
+    assertV3OwnerBoundary(input);
+    if (!/^[a-f0-9]{64}$/u.test(payloadSha256)) return false;
+    const normalized = normalizeV3Payload(input);
+    if (canonicalJson(input) !== canonicalJson(normalized)) return false;
+    if (canonicalJson(countsFor(input)) !== canonicalJson(recordCounts)) return false;
+    return await sha256Utf8(canonicalCloudBackupV3Payload(envelope)) === payloadSha256;
+  } catch {
+    return false;
+  }
 }
 
 export const FORBIDDEN_CLOUD_FIELDS = [

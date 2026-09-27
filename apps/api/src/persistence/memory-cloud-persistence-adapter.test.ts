@@ -13,6 +13,34 @@ const snapshot: CloudMatchSnapshot = {
 };
 
 describe('memory cloud persistence adapter', () => {
+  it('round-trips V3 profile settings and durable owner collections without rebuildable state', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({
+      now: fixedNow,
+      ownerProfile: {
+        ownerProfileId: 'owner-primary', label: 'Quy', settings: { locale: 'vi' },
+        createdAt: fixedNow(), updatedAt: fixedNow()
+      }
+    });
+    await adapter.upsertMatchSnapshot('owner-primary', snapshot);
+    await adapter.createBankrollAccount({
+      accountId: 'main', ownerProfileId: 'owner-primary', label: 'Main', openingBalancePoints: 100
+    });
+    const envelope = await adapter.exportOwnerData('owner-primary', fixedNow());
+    expect(envelope).toMatchObject({
+      schemaVersion: 'miraichi.cloud-backup.v3',
+      ownerProfile: { label: 'Quy', settings: { locale: 'vi' } },
+      recordCounts: { ownerProfiles: 1, bankrollAccounts: 1 },
+      payloadSha256: expect.stringMatching(/^[a-f0-9]{64}$/u)
+    });
+    expect(envelope).not.toHaveProperty('matchSnapshots');
+
+    const restored = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await restored.importOwnerData('owner-primary', envelope);
+    expect(await restored.exportOwnerData('owner-primary', fixedNow())).toMatchObject({
+      ownerProfile: { label: 'Quy', settings: { locale: 'vi' } },
+      bankrollAccounts: [{ accountId: 'main' }]
+    });
+  });
   it('saves, lists, clones, and deletes drafts', async () => {
     const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
     const tags = ['owner'];

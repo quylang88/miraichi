@@ -15,7 +15,7 @@ function request(method: string, url: string, body?: unknown) {
 function response() { return { statusCode: 0, body: '', writeHead(code: number) { this.statusCode = code; }, end(body?: unknown) { this.body = String(body ?? ''); } }; }
 
 describe('core betting journal integration', () => {
-  it('runs single-bankroll setup → warning → ongoing → settlement → report → V2 backup atomically', async () => {
+  it('runs single-bankroll setup → warning → ongoing → settlement → report → V3 backup atomically', async () => {
     let now = '2026-08-21T01:00:00.000Z';
     const adapter = createMemoryCloudPersistenceAdapter({ now: () => now });
     await adapter.upsertMatchSnapshot('owner-primary', { snapshotId: 'journal-fixture', generatedAt: now, importedAt: now, sources: [], matches: [{
@@ -65,12 +65,12 @@ describe('core betting journal integration', () => {
     out = response();
     await handleBackups(request('POST', '/api/v1/backups/export') as never, out as never, deps);
     const exported = JSON.parse(out.body);
-    expect(exported).toMatchObject({ schemaVersion: 'miraichi.cloud-backup.v2', bets: [{ preBetPlanAdherence: 'partly' }], settlementEvents: [{ settlementEventId: 's1', planAdherence: 'partly' }, { settlementEventId: 's2', planAdherence: 'partly' }] });
+    expect(exported).toMatchObject({ schemaVersion: 'miraichi.cloud-backup.v3', ownerProfile: { ownerProfileId: 'owner-primary' }, bets: [{ preBetPlanAdherence: 'partly' }], settlementEvents: [{ settlementEventId: 's1', planAdherence: 'partly' }, { settlementEventId: 's2', planAdherence: 'partly' }] });
     const importedAdapter = createMemoryCloudPersistenceAdapter();
     const importOut = response();
     const { sha256: _sha256, ...envelope } = exported;
     await handleBackups(request('POST', '/api/v1/backups/import', envelope) as never, importOut as never, { adapter: importedAdapter, ownerProfileId: 'owner-primary' });
     expect(importOut.statusCode).toBe(200);
-    expect(await importedAdapter.exportOwnerData('owner-primary', now)).toMatchObject({ schemaVersion: 'miraichi.cloud-backup.v2', bets: [{ profitLossPoints: 2 }], settlementEvents: [{ settlementEventId: 's1' }, { settlementEventId: 's2' }] });
+    expect(await importedAdapter.exportOwnerData('owner-primary', now)).toMatchObject({ schemaVersion: 'miraichi.cloud-backup.v3', bets: [{ profitLossPoints: 2 }], settlementEvents: [{ settlementEventId: 's1' }, { settlementEventId: 's2' }] });
   });
 });

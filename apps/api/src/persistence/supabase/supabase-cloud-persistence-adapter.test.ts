@@ -4,6 +4,7 @@ import { liveSnapshotFixture } from '../../../../../tests/fixtures/live-match-sn
 import type { PostgresQueryClient } from './postgres-query-client.js';
 import { postgresJson } from './postgres-parameters.js';
 import { createSupabaseCloudPersistenceAdapter } from './supabase-cloud-persistence-adapter.js';
+import { createMemoryCloudPersistenceAdapter } from '../memory-cloud-persistence-adapter.js';
 
 class FakeClient implements PostgresQueryClient {
   readonly calls: Array<{ text: string; values: readonly unknown[] }> = [];
@@ -43,10 +44,17 @@ describe('supabase cloud persistence adapter', () => {
     });
     const write=client.calls.find((call)=>call.text.includes('insert into miraichi_app.bet_settlement_event'))!;
     expect(write.values[5]).toBeNull();
-    client.enqueueRows([], [], [], [], [], [{settlement_event_id:'s',owner_profile_id:'owner-primary',bet_id:'b',bankroll_account_id:'a',settlement_type:'full_win',plan_adherence:null,calculated_profit_loss_points:'9',ledger_delta_points:'9',effective_at:'2026-09-15T00:00:00.000Z',occurred_at:'2026-09-15T00:00:00.000Z'}]);
+    client.enqueueRows(
+      [{id:'owner-primary',label:'Owner',settings:{locale:'vi'},created_at:'2026-07-02T00:00:00.000Z',updated_at:'2026-07-02T00:00:00.000Z'}],
+      [],
+      [{bet_id:'b',owner_profile_id:'owner-primary',match_group_id:'m',home_team_name:'A',away_team_name:'B',market_type:'1X2',selection_label:'A',odds_value:'0.9',stake_points:'10',status:'settled',bankroll_account_id:'a',created_at:'2026-09-15T00:00:00.000Z',updated_at:'2026-09-15T00:00:00.000Z'}],
+      [{account_id:'a',owner_profile_id:'owner-primary',label:'Main',opening_balance_points:'100',current_balance_points:'109',archived:false,created_at:'2026-07-02T00:00:00.000Z',updated_at:'2026-09-15T00:00:00.000Z'}],
+      [], [],
+      [{settlement_event_id:'s',owner_profile_id:'owner-primary',bet_id:'b',bankroll_account_id:'a',settlement_type:'full_win',plan_adherence:null,calculated_profit_loss_points:'9',ledger_delta_points:'9',effective_at:'2026-09-15T00:00:00.000Z',occurred_at:'2026-09-15T00:00:00.000Z'}]
+    );
     const exported=await adapter.exportOwnerData('owner-primary','2026-09-15T00:00:00.000Z');
-    expect(exported.schemaVersion).toBe('miraichi.cloud-backup.v2');
-    if (exported.schemaVersion !== 'miraichi.cloud-backup.v2') throw new Error('V2 backup required');
+    expect(exported.schemaVersion).toBe('miraichi.cloud-backup.v3');
+    if (exported.schemaVersion !== 'miraichi.cloud-backup.v3') throw new Error('V3 backup required');
     expect(exported.settlementEvents[0]).not.toHaveProperty('planAdherence');
   });
   it('uses parameterized owner-scoped bet queries', async () => {
@@ -228,14 +236,33 @@ describe('supabase cloud persistence adapter', () => {
     expect(balanceUpdates.some((call) => call.text.includes('current_balance_points>=$3'))).toBe(true);
   });
 
-  it('exports the canonical V2 backup collections', async () => {
+  it('exports the canonical V3 profile and durable collections', async () => {
     const client = new FakeClient();
-    client.enqueueRows([], [], [], [], [], []);
+    client.enqueueRows([{id:'owner-primary',label:'Quy',settings:{locale:'vi'},created_at:'2026-07-02T00:00:00.000Z',updated_at:'2026-08-21T00:00:00.000Z'}], [], [], [], [], [], []);
     const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
     const envelope = await adapter.exportOwnerData('owner-primary', '2026-08-21T00:00:00.000Z');
-    expect(envelope).toMatchObject({ schemaVersion: 'miraichi.cloud-backup.v2', disciplineConfigs: [], settlementEvents: [] });
+    expect(envelope).toMatchObject({
+      schemaVersion: 'miraichi.cloud-backup.v3',
+      ownerProfile: { ownerProfileId: 'owner-primary', label: 'Quy', settings: { locale: 'vi' } },
+      disciplineConfigs: [], settlementEvents: [], payloadSha256: expect.stringMatching(/^[a-f0-9]{64}$/u)
+    });
+    expect(client.calls[0]?.text).toContain('app_profile');
     expect(client.calls.some((call) => call.text.includes('discipline_config'))).toBe(true);
     expect(client.calls.some((call) => call.text.includes('bet_settlement_event'))).toBe(true);
+  });
+
+  it('restores the V3 owner profile before every related collection in one transaction', async () => {
+    const client = new FakeClient();
+    const adapter = createSupabaseCloudPersistenceAdapter({ client, ownerProfileId: 'owner-primary' });
+    const source = createMemoryCloudPersistenceAdapter({
+      now: () => '2026-09-27T00:00:00.000Z',
+      ownerProfile: { ownerProfileId: 'owner-primary', label: 'Quy', settings: { locale: 'vi' }, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-09-27T00:00:00.000Z' }
+    });
+    const envelope = await source.exportOwnerData('owner-primary', '2026-09-27T00:00:00.000Z');
+    await adapter.importOwnerData('owner-primary', envelope);
+    expect(client.transactions).toBe(1);
+    expect(client.calls[0]?.text).toContain('insert into miraichi_app.app_profile');
+    expect(client.calls[0]?.values).toEqual(expect.arrayContaining(['owner-primary', 'Quy']));
   });
 
   it('imports structured draft and bet context without dropping backup fields', async () => {
