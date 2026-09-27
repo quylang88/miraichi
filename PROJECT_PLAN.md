@@ -2,6 +2,14 @@
 
 ## Current State
 
+- **Active planning track**: `phase:plan Production delivery automation and owner-data safety` — the
+  owner selected protected `staging -> main`, automatic Frankfurt staging deployment, automatic
+  Singapore `ap-southeast-1` production deployment after a green release merge, encrypted private
+  R2 owner-data backups, additive expand/backfill/contract migrations, and a clean production owner
+  dataset on 2026-09-27. ADR-0055 records the accepted decisions. The written design at
+  `docs/superpowers/specs/2026-09-27-production-delivery-automation-design.md` awaits owner review;
+  implementation planning, remote branch/rule changes, secrets, pushes, resource creation, and
+  deployment remain unapproved.
 - **Status**: The owner correction is deployed to Frankfurt Edge version 26 and Cloudflare Worker
   `fc867def-cd30-4237-978d-7090f068cb99`. Today Quick Add is removed, while Bets retains a clean
   Manual Add flow for matches outside the canonical feed. Local release gates, real scoped and
@@ -364,10 +372,10 @@ deployment path.
 - **Same-origin boundary**: Cloudflare serves the existing PWA assets and proxies only `/api` plus
   `/api/*`. It preserves the owner cookie and `Set-Cookie`, streams bodies, follows no upstream
   redirect, and marks API responses non-cacheable. No database or provider secret is stored there.
-- **Region strategy**: staging proxy and cron invocations force `eu-central-1` so the Edge Function
-  runs with the Frankfurt database. A later, explicitly approved production cutover uses a new Tokyo
-  project and `ap-northeast-1`; Frankfurt remains intact for rollback until backup, smoke, and owner
-  approval are complete.
+- **Historical region strategy**: staging proxy and cron invocations force `eu-central-1` so the Edge
+  Function runs with the Frankfurt database. ADR-0055 supersedes this section's proposed Tokyo
+  production target with a separate Singapore `ap-southeast-1` project. Frankfurt remains the
+  staging environment; no production project or promotion is authorized by this historical phase.
 - **Background refresh**: replace the GitHub Actions wake-up with one hourly `pg_cron` + `pg_net`
   call. The function URL, gateway token, and existing refresh-only token are resolved from Supabase
   Vault at execution time. Full-season hydration never runs in the Edge Function.

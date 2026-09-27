@@ -1,5 +1,8 @@
 # Supabase Edge Function + Cloudflare Worker Owner Hosting Design
 
+> Production-region note (2026-09-27): ADR-0055 and the production delivery design supersede the
+> proposed Tokyo production region with Singapore `ap-southeast-1`. Frankfurt staging is unchanged.
+
 * **Status**: Approved design; implementation plan pending
 * **Date**: 2026-09-03
 * **Decision**: `docs/decisions/ADR-0052-supabase-edge-cloudflare-owner-hosting.md`

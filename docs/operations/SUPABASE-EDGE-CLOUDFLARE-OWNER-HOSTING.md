@@ -1,5 +1,9 @@
 # Supabase Edge + Cloudflare Worker owner hosting runbook
 
+> Production-region note (2026-09-27): the Frankfurt staging procedures remain active, but ADR-0055
+> supersedes this runbook's Tokyo production target with Singapore `ap-southeast-1`. Do not use the
+> historical Frankfurt-to-Tokyo section for a future production promotion.
+
 > **Status: match-detail candidate passed; awaiting owner feedback.**
 > User-triggered match detail, hosted browser E2E and rollback/restore passed on 2026-09-10.
 > `pnpm run verify:staging:hosted` passed after restoration at `2026-09-10T06:11:26.413Z`.

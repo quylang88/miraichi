@@ -1,5 +1,8 @@
 # ADR-0052: Supabase Edge Function And Cloudflare Worker Owner Hosting
 
+> Production-region note (2026-09-27): ADR-0055 supersedes this ADR's proposed Tokyo production
+> target with Singapore `ap-southeast-1`. The accepted Frankfurt staging topology remains current.
+
 * **Status**: Accepted
 * **Date**: 2026-09-03
 * **Owner approval**: Explicitly approved Supabase Edge Function plus Cloudflare Worker Static

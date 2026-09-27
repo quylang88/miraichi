@@ -6,6 +6,10 @@
 - `ADR-0046-core-bet-bankroll-discipline-and-reporting.md` — Accepted. Defines manual settlement, bankroll accounting, discipline warnings, psychology journaling, reports, and EN/VI UI boundaries.
 - `ADR-0050-single-bankroll-usable-owner-flow.md` — Accepted. Keeps one visible bankroll, preserves an internal compatibility account, and closes the reviewed bet/bankroll/psychology integrity and usability gaps.
 - `ADR-0052-supabase-edge-cloudflare-owner-hosting.md` — Accepted. Replaces the blocked Koyeb path with Cloudflare Worker Static Assets, one gateway-protected Supabase Edge Function, direct private Postgres access, Vault-backed cron, and Frankfurt-to-Tokyo rollout gates.
+- `ADR-0055-production-delivery-automation-and-owner-data-safety.md` — Accepted for planning.
+  Protects `staging` and `main`, requires exact hosted staging evidence before automatic production
+  deployment, selects an isolated Singapore production project, and adds encrypted R2 owner-data
+  backup. It supersedes ADR-0052's proposed Tokyo production region.
 - `ADR-0051-owner-hosted-api-and-live-overlay.md` — Hosting/scheduling superseded by ADR-0052. Its owner authentication, visibility-driven SportScore widget live refresh, and provider-neutral terminal/current boundaries remain accepted.
 - `ADR-0048-sportscore-public-api-source-boundary.md` — Accepted. Selects the attributed SportScore public API for 50 equal competitions, terminal-only best-effort 15–30 minute result updates, and lazy basic match detail.
 
