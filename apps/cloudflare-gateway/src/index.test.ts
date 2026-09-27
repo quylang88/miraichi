@@ -8,7 +8,11 @@ function environment(assetResponse = new Response('asset')): CloudflareGatewayEn
     MIRAICHI_EDGE_FUNCTION_URL: 'https://project-ref.supabase.co/functions/v1/miraichi-api',
     MIRAICHI_GATEWAY_TOKEN: 'gateway-token-with-at-least-thirty-two-bytes',
     MIRAICHI_PUBLIC_ORIGIN: 'https://miraichi-stage.workers.dev',
-    MIRAICHI_EDGE_REGION: 'eu-central-1'
+    MIRAICHI_EDGE_REGION: 'eu-central-1',
+    MIRAICHI_RELEASE_ENVIRONMENT: 'staging',
+    MIRAICHI_RELEASE_SHA: 'a'.repeat(40),
+    MIRAICHI_RELEASE_ARTIFACT: 'candidate-a1',
+    MIRAICHI_SCHEMA_COMPAT_VERSION: 'owner-v1'
   };
 }
 
@@ -79,6 +83,10 @@ describe('Cloudflare owner gateway', () => {
     expect(response.status).toBe(201);
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(response.headers.get('connection')).toBeNull();
+    expect(response.headers.get('x-miraichi-release-environment')).toBe('staging');
+    expect(response.headers.get('x-miraichi-release-sha')).toBe('a'.repeat(40));
+    expect(response.headers.get('x-miraichi-release-artifact')).toBe('candidate-a1');
+    expect(response.headers.get('x-miraichi-compatibility-version')).toBe('owner-v1');
     for (const name of [
       'endpoint-load-metrics',
       'sb-gateway-version',

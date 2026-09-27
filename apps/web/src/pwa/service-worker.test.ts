@@ -13,7 +13,8 @@ function worker() {
     delete: vi.fn(async () => true)
   };
   const fetch = vi.fn(async () => new Response('network'));
-  const source = readFileSync('apps/web/public/service-worker.ts', 'utf8');
+  const source = readFileSync('apps/web/public/service-worker.ts', 'utf8')
+    .replace('__MIRAICHI_WEB_HASH__', 'abc123');
   const script = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   runInNewContext(script, { exports: {}, URL, Response, caches, fetch,
     self: { location: { origin: 'https://app.example' }, addEventListener: (name: string, handler: (event: unknown) => void) => events.set(name, handler),
@@ -35,7 +36,7 @@ describe('installed startup cache', () => {
   it('precaches both self-contained script entries and the shell stylesheet', async () => {
     const { lifecycle, cache, caches } = worker();
     await lifecycle('install');
-    expect(caches.open).toHaveBeenCalledWith('miraichi-shell-v17-manual-add');
+    expect(caches.open).toHaveBeenCalledWith('miraichi-shell-abc123');
     expect(cache.addAll.mock.calls[0]?.[0]).toEqual(expect.arrayContaining([
       '/', '/index.html', '/apps/web/src/auth-bootstrap.js',
       '/apps/web/src/pwa/register-service-worker.js', '/packages/ui/src/index.css'

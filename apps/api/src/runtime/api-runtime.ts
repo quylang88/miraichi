@@ -4,6 +4,7 @@ import type { LiveRefreshCoordinator } from '../live/live-refresh-coordinator.js
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
 import type { CloudRouteDependencies } from '../routes/cloud-route-types.js';
 import type { MatchDetailRouteDependencies } from '../routes/match-detail.js';
+import type { ReleaseMetadata } from '@miraichi/shared';
 
 export interface ApiRuntime {
   readonly ownerAuthConfig: OwnerAuthConfig;
@@ -14,6 +15,7 @@ export interface ApiRuntime {
   readonly liveCoordinator: LiveRefreshCoordinator;
   readonly allowedOrigin?: string;
   readonly now?: () => number;
+  readonly releaseMetadata?: ReleaseMetadata;
 }
 
 export function defineApiRuntime(runtime: ApiRuntime): ApiRuntime {

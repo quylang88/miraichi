@@ -2,7 +2,7 @@
 
 export {};
 
-const CACHE_NAME = 'miraichi-shell-v17-manual-add';
+const CACHE_NAME = 'miraichi-shell-__MIRAICHI_WEB_HASH__';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

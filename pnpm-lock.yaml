@@ -63,6 +63,9 @@ importers:
       '@miraichi/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@miraichi/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
     devDependencies:
       wrangler:
         specifier: 4.128.0

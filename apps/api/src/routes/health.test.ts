@@ -22,7 +22,11 @@ describe('api health route', () => {
 
     handleHealth(
       {} as unknown as import('http').IncomingMessage,
-      response as unknown as import('http').ServerResponse
+      response as unknown as import('http').ServerResponse,
+      {
+        environment: 'staging', gitSha: 'a'.repeat(40),
+        artifactVersion: 'candidate-a1', compatibilityVersion: 'owner-v1'
+      }
     );
 
     expect(response.statusCode).toBe(200);
@@ -30,6 +34,10 @@ describe('api health route', () => {
     expect(JSON.parse(response.body || '{}')).toMatchObject({
       status: 'ok',
       service: 'api-mediation-gateway'
+    });
+    expect(JSON.parse(response.body || '{}').release).toEqual({
+      environment: 'staging', gitSha: 'a'.repeat(40),
+      artifactVersion: 'candidate-a1', compatibilityVersion: 'owner-v1'
     });
   });
 });

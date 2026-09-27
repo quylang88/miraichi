@@ -34,6 +34,7 @@ import { HostedMatchDetailCoordinator } from '../detail/hosted-match-detail.js';
 import { PostgresHostedMatchDetailStore } from '../detail/hosted-match-detail-store.js';
 import { fetchSelectedMatchDetail } from '../detail/match-detail-source.js';
 import { TerminalBetReconciliationCoordinator } from '../services/terminal-bet-reconciliation.js';
+import { readReleaseMetadata, type ReleaseMetadata } from '@miraichi/shared';
 
 export { createPostgresJsQueryClient } from '../persistence/supabase/postgres-js-query-client.js';
 
@@ -43,6 +44,15 @@ const FUNCTION_MOUNTS = [
 ] as const;
 
 export type EdgeEnvironment = Readonly<Record<string, string | undefined>>;
+
+function optionalReleaseMetadata(env: EdgeEnvironment): ReleaseMetadata | undefined {
+  const names = [
+    'MIRAICHI_RELEASE_ENVIRONMENT', 'MIRAICHI_RELEASE_SHA',
+    'MIRAICHI_RELEASE_ARTIFACT', 'MIRAICHI_SCHEMA_COMPAT_VERSION'
+  ] as const;
+  if (!names.some((name) => env[name]?.trim())) return undefined;
+  return readReleaseMetadata(env);
+}
 
 function runtimeDiagnostic(error: unknown): string {
   if (!(error instanceof Error)) return 'unknown_error';
@@ -85,6 +95,7 @@ export function createBootstrapEdgeApiHandler(env: EdgeEnvironment): ApiHandler 
   const unavailableLive = async (): Promise<never> => {
     throw new CloudPersistenceUnconfiguredError();
   };
+  const releaseMetadata = optionalReleaseMetadata(env);
   return createApiHandler(defineApiRuntime({
     ownerAuthConfig: readOwnerAuthConfig(env),
     liveRefreshServiceAuthConfig: readLiveRefreshServiceAuthConfig(env),
@@ -95,6 +106,7 @@ export function createBootstrapEdgeApiHandler(env: EdgeEnvironment): ApiHandler 
     matchRepository: repository,
     matchDetailDependencies: { repository },
     liveCoordinator: { read: unavailableLive, refresh: unavailableLive } as never,
+    ...(releaseMetadata ? { releaseMetadata } : {}),
     ...(env.MIRAICHI_PUBLIC_ORIGIN?.trim() ? { allowedOrigin: env.MIRAICHI_PUBLIC_ORIGIN.trim() } : {})
   }));
 }
@@ -104,6 +116,7 @@ export function createPostgresEdgeApiHandler(
   client: PostgresQueryClient,
   fetcher: typeof fetch = globalThis.fetch
 ): ApiHandler {
+  const releaseMetadata = optionalReleaseMetadata(env);
   const config = readEdgeCloudPersistenceConfig(env);
   const adapter = createSupabaseCloudPersistenceAdapter({
     client,
@@ -151,6 +164,7 @@ export function createPostgresEdgeApiHandler(
     matchRepository,
     matchDetailDependencies: { repository: cloudRepository, coordinator: detailCoordinator, terminalReconciler },
     liveCoordinator,
+    ...(releaseMetadata ? { releaseMetadata } : {}),
     ...(env.MIRAICHI_PUBLIC_ORIGIN?.trim() ? { allowedOrigin: env.MIRAICHI_PUBLIC_ORIGIN.trim() } : {})
   }));
   const authenticatedApi = withRevocableOwnerSessions(api, readOwnerAuthConfig(env), postgresOwnerSessionRevocations(client), env.MIRAICHI_PUBLIC_ORIGIN);

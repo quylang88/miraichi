@@ -9,3 +9,4 @@ export * from './core-betting-contracts.js';
 export * from './live-match-contracts.js';
 export * from './match-detail-contracts.js';
 export * from './structured-bet-selection.js';
+export * from './release-metadata.js';

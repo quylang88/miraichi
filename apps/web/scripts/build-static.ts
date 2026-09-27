@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url';
 import * as ts from 'typescript';
 import { buildSync } from 'esbuild';
 import { getIndexHtml } from '../src/index.js';
+import { readReleaseMetadata, type ReleaseMetadata } from '@miraichi/shared';
+import { sha256FileTree } from '../../../scripts/release/release-manifest.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -130,7 +132,24 @@ buildSync({
   minify: true
 });
 
-console.log(`[Web Static Build] Wrote Cloudflare Pages artifact to ${DIST_DIR}`);
+const releaseMetadata: ReleaseMetadata = process.env.MIRAICHI_RELEASE_ENVIRONMENT
+  ? readReleaseMetadata(process.env)
+  : {
+      environment: 'local',
+      gitSha: '0'.repeat(40),
+      artifactVersion: 'local-build',
+      compatibilityVersion: 'owner-v1'
+    };
+const webHash = await sha256FileTree(DIST_DIR, { exclude: ['release.json'] });
+const serviceWorkerPath = path.join(DIST_DIR, 'service-worker.js');
+const serviceWorker = fs.readFileSync(serviceWorkerPath, 'utf8');
+if (!serviceWorker.includes('__MIRAICHI_WEB_HASH__')) {
+  throw new Error('Service worker cache placeholder is missing');
+}
+fs.writeFileSync(serviceWorkerPath, serviceWorker.replaceAll('__MIRAICHI_WEB_HASH__', webHash));
+fs.writeFileSync(path.join(DIST_DIR, 'release.json'), `${JSON.stringify(releaseMetadata, null, 2)}\n`);
+
+console.log(`[Web Static Build] Wrote Cloudflare Worker Static Assets artifact ${webHash} to ${DIST_DIR}`);
 
 function transpileTypeScriptFile(sourcePath: string) {
   const source = fs.readFileSync(sourcePath, 'utf8');

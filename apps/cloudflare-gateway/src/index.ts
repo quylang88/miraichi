@@ -1,4 +1,5 @@
 import { readCloudflareGatewayConfig } from './config.js';
+import { readReleaseMetadata, type ReleaseMetadata } from '@miraichi/shared';
 
 export interface StaticAssetsBinding {
   fetch(request: Request): Promise<Response>;
@@ -11,6 +12,10 @@ export interface CloudflareGatewayEnv extends Readonly<Record<string, unknown>> 
   readonly MIRAICHI_GATEWAY_TOKEN: string;
   readonly MIRAICHI_PUBLIC_ORIGIN: string;
   readonly MIRAICHI_EDGE_REGION: string;
+  readonly MIRAICHI_RELEASE_ENVIRONMENT: string;
+  readonly MIRAICHI_RELEASE_SHA: string;
+  readonly MIRAICHI_RELEASE_ARTIFACT: string;
+  readonly MIRAICHI_SCHEMA_COMPAT_VERSION: string;
 }
 
 const HOP_BY_HOP_HEADERS = new Set([
@@ -70,6 +75,23 @@ function responseHeaders(source: Headers): Headers {
   return headers;
 }
 
+function releaseHeaders(source: Headers, release: ReleaseMetadata): Headers {
+  const headers = new Headers(source);
+  headers.set('x-miraichi-release-environment', release.environment);
+  headers.set('x-miraichi-release-sha', release.gitSha);
+  headers.set('x-miraichi-release-artifact', release.artifactVersion);
+  headers.set('x-miraichi-compatibility-version', release.compatibilityVersion);
+  return headers;
+}
+
+function withReleaseHeaders(response: Response, release: ReleaseMetadata): Response {
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: releaseHeaders(response.headers, release)
+  });
+}
+
 export function createCloudflareGateway(options: {
   readonly fetcher?: typeof fetch;
 } = {}) {
@@ -77,13 +99,19 @@ export function createCloudflareGateway(options: {
   return {
     async fetch(request: Request, env: CloudflareGatewayEnv): Promise<Response> {
       const incomingUrl = new URL(request.url);
-      if (!isApiPath(incomingUrl.pathname)) return env.ASSETS.fetch(request);
 
       let config;
+      let release;
       try {
         config = readCloudflareGatewayConfig(env);
+        release = readReleaseMetadata(env);
+        if (release.environment !== config.deploymentEnv) throw new Error('Release environment mismatch');
       } catch {
         return sanitizedFailure(500, 'gateway_configuration_error', 'Gateway configuration is invalid.');
+      }
+
+      if (!isApiPath(incomingUrl.pathname)) {
+        return withReleaseHeaders(await env.ASSETS.fetch(request), release);
       }
 
       const upstreamUrl = new URL(config.functionUrl);
@@ -100,7 +128,7 @@ export function createCloudflareGateway(options: {
         return new Response(upstream.body, {
           status: upstream.status,
           statusText: upstream.statusText,
-          headers: responseHeaders(upstream.headers)
+          headers: releaseHeaders(responseHeaders(upstream.headers), release)
         });
       } catch (error) {
         const isTimeout = error instanceof DOMException
