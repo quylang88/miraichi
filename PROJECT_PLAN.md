@@ -2,14 +2,18 @@
 
 ## Current State
 
-- **Active planning track**: `phase:plan Production delivery automation and owner-data safety` — the
+- **Completed planning track**: `phase:plan Production delivery automation and owner-data safety` — the
   owner selected protected `staging -> main`, automatic Frankfurt staging deployment, automatic
   Singapore `ap-southeast-1` production deployment after a green release merge, encrypted private
   R2 owner-data backups, additive expand/backfill/contract migrations, and a clean production owner
-  dataset on 2026-09-27. ADR-0055 records the accepted decisions. The written design at
-  `docs/superpowers/specs/2026-09-27-production-delivery-automation-design.md` awaits owner review;
-  implementation planning, remote branch/rule changes, secrets, pushes, resource creation, and
-  deployment remain unapproved.
+  dataset on 2026-09-27. ADR-0055 records the accepted decisions and the owner approved the written
+  design at `docs/superpowers/specs/2026-09-27-production-delivery-automation-design.md` by asking
+  to proceed with the exact TDD plan.
+- **Active planning track**: `phase:implementation-plan Production delivery automation and
+  owner-data safety` — the sequential RED -> GREEN -> review -> commit slices are written in
+  `docs/superpowers/plans/2026-09-27-production-delivery-automation.md` and await owner review.
+  Code implementation, remote branch/rule changes, secrets, pushes, resource creation, and
+  deployment remain unapproved until that plan gate is accepted.
 - **Status**: The owner correction is deployed to Frankfurt Edge version 26 and Cloudflare Worker
   `fc867def-cd30-4237-978d-7090f068cb99`. Today Quick Add is removed, while Bets retains a clean
   Manual Add flow for matches outside the canonical feed. Local release gates, real scoped and

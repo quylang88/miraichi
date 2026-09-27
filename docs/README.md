@@ -9,7 +9,8 @@
 - Current owner-hosted/live decision: `docs/decisions/ADR-0052-supabase-edge-cloudflare-owner-hosting.md`
 - Current production delivery decision: `docs/decisions/ADR-0055-production-delivery-automation-and-owner-data-safety.md`
 - Current design: `docs/superpowers/specs/2026-09-03-supabase-edge-cloudflare-owner-hosting-design.md`
-- Production delivery design awaiting written owner review: `docs/superpowers/specs/2026-09-27-production-delivery-automation-design.md`
+- Current production delivery design: `docs/superpowers/specs/2026-09-27-production-delivery-automation-design.md`
+- Production delivery implementation plan awaiting owner review: `docs/superpowers/plans/2026-09-27-production-delivery-automation.md`
 - Current implementation plan: `docs/superpowers/plans/2026-09-03-supabase-edge-cloudflare-owner-hosting.md`
 - Current owner hosting runbook: `docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md`
 - Architecture map: `docs/architecture/module-map.md`

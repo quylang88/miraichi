@@ -1,7 +1,7 @@
 # ADR-0055: Production delivery automation and owner-data safety
 
-- Status: Accepted owner decision for planning on 2026-09-27; implementation and production
-  promotion remain unapproved.
+- Status: Accepted on 2026-09-27; the implementation plan awaits owner review, and implementation
+  plus production promotion remain unapproved.
 - Extends ADR-0052's Supabase Edge Function and Cloudflare Worker topology.
 - Supersedes ADR-0052's proposed Tokyo production region with Singapore `ap-southeast-1`.
 

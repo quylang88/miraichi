@@ -1,10 +1,10 @@
 # Production Delivery Automation And Owner-Data Safety Design
 
-* **Status**: Written spec awaiting owner review
+* **Status**: Owner approved on 2026-09-27; implementation plan awaiting review
 * **Date**: 2026-09-27
 * **Decision**: `docs/decisions/ADR-0055-production-delivery-automation-and-owner-data-safety.md`
-* **Lifecycle**: `phase:plan` review; `phase:implementation-plan` remains blocked until this written
-  spec is approved
+* **Lifecycle**: `phase:plan` exit gate satisfied; exact TDD slices are being reviewed in
+  `docs/superpowers/plans/2026-09-27-production-delivery-automation.md`
 
 ## Outcome
 
