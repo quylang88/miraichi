@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   discoverMigrationSet,
+  overlayWorkingTreeMigrations,
   parseMigrationNameStatus,
   verifyMigrations,
   type MigrationRepository,
@@ -26,6 +27,19 @@ function repository(diff = `A\t${added}\n`): MigrationRepository {
 }
 
 describe('migration verification', () => {
+  it('overlays uncommitted additions, modifications, and deletions before local verification', () => {
+    const committed = discoverMigrationSet({ repository: repository(), baseSha, headSha });
+    const localAdded = 'supabase/migrations/20260929000000_local.sql';
+    expect(overlayWorkingTreeMigrations(committed, [
+      { path: initial, sql: 'changed historical sql;' },
+      { path: localAdded, sql: 'select 2;' }
+    ])).toEqual([
+      expect.objectContaining({ path: initial, change: 'modified', sql: 'changed historical sql;' }),
+      expect.objectContaining({ path: added, change: 'deleted' }),
+      expect.objectContaining({ path: localAdded, change: 'added', sql: 'select 2;' })
+    ]);
+  });
+
   it('discovers added migrations while retaining unchanged files in the set hash', () => {
     const migrations = discoverMigrationSet({ repository: repository(), baseSha, headSha });
     expect(migrations).toEqual([

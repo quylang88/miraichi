@@ -27,6 +27,11 @@ export interface ParsedMigrationChange {
   readonly path: string;
 }
 
+export interface WorkingTreeMigrationFile {
+  readonly path: string;
+  readonly sql: string;
+}
+
 export interface MigrationExecutionResult {
   readonly mode: 'empty' | 'prior';
   readonly appliedMigrationCount: number;
@@ -95,6 +100,36 @@ export function discoverMigrationSet(input: {
     });
   }
   return migrations.sort((left, right) => left.path.localeCompare(right.path));
+}
+
+export function overlayWorkingTreeMigrations(
+  committed: readonly MigrationFile[],
+  workingTree: readonly WorkingTreeMigrationFile[]
+): MigrationFile[] {
+  const workingByPath = new Map(workingTree
+    .filter((file) => MIGRATION_PATH.test(file.path))
+    .map((file) => [file.path.replace(/\\/gu, '/'), file.sql]));
+  const result: MigrationFile[] = [];
+  const committedPaths = new Set<string>();
+  for (const migration of committed) {
+    committedPaths.add(migration.path);
+    const workingSql = workingByPath.get(migration.path);
+    if (workingSql === undefined) {
+      result.push({ ...migration, change: 'deleted' });
+      continue;
+    }
+    result.push({
+      path: migration.path,
+      sql: workingSql,
+      change: workingSql === migration.sql
+        ? migration.change
+        : migration.change === 'added' ? 'added' : 'modified'
+    });
+  }
+  for (const [file, sql] of workingByPath) {
+    if (!committedPaths.has(file)) result.push({ path: file, sql, change: 'added' });
+  }
+  return result.sort((left, right) => left.path.localeCompare(right.path));
 }
 
 export async function verifyMigrations(input: {
@@ -307,6 +342,15 @@ export function workingTreeMigrations(root: string = process.cwd(), addedSuffix 
     }));
 }
 
+function localMigrationFiles(root: string): WorkingTreeMigrationFile[] {
+  return readdirSync(path.join(root, 'supabase', 'migrations'))
+    .filter((file) => /^\d{14}_[a-z0-9_]+\.sql$/u.test(file))
+    .map((file) => ({
+      path: `supabase/migrations/${file}`,
+      sql: readFileSync(path.join(root, 'supabase', 'migrations', file), 'utf8')
+    }));
+}
+
 const isCli = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isCli) {
   const run = async (): Promise<void> => {
@@ -316,7 +360,10 @@ if (isCli) {
     const baseSha = process.env.MIGRATION_BASE_SHA?.trim()
       || process.env.GITHUB_BASE_SHA?.trim()
       || git(['merge-base', headSha, 'main']);
-    const migrations = discoverMigrationSet({ repository, baseSha, headSha });
+    const migrations = overlayWorkingTreeMigrations(
+      discoverMigrationSet({ repository, baseSha, headSha }),
+      localMigrationFiles(process.cwd())
+    );
     const report = verifyMigrationSet({ baseSha, headSha, migrations });
     console.log(JSON.stringify({ status: report.ok ? 'passed' : 'failed', report }));
     process.exit(report.ok ? 0 : 1);
