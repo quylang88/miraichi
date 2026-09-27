@@ -19,6 +19,7 @@ const functionUrl = 'https://project-ref.supabase.co/functions/v1/miraichi-api';
 const gatewayToken = 'integration-gateway-token-with-at-least-32-bytes';
 const refreshToken = 'integration-refresh-token-with-at-least-32-bytes';
 const password = 'correct horse battery staple';
+const releaseSha = 'a'.repeat(40);
 
 const canonical: LocalMatch = {
   id: 'cloudflare-match-1',
@@ -107,7 +108,11 @@ describe('Cloudflare to Supabase Edge owner flow integration', () => {
       MIRAICHI_EDGE_FUNCTION_URL: functionUrl,
       MIRAICHI_GATEWAY_TOKEN: gatewayToken,
       MIRAICHI_PUBLIC_ORIGIN: origin,
-      MIRAICHI_EDGE_REGION: 'eu-central-1'
+      MIRAICHI_EDGE_REGION: 'eu-central-1',
+      MIRAICHI_RELEASE_ENVIRONMENT: 'staging',
+      MIRAICHI_RELEASE_SHA: releaseSha,
+      MIRAICHI_RELEASE_ARTIFACT: 'integration-candidate',
+      MIRAICHI_SCHEMA_COMPAT_VERSION: 'owner-v3'
     };
     const call = (path: string, init: RequestInit = {}) => {
       const headers = new Headers(init.headers);
@@ -115,10 +120,12 @@ describe('Cloudflare to Supabase Edge owner flow integration', () => {
       return worker.fetch(new Request(`${origin}${path}`, { ...init, headers }), env);
     };
 
-    expect((await call('/api/v1/auth/login', {
+    const rejectedLogin = await call('/api/v1/auth/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: 'wrong password value' })
-    })).status).toBe(401);
+    });
+    expect(rejectedLogin.status).toBe(401);
+    expect(rejectedLogin.headers.get('x-miraichi-release-sha')).toBe(releaseSha);
     const login = await call('/api/v1/auth/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })

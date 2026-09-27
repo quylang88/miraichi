@@ -8,6 +8,10 @@ export interface PostgresQueryClient {
   transaction<T>(operation: (client: PostgresQueryClient) => Promise<T>): Promise<T>;
 }
 
+export interface CloseablePostgresQueryClient extends PostgresQueryClient {
+  close(): Promise<void>;
+}
+
 export function resolvePostgresSslConfig(databaseUrl: string, databaseCa?: string): PostgresSslConfig {
   const parsed = new URL(databaseUrl);
   if (parsed.searchParams.get('sslmode') === 'disable') return false;
@@ -24,7 +28,7 @@ export function normalizePostgresConnectionString(databaseUrl: string): string {
   return parsed.toString();
 }
 
-export function createPostgresQueryClient(databaseUrl: string, databaseCa?: string): PostgresQueryClient {
+export function createPostgresQueryClient(databaseUrl: string, databaseCa?: string): CloseablePostgresQueryClient {
   const pool = new pg.Pool({
     connectionString: normalizePostgresConnectionString(databaseUrl),
     max: 5,
@@ -57,6 +61,7 @@ export function createPostgresQueryClient(databaseUrl: string, databaseCa?: stri
       } finally {
         client.release();
       }
-    }
+    },
+    close: async () => pool.end()
   };
 }

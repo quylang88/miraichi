@@ -4,7 +4,11 @@ import { createServer } from 'net';
 import os from 'os';
 import path from 'path';
 import { buildServingMatchStore } from '../apps/api/src/repositories/serving-match-store.js';
-import type { LocalMatch } from '../packages/shared/src/contracts/index.js';
+import {
+  verifyCloudBackupEnvelopeV3,
+  type CloudBackupEnvelopeV3,
+  type LocalMatch
+} from '../packages/shared/src/contracts/index.js';
 
 console.log('[Test-Endpoints] Starting API server...');
 
@@ -156,8 +160,16 @@ void (async () => {
     const ledgerCreate = await fetch(`${apiBaseUrl}/api/v1/bankroll/ledger`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entryId: 'e2e-entry', accountId: 'bankroll-primary', entryType: 'withdrawal', amountPoints: -10, occurredAt: timestamp }) });
     assert(ledgerCreate.status === 201, 'POST /api/v1/bankroll/ledger creates a signed manual entry');
     const backupExport = await fetch(`${apiBaseUrl}/api/v1/backups/export`, { method: 'POST' });
-    const backup = await backupExport.json() as { schemaVersion?: string };
-    assert(backupExport.ok && backup.schemaVersion === 'miraichi.cloud-backup.v2', 'POST /api/v1/backups/export returns a V2 cloud backup');
+    const backup = await backupExport.json() as CloudBackupEnvelopeV3 & { sha256: string };
+    assert(backupExport.ok && backup.schemaVersion === 'miraichi.cloud-backup.v3',
+      'POST /api/v1/backups/export returns a V3 owner backup');
+    assert(backup.ownerProfile?.ownerProfileId === 'owner-primary',
+      'V3 owner backup binds the owner profile');
+    assert(backup.recordCounts.betDrafts === 1 && backup.recordCounts.bets === 1,
+      'V3 owner backup counts the durable draft and bet');
+    const { sha256, ...backupEnvelope } = backup;
+    assert(sha256 === backup.payloadSha256 && await verifyCloudBackupEnvelopeV3(backupEnvelope),
+      'V3 owner backup has a valid canonical payload hash');
 
     const draftDelete = await fetch(`${apiBaseUrl}/api/v1/bet-drafts?id=e2e-draft`, { method: 'DELETE' });
     assert(draftDelete.status === 204, 'DELETE /api/v1/bet-drafts removes the integration draft');
