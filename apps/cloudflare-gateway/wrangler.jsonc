@@ -5,7 +5,8 @@
   "compatibility_date": "2026-09-03",
   "workers_dev": true,
   "env": {
-    "staging": {}
+    "staging": {},
+    "production": {}
   },
   "assets": {
     "directory": "../web/dist",

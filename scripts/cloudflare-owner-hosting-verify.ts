@@ -14,7 +14,7 @@ export interface StaticArtifactInventory {
 }
 
 export interface CloudflareAssetsConfig {
-  readonly deploymentEnvironments: readonly ['staging'];
+  readonly deploymentEnvironments: readonly ['staging', 'production'];
   readonly directory: string;
   readonly binding: 'ASSETS';
   readonly notFoundHandling: 'single-page-application';
@@ -68,7 +68,9 @@ export function readCloudflareAssetsConfig(configFile: string): CloudflareAssets
   };
   const assets = parsed.assets;
   const staging = parsed.env?.staging;
+  const production = parsed.env?.production;
   if (!staging || typeof staging !== 'object' || Array.isArray(staging)
+    || !production || typeof production !== 'object' || Array.isArray(production)
     || !assets
     || assets.directory !== '../web/dist'
     || assets.binding !== 'ASSETS'
@@ -80,7 +82,7 @@ export function readCloudflareAssetsConfig(configFile: string): CloudflareAssets
     throw new Error('Cloudflare Static Assets configuration is not exact');
   }
   return {
-    deploymentEnvironments: ['staging'],
+    deploymentEnvironments: ['staging', 'production'],
     directory: '../web/dist',
     binding: 'ASSETS',
     notFoundHandling: 'single-page-application',

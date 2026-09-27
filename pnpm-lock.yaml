@@ -59,6 +59,10 @@ importers:
         version: 8.20.0
 
   apps/cloudflare-gateway:
+    dependencies:
+      '@miraichi/config':
+        specifier: workspace:*
+        version: link:../../packages/config
     devDependencies:
       wrangler:
         specifier: 4.128.0

@@ -6,6 +6,9 @@
     "dev": "wrangler dev",
     "deploy:dry-run": "wrangler deploy --dry-run"
   },
+  "dependencies": {
+    "@miraichi/config": "workspace:*"
+  },
   "devDependencies": {
     "wrangler": "4.128.0"
   }

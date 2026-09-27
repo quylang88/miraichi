@@ -9,6 +9,13 @@ const valid = {
   MIRAICHI_EDGE_REGION: 'eu-central-1'
 } as const;
 
+const production = {
+  ...valid,
+  DEPLOYMENT_ENV: 'production',
+  MIRAICHI_PUBLIC_ORIGIN: 'https://miraichi.example.com',
+  MIRAICHI_EDGE_REGION: 'ap-southeast-1'
+} as const;
+
 describe('Cloudflare gateway config', () => {
   it('accepts the exact staging function, origin, and Frankfurt region', () => {
     expect(readCloudflareGatewayConfig(valid)).toEqual({
@@ -18,6 +25,24 @@ describe('Cloudflare gateway config', () => {
       publicOrigin: valid.MIRAICHI_PUBLIC_ORIGIN,
       region: 'eu-central-1'
     });
+  });
+
+  it('accepts the exact production function, origin, and Singapore region', () => {
+    expect(readCloudflareGatewayConfig(production)).toEqual({
+      deploymentEnv: 'production',
+      functionUrl: production.MIRAICHI_EDGE_FUNCTION_URL,
+      gatewayToken: production.MIRAICHI_GATEWAY_TOKEN,
+      publicOrigin: production.MIRAICHI_PUBLIC_ORIGIN,
+      region: 'ap-southeast-1'
+    });
+  });
+
+  it.each([
+    [{ ...production, MIRAICHI_EDGE_REGION: 'eu-central-1' }, 'ap-southeast-1'],
+    [{ ...production, MIRAICHI_PUBLIC_ORIGIN: 'https://localhost' }, 'localhost'],
+    [{ ...valid, DEPLOYMENT_ENV: 'production' }, 'ap-southeast-1']
+  ])('rejects crossed or local production bindings', (environment, message) => {
+    expect(() => readCloudflareGatewayConfig(environment)).toThrow(message);
   });
 
   it.each([

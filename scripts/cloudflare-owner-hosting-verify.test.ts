@@ -20,7 +20,7 @@ function fixture(): string {
   writeFileSync(path.join(root, 'apps/web/dist/index.html'), 'window.MIRAICHI_ENV={API_URL:""}');
   writeFileSync(path.join(root, 'apps/web/dist/assets/app.js'), 'fetch("/api/v1/health")');
   writeFileSync(path.join(root, 'apps/cloudflare-gateway/wrangler.jsonc'), JSON.stringify({
-    env: { staging: {} },
+    env: { staging: {}, production: {} },
     assets: {
       directory: '../web/dist', binding: 'ASSETS',
       not_found_handling: 'single-page-application', run_worker_first: ['/api', '/api/*']
@@ -37,7 +37,7 @@ describe('Cloudflare owner-hosting artifact verification', () => {
     })).toMatchObject({ fileCount: 2, largestFileBytes: expect.any(Number) });
     expect(readCloudflareAssetsConfig(path.join(root, 'apps/cloudflare-gateway/wrangler.jsonc')))
       .toEqual({
-        deploymentEnvironments: ['staging'],
+        deploymentEnvironments: ['staging', 'production'],
         directory: '../web/dist', binding: 'ASSETS',
         notFoundHandling: 'single-page-application', runWorkerFirst: ['/api', '/api/*']
       });
