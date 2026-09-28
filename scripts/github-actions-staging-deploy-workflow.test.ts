@@ -59,6 +59,8 @@ describe('GitHub Actions staging deployment workflow', () => {
     expect(workflow).toContain('actions/upload-artifact@v7');
     expect(workflow).toContain('name: miraichi-release-${{ github.sha }}');
     expect(workflow).toContain('retention-days: 14');
+    expect(workflow).toContain('Assemble immutable candidate artifact');
+    expect(workflow).toMatch(/uses: actions\/upload-artifact@v7[\s\S]*?path: artifacts\/candidate\s/u);
     expect(workflow).toContain('deployment-evidence.json');
     expect(workflow).toContain('apps/web/dist');
     expect(workflow).toContain('supabase/functions');
@@ -73,7 +75,7 @@ describe('GitHub Actions staging deployment workflow', () => {
     expect(workflow).toContain("core.setOutput('run-id'");
     expect(workflow).toContain('run-id: ${{ steps.prior.outputs.run-id }}');
     expect(workflow).toContain('github-token: ${{ github.token }}');
-    expect(workflow).toContain('deployment-evidence.ts artifacts/prior/artifacts/release/deployment-evidence.json');
+    expect(workflow).toContain('deployment-evidence.ts artifacts/prior/deployment-evidence.json');
     expect(workflow).toContain('MIRAICHI_STAGING_BASELINE_SHA');
     expect(workflow).not.toMatch(/name:\s*(?:latest|miraichi-release-latest)/u);
   });

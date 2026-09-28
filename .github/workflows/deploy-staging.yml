@@ -172,10 +172,10 @@ jobs:
         if: ${{ steps.prior.outputs.mode == 'artifact' }}
         shell: bash
         run: |
-          pnpm exec tsx scripts/release/deployment-evidence.ts artifacts/prior/artifacts/release/deployment-evidence.json
+          pnpm exec tsx scripts/release/deployment-evidence.ts artifacts/prior/deployment-evidence.json
           node --input-type=module <<'NODE' >> "$GITHUB_ENV"
           import { readFileSync } from 'node:fs';
-          const evidence = JSON.parse(readFileSync('artifacts/prior/artifacts/release/deployment-evidence.json', 'utf8'));
+          const evidence = JSON.parse(readFileSync('artifacts/prior/deployment-evidence.json', 'utf8'));
           if (evidence.status !== 'succeeded' || evidence.release?.sourceSha !== process.env.PRIOR_SHA) {
             throw new Error('Prior rollback evidence does not match its deployment SHA');
           }
@@ -238,6 +238,18 @@ jobs:
           MIRAICHI_OWNER_PASSWORD: ${{ secrets.MIRAICHI_OWNER_PASSWORD }}
         run: pnpm run verify:staging:hosted
 
+      - name: Assemble immutable candidate artifact
+        id: assemble
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          mkdir -p artifacts/candidate/apps/web artifacts/candidate/supabase
+          cp artifacts/release/release-manifest.json artifacts/candidate/release-manifest.json
+          cp artifacts/release/deployment-evidence.json artifacts/candidate/deployment-evidence.json
+          cp -R apps/web/dist artifacts/candidate/apps/web/dist
+          cp supabase/config.toml artifacts/candidate/supabase/config.toml
+          cp -R supabase/functions artifacts/candidate/supabase/functions
+
       - name: Retain immutable release and rollback evidence
         id: artifact
         if: ${{ always() }}
@@ -246,16 +258,11 @@ jobs:
           name: miraichi-release-${{ github.sha }}
           retention-days: 14
           if-no-files-found: error
-          path: |
-            artifacts/release/release-manifest.json
-            artifacts/release/deployment-evidence.json
-            apps/web/dist
-            supabase/config.toml
-            supabase/functions
+          path: artifacts/candidate
 
       - name: Mark staging deployment successful
         id: mark-success
-        if: ${{ always() && steps.deploy.outcome == 'success' && steps.hosted.outcome == 'success' && steps.artifact.outcome == 'success' }}
+        if: ${{ always() && steps.deploy.outcome == 'success' && steps.hosted.outcome == 'success' && steps.assemble.outcome == 'success' && steps.artifact.outcome == 'success' }}
         uses: actions/github-script@v9
         with:
           script: |
@@ -270,7 +277,7 @@ jobs:
             });
 
       - name: Mark staging deployment failed
-        if: ${{ always() && steps.deployment.outputs.deployment-id != '' && (steps.deploy.outcome != 'success' || steps.hosted.outcome != 'success' || steps.artifact.outcome != 'success' || steps.mark-success.outcome == 'failure') }}
+        if: ${{ always() && steps.deployment.outputs.deployment-id != '' && (steps.deploy.outcome != 'success' || steps.hosted.outcome != 'success' || steps.assemble.outcome != 'success' || steps.artifact.outcome != 'success' || steps.mark-success.outcome == 'failure') }}
         uses: actions/github-script@v9
         with:
           script: |
