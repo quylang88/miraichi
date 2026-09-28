@@ -21,6 +21,7 @@
     "release:deploy": "tsx scripts/release/deploy-release.ts",
     "verify:production:hosted": "tsx scripts/release/production-smoke.ts",
     "release:evidence:verify": "tsx scripts/release/deployment-evidence.ts",
+    "verify:release-candidate": "tsx scripts/release/release-candidate.ts",
     "dev:worker": "pnpm --filter worker run dev",
     "dev:cloudflare": "pnpm --filter @miraichi/cloudflare-gateway run dev",
     "data:build:serving:matches": "tsx scripts/build-serving-match-store.ts",

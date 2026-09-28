@@ -1,53 +1,75 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import fs from 'fs';
-import path from 'path';
 
-const WORKFLOW_PATH = path.resolve('.github/workflows/ci.yml');
+const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 
-function readWorkflow() {
-  return fs.readFileSync(WORKFLOW_PATH, 'utf8');
-}
+const requiredJobs = [
+  'boundaries',
+  'unit-tests',
+  'static-analysis',
+  'audits',
+  'integration',
+  'web-build',
+  'migrations',
+  'edge-runtime',
+  'cloudflare-artifact'
+] as const;
 
-describe('GitHub Actions CI workflow', () => {
-  it('exists and runs the required non-deploy verification commands', () => {
-    const workflow = readWorkflow();
-
+describe('GitHub Actions pull-request quality gate', () => {
+  it('runs only for pull requests targeting staging or main with read-only permissions', () => {
     expect(workflow).toContain('name: CI');
-    expect(workflow).toContain('pnpm/action-setup@v4');
-    expect(workflow).toContain('actions/setup-node@v4');
-    expect(workflow).toContain('pnpm install --frozen-lockfile');
-    expect(workflow).toContain('pnpm run verify:lifecycle');
-    expect(workflow).toContain('pnpm run test:unit');
-    expect(workflow).toContain('pnpm run lint');
-    expect(workflow).toContain('pnpm run typecheck');
-    expect(workflow).toContain('pnpm run audit');
-    expect(workflow).toContain('pnpm run audit:type-safety');
-    expect(workflow).toContain('pnpm run build');
+    expect(workflow).toMatch(/on:\s*\n\s*pull_request:\s*\n\s*branches:\s*\n\s*- staging\s*\n\s*- main/u);
+    expect(workflow).not.toMatch(/^\s*push:/mu);
+    expect(workflow).not.toContain('pull_request_target');
+    expect(workflow).toMatch(/permissions:\s*\n\s*contents: read/u);
+    expect(workflow).not.toMatch(/^\s+(?:actions|contents|deployments|id-token|packages|pull-requests): write$/mu);
   });
 
-  it('does not deploy or reference Cloudflare secrets', () => {
-    const workflow = readWorkflow();
-    const forbiddenMarkers = [
-      'wrangler',
-      'pages deploy',
-      'deploy:staging',
-      'deploy:staging:local',
-      'CLOUDFLARE_API_TOKEN',
-      'CLOUDFLARE_ACCOUNT_ID',
-      'secrets.',
-      'production'
-    ];
-
-    for (const marker of forbiddenMarkers) {
-      expect(workflow).not.toContain(marker);
+  it('keeps every required gate independently visible and aggregates all of them', () => {
+    for (const job of requiredJobs) {
+      expect(workflow).toMatch(new RegExp(`^  ${job}:`, 'mu'));
     }
+    expect(workflow).toMatch(/^  quality-gate:/mu);
+    expect(workflow).toContain('name: quality-gate');
+    expect(workflow).toContain('if: ${{ always() }}');
+    expect(workflow).toContain(`needs: [${requiredJobs.join(', ')}]`);
+    expect(workflow).toContain('toJSON(needs)');
+    expect(workflow).toContain("result !== 'success'");
   });
 
-  it('keeps integration and staging checks out of the default PR workflow', () => {
-    const workflow = readWorkflow();
+  it('covers the complete release gate instead of a check-only subset', () => {
+    for (const command of [
+      'pnpm run verify:product-boundary',
+      'pnpm run verify:lifecycle',
+      'pnpm run test:unit',
+      'pnpm run lint',
+      'pnpm run typecheck',
+      'pnpm run audit',
+      'pnpm run audit:type-safety',
+      'pnpm run test:integration',
+      'pnpm run build:web-static',
+      'pnpm run verify:migrations',
+      'pnpm run edge:function:build',
+      'pnpm run edge:function:graph:verify',
+      'pnpm run edge:runtime:smoke -- --scope all',
+      'pnpm run cloudflare:artifact:verify'
+    ]) expect(workflow).toContain(command);
+    expect(workflow).toContain('pnpm install --frozen-lockfile');
+    expect(workflow).toContain('pnpm exec playwright install --with-deps chromium webkit');
+  });
 
-    expect(workflow).not.toContain('pnpm run test:integration');
-    expect(workflow).not.toContain('pnpm run verify:staging');
-    expect(workflow).not.toContain('pnpm run smoke:staging');
+  it('cannot reach deployment environments, deployment credentials, or mutation commands', () => {
+    expect(workflow).not.toMatch(/^    environment:/mu);
+    for (const forbidden of [
+      'secrets.',
+      'pull_request_target',
+      'supabase link',
+      'supabase db push',
+      'supabase functions deploy',
+      'wrangler versions deploy',
+      'release:deploy',
+      'deploy:staging',
+      'deploy:production'
+    ]) expect(workflow).not.toContain(forbidden);
   });
 });

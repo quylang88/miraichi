@@ -2,54 +2,244 @@ name: CI
 
 on:
   pull_request:
-  push:
     branches:
+      - staging
       - main
 
 permissions:
   contents: read
 
 jobs:
-  verify:
+  boundaries:
+    name: Product boundary and lifecycle
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
         with:
-          version: 10.25.0
+          version: 10.18.3
           run_install: false
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run verify:product-boundary
+      - run: pnpm run verify:lifecycle
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test:unit
 
-      - name: Lifecycle verification
-        run: pnpm run verify:lifecycle
+  static-analysis:
+    name: Syntax, lint, and types
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run typecheck
 
-      - name: Unit tests
-        run: pnpm run test:unit
+  audits:
+    name: Guardrail and type-safety audits
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run audit
+      - run: pnpm run audit:type-safety
 
-      - name: JavaScript syntax check
-        run: pnpm run lint
+  integration:
+    name: Integration, endpoint, browser, and PWA suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium webkit
+      - run: pnpm run test:integration
 
-      - name: TypeScript typecheck
-        run: pnpm run typecheck
+  web-build:
+    name: Static web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:web-static
 
-      - name: Guardrail audit
-        run: pnpm run audit
+  migrations:
+    name: Migration policy and schema preservation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Start disposable local Postgres
+        run: pnpm exec supabase db start
+      - run: pnpm run verify:migrations
+      - name: Stop disposable local Postgres
+        if: ${{ always() }}
+        run: pnpm exec supabase stop --no-backup
 
-      - name: Type safety audit
-        run: pnpm run audit:type-safety
+  edge-runtime:
+    name: Supabase Edge build and runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run edge:function:build
+      - run: pnpm run edge:function:graph:verify
+      - name: Start disposable local Edge stack
+        run: >-
+          pnpm exec supabase start --exclude
+          analytics,imgproxy,inbucket,meta,realtime,rest,storage,studio,vector
+      - run: pnpm exec supabase migration up --local --include-all
+      - name: Create disposable local Edge configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d -m 700 .secrets
+          owner_password='ci-only-owner-password'
+          owner_hash="$(MIRAICHI_OWNER_PASSWORD="$owner_password" pnpm run --silent auth:hash-password)"
+          {
+            printf '%s\n' 'APP_ENV=local'
+            printf '%s\n' 'MIRAICHI_GATEWAY_TOKEN=ci-only-gateway-token-with-at-least-32-bytes'
+            printf '%s\n' 'MIRAICHI_EDGE_RUNTIME_SMOKE=enabled'
+            printf '%s\n' 'MIRAICHI_OWNER_AUTH_MODE=password'
+            printf 'MIRAICHI_OWNER_PASSWORD=%s\n' "$owner_password"
+            printf 'MIRAICHI_OWNER_PASSWORD_HASH=%s\n' "$owner_hash"
+            printf '%s\n' 'MIRAICHI_SESSION_SECRET=ci-only-session-secret-with-at-least-32-bytes'
+            printf '%s\n' 'MIRAICHI_SESSION_TTL_SECONDS=604800'
+            printf '%s\n' 'MIRAICHI_OWNER_PROFILE_ID=owner-primary'
+            printf '%s\n' 'MIRAICHI_PUBLIC_ORIGIN=http://127.0.0.1:4173'
+            printf '%s\n' 'MIRAICHI_REFRESH_TOKEN=ci-only-refresh-token-with-at-least-32-bytes'
+            printf '%s\n' 'MIRAICHI_PROVIDER_REFRESH_TOKEN=ci-only-provider-token-with-at-least-32-bytes'
+            printf '%s\n' 'MIRAICHI_CURRENT_REFRESH_BATCH_SIZE=3'
+            printf '%s\n' 'SPORTSCORE_LIVE_MODE=disabled'
+            printf '%s\n' 'LIVE_DATA_MODE=disabled'
+            printf '%s\n' 'SUPABASE_DB_URL=postgresql://postgres:postgres@db:5432/postgres'
+          } > .secrets/edge.local.env
+          chmod 600 .secrets/edge.local.env
+      - name: Run Edge runtime smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm exec supabase functions serve miraichi-api --env-file .secrets/edge.local.env >/tmp/miraichi-edge.log 2>&1 &
+          edge_pid=$!
+          trap 'kill "$edge_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --output /dev/null \
+              -H 'x-miraichi-gateway-token: ci-only-gateway-token-with-at-least-32-bytes' \
+              http://127.0.0.1:15421/functions/v1/miraichi-api/api/v1/health; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              exit 1
+            fi
+            sleep 2
+          done
+          pnpm run edge:runtime:smoke -- --scope all
+      - name: Stop disposable local Edge stack
+        if: ${{ always() }}
+        run: pnpm exec supabase stop --no-backup
 
-      - name: Static web build
-        run: pnpm run build
+  cloudflare-artifact:
+    name: Cloudflare artifact dry run
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:web-static
+      - run: pnpm run cloudflare:artifact:verify
+
+  quality-gate:
+    name: quality-gate
+    if: ${{ always() }}
+    needs: [boundaries, unit-tests, static-analysis, audits, integration, web-build, migrations, edge-runtime, cloudflare-artifact]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every child gate
+        env:
+          NEEDS_CONTEXT: ${{ toJSON(needs) }}
+        run: >-
+          node -e "const needs=JSON.parse(process.env.NEEDS_CONTEXT);
+          const failed=Object.entries(needs).filter(([, value]) => value.result !== 'success');
+          if(failed.length){console.error(failed.map(([name, value]) => name + ':' + value.result).join(','));process.exit(1)}"

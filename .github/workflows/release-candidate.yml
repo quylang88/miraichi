@@ -1,0 +1,133 @@
+name: Release Candidate
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  actions: read
+  contents: read
+  deployments: read
+
+jobs:
+  release-candidate:
+    name: release-candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Reject any source other than this repository staging branch
+        env:
+          IS_STAGING: ${{ github.event.pull_request.head.ref == 'staging' }}
+          IS_SAME_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        run: >-
+          node -e "if(process.env.IS_STAGING !== 'true' || process.env.IS_SAME_REPOSITORY !== 'true')
+          { console.error('Only the same-repository staging branch can be promoted to main'); process.exit(1) }"
+
+      - name: Checkout proposed merge tree
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve exact staging deployment and artifact
+        id: evidence
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs/promises');
+            const headSha = context.payload.pull_request.head.sha;
+            const artifactName = `miraichi-release-${headSha}`;
+            const { owner, repo } = context.repo;
+
+            const deployments = await github.paginate(github.rest.repos.listDeployments, {
+              owner,
+              repo,
+              sha: headSha,
+              environment: 'staging',
+              per_page: 100
+            });
+            deployments.sort((left, right) => right.id - left.id);
+            const deployment = deployments[0];
+            if (!deployment || deployment.sha !== headSha || deployment.environment !== 'staging') {
+              core.setFailed('No exact-SHA staging deployment exists');
+              return;
+            }
+            const statuses = await github.paginate(github.rest.repos.listDeploymentStatuses, {
+              owner,
+              repo,
+              deployment_id: deployment.id,
+              per_page: 100
+            });
+            statuses.sort((left, right) => right.id - left.id);
+            if (statuses[0]?.state !== 'success') {
+              core.setFailed('Latest exact-SHA staging deployment is not successful');
+              return;
+            }
+
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+              owner,
+              repo,
+              name: artifactName,
+              per_page: 100
+            });
+            const matchingArtifacts = artifacts
+              .filter((artifact) => artifact.name === artifactName
+                && !artifact.expired
+                && artifact.workflow_run?.head_branch === 'staging'
+                && artifact.workflow_run?.head_sha === headSha)
+              .sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at));
+            const artifact = matchingArtifacts[0];
+            if (!artifact?.workflow_run?.id || !artifact.digest) {
+              core.setFailed('No active exact-SHA staging artifact exists');
+              return;
+            }
+
+            await fs.mkdir('.release-candidate', { recursive: true });
+            await fs.writeFile('.release-candidate/github-evidence.json', JSON.stringify({
+              deployment: {
+                environment: deployment.environment,
+                state: statuses[0].state,
+                sha: deployment.sha,
+                id: deployment.id
+              },
+              artifact: {
+                name: artifact.name,
+                digest: artifact.digest,
+                expired: artifact.expired,
+                createdAt: artifact.created_at,
+                expiresAt: artifact.expires_at,
+                workflowHeadBranch: artifact.workflow_run.head_branch,
+                workflowHeadSha: artifact.workflow_run.head_sha
+              },
+              now: new Date().toISOString()
+            }));
+            core.setOutput('run-id', String(artifact.workflow_run.id));
+            core.setOutput('artifact-name', artifactName);
+
+      - name: Download exact staging artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.evidence.outputs.artifact-name }}
+          path: .release-candidate/artifact
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.evidence.outputs.run-id }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Verify candidate provenance
+        run: >-
+          pnpm run verify:release-candidate -- --github
+          .release-candidate/github-evidence.json
+          .release-candidate/artifact

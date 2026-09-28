@@ -11,6 +11,9 @@ describe('active owner-hosted deployment boundary', () => {
 
     expect(packageJson.scripts['deploy:staging']).toBeUndefined();
     expect(packageJson.scripts['deploy:staging:local']).toBeUndefined();
+    expect(packageJson.scripts['verify:release-candidate']).toBe(
+      'tsx scripts/release/release-candidate.ts'
+    );
     expect(packageJson.scripts['cloudflare:artifact:verify']).toBe(
       'tsx scripts/cloudflare-owner-hosting-verify.ts'
     );
