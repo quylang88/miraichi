@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const spawn = vi.hoisted(() => vi.fn());
 vi.mock('node:child_process', () => ({ spawnSync: spawn }));
-import { linkedStagingQuery } from './staging-scheduler-smoke.js';
+import { expectedStagingSchedulerCommand, linkedStagingQuery } from './staging-scheduler-smoke.js';
 
 describe('hosted scheduler database transport', () => {
   beforeEach(() => spawn.mockReset());
@@ -15,5 +15,13 @@ describe('hosted scheduler database transport', () => {
     spawn.mockReturnValue({ status: 1, stderr: 'connection reset', stdout: '' });
     expect(() => linkedStagingQuery("select miraichi_app.invoke_hosted_refresh('current')")).toThrow();
     expect(spawn).toHaveBeenCalledTimes(1);
+  });
+  it('requires every hosted cron command to remain pinned to Frankfurt', () => {
+    expect(expectedStagingSchedulerCommand('current')).toBe(
+      "select miraichi_app.invoke_hosted_refresh('current','eu-central-1');"
+    );
+    expect(expectedStagingSchedulerCommand('live')).toBe(
+      "select miraichi_app.invoke_hosted_refresh('live','eu-central-1');"
+    );
   });
 });

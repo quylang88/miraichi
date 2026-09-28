@@ -125,7 +125,7 @@ export function auditMigrationSql(path: string, sql: string): MigrationFinding[]
     all.findIndex((candidate) => candidate.rule === item.rule && candidate.line === item.line) === index);
 }
 
-function migrationSetHash(migrations: readonly MigrationFile[]): string {
+export function migrationSetHash(migrations: readonly MigrationFile[]): string {
   const digest = createHash('sha256');
   for (const migration of [...migrations].filter((item) => item.change !== 'deleted').sort((a, b) => a.path.localeCompare(b.path))) {
     digest.update(migration.path, 'utf8');

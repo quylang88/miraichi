@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const RUNBOOK = 'docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md';
 const DOCS_INDEX = 'docs/README.md';
+const STAGING_WORKFLOW = '.github/workflows/deploy-staging.yml';
 
 describe('owner-hosted Edge and Cloudflare deployment readiness', () => {
   it('pins the local Wrangler artifact runtime', () => {
@@ -47,5 +48,16 @@ describe('owner-hosted Edge and Cloudflare deployment readiness', () => {
       'docs/superpowers/plans/2026-09-03-supabase-edge-cloudflare-owner-hosting.md',
       'docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md'
     ]) expect(index).toContain(currentDocument);
+  });
+
+  it('automates staging through the tested release transaction and committed hosted gate', () => {
+    const workflow = readFileSync(STAGING_WORKFLOW, 'utf8');
+    for (const marker of [
+      'pnpm run verify:staging',
+      'pnpm run release:deploy',
+      'pnpm run verify:staging:hosted',
+      'MIRAICHI_RELEASE_ENVIRONMENT: staging',
+      'MIRAICHI_EDGE_REGION: eu-central-1'
+    ]) expect(workflow).toContain(marker);
   });
 });

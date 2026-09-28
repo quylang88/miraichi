@@ -2,6 +2,12 @@ import { spawnSync } from 'node:child_process';
 import { gate } from './staging-hosted-config.js';
 let querySequence = 0;
 
+type StagingRefreshKind = 'current' | 'live' | 'terminal';
+
+export function expectedStagingSchedulerCommand(kind: StagingRefreshKind): string {
+  return `select miraichi_app.invoke_hosted_refresh('${kind}','eu-central-1');`;
+}
+
 export function linkedStagingQuery(sql: string): Record<string, unknown>[] {
   const queryId = ++querySequence;
   const execute = () => spawnSync(process.execPath, ['node_modules/supabase/dist/supabase.js', 'db', 'query', '--linked', '--output-format', 'json'], {
@@ -34,18 +40,18 @@ export async function runStagingSchedulerSmoke(): Promise<void> {
   gate(JSON.stringify(vault) === JSON.stringify(expectedVault), 'exact four Vault names');
   const jobs = linkedStagingQuery("select jobname,schedule,command,active from cron.job where jobname like 'miraichi-%' order by jobname");
   gate(jobs.length === 3, 'exact three cron jobs');
-  for (const kind of ['current','live','terminal']) {
+  for (const kind of ['current','live','terminal'] as const) {
     const job = jobs.find((row) => row.jobname === `miraichi-${kind}-refresh`);
     gate(job?.active === true && job.schedule === (kind === 'terminal' ? '* * * * *' : '*/5 * * * *')
-      && job.command === `select miraichi_app.invoke_hosted_refresh('${kind}');`, 'exact active scheduler contract');
+      && job.command === expectedStagingSchedulerCommand(kind), 'exact active scheduler contract');
   }
   const outcomes: Record<string, string> = {};
-  for (const kind of ['current','terminal','live']) {
+  for (const kind of ['current','terminal','live'] as const) {
     console.log(JSON.stringify({ gate: 'hosted-scheduler', stage: kind }));
     const before = linkedStagingQuery(`select (select revision from miraichi_app.provider_refresh_control where owner_profile_id='owner-primary') as revision,
       (select count(*)::int from miraichi_app.match_record) as matches,
       (select generated_at from miraichi_app.live_match_snapshot where owner_profile_id='owner-primary') as live_at`)[0];
-    const invoked = linkedStagingQuery(`select miraichi_app.invoke_hosted_refresh('${kind}') as request_id`)[0];
+    const invoked = linkedStagingQuery(`select miraichi_app.invoke_hosted_refresh('${kind}','eu-central-1') as request_id`)[0];
     const id = Number(invoked.request_id);
     gate(Number.isSafeInteger(id) && id > 0, 'controlled scheduler request ID');
     let delivery: Record<string, unknown> | undefined;
