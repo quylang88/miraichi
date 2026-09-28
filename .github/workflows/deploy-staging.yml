@@ -122,6 +122,7 @@ jobs:
               environment: 'staging',
               per_page: 100
             });
+            deployments.sort((left, right) => right.id - left.id);
             let prior = null;
             for (const deployment of deployments) {
               if (String(deployment.id) === process.env.CURRENT_DEPLOYMENT_ID || deployment.sha === context.sha) continue;
@@ -131,7 +132,8 @@ jobs:
                 deployment_id: deployment.id,
                 per_page: 100
               });
-              if (statuses.some((status) => status.state === 'success')) {
+              statuses.sort((left, right) => right.id - left.id);
+              if (statuses[0]?.state === 'success') {
                 prior = deployment;
                 break;
               }

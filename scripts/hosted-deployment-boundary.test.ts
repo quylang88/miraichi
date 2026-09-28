@@ -9,6 +9,8 @@ describe('active owner-hosted deployment boundary', () => {
     const environmentTemplate = readFileSync('.env.example', 'utf8');
     const wrangler = readFileSync('apps/cloudflare-gateway/wrangler.jsonc', 'utf8');
     const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8');
+    const productionWorkflow = readFileSync('.github/workflows/deploy-production.yml', 'utf8');
+    const backupWorkflow = readFileSync('.github/workflows/backup-production.yml', 'utf8');
 
     expect(packageJson.scripts['deploy:staging']).toBeUndefined();
     expect(packageJson.scripts['deploy:staging:local']).toBeUndefined();
@@ -16,6 +18,10 @@ describe('active owner-hosted deployment boundary', () => {
     expect(stagingWorkflow).toContain('pnpm run release:deploy');
     expect(stagingWorkflow).not.toContain('environment: production');
     expect(stagingWorkflow).not.toContain('R2_');
+    expect(productionWorkflow).toContain('environment: production');
+    expect(productionWorkflow).toContain('pnpm run release:deploy');
+    expect(backupWorkflow).toContain('pnpm run backup:owner:create');
+    expect(backupWorkflow).not.toContain('release:deploy');
     expect(packageJson.scripts['verify:release-candidate']).toBe(
       'tsx scripts/release/release-candidate.ts'
     );

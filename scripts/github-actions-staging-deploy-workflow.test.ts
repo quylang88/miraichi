@@ -82,6 +82,9 @@ describe('GitHub Actions staging deployment workflow', () => {
     expect(workflow).toContain('MIRAICHI_PRIOR_RELEASE_SHA');
     expect(workflow).toContain('MIRAICHI_PRIOR_RELEASE_ARTIFACT');
     expect(workflow).toContain('MIRAICHI_PRIOR_SCHEMA_COMPAT_VERSION');
+    expect(workflow).not.toContain("statuses.some((status) => status.state === 'success')");
+    expect(workflow).toContain("statuses[0]?.state === 'success'");
+    expect(workflow).toMatch(/Resolve prior successful rollback artifact[\s\S]*?deployments\.sort\(\(left, right\) => right\.id - left\.id\);[\s\S]*?for \(const deployment of deployments\)/u);
     expect(workflow).not.toMatch(/name:\s*(?:latest|miraichi-release-latest)/u);
   });
 });

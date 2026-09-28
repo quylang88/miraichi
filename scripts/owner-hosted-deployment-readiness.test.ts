@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 const RUNBOOK = 'docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md';
 const DOCS_INDEX = 'docs/README.md';
 const STAGING_WORKFLOW = '.github/workflows/deploy-staging.yml';
+const PRODUCTION_WORKFLOW = '.github/workflows/deploy-production.yml';
+const BACKUP_WORKFLOW = '.github/workflows/backup-production.yml';
 
 describe('owner-hosted Edge and Cloudflare deployment readiness', () => {
   it('pins the local Wrangler artifact runtime', () => {
@@ -59,5 +61,20 @@ describe('owner-hosted Edge and Cloudflare deployment readiness', () => {
       'MIRAICHI_RELEASE_ENVIRONMENT: staging',
       'MIRAICHI_EDGE_REGION: eu-central-1'
     ]) expect(workflow).toContain(marker);
+  });
+
+  it('automates approved production promotion and isolated owner backup verification', () => {
+    const production = readFileSync(PRODUCTION_WORKFLOW, 'utf8');
+    const backup = readFileSync(BACKUP_WORKFLOW, 'utf8');
+    for (const marker of [
+      'verify:release-candidate -- --github-production',
+      'pnpm run release:deploy',
+      'pnpm run verify:production:hosted',
+      'MIRAICHI_RELEASE_ENVIRONMENT: production',
+      'MIRAICHI_EDGE_REGION: ap-southeast-1'
+    ]) expect(production).toContain(marker);
+    expect(backup).toContain('pnpm run backup:owner:create');
+    expect(backup).toContain('pnpm run backup:owner:restore-local');
+    expect(backup).not.toContain('release:deploy');
   });
 });

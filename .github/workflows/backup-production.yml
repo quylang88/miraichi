@@ -1,0 +1,118 @@
+name: Backup Production Owner Data
+
+on:
+  schedule:
+    - cron: '17 18 * * *'
+    - cron: '47 18 * * 0'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Production owner-data backup operation
+        required: true
+        default: create
+        type: choice
+        options:
+          - create
+          - restore-verify
+
+permissions:
+  contents: read
+
+concurrency:
+  group: miraichi-production-backup
+  cancel-in-progress: false
+
+jobs:
+  create:
+    name: Create and verify encrypted owner backup
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '17 18 * * *') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'create') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      OWNER_BACKUP_ENVIRONMENT: production
+      OWNER_BACKUP_R2_ENDPOINT: ${{ vars.OWNER_BACKUP_R2_ENDPOINT }}
+      OWNER_BACKUP_R2_BUCKET: ${{ vars.OWNER_BACKUP_R2_BUCKET }}
+      OWNER_BACKUP_KEY_ID: ${{ vars.OWNER_BACKUP_KEY_ID }}
+      MIRAICHI_OWNER_PROFILE_ID: ${{ vars.MIRAICHI_OWNER_PROFILE_ID }}
+    steps:
+      - name: Reject non-main backup runs
+        run: node -e "if (process.env.GITHUB_REF_NAME !== 'main') throw new Error('Production backups run only from main')"
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Create, read back, and verify encrypted backup
+        env:
+          OWNER_BACKUP_R2_ACCESS_KEY_ID: ${{ secrets.OWNER_BACKUP_R2_ACCESS_KEY_ID }}
+          OWNER_BACKUP_R2_SECRET_ACCESS_KEY: ${{ secrets.OWNER_BACKUP_R2_SECRET_ACCESS_KEY }}
+          OWNER_BACKUP_KEY_BASE64: ${{ secrets.OWNER_BACKUP_KEY_BASE64 }}
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          SUPABASE_DATABASE_CA_BASE64: ${{ secrets.SUPABASE_DATABASE_CA_BASE64 }}
+        run: |
+          pnpm run backup:owner:create
+          pnpm run backup:owner:verify
+
+  restore-verify:
+    name: Restore latest backup into disposable local Supabase
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '47 18 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'restore-verify') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    env:
+      OWNER_BACKUP_ENVIRONMENT: production
+      OWNER_BACKUP_R2_ENDPOINT: ${{ vars.OWNER_BACKUP_R2_ENDPOINT }}
+      OWNER_BACKUP_R2_BUCKET: ${{ vars.OWNER_BACKUP_R2_BUCKET }}
+      OWNER_BACKUP_KEY_ID: ${{ vars.OWNER_BACKUP_KEY_ID }}
+      MIRAICHI_OWNER_PROFILE_ID: ${{ vars.MIRAICHI_OWNER_PROFILE_ID }}
+      SUPABASE_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:15422/postgres
+    steps:
+      - name: Reject non-main restore verification runs
+        run: node -e "if (process.env.GITHUB_REF_NAME !== 'main') throw new Error('Production restore verification runs only from main')"
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Start disposable local Supabase
+        run: |
+          pnpm exec supabase start
+          pnpm exec supabase db reset --local
+
+      - name: Restore and verify exact durable owner data
+        env:
+          OWNER_BACKUP_R2_ACCESS_KEY_ID: ${{ secrets.OWNER_BACKUP_R2_ACCESS_KEY_ID }}
+          OWNER_BACKUP_R2_SECRET_ACCESS_KEY: ${{ secrets.OWNER_BACKUP_R2_SECRET_ACCESS_KEY }}
+          OWNER_BACKUP_KEY_BASE64: ${{ secrets.OWNER_BACKUP_KEY_BASE64 }}
+        run: pnpm run backup:owner:restore-local
+
+      - name: Destroy disposable local Supabase
+        if: ${{ always() }}
+        run: pnpm exec supabase stop --no-backup

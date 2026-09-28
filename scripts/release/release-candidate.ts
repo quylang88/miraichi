@@ -56,7 +56,21 @@ export interface CandidateVerification {
   readonly deploymentId: number;
 }
 
+export interface ProductionPromotionInput {
+  readonly push: {
+    readonly ref: string;
+    readonly beforeSha: string;
+    readonly afterSha: string;
+    readonly repository: string;
+  };
+  readonly checkedOutSha: string;
+  readonly pullRequestMerged: boolean;
+  readonly mergeCommitSha: string;
+  readonly candidate: ReleaseCandidateInput;
+}
+
 const GIT_ID = /^[a-f0-9]{40}$/u;
+const ZERO_GIT_ID = /^0{40}$/u;
 const ARTIFACT_DIGEST = /^sha256:[a-f0-9]{64}$/u;
 
 function reject(code: string): never {
@@ -152,6 +166,24 @@ export async function verifyReleaseCandidate(input: ReleaseCandidateInput): Prom
   };
 }
 
+export async function verifyProductionPromotion(
+  input: ProductionPromotionInput
+): Promise<CandidateVerification> {
+  if (input.push.ref !== 'refs/heads/main') reject('promotion_wrong_ref');
+  if (!GIT_ID.test(input.push.beforeSha) || ZERO_GIT_ID.test(input.push.beforeSha)
+    || !GIT_ID.test(input.push.afterSha) || ZERO_GIT_ID.test(input.push.afterSha)) {
+    reject('promotion_push_sha_invalid');
+  }
+  if (input.push.repository !== input.candidate.pullRequest.baseRepository
+    || input.push.repository !== input.candidate.pullRequest.headRepository) {
+    reject('promotion_repository_mismatch');
+  }
+  if (!input.pullRequestMerged) reject('promotion_pr_not_merged');
+  if (input.mergeCommitSha !== input.push.afterSha) reject('promotion_merge_commit_mismatch');
+  if (input.checkedOutSha !== input.push.afterSha) reject('promotion_checkout_mismatch');
+  return verifyReleaseCandidate(input.candidate);
+}
+
 interface GithubEvidenceFile {
   readonly deployment: ReleaseCandidateInput['deployment'];
   readonly artifact: ReleaseCandidateInput['artifact'];
@@ -163,6 +195,26 @@ interface PullRequestEvent {
   readonly pull_request?: {
     readonly base?: { readonly ref?: string; readonly sha?: string; readonly repo?: { readonly full_name?: string } };
     readonly head?: { readonly ref?: string; readonly sha?: string; readonly repo?: { readonly full_name?: string } };
+  };
+}
+
+interface PushEvent {
+  readonly ref?: string;
+  readonly before?: string;
+  readonly after?: string;
+  readonly repository?: { readonly full_name?: string };
+}
+
+interface GithubProductionEvidenceFile extends GithubEvidenceFile {
+  readonly pullRequest: {
+    readonly baseRef: string;
+    readonly headRef: string;
+    readonly baseRepository: string;
+    readonly headRepository: string;
+    readonly headSha: string;
+    readonly headIsTag: boolean;
+    readonly merged: boolean;
+    readonly mergeCommitSha: string;
   };
 }
 
@@ -220,16 +272,74 @@ async function verifyGithubCandidate(metadataFile: string, artifactDirectory: st
   });
 }
 
+async function verifyGithubProductionCandidate(
+  metadataFile: string,
+  artifactDirectory: string
+): Promise<CandidateVerification> {
+  const eventPath = process.env.GITHUB_EVENT_PATH;
+  if (!eventPath) reject('candidate_event_path_missing');
+  const event = await loadJson(path.resolve(eventPath)) as PushEvent;
+  const metadata = await loadJson(path.resolve(metadataFile)) as GithubProductionEvidenceFile;
+  const manifest = await loadJson(path.resolve(artifactDirectory, 'release-manifest.json')) as ReleaseManifest;
+  const deploymentEvidence = await loadJson(
+    path.resolve(artifactDirectory, 'deployment-evidence.json')
+  ) as DeploymentEvidence;
+  const headSha = metadata.pullRequest.headSha;
+  const beforeSha = event.before ?? '';
+  const afterSha = event.after ?? '';
+  if (!GIT_ID.test(headSha) || !GIT_ID.test(beforeSha) || !GIT_ID.test(afterSha)) {
+    reject('candidate_event_invalid');
+  }
+  const changedPaths = git(['diff', '--name-only', '--no-renames', headSha, 'HEAD'])
+    .split(/\r?\n/u)
+    .filter(Boolean);
+  const candidate: ReleaseCandidateInput = {
+    pullRequest: {
+      baseRef: metadata.pullRequest.baseRef,
+      headRef: metadata.pullRequest.headRef,
+      baseRepository: metadata.pullRequest.baseRepository,
+      headRepository: metadata.pullRequest.headRepository,
+      headSha,
+      headIsTag: metadata.pullRequest.headIsTag
+    },
+    mainIsAncestor: isAncestor(beforeSha, headSha),
+    candidateTreeId: git(['rev-parse', `${headSha}^{tree}`]),
+    proposedMergeTreeId: git(['rev-parse', 'HEAD^{tree}']),
+    releaseOnlyChangedPaths: changedPaths,
+    deployment: metadata.deployment,
+    artifact: metadata.artifact,
+    manifest,
+    deploymentEvidence,
+    now: metadata.now
+  };
+  return verifyProductionPromotion({
+    push: {
+      ref: event.ref ?? '',
+      beforeSha,
+      afterSha,
+      repository: event.repository?.full_name ?? ''
+    },
+    checkedOutSha: git(['rev-parse', 'HEAD']),
+    pullRequestMerged: metadata.pullRequest.merged,
+    mergeCommitSha: metadata.pullRequest.mergeCommitSha,
+    candidate
+  });
+}
+
 const isCli = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isCli) {
   void (async () => {
-    if (process.argv[2] !== '--github' || !process.argv[3] || !process.argv[4] || process.argv.length !== 5) {
+    const mode = process.argv[2];
+    if (!['--github', '--github-production'].includes(mode ?? '')
+      || !process.argv[3] || !process.argv[4] || process.argv.length !== 5) {
       reject('candidate_cli_arguments_invalid');
     }
-    const result = await verifyGithubCandidate(process.argv[3], process.argv[4]);
+    const result = mode === '--github-production'
+      ? await verifyGithubProductionCandidate(process.argv[3], process.argv[4])
+      : await verifyGithubCandidate(process.argv[3], process.argv[4]);
     console.log(JSON.stringify(result));
   })().catch((error) => {
-    const code = error instanceof Error && /^candidate_[a-z0-9_]+$/u.test(error.message)
+    const code = error instanceof Error && /^(?:candidate|promotion)_[a-z0-9_]+$/u.test(error.message)
       ? error.message
       : 'candidate_verification_failed';
     console.error(JSON.stringify({ status: 'failed', code }));

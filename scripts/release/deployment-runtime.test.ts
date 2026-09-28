@@ -79,15 +79,15 @@ describe('deployment transaction', () => {
   });
 
   it.each([
-    ['validate', ['validate']],
-    ['backup', ['validate', 'backup']],
-    ['migrationDryRun', ['validate', 'backup', 'migrationDryRun']],
-    ['applyMigrations', ['validate', 'backup', 'migrationDryRun', 'applyMigrations']],
-    ['deployEdge', ['validate', 'backup', 'migrationDryRun', 'applyMigrations', 'deployEdge', 'rollbackEdge:edge-old']],
-    ['deployWorker', ['validate', 'backup', 'migrationDryRun', 'applyMigrations', 'deployEdge', 'deployWorker', 'rollbackWorker:worker-old', 'rollbackEdge:edge-old']],
-    ['configureScheduler', ['validate', 'backup', 'migrationDryRun', 'applyMigrations', 'deployEdge', 'deployWorker', 'configureScheduler', 'pauseScheduler', 'rollbackWorker:worker-old', 'rollbackEdge:edge-old']],
-    ['smoke', ['validate', 'backup', 'migrationDryRun', 'applyMigrations', 'deployEdge', 'deployWorker', 'configureScheduler', 'smoke', 'pauseScheduler', 'rollbackWorker:worker-old', 'rollbackEdge:edge-old']],
-    ['recordEvidence', ['validate', 'backup', 'migrationDryRun', 'applyMigrations', 'deployEdge', 'deployWorker', 'configureScheduler', 'smoke', 'recordEvidence', 'pauseScheduler', 'rollbackWorker:worker-old', 'rollbackEdge:edge-old']]
+    ['validate', ['validate', 'recordEvidence']],
+    ['backup', ['validate', 'backup', 'recordEvidence']],
+    ['migrationDryRun', ['validate', 'backup', 'migrationDryRun', 'recordEvidence']],
+    ['applyMigrations', ['validate', 'backup', 'migrationDryRun', 'applyMigrations', 'recordEvidence']],
+    ['deployEdge', ['validate', 'backup', 'migrationDryRun', 'applyMigrations', 'deployEdge', 'rollbackEdge:edge-old', 'recordEvidence']],
+    ['deployWorker', ['validate', 'backup', 'migrationDryRun', 'applyMigrations', 'deployEdge', 'deployWorker', 'rollbackWorker:worker-old', 'rollbackEdge:edge-old', 'recordEvidence']],
+    ['configureScheduler', ['validate', 'backup', 'migrationDryRun', 'applyMigrations', 'deployEdge', 'deployWorker', 'configureScheduler', 'pauseScheduler', 'rollbackWorker:worker-old', 'rollbackEdge:edge-old', 'recordEvidence']],
+    ['smoke', ['validate', 'backup', 'migrationDryRun', 'applyMigrations', 'deployEdge', 'deployWorker', 'configureScheduler', 'smoke', 'pauseScheduler', 'rollbackWorker:worker-old', 'rollbackEdge:edge-old', 'recordEvidence']],
+    ['recordEvidence', ['validate', 'backup', 'migrationDryRun', 'applyMigrations', 'deployEdge', 'deployWorker', 'configureScheduler', 'smoke', 'recordEvidence', 'pauseScheduler', 'rollbackWorker:worker-old', 'rollbackEdge:edge-old', 'recordEvidence']]
   ])('stops and compensates safely when %s fails', async (stage, expectedCalls) => {
     const ctx = fixture(stage);
     await expect(runDeployment(productionPlan, ctx.operations)).rejects.toBeInstanceOf(DeploymentFailure);

@@ -190,6 +190,12 @@ export async function runDeployment(
       startedAt,
       completedAt: now().toISOString()
     });
+    try {
+      await operations.recordEvidence(evidence);
+    } catch {
+      // Preserve the primary deployment failure. The caller still receives the
+      // sanitized evidence even when the external evidence sink is unavailable.
+    }
     throw new DeploymentFailure(evidence);
   }
 }

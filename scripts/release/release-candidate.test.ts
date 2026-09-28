@@ -2,7 +2,12 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { createDeploymentEvidence, createDeploymentFailureEvidence } from './deployment-evidence.js';
 import { canonicalReleaseManifest, createReleaseManifest } from './release-manifest.js';
-import { verifyReleaseCandidate, type ReleaseCandidateInput } from './release-candidate.js';
+import {
+  verifyProductionPromotion,
+  verifyReleaseCandidate,
+  type ProductionPromotionInput,
+  type ReleaseCandidateInput
+} from './release-candidate.js';
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 const sourceSha = 'a'.repeat(40);
@@ -118,5 +123,45 @@ describe('release candidate verification', () => {
     });
     await expect(verifyReleaseCandidate({ ...input, deploymentEvidence: failure }))
       .rejects.toThrow('candidate_deployment_evidence_invalid');
+  });
+});
+
+describe('production promotion verification', () => {
+  async function promotion(): Promise<ProductionPromotionInput> {
+    const candidate = await validInput();
+    return {
+      push: {
+        ref: 'refs/heads/main',
+        beforeSha: 'c'.repeat(40),
+        afterSha: 'd'.repeat(40),
+        repository: 'owner/miraichi'
+      },
+      checkedOutSha: 'd'.repeat(40),
+      pullRequestMerged: true,
+      mergeCommitSha: 'd'.repeat(40),
+      candidate
+    };
+  }
+
+  it('accepts only the exact checked-out main commit created by the verified staging PR', async () => {
+    await expect(verifyProductionPromotion(await promotion())).resolves.toMatchObject({
+      status: 'verified', sourceSha, treeId
+    });
+  });
+
+  it.each([
+    ['non-main ref', async () => ({ ...await promotion(), push: { ...(await promotion()).push, ref: 'refs/tags/main' } }), 'promotion_wrong_ref'],
+    ['direct push', async () => ({ ...await promotion(), pullRequestMerged: false }), 'promotion_pr_not_merged'],
+    ['different merge commit', async () => ({ ...await promotion(), mergeCommitSha: 'e'.repeat(40) }), 'promotion_merge_commit_mismatch'],
+    ['checkout drift', async () => ({ ...await promotion(), checkedOutSha: 'e'.repeat(40) }), 'promotion_checkout_mismatch'],
+    ['zero push identity', async () => ({
+      ...await promotion(),
+      push: { ...(await promotion()).push, afterSha: '0'.repeat(40) },
+      checkedOutSha: '0'.repeat(40),
+      mergeCommitSha: '0'.repeat(40)
+    }), 'promotion_push_sha_invalid'],
+    ['repository drift', async () => ({ ...await promotion(), push: { ...(await promotion()).push, repository: 'attacker/miraichi' } }), 'promotion_repository_mismatch']
+  ])('rejects %s', async (_label, build, code) => {
+    await expect(verifyProductionPromotion(await build())).rejects.toThrow(code);
   });
 });
