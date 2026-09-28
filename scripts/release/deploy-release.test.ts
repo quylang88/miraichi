@@ -23,6 +23,10 @@ const config: CliReleaseConfig = {
   edgeFunctionUrl: 'https://abcdefghijklmnopqrst.supabase.co/functions/v1/miraichi-api',
   edgeGatewayToken: 'gateway-token-with-at-least-32-bytes',
   priorEdgeArtifactRoot: 'C:/artifacts/edge-old',
+  priorRelease: {
+    environment: 'production', gitSha: 'd'.repeat(40),
+    artifactVersion: 'candidate-old', compatibilityVersion: 'owner-v2'
+  },
   priorVersions: { edgeVersionId: 'edge-old', workerVersionId: 'worker-old' }
 };
 
@@ -74,6 +78,25 @@ describe('release CLI adapters', () => {
       expect.arrayContaining(['db', 'push', '--linked', '--include-all', '--yes']),
       expect.arrayContaining(['functions', 'deploy', 'miraichi-api', '--project-ref', config.projectRef, '--use-api']),
       expect.arrayContaining(['--workdir', config.priorEdgeArtifactRoot]),
+      expect.arrayContaining(['secrets', 'set', '--project-ref', config.projectRef,
+        `MIRAICHI_RELEASE_ENVIRONMENT=${config.target.environment}`,
+        `MIRAICHI_RELEASE_SHA=${manifest.sourceSha}`,
+        `MIRAICHI_RELEASE_ARTIFACT=${config.artifactVersion}`,
+        'MIRAICHI_SCHEMA_COMPAT_VERSION=owner-v3']),
+      expect.arrayContaining(['secrets', 'set', '--project-ref', config.projectRef,
+        `MIRAICHI_RELEASE_ENVIRONMENT=${config.priorRelease.environment}`,
+        `MIRAICHI_RELEASE_SHA=${config.priorRelease.gitSha}`,
+        `MIRAICHI_RELEASE_ARTIFACT=${config.priorRelease.artifactVersion}`,
+        `MIRAICHI_SCHEMA_COMPAT_VERSION=${config.priorRelease.compatibilityVersion}`]),
+      expect.arrayContaining(['wrangler', 'deploy', '--env', 'production', '--keep-vars', '--strict',
+        '--var', 'DEPLOYMENT_ENV:production',
+        '--var', `MIRAICHI_EDGE_FUNCTION_URL:${config.edgeFunctionUrl}`,
+        '--var', `MIRAICHI_PUBLIC_ORIGIN:${config.publicOrigin}`,
+        '--var', 'MIRAICHI_EDGE_REGION:ap-southeast-1',
+        '--var', 'MIRAICHI_RELEASE_ENVIRONMENT:production',
+        '--var', `MIRAICHI_RELEASE_SHA:${manifest.sourceSha}`,
+        '--var', `MIRAICHI_RELEASE_ARTIFACT:${config.artifactVersion}`,
+        '--var', 'MIRAICHI_SCHEMA_COMPAT_VERSION:owner-v3']),
       expect.arrayContaining(['wrangler', 'rollback', 'worker-old', '--env', 'production', '--yes']),
       expect.arrayContaining(['db', 'query', '--linked', "select miraichi_app.configure_hosted_refresh('ap-southeast-1');"]),
       expect.arrayContaining(['db', 'query', '--linked', 'select miraichi_app.unschedule_hosted_refresh();'])
@@ -90,6 +113,9 @@ describe('release CLI adapters', () => {
     }, { runner })).toThrow('immutable');
     expect(() => createCliReleaseOperations({ ...config, candidateSha: 'c'.repeat(40) }, { runner }))
       .toThrow('Candidate SHA');
+    expect(() => createCliReleaseOperations({
+      ...config, priorRelease: { ...config.priorRelease, environment: 'staging' }
+    }, { runner })).toThrow(/prior release/iu);
     expect(() => createCliReleaseOperations({ ...config, checkedOutSha: 'c'.repeat(40) }, { runner }))
       .not.toThrow();
     expect(() => createCliReleaseOperations({

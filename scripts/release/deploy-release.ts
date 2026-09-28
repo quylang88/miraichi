@@ -7,7 +7,7 @@ import {
   getReleaseTarget,
   type ReleaseTarget
 } from '../../packages/config/src/release-targets.js';
-import type { ReleaseMetadata } from '../../packages/shared/src/contracts/index.js';
+import { readReleaseMetadata, type ReleaseMetadata } from '../../packages/shared/src/contracts/index.js';
 import { createCommandRunner, type CommandRunner } from './command-runner.js';
 import { assertImmutableId, type DeploymentEvidence, type RuntimeVersions } from './deployment-evidence.js';
 import {
@@ -33,6 +33,7 @@ export interface CliReleaseConfig {
   readonly edgeFunctionUrl: string;
   readonly edgeGatewayToken: string;
   readonly priorEdgeArtifactRoot: string;
+  readonly priorRelease: ReleaseMetadata;
   readonly priorVersions: RuntimeVersions;
   readonly compatibilityVersion?: string;
   readonly evidencePath?: string;
@@ -85,6 +86,15 @@ function assertConfig(config: CliReleaseConfig): void {
     throw new Error('Release artifact roots must be absolute');
   }
   if (config.edgeGatewayToken.length < 32) throw new Error('Edge gateway token is invalid');
+  const priorRelease = readReleaseMetadata({
+    MIRAICHI_RELEASE_ENVIRONMENT: config.priorRelease.environment,
+    MIRAICHI_RELEASE_SHA: config.priorRelease.gitSha,
+    MIRAICHI_RELEASE_ARTIFACT: config.priorRelease.artifactVersion,
+    MIRAICHI_SCHEMA_COMPAT_VERSION: config.priorRelease.compatibilityVersion
+  });
+  if (priorRelease.environment !== config.target.environment) {
+    throw new Error('Prior release environment does not match the approved target');
+  }
   assertImmutableId(config.artifactVersion, 'Artifact version');
   assertImmutableId(config.priorVersions.edgeVersionId, 'Prior Edge version');
   assertImmutableId(config.priorVersions.workerVersionId, 'Prior Worker version');
@@ -114,12 +124,35 @@ async function localMigrationVersions(root: string): Promise<string[]> {
 }
 
 function expectedRelease(config: CliReleaseConfig): ReleaseMetadata {
-  return {
-    environment: config.target.environment,
-    gitSha: config.manifest.sourceSha,
-    artifactVersion: config.artifactVersion,
-    compatibilityVersion: config.compatibilityVersion ?? 'owner-v3'
-  };
+  return readReleaseMetadata({
+    MIRAICHI_RELEASE_ENVIRONMENT: config.target.environment,
+    MIRAICHI_RELEASE_SHA: config.manifest.sourceSha,
+    MIRAICHI_RELEASE_ARTIFACT: config.artifactVersion,
+    MIRAICHI_SCHEMA_COMPAT_VERSION: config.compatibilityVersion ?? 'owner-v3'
+  });
+}
+
+function edgeReleaseSecretArgs(projectRef: string, release: ReleaseMetadata): string[] {
+  return [
+    'secrets', 'set', '--project-ref', projectRef,
+    `MIRAICHI_RELEASE_ENVIRONMENT=${release.environment}`,
+    `MIRAICHI_RELEASE_SHA=${release.gitSha}`,
+    `MIRAICHI_RELEASE_ARTIFACT=${release.artifactVersion}`,
+    `MIRAICHI_SCHEMA_COMPAT_VERSION=${release.compatibilityVersion}`
+  ];
+}
+
+function workerPublicBindingArgs(config: CliReleaseConfig, release: ReleaseMetadata): string[] {
+  return [
+    '--var', `DEPLOYMENT_ENV:${config.target.environment}`,
+    '--var', `MIRAICHI_EDGE_FUNCTION_URL:${config.edgeFunctionUrl}`,
+    '--var', `MIRAICHI_PUBLIC_ORIGIN:${config.publicOrigin}`,
+    '--var', `MIRAICHI_EDGE_REGION:${config.target.edgeRegion}`,
+    '--var', `MIRAICHI_RELEASE_ENVIRONMENT:${release.environment}`,
+    '--var', `MIRAICHI_RELEASE_SHA:${release.gitSha}`,
+    '--var', `MIRAICHI_RELEASE_ARTIFACT:${release.artifactVersion}`,
+    '--var', `MIRAICHI_SCHEMA_COMPAT_VERSION:${release.compatibilityVersion}`
+  ];
 }
 
 export function createCliReleaseOperations(
@@ -211,16 +244,20 @@ export function createCliReleaseOperations(
       await runSupabase(['db', 'push', '--linked', '--include-all', '--yes']);
     },
     deployEdge: async () => {
+      await runSupabase(edgeReleaseSecretArgs(config.projectRef, expectedRelease(config)));
       await runSupabase(['functions', 'deploy', 'miraichi-api', '--project-ref', config.projectRef, '--use-api', '--workdir', config.root]);
       return { versionId: config.manifest.edgeHash };
     },
     rollbackEdge: async (versionId) => {
       if (versionId !== config.priorVersions.edgeVersionId) throw Object.assign(new Error('Edge rollback version mismatch'), { code: 'edge_rollback_version_mismatch' });
+      await runSupabase(edgeReleaseSecretArgs(config.projectRef, config.priorRelease));
       await runSupabase(['functions', 'deploy', 'miraichi-api', '--project-ref', config.projectRef, '--use-api', '--workdir', config.priorEdgeArtifactRoot]);
     },
     deployWorker: async () => {
+      const release = expectedRelease(config);
       const result = await runWrangler([
         'deploy', '--env', config.target.cloudflareEnvironment, '--keep-vars', '--strict',
+        ...workerPublicBindingArgs(config, release),
         '--message', `release:${config.manifest.sourceSha}`
       ]);
       const versionId = WORKER_VERSION.exec(result.stdout)?.[1];
@@ -280,6 +317,12 @@ export async function runDeployRelease(env: NodeJS.ProcessEnv = process.env): Pr
     edgeFunctionUrl: required(env, 'MIRAICHI_EDGE_FUNCTION_URL'),
     edgeGatewayToken: required(env, 'MIRAICHI_GATEWAY_TOKEN'),
     priorEdgeArtifactRoot: path.resolve(required(env, 'MIRAICHI_PRIOR_EDGE_ARTIFACT_ROOT')),
+    priorRelease: {
+      environment: target.environment,
+      gitSha: required(env, 'MIRAICHI_PRIOR_RELEASE_SHA'),
+      artifactVersion: required(env, 'MIRAICHI_PRIOR_RELEASE_ARTIFACT'),
+      compatibilityVersion: required(env, 'MIRAICHI_PRIOR_SCHEMA_COMPAT_VERSION')
+    },
     priorVersions: {
       edgeVersionId: required(env, 'MIRAICHI_PRIOR_EDGE_VERSION_ID'),
       workerVersionId: required(env, 'MIRAICHI_PRIOR_WORKER_VERSION_ID')

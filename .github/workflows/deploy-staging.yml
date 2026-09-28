@@ -177,12 +177,22 @@ jobs:
           node --input-type=module <<'NODE' >> "$GITHUB_ENV"
           import { readFileSync } from 'node:fs';
           const evidence = JSON.parse(readFileSync('artifacts/prior/deployment-evidence.json', 'utf8'));
+          const release = JSON.parse(readFileSync('artifacts/prior/apps/web/dist/release.json', 'utf8'));
           if (evidence.status !== 'succeeded' || evidence.release?.sourceSha !== process.env.PRIOR_SHA) {
             throw new Error('Prior rollback evidence does not match its deployment SHA');
           }
+          if (release.environment !== 'staging'
+            || release.gitSha !== evidence.release.sourceSha
+            || release.artifactVersion !== evidence.release.artifactVersion
+            || typeof release.compatibilityVersion !== 'string') {
+            throw new Error('Prior rollback release identity is inconsistent');
+          }
           for (const [name, value] of Object.entries({
             MIRAICHI_PRIOR_EDGE_VERSION_ID: evidence.runtime?.edgeVersionId,
-            MIRAICHI_PRIOR_WORKER_VERSION_ID: evidence.runtime?.workerVersionId
+            MIRAICHI_PRIOR_WORKER_VERSION_ID: evidence.runtime?.workerVersionId,
+            MIRAICHI_PRIOR_RELEASE_SHA: release.gitSha,
+            MIRAICHI_PRIOR_RELEASE_ARTIFACT: release.artifactVersion,
+            MIRAICHI_PRIOR_SCHEMA_COMPAT_VERSION: release.compatibilityVersion
           })) {
             if (typeof value !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value) || value.toLowerCase() === 'latest') {
               throw new Error(`Invalid prior runtime version: ${name}`);
@@ -201,12 +211,17 @@ jobs:
           BASELINE_SHA: ${{ vars.MIRAICHI_STAGING_BASELINE_SHA }}
           BASELINE_EDGE_VERSION_ID: ${{ vars.MIRAICHI_STAGING_BASELINE_EDGE_VERSION_ID }}
           BASELINE_WORKER_VERSION_ID: ${{ vars.MIRAICHI_STAGING_BASELINE_WORKER_VERSION_ID }}
+          BASELINE_RELEASE_SHA: ${{ vars.MIRAICHI_STAGING_BASELINE_RELEASE_SHA }}
+          BASELINE_RELEASE_ARTIFACT: ${{ vars.MIRAICHI_STAGING_BASELINE_RELEASE_ARTIFACT }}
+          BASELINE_SCHEMA_COMPAT_VERSION: ${{ vars.MIRAICHI_STAGING_BASELINE_SCHEMA_COMPAT_VERSION }}
         run: |
           node --input-type=module <<'NODE'
           const sha = process.env.BASELINE_SHA ?? '';
+          const releaseSha = process.env.BASELINE_RELEASE_SHA ?? '';
           const immutable = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
           if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error('MIRAICHI_STAGING_BASELINE_SHA must be an exact Git SHA');
-          for (const name of ['BASELINE_EDGE_VERSION_ID', 'BASELINE_WORKER_VERSION_ID']) {
+          if (releaseSha !== sha) throw new Error('Staging baseline Git and release SHAs must match');
+          for (const name of ['BASELINE_EDGE_VERSION_ID', 'BASELINE_WORKER_VERSION_ID', 'BASELINE_RELEASE_ARTIFACT', 'BASELINE_SCHEMA_COMPAT_VERSION']) {
             const value = process.env[name] ?? '';
             if (!immutable.test(value) || value.toLowerCase() === 'latest') throw new Error(`${name} is not immutable`);
           }
@@ -218,6 +233,9 @@ jobs:
           {
             echo "MIRAICHI_PRIOR_EDGE_VERSION_ID=$BASELINE_EDGE_VERSION_ID"
             echo "MIRAICHI_PRIOR_WORKER_VERSION_ID=$BASELINE_WORKER_VERSION_ID"
+            echo "MIRAICHI_PRIOR_RELEASE_SHA=$BASELINE_RELEASE_SHA"
+            echo "MIRAICHI_PRIOR_RELEASE_ARTIFACT=$BASELINE_RELEASE_ARTIFACT"
+            echo "MIRAICHI_PRIOR_SCHEMA_COMPAT_VERSION=$BASELINE_SCHEMA_COMPAT_VERSION"
             echo "MIRAICHI_PRIOR_EDGE_ARTIFACT_ROOT=$GITHUB_WORKSPACE/artifacts/prior/baseline"
           } >> "$GITHUB_ENV"
 
