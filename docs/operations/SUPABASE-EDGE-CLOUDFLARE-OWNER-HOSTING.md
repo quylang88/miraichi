@@ -4,13 +4,15 @@
 > supersedes this runbook's Tokyo production target with Singapore `ap-southeast-1`. Do not use the
 > historical Frankfurt-to-Tokyo section for a future production promotion.
 
-> **Status: match-detail candidate passed; awaiting owner feedback.**
+> **Status: historical Frankfurt staging evidence; production operations moved to the active
+> production delivery runbook.**
 > User-triggered match detail, hosted browser E2E and rollback/restore passed on 2026-09-10.
 > `pnpm run verify:staging:hosted` passed after restoration at `2026-09-10T06:11:26.413Z`.
-> Local verification alone cannot close staging. Tokyo/production remains unapproved.
+> Local verification alone cannot close staging. Remote production rollout is governed by
+> `PRODUCTION-DELIVERY.md`.
 
 This runbook replaces the Koyeb deployment path. It retains the Frankfurt Supabase staging project
-and its verified match snapshot. It does not authorize a push, Tokyo project, production promotion,
+and its verified match snapshot. It does not authorize a push, production project/promotion,
 paid service, remote database reset, or project deletion.
 
 ## 2026-09-10 user-triggered match detail
@@ -509,20 +511,15 @@ causes an outage; the recovery is restoring matching secret versions, not bypass
 - `pnpm run verify:staging` passed with 141 unit files/705 tests, all integration suites, endpoint
   E2E, PWA verification, audits, typecheck, and the final static build.
 
-## 8. Frankfurt staging to Tokyo production
+## 8. Superseded historical Frankfurt-to-Tokyo procedure
 
-Do nothing in this section until the owner explicitly approves production preparation.
+This section is retained only as decision history. Do not execute it. ADR-0055 replaced Tokyo with
+a separate Singapore `ap-southeast-1` production project and the active procedure moved to
+`PRODUCTION-DELIVERY.md`.
 
-1. Export and verify an owner backup from Frankfurt.
-2. Create a separate Supabase project in Tokyo; do not move or delete Frankfurt.
-3. Apply all migrations and verify their versions.
-4. Sync the exact validated current match snapshot and verify row/competition/snapshot counts.
-5. Configure independent Edge secrets and Vault values, then deploy the same reviewed function.
-6. Run direct gateway and transaction smoke with `ap-northeast-1`.
-7. Change the Cloudflare production target and region to Tokyo, deploy a recorded version, and run
-   the complete authenticated/cron smoke.
-8. Retain Frankfurt until Tokyo backup, owner flow, live refresh, rollback, and owner approval are
-   all explicit. Deletion is a separate destructive action requiring explicit approval.
+The former proposal was: export Frankfurt data, create a Tokyo project, apply migrations, copy a
+match snapshot, configure runtime secrets, deploy with `ap-northeast-1`, and retain Frankfurt for
+rollback. None of those steps is current authorization or a valid production runbook.
 
 ## Published limits to monitor
 

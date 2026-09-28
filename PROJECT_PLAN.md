@@ -9,11 +9,14 @@
   dataset on 2026-09-27. ADR-0055 records the accepted decisions and the owner approved the written
   design at `docs/superpowers/specs/2026-09-27-production-delivery-automation-design.md` by asking
   to proceed with the exact TDD plan.
-- **Active planning track**: `phase:implementation-plan Production delivery automation and
-  owner-data safety` — the sequential RED -> GREEN -> review -> commit slices are written in
-  `docs/superpowers/plans/2026-09-27-production-delivery-automation.md` and await owner review.
-  Code implementation, remote branch/rule changes, secrets, pushes, resource creation, and
-  deployment remain unapproved until that plan gate is accepted.
+- **Completed implementation-plan gate**: `phase:implementation-plan Production delivery automation
+  and owner-data safety` — the owner approved the sequential RED -> GREEN -> review -> commit plan
+  and authorized execution through reviewed slice commits.
+- **Active implementation track**: repository delivery foundations through automatic staging,
+  exact-candidate production, encrypted backup/restore verification, migration safety, readiness,
+  and operations documentation are being completed on the isolated implementation branch. Remote
+  branch/rule changes, provider creation, secret entry, and deployment occur only in the explicit
+  provisioning/rehearsal slice after the repository closeout is green.
 - **Status**: The owner correction is deployed to Frankfurt Edge version 26 and Cloudflare Worker
   `fc867def-cd30-4237-978d-7090f068cb99`. Today Quick Add is removed, while Bets retains a clean
   Manual Add flow for matches outside the canonical feed. Local release gates, real scoped and
@@ -88,7 +91,8 @@
   `miraichi-shell-v17-manual-add`. Eighteen migrations, three refresh jobs, and four Vault names are
   present. The aggregate hosted gate passed at `2026-09-18T04:36:48.478Z`; the previous Edge v25
   SHA and Worker `96f8a771-4419-4c67-9c67-4760dff43749` remain the recorded rollback baseline.
-  Push, Tokyo creation, and production remain pending.
+  This evidence predates ADR-0055. Remote staging branch/rule provisioning, the separate Singapore
+  production project, and production promotion remain pending under the active delivery plan.
 - **Current lifecycle source of truth**: this file.
 
 ## Structured Add Bet — 2026-09-15 staging candidate
