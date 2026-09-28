@@ -24,6 +24,7 @@ jobs:
     env:
       MIRAICHI_RELEASE_ENVIRONMENT: staging
       MIRAICHI_EDGE_REGION: eu-central-1
+      MIRAICHI_RELEASE_SHA: ${{ github.sha }}
       MIRAICHI_CANDIDATE_SHA: ${{ github.sha }}
       MIRAICHI_RELEASE_ARTIFACT: miraichi-release-${{ github.sha }}
       MIRAICHI_RELEASE_MANIFEST_PATH: ${{ github.workspace }}/artifacts/release/release-manifest.json

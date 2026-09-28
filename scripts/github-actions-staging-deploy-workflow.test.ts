@@ -12,6 +12,7 @@ describe('GitHub Actions staging deployment workflow', () => {
     expect(workflow).toContain('group: miraichi-staging-deploy');
     expect(workflow).toContain('cancel-in-progress: false');
     expect(workflow).toContain('ref: ${{ github.sha }}');
+    expect(workflow).toContain('MIRAICHI_RELEASE_SHA: ${{ github.sha }}');
     expect(workflow).toContain("GITHUB_REF_NAME !== 'staging'");
   });
 
