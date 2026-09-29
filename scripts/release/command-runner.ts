@@ -18,15 +18,28 @@ export interface CommandRunner {
 }
 
 export class CommandExecutionError extends Error {
-  readonly code = 'command_failed';
-
-  constructor(readonly exitCode: number | null) {
+  constructor(readonly exitCode: number | null, readonly code = 'command_failed') {
     super('Release command failed');
     this.name = 'CommandExecutionError';
   }
 }
 
 const MAX_CAPTURE_BYTES = 2 * 1024 * 1024;
+
+function classifyFailure(stderr: string, exceeded: boolean): string {
+  if (exceeded) return 'command_output_limit_exceeded';
+  if (/password authentication failed|authentication failed|invalid (?:access )?token|unauthorized|forbidden/iu.test(stderr)) {
+    return 'authentication_failed';
+  }
+  if (/failed to connect|connection refused|network is unreachable|no such host|could not translate host|dial tcp|connection reset|i\/o timeout/iu.test(stderr)) {
+    return 'connection_failed';
+  }
+  if (/migration history.*(?:mismatch|out of sync)|repair the migration history|remote migration versions?.*(?:not found|do not match)|local migration files.*inserted before/iu.test(stderr)) {
+    return 'migration_history_mismatch';
+  }
+  if (/unknown (?:command|flag)|usage:/iu.test(stderr)) return 'release_cli_usage_failed';
+  return 'command_failed';
+}
 
 function assertLiteral(value: string, label: string): void {
   if (!value || value.includes('\0')) throw new Error(`${label} is invalid`);
@@ -66,8 +79,9 @@ export function createCommandRunner(): CommandRunner {
         const timeout = setTimeout(() => child.kill(), timeoutMs);
         child.on('close', (exitCode) => {
           clearTimeout(timeout);
-          if (exceeded || exitCode !== 0) reject(new CommandExecutionError(exitCode));
-          else resolve({ stdout, stderr, exitCode: 0 });
+          if (exceeded || exitCode !== 0) {
+            reject(new CommandExecutionError(exitCode, classifyFailure(stderr, exceeded)));
+          } else resolve({ stdout, stderr, exitCode: 0 });
         });
         if (options.input !== undefined) child.stdin.end(options.input);
         else child.stdin.end();
