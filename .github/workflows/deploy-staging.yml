@@ -90,9 +90,16 @@ jobs:
           test -n "$MIGRATION_BASE_SHA"
           echo "MIGRATION_BASE_SHA=$MIGRATION_BASE_SHA" >> "$GITHUB_ENV"
 
+      - name: Start disposable local Postgres
+        run: pnpm exec supabase db start
+
       - name: Run full staging verification
         id: verify
         run: pnpm run verify:staging
+
+      - name: Stop disposable local Postgres
+        if: ${{ always() }}
+        run: pnpm exec supabase stop --no-backup
 
       - name: Build deployable Edge artifact
         run: pnpm run edge:function:build
