@@ -351,15 +351,26 @@ function localMigrationFiles(root: string): WorkingTreeMigrationFile[] {
     }));
 }
 
+export function resolveMigrationBaseSha(input: {
+  readonly env: Readonly<Record<string, string | undefined>>;
+  readonly headSha: string;
+  readonly git: (args: readonly string[]) => string;
+}): string {
+  const explicitBaseSha = input.env.MIGRATION_BASE_SHA?.trim()
+    || input.env.GITHUB_BASE_SHA?.trim();
+  if (explicitBaseSha) return explicitBaseSha;
+
+  const baseRef = input.env.GITHUB_BASE_REF?.trim() || 'main';
+  return input.git(['merge-base', input.headSha, `refs/remotes/origin/${baseRef}`]).trim();
+}
+
 const isCli = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isCli) {
   const run = async (): Promise<void> => {
     const repository = new GitMigrationRepository();
     const git = (args: readonly string[]) => execFileSync('git', [...args], { encoding: 'utf8' }).trim();
     const headSha = process.env.GITHUB_SHA?.trim() || git(['rev-parse', 'HEAD']);
-    const baseSha = process.env.MIGRATION_BASE_SHA?.trim()
-      || process.env.GITHUB_BASE_SHA?.trim()
-      || git(['merge-base', headSha, 'main']);
+    const baseSha = resolveMigrationBaseSha({ env: process.env, headSha, git });
     const migrations = overlayWorkingTreeMigrations(
       discoverMigrationSet({ repository, baseSha, headSha }),
       localMigrationFiles(process.cwd())
