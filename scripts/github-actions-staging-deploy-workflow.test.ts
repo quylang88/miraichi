@@ -63,6 +63,15 @@ describe('GitHub Actions staging deployment workflow', () => {
     expect(workflow).toMatch(/name: Stop disposable local Postgres\s*\n\s*if: \$\{\{ always\(\) \}\}\s*\n\s*run: pnpm exec supabase stop --no-backup/u);
   });
 
+  it('installs the browser runtimes before full staging verification', () => {
+    const install = workflow.indexOf('name: Install Playwright browsers');
+    const verify = workflow.indexOf('name: Run full staging verification');
+
+    expect(install).toBeGreaterThan(-1);
+    expect(install).toBeLessThan(verify);
+    expect(workflow).toMatch(/name: Install Playwright browsers\s*\n\s*run: pnpm exec playwright install --with-deps chromium webkit/u);
+  });
+
   it('records success and failure and retains exact-SHA evidence for a bounded time', () => {
     expect(workflow).toContain('github.rest.repos.createDeployment');
     expect(workflow).toContain('github.rest.repos.createDeploymentStatus');
