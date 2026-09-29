@@ -51,6 +51,18 @@ describe('GitHub Actions staging deployment workflow', () => {
     }
   });
 
+  it('runs migration-preservation verification against a disposable local database', () => {
+    const start = workflow.indexOf('name: Start disposable local Postgres');
+    const verify = workflow.indexOf('name: Run full staging verification');
+    const stop = workflow.indexOf('name: Stop disposable local Postgres');
+
+    expect(start).toBeGreaterThan(-1);
+    expect(workflow).toMatch(/name: Start disposable local Postgres\s*\n\s*run: pnpm exec supabase db start/u);
+    expect(stop).toBeGreaterThan(verify);
+    expect(start).toBeLessThan(verify);
+    expect(workflow).toMatch(/name: Stop disposable local Postgres\s*\n\s*if: \$\{\{ always\(\) \}\}\s*\n\s*run: pnpm exec supabase stop --no-backup/u);
+  });
+
   it('records success and failure and retains exact-SHA evidence for a bounded time', () => {
     expect(workflow).toContain('github.rest.repos.createDeployment');
     expect(workflow).toContain('github.rest.repos.createDeploymentStatus');
