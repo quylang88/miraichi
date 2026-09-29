@@ -37,8 +37,9 @@ Before every production migration, export the durable owner dataset, validate it
 store it in a private Cloudflare R2 Standard bucket. Also run a daily backup and a weekly disposable
 restore test. Match snapshots, provider caches, refresh state, sessions, and temporary discipline
 challenges are rebuildable or ephemeral and remain outside the owner backup. The pipeline enforces a
-1 GB internal storage ceiling and lifecycle retention so expected R2 usage remains well inside the
-current free tier; R2 is usage-billed and is not represented as a hard zero-cost service.
+16 MB per-object, 100-object per-prefix, and 1 GB retained-storage ceilings, disables automatic SDK
+retries, and applies lifecycle retention so expected R2 usage remains well inside the current free
+tier. R2 is usage-billed and is not represented as a hard zero-cost service or hard spending cap.
 
 Normal production automation accepts only backward-compatible expand/backfill migrations. Destructive
 contract migrations require a separately reviewed release after old code no longer depends on the

@@ -7,6 +7,7 @@ import {
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
+  type S3ClientConfig,
   type GetObjectCommandOutput,
   type HeadObjectCommandOutput,
   type ListObjectsV2CommandOutput
@@ -18,6 +19,8 @@ import type {
 } from './owner-backup-crypto.js';
 
 export const OWNER_BACKUP_BYTE_CEILING = 1_000_000_000;
+export const OWNER_BACKUP_OBJECT_BYTE_CEILING = 16_000_000;
+export const OWNER_BACKUP_OBJECT_COUNT_CEILING = 100;
 
 export interface StoredBackupMetadata {
   readonly environment: OwnerBackupEnvironment;
@@ -59,6 +62,7 @@ export interface R2OwnerBackupStoreConfig {
   readonly ownerProfileId: string;
   readonly prefix?: string;
   readonly client?: OwnerBackupS3Client;
+  readonly clientFactory?: (options: S3ClientConfig) => OwnerBackupS3Client;
   readonly now?: () => Date;
 }
 
@@ -272,10 +276,11 @@ export function createR2OwnerBackupStore(config: R2OwnerBackupStoreConfig): Owne
   const now = config.now ?? (() => new Date());
   const basePrefix = config.prefix ?? 'owner-backups';
   const boundedPrefix = `${basePrefix}/${config.environment}/${config.ownerProfileId}/`;
-  const client: OwnerBackupS3Client = config.client ?? new S3Client({
+  const client: OwnerBackupS3Client = config.client ?? (config.clientFactory ?? ((options) => new S3Client(options)))({
     endpoint: config.endpoint,
     region: config.region,
-    credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey }
+    credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
+    maxAttempts: 1
   });
 
   const send = async <Output>(command: OwnerBackupS3Command): Promise<Output> => {
@@ -312,21 +317,21 @@ export function createR2OwnerBackupStore(config: R2OwnerBackupStoreConfig): Owne
   };
 
   const list = async (): Promise<StoredBackupObject[]> => {
+    const output = await send<ListObjectsV2CommandOutput>(new ListObjectsV2Command({
+      Bucket: config.bucket,
+      Prefix: boundedPrefix,
+      MaxKeys: OWNER_BACKUP_OBJECT_COUNT_CEILING + 1
+    }));
+    const contents = output.Contents ?? [];
+    if (output.IsTruncated || contents.length > OWNER_BACKUP_OBJECT_COUNT_CEILING) {
+      throw new Error('Owner backup object-count safety ceiling exceeded');
+    }
     const keys: string[] = [];
-    let continuationToken: string | undefined;
-    do {
-      const output = await send<ListObjectsV2CommandOutput>(new ListObjectsV2Command({
-        Bucket: config.bucket, Prefix: boundedPrefix,
-        ...(continuationToken ? { ContinuationToken: continuationToken } : {})
-      }));
-      for (const object of output.Contents ?? []) {
-        if (!object.Key) throw new Error('Owner backup storage listing is invalid');
-        assertBoundedKey(object.Key);
-        keys.push(object.Key);
-      }
-      continuationToken = output.IsTruncated ? output.NextContinuationToken : undefined;
-      if (output.IsTruncated && !continuationToken) throw new Error('Owner backup storage listing is invalid');
-    } while (continuationToken);
+    for (const object of contents) {
+      if (!object.Key) throw new Error('Owner backup storage listing is invalid');
+      assertBoundedKey(object.Key);
+      keys.push(object.Key);
+    }
     return Promise.all(keys.sort().map(head));
   };
 
@@ -366,6 +371,9 @@ export function createR2OwnerBackupStore(config: R2OwnerBackupStoreConfig): Owne
     const safeTimestamp = exportedAt.replace(/[:.]/gu, '-');
     const objectKey = `${boundedPrefix}${date[0]}/${date[1]}/${date[2]}/${safeTimestamp}-${parsedEnvelope.ciphertextSha256}.json`;
     const payload = Buffer.from(canonicalJson(parsedEnvelope), 'utf8');
+    if (payload.byteLength > OWNER_BACKUP_OBJECT_BYTE_CEILING) {
+      throw new Error('Owner backup exceeds the 16 MB single-object safety ceiling');
+    }
     const metadata = storedMetadata(parsedEnvelope);
     const candidate: StoredBackupObject = {
       key: objectKey, size: payload.byteLength, uploadedAt,
@@ -379,6 +387,9 @@ export function createR2OwnerBackupStore(config: R2OwnerBackupStoreConfig): Owne
         throw new Error('Owner backup storage idempotency mismatch');
       }
       return exact;
+    }
+    if (existing.length >= OWNER_BACKUP_OBJECT_COUNT_CEILING) {
+      throw new Error('Owner backup object-count safety ceiling reached');
     }
     const retention = planBackupRetention([...existing, candidate], now());
     if (retention.projectedBytes > OWNER_BACKUP_BYTE_CEILING) {

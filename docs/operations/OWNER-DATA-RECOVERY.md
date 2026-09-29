@@ -22,13 +22,18 @@ The production backup workflow:
 4. performs metadata, byte readback, decryption, payload-hash, owner, and record-count verification;
 5. applies bounded retention only after the new object is proven.
 
-The retention plan keeps 30 daily and 12 monthly encrypted objects, subject to the internal 1 GB
-pre-upload refusal ceiling.
+The retention plan keeps 30 daily and 12 monthly encrypted objects. The client fails closed before
+an R2 write when one serialized encrypted object exceeds 16 MB, retained objects would exceed 1 GB,
+or the owner prefix contains more than 100 objects. R2 SDK retries are disabled (`maxAttempts: 1`),
+so a provider failure cannot become an automatic request storm. A ceiling failure blocks backup and
+therefore blocks production promotion; it is not silently bypassed.
 
 Daily create/readback and weekly `backup:owner:restore-local` are independent of application deploy
 permission. Plaintext must never be written to GitHub artifacts, R2, logs, shell history, or normal
-files. R2 is usage-billed; retention and the internal 1 GB refusal ceiling are risk controls, not a
-hard billing cap.
+files. R2 is usage-billed; the 16 MB / 100-object / 1 GB refusal ceilings are application risk
+controls, not a Cloudflare account billing cap. Configure the lowest practical account budget alert
+and inspect Billable Usage, but treat the alert as informational: Cloudflare does not stop usage when
+the threshold is crossed, and reporting is not real-time.
 
 ## Encryption-key custody and rotation
 

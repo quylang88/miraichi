@@ -200,7 +200,11 @@ Direct production hotfixes are forbidden. The mandatory main -> staging -> main 
 
 - Supabase Free and Cloudflare Free have quotas and no uptime or recovery guarantee.
 - The practical recovery point is approximately one successful daily backup, not zero data loss.
-- R2 is usage-billed. The repository's 1 GB pre-upload ceiling and retention policy reduce risk but
-  do not cap the Cloudflare account bill.
+- R2 is usage-billed. The repository limits one encrypted object to 16 MB, one owner prefix to 100
+  objects, retained ciphertext to 1 GB, and SDK attempts to one. These fail-closed controls keep the
+  application far below the current Standard free allocation under normal operation, but they do
+  not cap the Cloudflare account bill or protect against unrelated account workloads.
+- Set the lowest practical account budget alert after R2 activation and review Billable Usage. The
+  alert is informational and delayed; it does not pause usage or provide a zero-cost guarantee.
 - No point-in-time recovery, cross-region database failover, or support SLA is provided by this
   design.

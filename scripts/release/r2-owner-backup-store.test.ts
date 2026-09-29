@@ -1,9 +1,12 @@
 import { Buffer } from 'node:buffer';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { createCloudBackupEnvelopeV3 } from '../../packages/shared/src/contracts/index.js';
 import { encryptOwnerBackup, parseBackupKey, type EncryptedOwnerBackupV1 } from './owner-backup-crypto.js';
 import {
   createR2OwnerBackupStore,
+  OWNER_BACKUP_OBJECT_BYTE_CEILING,
+  OWNER_BACKUP_OBJECT_COUNT_CEILING,
   planBackupRetention,
   type OwnerBackupS3Client,
   type StoredBackupObject
@@ -21,6 +24,7 @@ class FakeS3Client {
   readonly objects = new Map<string, FakeObject>();
   failPut = false;
   corruptReadback = false;
+  truncatedListing = false;
 
   async send(command: Parameters<OwnerBackupS3Client['send']>[0]): Promise<unknown> {
     const name = command.constructor.name;
@@ -32,7 +36,8 @@ class FakeS3Client {
         Contents: [...this.objects.entries()]
           .filter(([key]) => key.startsWith(prefix))
           .map(([Key, value]) => ({ Key, Size: value.size, LastModified: value.lastModified })),
-        IsTruncated: false
+        IsTruncated: this.truncatedListing,
+        ...(this.truncatedListing ? { NextContinuationToken: 'more' } : {})
       };
     }
     const key = String(input.Key);
@@ -114,6 +119,21 @@ describe('R2 owner backup store', () => {
     })).toThrow('configuration is invalid');
   });
 
+  it('disables automatic SDK retries for the real R2 client', () => {
+    let captured: Record<string, unknown> | undefined;
+    const { client: injectedClient, ...withoutInjectedClient } = config(new FakeS3Client());
+    void injectedClient;
+    createR2OwnerBackupStore({
+      ...withoutInjectedClient,
+      clientFactory: (options) => {
+        captured = options as unknown as Record<string, unknown>;
+        return new FakeS3Client();
+      }
+    });
+
+    expect(captured).toMatchObject({ maxAttempts: 1 });
+  });
+
   it('uploads privately, verifies HEAD/readback, and makes an identical retry idempotent', async () => {
     const client = new FakeS3Client();
     const store = createR2OwnerBackupStore(config(client));
@@ -187,6 +207,58 @@ describe('R2 owner backup store', () => {
     await expect(failingStore.put(encrypted)).rejects.toThrowError(/^Owner backup storage operation failed$/u);
     expect(failingClient.objects.has(oldKey)).toBe(true);
     expect(failingClient.calls.some((call) => call.name === 'DeleteObjectCommand')).toBe(false);
+  });
+
+  it('rejects an oversized single backup before any R2 request', async () => {
+    const client = new FakeS3Client();
+    const store = createR2OwnerBackupStore(config(client));
+    const encrypted = await encryptedBackup();
+    const ciphertext = Buffer.alloc(OWNER_BACKUP_OBJECT_BYTE_CEILING, 7);
+    const oversized: EncryptedOwnerBackupV1 = {
+      ...encrypted,
+      ciphertextBase64: ciphertext.toString('base64'),
+      ciphertextSha256: createHash('sha256').update(ciphertext).digest('hex')
+    };
+
+    await expect(store.put(oversized)).rejects.toThrow('single-object safety ceiling');
+    expect(client.calls).toHaveLength(0);
+  });
+
+  it('fails closed when the bounded prefix contains too many objects', async () => {
+    const client = new FakeS3Client();
+    const prefix = 'owner-backups/production/owner-primary/';
+    for (let index = 0; index <= OWNER_BACKUP_OBJECT_COUNT_CEILING; index += 1) {
+      client.objects.set(`${prefix}${index}-${'a'.repeat(64)}.json`, {
+        body: Buffer.from('{}'), size: 2, lastModified: now, metadata: {}
+      });
+    }
+    client.truncatedListing = true;
+    const store = createR2OwnerBackupStore(config(client));
+
+    await expect(store.list()).rejects.toThrow('object-count safety ceiling');
+    expect(client.calls.map((call) => call.name)).toEqual(['ListObjectsV2Command']);
+    expect(client.calls[0]?.input.MaxKeys).toBe(OWNER_BACKUP_OBJECT_COUNT_CEILING + 1);
+  });
+
+  it('refuses a new PUT when the prefix is already at the object-count ceiling', async () => {
+    const client = new FakeS3Client();
+    const prefix = 'owner-backups/production/owner-primary/';
+    for (let index = 0; index < OWNER_BACKUP_OBJECT_COUNT_CEILING; index += 1) {
+      client.objects.set(`${prefix}${index}-${'a'.repeat(64)}.json`, {
+        body: Buffer.from('{}'), size: 2, lastModified: now,
+        metadata: {
+          environment: 'production', 'owner-profile-id': 'owner-primary',
+          'exported-at': now.toISOString(), 'backup-schema-version': 'miraichi.cloud-backup.v3',
+          'key-id': 'key-1', 'plaintext-sha256': 'b'.repeat(64),
+          'ciphertext-sha256': 'a'.repeat(64), 'uploaded-at': now.toISOString()
+        }
+      });
+    }
+    const store = createR2OwnerBackupStore(config(client));
+
+    await expect(store.put(await encryptedBackup())).rejects.toThrow('object-count safety ceiling');
+    expect(client.calls.some((call) => call.name === 'PutObjectCommand')).toBe(false);
+    expect(client.objects).toHaveLength(OWNER_BACKUP_OBJECT_COUNT_CEILING);
   });
 
   it('rejects cross-environment metadata and corrupted readback without deleting anything', async () => {
