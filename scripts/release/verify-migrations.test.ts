@@ -3,6 +3,7 @@ import {
   discoverMigrationSet,
   overlayWorkingTreeMigrations,
   parseMigrationNameStatus,
+  resolveMigrationBaseSha,
   verifyMigrations,
   type MigrationRepository,
   type MigrationRunner
@@ -27,6 +28,22 @@ function repository(diff = `A\t${added}\n`): MigrationRepository {
 }
 
 describe('migration verification', () => {
+  it('resolves a GitHub pull request base from its remote tracking ref without a local main branch', () => {
+    const expectedBaseSha = 'c'.repeat(40);
+    const result = resolveMigrationBaseSha({
+      env: { GITHUB_BASE_REF: 'staging' },
+      headSha,
+      git: (args) => {
+        if (args.join(' ') !== `merge-base ${headSha} refs/remotes/origin/staging`) {
+          throw new Error(`unexpected git invocation: ${args.join(' ')}`);
+        }
+        return expectedBaseSha;
+      }
+    });
+
+    expect(result).toBe(expectedBaseSha);
+  });
+
   it('overlays uncommitted additions, modifications, and deletions before local verification', () => {
     const committed = discoverMigrationSet({ repository: repository(), baseSha, headSha });
     const localAdded = 'supabase/migrations/20260929000000_local.sql';
