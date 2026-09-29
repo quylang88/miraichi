@@ -58,6 +58,11 @@ describe('GitHub Actions pull-request quality gate', () => {
     expect(workflow).toContain('pnpm exec playwright install --with-deps chromium webkit');
   });
 
+  it('preserves dollar signs in the generated scrypt password hash for the Edge env parser', () => {
+    expect(workflow).toContain(`printf "MIRAICHI_OWNER_PASSWORD_HASH='%s'\\n" "$owner_hash"`);
+    expect(workflow).not.toContain(`printf 'MIRAICHI_OWNER_PASSWORD_HASH=%s\\n' "$owner_hash"`);
+  });
+
   it('cannot reach deployment environments, deployment credentials, or mutation commands', () => {
     expect(workflow).not.toMatch(/^    environment:/mu);
     for (const forbidden of [

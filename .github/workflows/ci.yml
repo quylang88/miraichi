@@ -175,7 +175,7 @@ jobs:
             printf '%s\n' 'MIRAICHI_EDGE_RUNTIME_SMOKE=enabled'
             printf '%s\n' 'MIRAICHI_OWNER_AUTH_MODE=password'
             printf 'MIRAICHI_OWNER_PASSWORD=%s\n' "$owner_password"
-            printf 'MIRAICHI_OWNER_PASSWORD_HASH=%s\n' "$owner_hash"
+            printf "MIRAICHI_OWNER_PASSWORD_HASH='%s'\n" "$owner_hash"
             printf '%s\n' 'MIRAICHI_SESSION_SECRET=ci-only-session-secret-with-at-least-32-bytes'
             printf '%s\n' 'MIRAICHI_SESSION_TTL_SECONDS=604800'
             printf '%s\n' 'MIRAICHI_OWNER_PROFILE_ID=owner-primary'
