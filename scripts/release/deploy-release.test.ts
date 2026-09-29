@@ -15,14 +15,14 @@ const manifest = createReleaseManifest({
   builtAt: '2026-09-28T00:00:00.000Z'
 });
 const config: CliReleaseConfig = {
-  root: 'C:/workspace', target: getReleaseTarget('production'), branch: 'main',
+  root: path.resolve('workspace'), target: getReleaseTarget('production'), branch: 'main',
   checkedOutSha: manifest.sourceSha,
   candidateSha: manifest.sourceSha,
   manifest, artifactVersion: 'candidate-a', projectRef: 'abcdefghijklmnopqrst',
   publicOrigin: 'https://miraichi-production.workers.dev',
   edgeFunctionUrl: 'https://abcdefghijklmnopqrst.supabase.co/functions/v1/miraichi-api',
   edgeGatewayToken: 'gateway-token-with-at-least-32-bytes',
-  priorEdgeArtifactRoot: 'C:/artifacts/edge-old',
+  priorEdgeArtifactRoot: path.resolve('artifacts', 'edge-old'),
   priorRelease: {
     environment: 'production', gitSha: 'd'.repeat(40),
     artifactVersion: 'candidate-old', compatibilityVersion: 'owner-v2'
