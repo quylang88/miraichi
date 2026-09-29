@@ -82,6 +82,9 @@ jobs:
       - name: Install frozen workspace
         run: pnpm install --frozen-lockfile
 
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium webkit
+
       - name: Resolve migration comparison base
         shell: bash
         run: |
