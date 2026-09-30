@@ -71,6 +71,15 @@ describe('GitHub Actions production deployment workflow', () => {
     expect(runtime).toContain('operations.rollbackEdge');
   });
 
+  it('supplies the separate database password to backup-first node-postgres connections', () => {
+    const transaction = deploy.split('- name: Run backup-first production release transaction')[1]!
+      .split('- name: Run committed read-only production smoke')[0]!;
+    expect(transaction).toContain('PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}');
+    const create = backup.split('- name: Create, read back, and verify encrypted backup')[1]!
+      .split('run: pnpm run backup:owner:create')[0]!;
+    expect(create).toContain('PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}');
+  });
+
   it('records both final states and retains exact rollback evidence without latest', () => {
     for (const marker of [
       'github.rest.repos.createDeployment',

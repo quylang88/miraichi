@@ -63,7 +63,18 @@
   environment names. Next minimal slice: execute the bundled entry with disposable Deno environment
   and a database driver that rejects queries; observe health RED without release, forward the four
   reviewed names, verify GREEN/local/graph, independent review, commit, green PR and exact deployment.
-  No migration is added.
+  No migration is added. PR #18 passed all ten CI checks on `36786704615` and merged at
+  `db85b342140a298c2e35ef1da7fe83714680bbe5`; exact staging run `36787024691` passed the
+  deployment transaction and read-only release smoke, but hosted browser verification failed at
+  logout cleanup. Candidate remains deployed with correct Worker/Edge identity. Provider readback
+  confirms zero synthetic manual drafts, the existing one draft remains, and three active jobs.
+  A minimal authenticated API probe returns login 204/session 200/logout 204; the complete browser
+  context failure still needs diagnosis before another deployment or promotion.
+  Production preparation also found that password-free pooler URLs need the separate password in
+  node-postgres backup processes. Minimal continuation: observe the production workflow binding
+  RED, bind `PGPASSWORD` only in backup-first/daily create steps, verify focused/local checks and
+  the actual pinned node-postgres password resolution, review, then deliver through green staging.
+  Disposable restore credentials and migrations remain unchanged.
   Hosted staging still requires a successful exact-SHA deployment and smoke/artifact/status gates.
   Owner-approved Free production project `xmjvvizihdrklakrmsav` reads back `ACTIVE_HEALTHY` at
   Singapore `ap-southeast-1`, with no application or migration tables. Its ref, Edge URL, owner ID,

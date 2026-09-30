@@ -152,7 +152,10 @@ and SSL `require` or a certificate-verifying mode; transaction mode on port 6543
 The release adapter verifies the project username/host/port and rejects unsafe query parameters.
 It supplies the migration dry-run/apply commands with a password-free `--db-url` argument and
 passes the password only through `PGPASSWORD` (decoded from the URL when supplied, otherwise
-read from `SUPABASE_DB_PASSWORD` without percent-decoding). Scheduler configuration, scheduler
+read from `SUPABASE_DB_PASSWORD` without percent-decoding). Production backup-first and daily backup
+steps also bind `PGPASSWORD` from that Environment secret so node-postgres can authenticate with
+a password-free URL. The disposable local restore retains its own local connection credentials.
+Scheduler configuration, scheduler
 compensation, transaction probes, and standalone hosted probes use the same validated Session
 pooler and password environment. Query commands explicitly select `--output json --agent yes`
 so the committed parsers always receive the JSON row envelope.
