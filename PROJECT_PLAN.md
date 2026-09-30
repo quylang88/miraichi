@@ -25,8 +25,14 @@
   URL is configured in staging `SUPABASE_DATABASE_URL`; its password-free form reuses the existing
   `SUPABASE_DB_PASSWORD` secret unchanged. Secret metadata readback succeeded on 2026-09-30.
   Linked SQL queries use the CLI Management API and retain their existing path. Local verification
-  passes 199 files / 1,339 tests; hosted staging still requires green checks on the final PR head
-  and a new exact-SHA deployment plus hosted smoke/artifact/status gates.
+  passes 199 files / 1,339 tests. PR #14 passed all ten checks on `36719390926` and merged at
+  `9e28aa8e7a6c7290b4f8144e066d24a0ebe3515d`. Exact Deploy Staging run `36719831798`
+  passed migration dry-run/apply and Edge deployment, proving the pooler connection works, but
+  failed at `worker_deploy` with `command_failed`; rollback reported no errors. Cloudflare
+  Dashboard deployment history independently shows the new Worker upload followed by rollback
+  to baseline `62fac25e`. The reviewed diagnostic slice classifies both captured streams while
+  retaining only safe error codes, so the post-upload failure can be investigated without raw logs.
+  Hosted staging still requires a successful exact-SHA deployment and smoke/artifact/status gates.
   Provider readback still shows only Frankfurt staging; production lacks variables/runtime
   credentials, and any `staging -> main` merge requires fresh explicit owner confirmation.
 - **Active implementation track**: repository delivery foundations through automatic staging,
