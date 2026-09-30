@@ -101,7 +101,7 @@ function assertConfig(config: CliReleaseConfig): void {
   assertImmutableId(config.priorVersions.workerVersionId, 'Prior Worker version');
 }
 
-function releaseDatabaseConnection(config: CliReleaseConfig): { url: string; password: string } | undefined {
+function releaseDatabaseConnection(config: CliReleaseConfig, env: NodeJS.ProcessEnv): { url: string; password: string } | undefined {
   if (config.databaseUrl === undefined) return undefined;
   try {
     const url = new URL(config.databaseUrl);
@@ -109,14 +109,13 @@ function releaseDatabaseConnection(config: CliReleaseConfig): { url: string; pas
       || url.username !== `postgres.${config.projectRef}`
       || !/^[a-z0-9-]+\.pooler\.supabase\.com$/u.test(url.hostname)
       || url.port !== '5432' || url.pathname !== '/postgres' || url.hash
-      || !url.password
       || [...url.searchParams.keys()].some((name) => name !== 'sslmode')
       || url.searchParams.getAll('sslmode').length > 1
       || (url.searchParams.has('sslmode')
         && !['require', 'verify-ca', 'verify-full'].includes(url.searchParams.get('sslmode')!))) {
       throw new Error('invalid');
     }
-    const password = decodeURIComponent(url.password);
+    const password = url.password ? decodeURIComponent(url.password) : env.SUPABASE_DB_PASSWORD;
     if (!password || password.includes('\0')) throw new Error('invalid');
     url.password = '';
     if (!url.searchParams.has('sslmode')) url.searchParams.set('sslmode', 'require');
@@ -188,7 +187,7 @@ export function createCliReleaseOperations(
   assertConfig(config);
   const runner = dependencies.runner ?? createCommandRunner();
   const env = dependencies.env ?? process.env;
-  const database = releaseDatabaseConnection(config);
+  const database = releaseDatabaseConnection(config, env);
   const migrationTarget = database ? ['--db-url', database.url] : ['--linked'];
   const migrationEnv = database ? { ...env, PGPASSWORD: database.password } : env;
   const runSupabase = (args: readonly string[], commandEnv = env) => runner.run(process.execPath, [supabaseCli(config.root), ...args], {

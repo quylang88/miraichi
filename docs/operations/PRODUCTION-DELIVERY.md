@@ -142,15 +142,17 @@ into chat, commands that persist in shell history, artifacts, logs, or tracked f
 
 The GitHub runner cannot use the Free project's IPv6 direct endpoint. For each environment,
 copy **Connect -> Session pooler** from that exact Supabase project. Do not construct a pooler
-hostname from the region: the cluster index is provider-assigned. Replace `[YOUR-PASSWORD]` with
-its percent-encoded database password and save the complete URL as the Environment secret
+hostname from the region: the cluster index is provider-assigned. Prefer removing the
+`:[YOUR-PASSWORD]` placeholder and reusing the existing `SUPABASE_DB_PASSWORD` Environment secret.
+Alternatively, insert the percent-encoded password in the URL. Save the URL as the Environment secret
 `SUPABASE_DATABASE_URL` through GitHub UI or `gh secret set` stdin. Never pass a real secret in
 `--body` or shell history. Use port 5432, username `postgres.<project-ref>`, database `postgres`,
 and SSL `require` or a certificate-verifying mode; transaction mode on port 6543 is rejected.
 
 The release adapter verifies the project username/host/port and rejects unsafe query parameters.
 It supplies the migration dry-run/apply commands with a password-free `--db-url` argument and
-passes the decoded password only through `PGPASSWORD`. Other remote SQL queries stay on the
+passes the password only through `PGPASSWORD` (decoded from the URL when supplied, otherwise
+read from `SUPABASE_DB_PASSWORD` without percent-decoding). Other remote SQL queries stay on the
 pinned CLI's linked Management API path, which does not require a direct Postgres connection.
 When the URL is absent, the legacy linked migration path remains available, but a direct IPv6
 failure still blocks deployment before mutation. Configure the URL before the next staging release.

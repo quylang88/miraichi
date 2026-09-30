@@ -163,7 +163,7 @@ describe('explicit Session pooler migrations', () => {
     'not-a-url'
   ])('rejects unsafe or crossed pooler inputs before any command: %s', (databaseUrl) => {
     const runner: CommandRunner = { run: vi.fn() };
-    expect(() => createCliReleaseOperations({ ...config, databaseUrl }, { runner }))
+    expect(() => createCliReleaseOperations({ ...config, databaseUrl }, { runner, env: {} }))
       .toThrow('Invalid release database connection');
     expect(runner.run).not.toHaveBeenCalled();
   });
@@ -180,4 +180,24 @@ describe('explicit Session pooler migrations', () => {
     expect(calls[0]).toContain('--linked');
     expect(calls[0]).not.toContain('--db-url');
   });
+});
+
+it('authenticates a password-free Dashboard URL with the existing environment DB secret', async () => {
+  const calls: Array<{ args: readonly string[]; env: NodeJS.ProcessEnv | undefined }> = [];
+  const runner: CommandRunner = { run: async (_command, args, options) => {
+    calls.push({ args, env: options?.env });
+    return { stdout: '', stderr: '', exitCode: 0 };
+  } };
+  const url = `postgresql://postgres.${config.projectRef}@aws-7-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require`;
+  const operations = createCliReleaseOperations({ ...config, databaseUrl: url }, {
+    runner, env: { SUPABASE_DB_PASSWORD: 'existing-p@ss:%2F#' }
+  });
+  await operations.migrationDryRun();
+  await operations.applyMigrations();
+  expect(calls).toHaveLength(2);
+  for (const call of calls) {
+    expect(call.args).toContain(url);
+    expect(call.env?.PGPASSWORD).toBe('existing-p@ss:%2F#');
+    expect(JSON.stringify(call.args)).not.toContain('existing-p@ss:%2F#');
+  }
 });

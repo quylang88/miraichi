@@ -20,11 +20,13 @@
   Exact merge-SHA Deploy Staging run `36714649571` passed full staging verification, but stopped
   before mutation at `migration_dry_run` with `ipv6_connection_unavailable` and only `validate`
   completed. GitHub deployment status is failure; no new migration/Edge/Worker was deployed.
-  The next reviewed TDD slice accepts an exact Dashboard Session pooler URL for dry-run/apply,
-  validates project identity and port 5432/TLS, and keeps the password out of command arguments.
-  Linked SQL queries use the CLI Management API and retain their existing path. Hosted staging
-  remains blocked until the staging `SUPABASE_DATABASE_URL` secret is configured from Connect
-  and a new exact-SHA deployment plus hosted smoke/artifact/status gates pass.
+  PR #14 implements the reviewed TDD Session pooler slice for dry-run/apply, validates project
+  identity and port 5432/TLS, and keeps the password out of command arguments. The exact Dashboard
+  URL is configured in staging `SUPABASE_DATABASE_URL`; its password-free form reuses the existing
+  `SUPABASE_DB_PASSWORD` secret unchanged. Secret metadata readback succeeded on 2026-09-30.
+  Linked SQL queries use the CLI Management API and retain their existing path. Local verification
+  passes 199 files / 1,339 tests; hosted staging still requires green checks on the final PR head
+  and a new exact-SHA deployment plus hosted smoke/artifact/status gates.
   Provider readback still shows only Frankfurt staging; production lacks variables/runtime
   credentials, and any `staging -> main` merge requires fresh explicit owner confirmation.
 - **Active implementation track**: repository delivery foundations through automatic staging,
