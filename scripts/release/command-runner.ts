@@ -26,27 +26,35 @@ export class CommandExecutionError extends Error {
 
 const MAX_CAPTURE_BYTES = 2 * 1024 * 1024;
 
-function classifyFailure(stderr: string, exceeded: boolean): string {
+function classifyFailure(diagnostic: string, exceeded: boolean): string {
   if (exceeded) return 'command_output_limit_exceeded';
-  if (/password authentication failed|authentication failed|invalid (?:access )?token|unauthorized|forbidden/iu.test(stderr)) {
+  if (/Aborting the upload operation because of conflicts/iu.test(diagnostic)) {
+    return 'cloudflare_remote_conflict';
+  }
+  if (/A request to the Cloudflare API/iu.test(diagnostic)) {
+    const apiCode = /\[code: ([0-9]{5})\]/u.exec(diagnostic)?.[1];
+    if (apiCode === '10000') return 'cloudflare_authentication_failed';
+    return apiCode ? `cloudflare_api_error_${apiCode}` : 'cloudflare_api_failed';
+  }
+  if (/password authentication failed|authentication failed|invalid (?:access )?token|unauthorized|forbidden/iu.test(diagnostic)) {
     return 'authentication_failed';
   }
-  if (/IPv6 is not supported|network is unreachable|no route to host/iu.test(stderr)) {
+  if (/IPv6 is not supported|network is unreachable|no route to host/iu.test(diagnostic)) {
     return 'ipv6_connection_unavailable';
   }
-  if (/pooler\.supabase\.com/iu.test(stderr) && /failed to connect|failed to receive|timeout|unexpected EOF/iu.test(stderr)) {
+  if (/pooler\.supabase\.com/iu.test(diagnostic) && /failed to connect|failed to receive|timeout|unexpected EOF/iu.test(diagnostic)) {
     return 'pooler_connection_failed';
   }
-  if (/lookup .*(?:no such host|server misbehaving)|could not translate host/iu.test(stderr)) {
+  if (/lookup .*(?:no such host|server misbehaving)|could not translate host/iu.test(diagnostic)) {
     return 'dns_resolution_failed';
   }
-  if (/failed to connect|connection refused|network is unreachable|no such host|could not translate host|dial tcp|connection reset|i\/o timeout/iu.test(stderr)) {
+  if (/failed to connect|connection refused|network is unreachable|no such host|could not translate host|dial tcp|connection reset|i\/o timeout/iu.test(diagnostic)) {
     return 'connection_failed';
   }
-  if (/migration history.*(?:mismatch|out of sync)|repair the migration history|remote migration versions?.*(?:not found|do not match)|local migration files.*inserted before/iu.test(stderr)) {
+  if (/migration history.*(?:mismatch|out of sync)|repair the migration history|remote migration versions?.*(?:not found|do not match)|local migration files.*inserted before/iu.test(diagnostic)) {
     return 'migration_history_mismatch';
   }
-  if (/unknown (?:command|flag)|usage:/iu.test(stderr)) return 'release_cli_usage_failed';
+  if (/unknown (?:command|flag)|usage:/iu.test(diagnostic)) return 'release_cli_usage_failed';
   return 'command_failed';
 }
 
@@ -89,7 +97,7 @@ export function createCommandRunner(): CommandRunner {
         child.on('close', (exitCode) => {
           clearTimeout(timeout);
           if (exceeded || exitCode !== 0) {
-            reject(new CommandExecutionError(exitCode, classifyFailure(stderr, exceeded)));
+            reject(new CommandExecutionError(exitCode, classifyFailure(`${stdout}\n${stderr}`, exceeded)));
           } else resolve({ stdout, stderr, exitCode: 0 });
         });
         if (options.input !== undefined) child.stdin.end(options.input);

@@ -65,4 +65,30 @@ describe('release command runner', () => {
     expect(observed).toMatchObject({ code, exitCode: 10 });
     expect(JSON.stringify(observed)).not.toContain(stderr);
   });
+  it.each([
+    ['stdout', 'Aborting the upload operation because of conflicts. To override and upload anyway, remove the `--strict` flag', 'cloudflare_remote_conflict'],
+    ['stderr', 'Aborting the upload operation because of conflicts. To override and upload anyway, remove the `--strict` flag', 'cloudflare_remote_conflict'],
+    ['stdout', 'A request to the Cloudflare API (/accounts/example/workers/scripts/example) failed. Authentication error [code: 10000]', 'cloudflare_authentication_failed'],
+    ['stderr', 'A request to the Cloudflare API (/accounts/example/workers/scripts/example) failed. [code: 10023]', 'cloudflare_api_error_10023'],
+    ['stdout', 'A request to the Cloudflare API failed. [code: private-token]', 'cloudflare_api_failed'],
+    ['stderr', 'A request to the Cloudflare API failed. [code: 1234567890]', 'cloudflare_api_failed'],
+    ['stdout', 'password authentication failed', 'authentication_failed']
+  ])('classifies %s diagnostics without leaking captured output', async (stream, diagnostic, code) => {
+    const runner = createCommandRunner();
+    const secret = 'private-token-cookie-and-response';
+    let observed: unknown;
+    try {
+      await runner.run(process.execPath, [
+        '-e', 'process[process.argv[1]].write(process.argv[2] + process.env.RELEASE_TEST_SECRET); process.exit(11)',
+        stream, diagnostic
+      ], { env: { ...process.env, RELEASE_TEST_SECRET: secret } });
+    } catch (error) {
+      observed = error;
+    }
+    expect(observed).toMatchObject({ code, exitCode: 11 });
+    expect(String(observed)).not.toContain(secret);
+    expect(JSON.stringify(observed)).not.toContain(secret);
+    expect(JSON.stringify(observed)).not.toContain(diagnostic);
+  });
+
 });
