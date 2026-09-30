@@ -29,6 +29,7 @@ export interface CliReleaseConfig {
   readonly manifest: ReleaseManifest;
   readonly artifactVersion: string;
   readonly projectRef: string;
+  readonly databaseUrl?: string;
   readonly publicOrigin: string;
   readonly edgeFunctionUrl: string;
   readonly edgeGatewayToken: string;
@@ -100,6 +101,31 @@ function assertConfig(config: CliReleaseConfig): void {
   assertImmutableId(config.priorVersions.workerVersionId, 'Prior Worker version');
 }
 
+function releaseDatabaseConnection(config: CliReleaseConfig): { url: string; password: string } | undefined {
+  if (config.databaseUrl === undefined) return undefined;
+  try {
+    const url = new URL(config.databaseUrl);
+    if (!['postgres:', 'postgresql:'].includes(url.protocol)
+      || url.username !== `postgres.${config.projectRef}`
+      || !/^[a-z0-9-]+\.pooler\.supabase\.com$/u.test(url.hostname)
+      || url.port !== '5432' || url.pathname !== '/postgres' || url.hash
+      || !url.password
+      || [...url.searchParams.keys()].some((name) => name !== 'sslmode')
+      || url.searchParams.getAll('sslmode').length > 1
+      || (url.searchParams.has('sslmode')
+        && !['require', 'verify-ca', 'verify-full'].includes(url.searchParams.get('sslmode')!))) {
+      throw new Error('invalid');
+    }
+    const password = decodeURIComponent(url.password);
+    if (!password || password.includes('\0')) throw new Error('invalid');
+    url.password = '';
+    if (!url.searchParams.has('sslmode')) url.searchParams.set('sslmode', 'require');
+    return { url: url.toString(), password };
+  } catch {
+    throw new Error('Invalid release database connection');
+  }
+}
+
 function parseJsonRows(output: string): Record<string, unknown>[] {
   const offset = output.indexOf('{');
   if (offset < 0) throw Object.assign(new Error('Query response unavailable'), { code: 'remote_query_invalid' });
@@ -162,8 +188,11 @@ export function createCliReleaseOperations(
   assertConfig(config);
   const runner = dependencies.runner ?? createCommandRunner();
   const env = dependencies.env ?? process.env;
-  const runSupabase = (args: readonly string[]) => runner.run(process.execPath, [supabaseCli(config.root), ...args], {
-    cwd: config.root, env, timeoutMs: 10 * 60_000
+  const database = releaseDatabaseConnection(config);
+  const migrationTarget = database ? ['--db-url', database.url] : ['--linked'];
+  const migrationEnv = database ? { ...env, PGPASSWORD: database.password } : env;
+  const runSupabase = (args: readonly string[], commandEnv = env) => runner.run(process.execPath, [supabaseCli(config.root), ...args], {
+    cwd: config.root, env: commandEnv, timeoutMs: 10 * 60_000
   });
   const runWrangler = (args: readonly string[]) => runner.run(pnpmCommand(), [
     '--filter', '@miraichi/cloudflare-gateway', 'exec', 'wrangler', ...args
@@ -238,10 +267,10 @@ export function createCliReleaseOperations(
     },
     backup,
     migrationDryRun: async () => {
-      await runSupabase(['db', 'push', '--linked', '--dry-run', '--include-all', '--yes']);
+      await runSupabase(['db', 'push', ...migrationTarget, '--dry-run', '--include-all', '--yes'], migrationEnv);
     },
     applyMigrations: async () => {
-      await runSupabase(['db', 'push', '--linked', '--include-all', '--yes']);
+      await runSupabase(['db', 'push', ...migrationTarget, '--include-all', '--yes'], migrationEnv);
     },
     deployEdge: async () => {
       await runSupabase(edgeReleaseSecretArgs(config.projectRef, expectedRelease(config)));
@@ -313,6 +342,7 @@ export async function runDeployRelease(env: NodeJS.ProcessEnv = process.env): Pr
     manifest,
     artifactVersion: required(env, 'MIRAICHI_RELEASE_ARTIFACT'),
     projectRef: required(env, 'SUPABASE_PROJECT_REF'),
+    ...(env.SUPABASE_DATABASE_URL?.trim() ? { databaseUrl: env.SUPABASE_DATABASE_URL.trim() } : {}),
     publicOrigin: required(env, 'MIRAICHI_PUBLIC_ORIGIN'),
     edgeFunctionUrl: required(env, 'MIRAICHI_EDGE_FUNCTION_URL'),
     edgeGatewayToken: required(env, 'MIRAICHI_GATEWAY_TOKEN'),

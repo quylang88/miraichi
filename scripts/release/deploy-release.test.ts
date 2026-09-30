@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { getReleaseTarget } from '../../packages/config/src/release-targets.js';
 import { createReleaseManifest } from './release-manifest.js';
 import { createCliReleaseOperations, type CliReleaseConfig } from './deploy-release.js';
-import type { CommandRunner } from './command-runner.js';
+import type { CommandRunOptions, CommandRunner } from './command-runner.js';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const manifest = createReleaseManifest({
@@ -125,5 +125,59 @@ describe('release CLI adapters', () => {
       checkedOutSha: 'c'.repeat(40)
     }, { runner })).toThrow('Checked-out SHA');
     expect(runner.run).not.toHaveBeenCalled();
+  });
+});
+
+describe('explicit Session pooler migrations', () => {
+  it('uses the supplied pooler for both migration stages without putting its password in arguments', async () => {
+    const password = 'owner-db-p@ss:/? #$';
+    const databaseUrl = `postgresql://postgres.${config.projectRef}:${encodeURIComponent(password)}@aws-7-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require`;
+    const calls: Array<{ args: readonly string[]; options: CommandRunOptions | undefined }> = [];
+    const runner: CommandRunner = { run: async (_command, args, options) => {
+      calls.push({ args, options });
+      return { stdout: '', stderr: '', exitCode: 0 };
+    } };
+    const operations = createCliReleaseOperations({ ...config, databaseUrl }, { runner, env: { EXISTING: 'preserved' } });
+    await operations.migrationDryRun();
+    await operations.applyMigrations();
+    expect(calls.map(({ args }) => args.slice(1))).toEqual([
+      ['db', 'push', '--db-url', `postgresql://postgres.${config.projectRef}@aws-7-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require`, '--dry-run', '--include-all', '--yes'],
+      ['db', 'push', '--db-url', `postgresql://postgres.${config.projectRef}@aws-7-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require`, '--include-all', '--yes']
+    ]);
+    for (const { args, options } of calls) {
+      expect(options?.env?.PGPASSWORD).toBe(password);
+      expect(options?.env?.EXISTING).toBe('preserved');
+      expect(JSON.stringify(args)).not.toContain(password);
+      expect(JSON.stringify(args)).not.toContain(encodeURIComponent(password));
+      expect(args).not.toContain('--linked');
+    }
+  });
+
+  it.each([
+    'postgresql://postgres.wrongref:private@aws-7-eu-central-1.pooler.supabase.com:5432/postgres',
+    `postgresql://postgres.${config.projectRef}:private@aws-7-eu-central-1.pooler.supabase.com:6543/postgres`,
+    `postgresql://postgres.${config.projectRef}:private@evil.example.com:5432/postgres`,
+    `postgresql://postgres.${config.projectRef}:private@aws-7-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=disable`,
+    `postgresql://postgres.${config.projectRef}:private@aws-7-eu-central-1.pooler.supabase.com:5432/postgres?password=leaked`,
+    `postgresql://postgres.${config.projectRef}@aws-7-eu-central-1.pooler.supabase.com:5432/postgres`,
+    'not-a-url'
+  ])('rejects unsafe or crossed pooler inputs before any command: %s', (databaseUrl) => {
+    const runner: CommandRunner = { run: vi.fn() };
+    expect(() => createCliReleaseOperations({ ...config, databaseUrl }, { runner }))
+      .toThrow('Invalid release database connection');
+    expect(runner.run).not.toHaveBeenCalled();
+  });
+
+  it('keeps linked Management API queries separate from the migration connection', async () => {
+    const calls: Array<readonly string[]> = [];
+    const runner: CommandRunner = { run: async (_command, args) => {
+      calls.push(args); return { stdout: '', stderr: '', exitCode: 0 };
+    } };
+    const operations = createCliReleaseOperations({ ...config,
+      databaseUrl: `postgresql://postgres.${config.projectRef}:private@aws-7-eu-central-1.pooler.supabase.com:5432/postgres`
+    }, { runner });
+    await operations.configureScheduler();
+    expect(calls[0]).toContain('--linked');
+    expect(calls[0]).not.toContain('--db-url');
   });
 });

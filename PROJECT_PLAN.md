@@ -12,16 +12,21 @@
 - **Completed implementation-plan gate**: `phase:implementation-plan Production delivery automation
   and owner-data safety` — the owner approved the sequential RED -> GREEN -> review -> commit plan
   and authorized execution through reviewed slice commits.
-- **Delivery continuation (2026-09-30)**: PR #13 remains the `staging` candidate on
-  `codex/release-connection-diagnostics`. Live GitHub readback confirms Edge runtime and
-  `quality-gate` failed on run `36564134594`; the smoke step ran for almost ten minutes without
-  identifying a request stage. The reviewed timeout slice bounds each HTTP request (including
-  response-body consumption) to 25 seconds, aborts on expiry, redacts transport failures, and bounds
-  the CI health probe with curl connect/max-time. RED covered seven stalled request stages, a
-  stalled native HTTP body, and sensitive transport errors. Focused/local, integration/browser/PWA,
-  Edge build, and module-graph checks passed before commit. Exact-head CI and hosted staging remain
-  required before advancing. Production still lacks its variables/runtime credentials, and any
-  `staging -> main` merge requires a fresh explicit owner confirmation.
+- **Delivery continuation (2026-09-30)**: PR #13 passed all ten checks on CI run
+  `36714196513` and merged into `staging` at `d48df821a53608838d34128cb6ef8f6ef932e2f7`.
+  Reviewed timeout slice `b89bc17` proves seven bounded/aborted request stages, native stalled-body
+  handling, redacted failures, and real CLI exit; local 199 unit files / 1,329 tests,
+  integration/browser/PWA, migration preservation, actual Edge runtime, graph, and artifact passed.
+  Exact merge-SHA Deploy Staging run `36714649571` passed full staging verification, but stopped
+  before mutation at `migration_dry_run` with `ipv6_connection_unavailable` and only `validate`
+  completed. GitHub deployment status is failure; no new migration/Edge/Worker was deployed.
+  The next reviewed TDD slice accepts an exact Dashboard Session pooler URL for dry-run/apply,
+  validates project identity and port 5432/TLS, and keeps the password out of command arguments.
+  Linked SQL queries use the CLI Management API and retain their existing path. Hosted staging
+  remains blocked until the staging `SUPABASE_DATABASE_URL` secret is configured from Connect
+  and a new exact-SHA deployment plus hosted smoke/artifact/status gates pass.
+  Provider readback still shows only Frankfurt staging; production lacks variables/runtime
+  credentials, and any `staging -> main` merge requires fresh explicit owner confirmation.
 - **Active implementation track**: repository delivery foundations through automatic staging,
   exact-candidate production, encrypted backup/restore verification, migration safety, readiness,
   and operations documentation are being completed on the isolated implementation branch. Remote
