@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { runProductionSmoke } from './production-smoke.js';
+import { runProductionSmoke, runProductionSmokeCli } from './production-smoke.js';
+import { createReleaseManifest } from './release-manifest.js';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const origin = 'https://miraichi-production.workers.dev';
@@ -58,6 +62,52 @@ function input(fetcher: typeof fetch) {
 }
 
 describe('production smoke', () => {
+  it('uses the exact password-free pooler preflight for standalone production SQL probes', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'miraichi-smoke-pooler-'));
+    const ctx = fixture();
+    const captured: string[][] = [];
+    vi.stubGlobal('fetch', ctx.fetcher);
+    try {
+      await mkdir(path.join(root, 'supabase', 'migrations'), { recursive: true });
+      await writeFile(path.join(root, 'supabase', 'migrations', '20260901000000_fixture.sql'), 'select 1;');
+      const manifestPath = path.join(root, 'manifest.json');
+      await writeFile(manifestPath, JSON.stringify(createReleaseManifest({
+        sourceSha: release.gitSha, treeId: 'b'.repeat(40), migrationHash: hash('migrations'),
+        webHash: hash('web'), edgeHash: hash('edge'), workerHash: hash('worker'),
+        builtAt: '2026-09-30T00:00:00.000Z',
+        toolchain: { node: '22.23.3', pnpm: '10.18.3', supabase: '2.109.0', wrangler: '4.128.0' }
+      })));
+      const report = await runProductionSmokeCli({
+        GITHUB_WORKSPACE: root, MIRAICHI_RELEASE_ENVIRONMENT: 'production',
+        MIRAICHI_RELEASE_SHA: release.gitSha, MIRAICHI_RELEASE_ARTIFACT: release.artifactVersion,
+        MIRAICHI_SCHEMA_COMPAT_VERSION: release.compatibilityVersion,
+        MIRAICHI_RELEASE_MANIFEST_PATH: manifestPath, MIRAICHI_PUBLIC_ORIGIN: origin,
+        MIRAICHI_EDGE_FUNCTION_URL: edge, MIRAICHI_GATEWAY_TOKEN: 'gateway-token-with-at-least-32-bytes',
+        SUPABASE_PROJECT_REF: 'abcdefghijklmnopqrst',
+        SUPABASE_DATABASE_URL: 'postgresql://postgres.abcdefghijklmnopqrst:private@aws-3-ap-southeast-1.pooler.supabase.com:5432/postgres'
+      }, { run: async (_command, args, options) => {
+        captured.push([...args]);
+        expect(options?.env?.PGPASSWORD).toBe('private');
+        const sql = args.at(-1)!;
+        const rows = sql.includes('vault_names') ? [{ target: edge, vault_names: [
+          'miraichi_edge_function_url', 'miraichi_edge_gateway_token', 'miraichi_live_refresh_token', 'miraichi_provider_refresh_token'
+        ], active_job_names: ['miraichi-current-refresh', 'miraichi-live-refresh', 'miraichi-terminal-refresh'] }]
+          : sql.includes('schema_migrations') ? [{ version: '20260901000000' }] : [{ compatible: true }];
+        return { stdout: JSON.stringify({ rows }), stderr: '', exitCode: 0 };
+      } });
+      expect(report.status).toBe('passed');
+      expect(captured).toHaveLength(3);
+      for (const args of captured) {
+        expect(args.slice(1, -1)).toEqual(['db', 'query', '--db-url',
+          'postgresql://postgres.abcdefghijklmnopqrst@aws-3-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require',
+          '--output', 'json', '--agent', 'yes']);
+        expect(JSON.stringify(args)).not.toContain('private');
+      }
+    } finally {
+      vi.unstubAllGlobals();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
   it('proves shell, PWA, release, auth, schema, scheduler, and Singapore region without owner writes', async () => {
     const ctx = fixture();
     const report = await runProductionSmoke(input(ctx.fetcher));

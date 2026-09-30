@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { gate } from './staging-hosted-config.js';
+import { remoteQueryCommand } from './release/supabase-query.js';
 let querySequence = 0;
 
 type StagingRefreshKind = 'current' | 'live' | 'terminal';
@@ -10,8 +11,10 @@ export function expectedStagingSchedulerCommand(kind: StagingRefreshKind): strin
 
 export function linkedStagingQuery(sql: string): Record<string, unknown>[] {
   const queryId = ++querySequence;
-  const execute = () => spawnSync(process.execPath, ['node_modules/supabase/dist/supabase.js', 'db', 'query', '--linked', '--output-format', 'json'], {
-    input: sql, encoding: 'utf8', windowsHide: true, timeout: 45_000
+  const queryCommand = remoteQueryCommand({ projectRef: process.env.SUPABASE_PROJECT_REF ?? '',
+    ...(process.env.SUPABASE_DATABASE_URL?.trim() ? { databaseUrl: process.env.SUPABASE_DATABASE_URL.trim() } : {}) }, process.env);
+  const execute = () => spawnSync(process.execPath, ['node_modules/supabase/dist/supabase.js', ...queryCommand.args], {
+    input: sql, env: queryCommand.env, encoding: 'utf8', windowsHide: true, timeout: 45_000
   });
   let result = execute();
   const metadataRead = /^select (?:name|jobname|status_code|\(select)\b/u.test(sql) && !sql.includes(';');

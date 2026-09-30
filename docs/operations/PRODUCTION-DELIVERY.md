@@ -152,8 +152,14 @@ and SSL `require` or a certificate-verifying mode; transaction mode on port 6543
 The release adapter verifies the project username/host/port and rejects unsafe query parameters.
 It supplies the migration dry-run/apply commands with a password-free `--db-url` argument and
 passes the password only through `PGPASSWORD` (decoded from the URL when supplied, otherwise
-read from `SUPABASE_DB_PASSWORD` without percent-decoding). Other remote SQL queries stay on the
-pinned CLI's linked Management API path, which does not require a direct Postgres connection.
+read from `SUPABASE_DB_PASSWORD` without percent-decoding). Scheduler configuration, scheduler
+compensation, transaction probes, and standalone hosted probes use the same validated Session
+pooler and password environment. Query commands explicitly select `--output json --agent yes`
+so the committed parsers always receive the JSON row envelope.
+The pinned CLI's `db query --linked` performs a direct-connection preflight before reaching the
+Management API; on an IPv4-only runner this can fail even though the query itself uses HTTPS.
+The CLI also rejects combining `--linked` and `--db-url`, so configured query paths use only
+`--db-url`. Both hosted verification workflow steps receive the corresponding Environment URL.
 When the URL is absent, the legacy linked migration path remains available, but a direct IPv6
 failure still blocks deployment before mutation. Configure the URL before the next staging release.
 

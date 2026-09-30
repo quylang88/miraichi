@@ -32,8 +32,25 @@
   Dashboard deployment history independently shows the new Worker upload followed by rollback
   to baseline `62fac25e`. The reviewed diagnostic slice classifies both captured streams while
   retaining only safe error codes, so the post-upload failure can be investigated without raw logs.
+  PR #15 passed all ten CI checks and merged at `bfbce77646e312aba0c8696377110942ef226a15`.
+  Exact staging run `36726968994` attempt 1 identified Cloudflare API authentication failure.
+  After the owner approved adding Workers Metadata Read-Only to the existing per-Worker Editor
+  token, attempt 2 passed Worker deployment but failed `scheduler_configure` with
+  `ipv6_connection_unavailable`; scheduler compensation reported the same failure. Connector
+  recovery subsequently paused all Miraichi staging jobs and read back zero active jobs.
+  The continuation slice covers `deploy-release`, standalone staging/production SQL probes, and
+  their workflow bindings: observe RED for pooler query/rollback transport, extract the existing
+  validated connection into `supabase-query`, run focused tests plus `verify:local`, characterize
+  the actual pinned CLI, review, then deliver a green PR to staging. No migration is added.
+  RED was observed for all three SQL consumers; final focused 21 tests and full local 199 files /
+  1,348 tests pass, as do integration/browser/PWA checks. The actual pinned CLI returns the expected
+  JSON row envelope using a password-free database argument and `PGPASSWORD` against disposable
+  local Postgres. Independent review reports no actionable findings; hosted proof remains pending.
   Hosted staging still requires a successful exact-SHA deployment and smoke/artifact/status gates.
-  Provider readback still shows only Frankfurt staging; production lacks variables/runtime
+  Owner-approved Free production project `xmjvvizihdrklakrmsav` reads back `ACTIVE_HEALTHY` at
+  Singapore `ap-southeast-1`, with no application or migration tables. Its ref, Edge URL, owner ID,
+  and exact Dashboard Session pooler URL are configured in GitHub production; readiness remains
+  blocked on separate Worker and verified backup/offline-key gates. Production lacks runtime
   credentials, and any `staging -> main` merge requires fresh explicit owner confirmation.
 - **Active implementation track**: repository delivery foundations through automatic staging,
   exact-candidate production, encrypted backup/restore verification, migration safety, readiness,

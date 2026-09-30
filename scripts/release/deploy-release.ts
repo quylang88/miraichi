@@ -1,3 +1,4 @@
+import { releaseDatabaseConnection, remoteQueryCommand } from './supabase-query.js';
 import { createHash } from 'node:crypto';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -101,30 +102,6 @@ function assertConfig(config: CliReleaseConfig): void {
   assertImmutableId(config.priorVersions.workerVersionId, 'Prior Worker version');
 }
 
-function releaseDatabaseConnection(config: CliReleaseConfig, env: NodeJS.ProcessEnv): { url: string; password: string } | undefined {
-  if (config.databaseUrl === undefined) return undefined;
-  try {
-    const url = new URL(config.databaseUrl);
-    if (!['postgres:', 'postgresql:'].includes(url.protocol)
-      || url.username !== `postgres.${config.projectRef}`
-      || !/^[a-z0-9-]+\.pooler\.supabase\.com$/u.test(url.hostname)
-      || url.port !== '5432' || url.pathname !== '/postgres' || url.hash
-      || [...url.searchParams.keys()].some((name) => name !== 'sslmode')
-      || url.searchParams.getAll('sslmode').length > 1
-      || (url.searchParams.has('sslmode')
-        && !['require', 'verify-ca', 'verify-full'].includes(url.searchParams.get('sslmode')!))) {
-      throw new Error('invalid');
-    }
-    const password = url.password ? decodeURIComponent(url.password) : env.SUPABASE_DB_PASSWORD;
-    if (!password || password.includes('\0')) throw new Error('invalid');
-    url.password = '';
-    if (!url.searchParams.has('sslmode')) url.searchParams.set('sslmode', 'require');
-    return { url: url.toString(), password };
-  } catch {
-    throw new Error('Invalid release database connection');
-  }
-}
-
 function parseJsonRows(output: string): Record<string, unknown>[] {
   const offset = output.indexOf('{');
   if (offset < 0) throw Object.assign(new Error('Query response unavailable'), { code: 'remote_query_invalid' });
@@ -196,8 +173,9 @@ export function createCliReleaseOperations(
   const runWrangler = (args: readonly string[]) => runner.run(pnpmCommand(), [
     '--filter', '@miraichi/cloudflare-gateway', 'exec', 'wrangler', ...args
   ], { cwd: config.root, env, timeoutMs: 10 * 60_000 });
-  const linkedQuery = async (sql: string): Promise<Record<string, unknown>[]> => {
-    const result = await runSupabase(['db', 'query', '--linked', '--output-format', 'json', sql]);
+  const queryCommand = remoteQueryCommand(config, env);
+  const queryDatabase = async (sql: string): Promise<Record<string, unknown>[]> => {
+    const result = await runSupabase([...queryCommand.args, sql], queryCommand.env);
     return parseJsonRows(result.stdout);
   };
 
@@ -224,7 +202,7 @@ export function createCliReleaseOperations(
     expectedRegion: config.target.edgeRegion,
     expectedSchedulerTarget: config.edgeFunctionUrl,
     schedulerProbe: async () => {
-      const row = (await linkedQuery(`select
+      const row = (await queryDatabase(`select
         miraichi_app.edge_scheduler_vault_secret('miraichi_edge_function_url') as target,
         array(select name from vault.secrets where name like 'miraichi_%' order by name) as vault_names,
         array(select jobname from cron.job where jobname like 'miraichi-%' and active order by jobname) as active_job_names`))[0];
@@ -232,13 +210,13 @@ export function createCliReleaseOperations(
       return { target: row.target, vaultNames: textArray(row.vault_names), activeJobNames: textArray(row.active_job_names) };
     },
     schemaProbe: async () => {
-      const rows = await linkedQuery('select version from supabase_migrations.schema_migrations order by version');
+      const rows = await queryDatabase('select version from supabase_migrations.schema_migrations order by version');
       const remoteVersions = rows.map((row) => String(row.version));
       const expectedVersions = await localMigrationVersions(config.root);
       if (JSON.stringify(remoteVersions) !== JSON.stringify(expectedVersions)) {
         throw Object.assign(new Error('Migration history mismatch'), { code: 'schema_compatibility_mismatch' });
       }
-      const compatibility = (await linkedQuery(`select pg_get_constraintdef(oid) like '%miraichi.cloud-backup.v3%' as compatible
+      const compatibility = (await queryDatabase(`select pg_get_constraintdef(oid) like '%miraichi.cloud-backup.v3%' as compatible
         from pg_constraint where conname='backup_export_log_schema_version_check'`))[0];
       if (compatibility?.compatible !== true) {
         throw Object.assign(new Error('Schema compatibility unavailable'), { code: 'schema_compatibility_mismatch' });
@@ -298,11 +276,11 @@ export function createCliReleaseOperations(
       await runWrangler(['rollback', versionId, '--env', config.target.cloudflareEnvironment, '--yes']);
     },
     configureScheduler: async () => {
-      await runSupabase(['db', 'query', '--linked', `select miraichi_app.configure_hosted_refresh('${config.target.edgeRegion}');`]);
+      await queryDatabase(`select miraichi_app.configure_hosted_refresh('${config.target.edgeRegion}');`);
       return { targetSha256: sha256(config.edgeFunctionUrl), vaultNames: 4, activeJobs: 3 };
     },
     pauseScheduler: async () => {
-      await runSupabase(['db', 'query', '--linked', 'select miraichi_app.unschedule_hosted_refresh();']);
+      await queryDatabase('select miraichi_app.unschedule_hosted_refresh();');
     },
     smoke,
     recordEvidence
