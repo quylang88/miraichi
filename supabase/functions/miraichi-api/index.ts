@@ -8,6 +8,10 @@ import { createPostgresRuntime } from '../_shared/postgres-runtime.ts';
 
 const environment = Object.fromEntries([
   'APP_ENV',
+  'MIRAICHI_RELEASE_ENVIRONMENT',
+  'MIRAICHI_RELEASE_SHA',
+  'MIRAICHI_RELEASE_ARTIFACT',
+  'MIRAICHI_SCHEMA_COMPAT_VERSION',
   'MIRAICHI_GATEWAY_TOKEN',
   'MIRAICHI_EDGE_RUNTIME_SMOKE',
   'MIRAICHI_OWNER_AUTH_MODE',
