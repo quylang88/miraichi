@@ -31,6 +31,15 @@ function classifyFailure(stderr: string, exceeded: boolean): string {
   if (/password authentication failed|authentication failed|invalid (?:access )?token|unauthorized|forbidden/iu.test(stderr)) {
     return 'authentication_failed';
   }
+  if (/IPv6 is not supported|network is unreachable|no route to host/iu.test(stderr)) {
+    return 'ipv6_connection_unavailable';
+  }
+  if (/pooler\.supabase\.com/iu.test(stderr) && /failed to connect|failed to receive|timeout|unexpected EOF/iu.test(stderr)) {
+    return 'pooler_connection_failed';
+  }
+  if (/lookup .*(?:no such host|server misbehaving)|could not translate host/iu.test(stderr)) {
+    return 'dns_resolution_failed';
+  }
   if (/failed to connect|connection refused|network is unreachable|no such host|could not translate host|dial tcp|connection reset|i\/o timeout/iu.test(stderr)) {
     return 'connection_failed';
   }

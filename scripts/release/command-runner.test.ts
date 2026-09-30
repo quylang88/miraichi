@@ -47,4 +47,22 @@ describe('release command runner', () => {
     expect(String(observed)).not.toContain(secret);
     expect(JSON.stringify(observed)).not.toContain(secret);
   });
+
+  it.each([
+    ['IPv6 is not supported on your current network: network is unreachable', 'ipv6_connection_unavailable'],
+    ['failed to connect to host=aws-1-eu-central-1.pooler.supabase.com: timeout: context deadline exceeded', 'pooler_connection_failed'],
+    ['lookup database.example: no such host', 'dns_resolution_failed']
+  ])('classifies a safe connection diagnostic without retaining stderr: %s', async (stderr, code) => {
+    const runner = createCommandRunner();
+    let observed: unknown;
+    try {
+      await runner.run(process.execPath, [
+        '-e', 'process.stderr.write(process.argv[1]); process.exit(10)', stderr
+      ]);
+    } catch (error) {
+      observed = error;
+    }
+    expect(observed).toMatchObject({ code, exitCode: 10 });
+    expect(JSON.stringify(observed)).not.toContain(stderr);
+  });
 });

@@ -51,11 +51,45 @@ export async function runEdgeRuntimeSmoke(options: {
   readonly ownerPassword?: string;
   readonly refreshToken?: string;
   readonly fetcher?: typeof fetch;
+  readonly requestTimeoutMs?: number;
 }): Promise<EdgeRuntimeSmokeResult | EdgeAllRuntimeSmokeResult> {
   if (Buffer.byteLength(options.gatewayToken, 'utf8') < 32) {
     throw new Error('MIRAICHI_GATEWAY_TOKEN must be at least 32 bytes');
   }
   const fetcher = options.fetcher ?? fetch;
+  const requestTimeoutMs = options.requestTimeoutMs ?? 25_000;
+  if (!Number.isFinite(requestTimeoutMs) || requestTimeoutMs <= 0 || requestTimeoutMs > 30_000) {
+    throw new Error('Edge runtime smoke request timeout must be between 0 and 30000 ms');
+  }
+  const request = async (stage: string, url: string, init: RequestInit) => {
+    const controller = new AbortController();
+    let timedOut = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+        reject(new Error(`Edge runtime smoke timed out at stage: ${stage}`));
+      }, requestTimeoutMs);
+    });
+    try {
+      return await Promise.race([
+        (async () => {
+          const response = await fetcher(url, { ...init, signal: controller.signal });
+          // Keep the deadline active while reading the body, not just until headers arrive.
+          const body = response.status === 204 ? {} : await response.json().catch(() => ({}));
+          return { response, body: body as Record<string, unknown> };
+        })(),
+        deadline
+      ]);
+    } catch {
+      throw new Error(timedOut
+        ? `Edge runtime smoke timed out at stage: ${stage}`
+        : `Edge runtime smoke request failed at stage: ${stage}`);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
   const functionUrl = options.functionUrl.replace(/\/$/, '');
   const gatewayHeaders = { 'x-miraichi-gateway-token': options.gatewayToken };
   if (options.scope === 'all') {
@@ -73,20 +107,17 @@ export async function runEdgeRuntimeSmoke(options: {
     if (!options.refreshToken || Buffer.byteLength(options.refreshToken, 'utf8') < 32) {
       throw new Error('MIRAICHI_REFRESH_TOKEN is required for the auth smoke');
     }
-    const primitivesResponse = await fetcher(`${functionUrl}/__runtime-smoke/auth-primitives`, {
+    const primitivesResult = await request('auth-primitives', `${functionUrl}/__runtime-smoke/auth-primitives`, {
       method: 'POST', headers: gatewayHeaders
     });
-    const primitives = primitivesResponse.ok
-      ? await primitivesResponse.json() as Record<string, unknown>
-      : {};
+    const primitives = primitivesResult.response.ok ? primitivesResult.body : {};
 
-    const login = async (password: string) => fetcher(`${functionUrl}/api/v1/auth/login`, {
+    const login = async (stage: string, password: string) => request(stage, `${functionUrl}/api/v1/auth/login`, {
       method: 'POST',
       headers: { ...gatewayHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })
     });
-    const invalidResponse = await login(`${options.ownerPassword}-invalid`);
-    const invalidBody = await invalidResponse.json().catch(() => ({})) as Record<string, unknown>;
+    const { response: invalidResponse, body: invalidBody } = await login('invalid-login', `${options.ownerPassword}-invalid`);
     const invalidError = typeof invalidBody.error === 'object' && invalidBody.error !== null
       ? invalidBody.error as Record<string, unknown>
       : {};
@@ -94,7 +125,7 @@ export async function runEdgeRuntimeSmoke(options: {
       && invalidError.code === 'invalid_credentials'
       && invalidError.message === 'Invalid credentials.';
 
-    const loginResponse = await login(options.ownerPassword);
+    const { response: loginResponse } = await login('login', options.ownerPassword);
     const setCookie = loginResponse.headers.get('set-cookie') ?? '';
     const cookie = setCookie.split(';')[0] ?? '';
     const sessionCookie = loginResponse.status === 204
@@ -104,24 +135,22 @@ export async function runEdgeRuntimeSmoke(options: {
       && setCookie.includes('Secure')
       && setCookie.includes('SameSite=Strict');
 
-    const protectedResponse = await fetcher(`${functionUrl}/api/v1/cloud-persistence/status`, {
+    const { response: protectedResponse, body: protectedBody } = await request('protected-route', `${functionUrl}/api/v1/cloud-persistence/status`, {
       headers: { ...gatewayHeaders, Cookie: cookie }
     });
-    const protectedBody = await protectedResponse.json().catch(() => ({})) as Record<string, unknown>;
     const protectedRoute = protectedResponse.status === 200
       && protectedBody.state === 'ready';
 
-    const refreshResponse = await fetcher(`${functionUrl}/api/v1/cloud-persistence/status`, {
+    const { response: refreshResponse, body: refreshBody } = await request('refresh-isolation', `${functionUrl}/api/v1/cloud-persistence/status`, {
       headers: { ...gatewayHeaders, Authorization: `Bearer ${options.refreshToken}` }
     });
-    const refreshBody = await refreshResponse.json().catch(() => ({})) as Record<string, unknown>;
     const refreshError = typeof refreshBody.error === 'object' && refreshBody.error !== null
       ? refreshBody.error as Record<string, unknown>
       : {};
     const refreshIsolation = refreshResponse.status === 401
       && refreshError.code === 'authentication_required';
 
-    const logoutResponse = await fetcher(`${functionUrl}/api/v1/auth/logout`, {
+    const { response: logoutResponse } = await request('logout', `${functionUrl}/api/v1/auth/logout`, {
       method: 'POST', headers: { ...gatewayHeaders, Cookie: cookie }
     });
     const logoutCookie = logoutResponse.headers.get('set-cookie') ?? '';
@@ -150,7 +179,7 @@ export async function runEdgeRuntimeSmoke(options: {
     };
   }
 
-  const response = await fetcher(`${functionUrl}/__runtime-smoke/postgres`, {
+  const { response, body } = await request('postgres', `${functionUrl}/__runtime-smoke/postgres`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -159,7 +188,7 @@ export async function runEdgeRuntimeSmoke(options: {
     body: JSON.stringify({ marker: randomUUID() })
   });
   if (!response.ok) throw new Error(`Edge postgres smoke failed with HTTP ${response.status}`);
-  const result = await response.json() as Partial<EdgePostgresRuntimeSmokeResult>;
+  const result = body as Partial<EdgePostgresRuntimeSmokeResult>;
   if (result.scope !== options.scope
     || result.parameterizedQuery !== true
     || result.rollback !== true

@@ -194,14 +194,15 @@ jobs:
           set -euo pipefail
           pnpm exec supabase functions serve miraichi-api --env-file .secrets/edge.local.env >/tmp/miraichi-edge.log 2>&1 &
           edge_pid=$!
-          trap 'kill "$edge_pid" 2>/dev/null || true' EXIT
+          trap 'kill "$edge_pid" 2>/dev/null || true; wait "$edge_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 30); do
-            if curl --fail --silent --output /dev/null \
+            if curl --fail --silent --connect-timeout 3 --max-time 5 --output /dev/null \
               -H 'x-miraichi-gateway-token: ci-only-gateway-token-with-at-least-32-bytes' \
               http://127.0.0.1:15421/functions/v1/miraichi-api/api/v1/health; then
               break
             fi
             if [ "$attempt" -eq 30 ]; then
+              echo "Edge runtime smoke failed at stage: health" >&2
               exit 1
             fi
             sleep 2
