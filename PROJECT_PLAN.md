@@ -55,7 +55,15 @@
   and exact-SHA staging deployment. Actual Wrangler RED failed the root header check; GREEN passes
   shell, manifest, service worker and release metadata with release headers. Focused 23 tests,
   full local 199 files / 1,349 tests and the 77-file Wrangler artifact dry-run pass; independent
-  review reports no actionable findings. No migration is added.
+  review reports no actionable findings. PR #17 passed all ten CI checks on `36738859917`
+  and merged at `75aa79c2929131c810a16b0e5ef7329e86b8a085`. Exact staging run `36739358533`
+  passed deployment/configuration but again failed release identity smoke; rollback succeeded.
+  The candidate Worker preview now independently proves correct shell/release headers and metadata,
+  while Edge health omits its release body. The real function entry omitted all four release
+  environment names. Next minimal slice: execute the bundled entry with disposable Deno environment
+  and a database driver that rejects queries; observe health RED without release, forward the four
+  reviewed names, verify GREEN/local/graph, independent review, commit, green PR and exact deployment.
+  No migration is added.
   Hosted staging still requires a successful exact-SHA deployment and smoke/artifact/status gates.
   Owner-approved Free production project `xmjvvizihdrklakrmsav` reads back `ACTIVE_HEALTHY` at
   Singapore `ap-southeast-1`, with no application or migration tables. Its ref, Edge URL, owner ID,
