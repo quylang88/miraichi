@@ -1,3 +1,9 @@
+import { createServer } from 'node:http';
+import { execFile } from 'node:child_process';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { once } from 'node:events';
 import { describe, expect, it, vi } from 'vitest';
 import {
   parseEdgeRuntimeSmokeArgs,
@@ -84,3 +90,124 @@ describe('Supabase Edge runtime smoke', () => {
     expect(fetcher).toHaveBeenCalledTimes(6);
   });
 });
+
+const stages = ['postgres', 'auth-primitives', 'invalid-login', 'login', 'protected-route', 'refresh-isolation', 'logout'] as const;
+const smokeOptions = {
+  scope: 'all' as const,
+  functionUrl: 'http://127.0.0.1:15421/functions/v1/miraichi-api',
+  gatewayToken: 'private-gateway-token-with-at-least-32-bytes',
+  ownerPassword: 'private-owner-password',
+  refreshToken: 'private-refresh-token-with-at-least-32-bytes'
+};
+function successfulResponses(): Response[] {
+  return [
+    Response.json({ scope: 'postgres', parameterizedQuery: true, rollback: true, commit: true, cleanup: true }),
+    Response.json({ scrypt: true, randomBytes: true, hmacSession: true }),
+    Response.json({ error: { code: 'invalid_credentials', message: 'Invalid credentials.' } }, { status: 401 }),
+    new Response(null, { status: 204, headers: { 'set-cookie': '__Host-miraichi_owner=v1.payload.signature; Path=/; HttpOnly; Secure; SameSite=Strict' } }),
+    Response.json({ state: 'ready' }),
+    Response.json({ error: { code: 'authentication_required' } }, { status: 401 }),
+    new Response(null, { status: 204, headers: { 'set-cookie': '__Host-miraichi_owner=; Max-Age=0' } })
+  ];
+}
+
+describe('bounded Edge requests', () => {
+  it.each(stages)('aborts a stalled %s request at the default deadline with only a safe stage', async (stage) => {
+    vi.useFakeTimers();
+    let stalledSignal: AbortSignal | null | undefined;
+    const responses = successfulResponses();
+    let index = 0;
+    let rejectStalled: ((reason: Error) => void) | undefined;
+    const fetcher: typeof fetch = async (_url, init) => {
+      if (index++ !== stages.indexOf(stage)) return responses.shift()!;
+      stalledSignal = init?.signal;
+      return new Promise<Response>((_resolve, reject) => {
+        rejectStalled = reject;
+        stalledSignal?.addEventListener('abort', () => reject(new Error('private password cookie Authorization raw response')), { once: true });
+      });
+    };
+    const result = runEdgeRuntimeSmoke({ ...smokeOptions, fetcher }).catch((error: unknown) => error);
+    try {
+      await vi.advanceTimersByTimeAsync(25_000);
+      expect(stalledSignal?.aborted).toBe(true);
+      expect((await result as Error).message).toBe(`Edge runtime smoke timed out at stage: ${stage}`);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      rejectStalled?.(new Error('test cleanup'));
+      await result;
+      vi.useRealTimers();
+    }
+  });
+
+  it('bounds a real HTTP response whose body never completes', async () => {
+    const server = createServer((_request, response) => {
+      response.writeHead(200, { 'Content-Type': 'application/json' });
+      response.write('{');
+    });
+    server.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Missing test server address');
+    const cleanupTimer = setTimeout(() => server.closeAllConnections(), 500);
+    try {
+      await expect(runEdgeRuntimeSmoke({
+        ...smokeOptions, scope: 'postgres',
+        functionUrl: `http://127.0.0.1:${address.port}`,
+        requestTimeoutMs: 50
+      })).rejects.toThrow('Edge runtime smoke timed out at stage: postgres');
+    } finally {
+      clearTimeout(cleanupTimer);
+      server.closeAllConnections();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  }, 1000);
+
+  it('redacts transport error messages and releases the deadline timer', async () => {
+    vi.useFakeTimers();
+    try {
+      await expect(runEdgeRuntimeSmoke({
+        ...smokeOptions, scope: 'postgres',
+        fetcher: async () => { throw new Error('private-owner-password Authorization cookie raw response'); }
+      })).rejects.toThrow(/^Edge runtime smoke request failed at stage: postgres$/);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+it('exits the real smoke CLI with a safe failure after aborting a stalled native response', async () => {
+  let responseClosed = false;
+  const server = createServer((_request, response) => {
+    response.on('close', () => { responseClosed = true; });
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.write('{');
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const address = server.address();
+  if (!address || typeof address === 'string') throw new Error('Missing test server address');
+  const root = mkdtempSync(path.join(tmpdir(), 'miraichi-smoke-cli-'));
+  mkdirSync(path.join(root, '.secrets'));
+  writeFileSync(path.join(root, '.secrets/edge.local.env'), '', { mode: 0o600 });
+  try {
+    const result = await new Promise<{ code: number | string | undefined; stdout: string; stderr: string }>((resolve) => {
+      execFile(process.execPath, [
+        '--import', import.meta.resolve('tsx'),
+        path.resolve('scripts/supabase-edge-runtime-smoke.ts'), '--scope', 'postgres'
+      ], {
+        cwd: root, timeout: 30_000,
+        env: { ...process.env, MIRAICHI_GATEWAY_TOKEN: smokeOptions.gatewayToken,
+          MIRAICHI_EDGE_FUNCTION_URL: `http://127.0.0.1:${address.port}` }
+      }, (error, stdout, stderr) => resolve({ code: error?.code, stdout, stderr }));
+    });
+    expect(result.code).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr.trim()).toBe('Edge runtime smoke timed out at stage: postgres');
+    expect(responseClosed).toBe(true);
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    rmSync(root, { recursive: true, force: true });
+  }
+}, 35_000);
