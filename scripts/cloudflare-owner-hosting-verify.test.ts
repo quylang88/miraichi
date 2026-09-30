@@ -23,7 +23,7 @@ function fixture(): string {
     env: { staging: {}, production: {} },
     assets: {
       directory: '../web/dist', binding: 'ASSETS',
-      not_found_handling: 'single-page-application', run_worker_first: ['/api', '/api/*']
+      not_found_handling: 'single-page-application', run_worker_first: true
     }
   }));
   return root;
@@ -39,8 +39,22 @@ describe('Cloudflare owner-hosting artifact verification', () => {
       .toEqual({
         deploymentEnvironments: ['staging', 'production'],
         directory: '../web/dist', binding: 'ASSETS',
-        notFoundHandling: 'single-page-application', runWorkerFirst: ['/api', '/api/*']
+        notFoundHandling: 'single-page-application', runWorkerFirst: true
       });
+  });
+
+  it('rejects API-only routing that bypasses release headers on static responses', () => {
+    const root = fixture();
+    const configFile = path.join(root, 'apps/cloudflare-gateway/wrangler.jsonc');
+    writeFileSync(configFile, JSON.stringify({
+      env: { staging: {}, production: {} },
+      assets: {
+        directory: '../web/dist', binding: 'ASSETS',
+        not_found_handling: 'single-page-application', run_worker_first: ['/api', '/api/*']
+      }
+    }));
+    expect(() => readCloudflareAssetsConfig(configFile))
+      .toThrow('Cloudflare Static Assets configuration is not exact');
   });
 
   it('rejects excess files, oversized files, and an external API URL', () => {
