@@ -234,3 +234,12 @@ Direct production hotfixes are forbidden. The mandatory main -> staging -> main 
   alert is informational and delayed; it does not pause usage or provide a zero-cost guarantee.
 - No point-in-time recovery, cross-region database failover, or support SLA is provided by this
   design.
+
+## Static response release identity
+
+Cloudflare Static Assets must use `run_worker_first: true`. The gateway's existing static handler
+adds the same release identity headers as API responses. API-only routing patterns bypass that
+handler for the shell, manifest, service worker and release metadata; the release smoke correctly
+rejects those responses even when the built metadata contains the candidate SHA. Artifact verification
+rejects that bypass configuration. This routes static requests through the Worker and counts those
+requests against Worker invocation usage; it does not select a paid plan.

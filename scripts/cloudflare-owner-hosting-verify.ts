@@ -18,7 +18,7 @@ export interface CloudflareAssetsConfig {
   readonly directory: string;
   readonly binding: 'ASSETS';
   readonly notFoundHandling: 'single-page-application';
-  readonly runWorkerFirst: readonly ['/api', '/api/*'];
+  readonly runWorkerFirst: true;
 }
 
 function filesBelow(directory: string): string[] {
@@ -75,10 +75,7 @@ export function readCloudflareAssetsConfig(configFile: string): CloudflareAssets
     || assets.directory !== '../web/dist'
     || assets.binding !== 'ASSETS'
     || assets.not_found_handling !== 'single-page-application'
-    || !Array.isArray(assets.run_worker_first)
-    || assets.run_worker_first.length !== 2
-    || assets.run_worker_first[0] !== '/api'
-    || assets.run_worker_first[1] !== '/api/*') {
+    || assets.run_worker_first !== true) {
     throw new Error('Cloudflare Static Assets configuration is not exact');
   }
   return {
@@ -86,7 +83,7 @@ export function readCloudflareAssetsConfig(configFile: string): CloudflareAssets
     directory: '../web/dist',
     binding: 'ASSETS',
     notFoundHandling: 'single-page-application',
-    runWorkerFirst: ['/api', '/api/*']
+    runWorkerFirst: true
   };
 }
 

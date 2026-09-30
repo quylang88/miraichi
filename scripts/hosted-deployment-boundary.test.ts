@@ -29,7 +29,7 @@ describe('active owner-hosted deployment boundary', () => {
       'tsx scripts/cloudflare-owner-hosting-verify.ts'
     );
     expect(wrangler).toContain('"directory": "../web/dist"');
-    expect(wrangler).toContain('"run_worker_first": ["/api", "/api/*"]');
+    expect(JSON.parse(wrangler).assets.run_worker_first).toBe(true);
     expect(environmentTemplate).not.toContain('CLOUDFLARE_API_TOKEN');
     expect(environmentTemplate).not.toContain('CLOUDFLARE_ACCOUNT_ID');
     expect(environmentTemplate).not.toContain('CLOUDFLARE_PAGES_PROJECT');

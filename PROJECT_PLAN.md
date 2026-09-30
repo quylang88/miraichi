@@ -45,7 +45,17 @@
   RED was observed for all three SQL consumers; final focused 21 tests and full local 199 files /
   1,348 tests pass, as do integration/browser/PWA checks. The actual pinned CLI returns the expected
   JSON row envelope using a password-free database argument and `PGPASSWORD` against disposable
-  local Postgres. Independent review reports no actionable findings; hosted proof remains pending.
+  local Postgres. Independent review reports no actionable findings. PR #16 passed all ten CI checks on
+  `36735607812` and merged at `04cfc94fd39cc59431cd2f383c0b82e5c47146c6`. Exact staging
+  deployment `36736065839` passed migration, Edge, Worker and scheduler configuration, then failed
+  smoke with `release_identity_mismatch`; rollback reported no errors. Actual hosted shell and
+  release metadata lacked release headers because API-only Worker-first routing bypassed the static
+  handler. The next minimal slice sets all-assets Worker-first routing, updates the artifact verifier
+  to reject API-only routing, then runs focused/local checks, independent review, green PR checks
+  and exact-SHA staging deployment. Actual Wrangler RED failed the root header check; GREEN passes
+  shell, manifest, service worker and release metadata with release headers. Focused 23 tests,
+  full local 199 files / 1,349 tests and the 77-file Wrangler artifact dry-run pass; independent
+  review reports no actionable findings. No migration is added.
   Hosted staging still requires a successful exact-SHA deployment and smoke/artifact/status gates.
   Owner-approved Free production project `xmjvvizihdrklakrmsav` reads back `ACTIVE_HEALTHY` at
   Singapore `ap-southeast-1`, with no application or migration tables. Its ref, Edge URL, owner ID,
