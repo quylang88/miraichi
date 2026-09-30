@@ -267,6 +267,7 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
           MIRAICHI_OWNER_PASSWORD: ${{ secrets.MIRAICHI_OWNER_PASSWORD }}
         run: pnpm run verify:staging:hosted
 

@@ -1,3 +1,4 @@
+import { remoteQueryCommand } from './supabase-query.js';
 import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -249,11 +250,13 @@ export async function runProductionSmokeCli(
   const root = path.resolve(env.GITHUB_WORKSPACE?.trim() || process.cwd());
   const manifest = await readManifest(required(env, 'MIRAICHI_RELEASE_MANIFEST_PATH'));
   const expectedReleaseMetadata = readReleaseMetadata(env);
+  const queryCommand = remoteQueryCommand({ projectRef: env.SUPABASE_PROJECT_REF ?? '',
+    ...(env.SUPABASE_DATABASE_URL?.trim() ? { databaseUrl: env.SUPABASE_DATABASE_URL.trim() } : {}) }, env);
   const runQuery = async (sql: string) => {
     const result = await runner.run(process.execPath, [
       path.join(root, 'node_modules', 'supabase', 'dist', 'supabase.js'),
-      'db', 'query', '--linked', '--output-format', 'json', sql
-    ], { cwd: root, env, timeoutMs: 120_000 });
+      ...queryCommand.args, sql
+    ], { cwd: root, env: queryCommand.env, timeoutMs: 120_000 });
     return parseJsonRows(result.stdout);
   };
   const edgeFunctionUrl = required(env, 'MIRAICHI_EDGE_FUNCTION_URL');

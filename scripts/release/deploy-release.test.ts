@@ -51,7 +51,8 @@ describe('release CLI adapters', () => {
         calls.push({ command, args });
         return {
           stdout: command === 'git' ? `${manifest.sourceSha}\n${manifest.treeId}\n`
-            : args.includes('deploy') && args.includes('wrangler') ? 'Current Version ID: worker-new' : '',
+            : args.includes('deploy') && args.includes('wrangler') ? 'Current Version ID: worker-new'
+            : args.includes('query') ? '{"rows":[]}' : '',
           stderr: '', exitCode: 0 as const
         };
       })
@@ -168,17 +169,22 @@ describe('explicit Session pooler migrations', () => {
     expect(runner.run).not.toHaveBeenCalled();
   });
 
-  it('keeps linked Management API queries separate from the migration connection', async () => {
-    const calls: Array<readonly string[]> = [];
-    const runner: CommandRunner = { run: async (_command, args) => {
-      calls.push(args); return { stdout: '', stderr: '', exitCode: 0 };
+  it('bypasses IPv6 preflight for scheduler configuration and compensation using the exact pooler', async () => {
+    const calls: Array<{ args: readonly string[]; options: CommandRunOptions | undefined }> = [];
+    const runner: CommandRunner = { run: async (_command, args, options) => {
+      calls.push({ args, options }); return { stdout: '{"rows":[]}', stderr: '', exitCode: 0 };
     } };
     const operations = createCliReleaseOperations({ ...config,
       databaseUrl: `postgresql://postgres.${config.projectRef}:private@aws-7-eu-central-1.pooler.supabase.com:5432/postgres`
     }, { runner });
     await operations.configureScheduler();
-    expect(calls[0]).toContain('--linked');
-    expect(calls[0]).not.toContain('--db-url');
+    await operations.pauseScheduler();
+    expect(calls.map(({ args }) => args.slice(1))).toEqual([
+      ['db', 'query', '--db-url', `postgresql://postgres.${config.projectRef}@aws-7-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require`, '--output', 'json', '--agent', 'yes', "select miraichi_app.configure_hosted_refresh('ap-southeast-1');"],
+      ['db', 'query', '--db-url', `postgresql://postgres.${config.projectRef}@aws-7-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require`, '--output', 'json', '--agent', 'yes', 'select miraichi_app.unschedule_hosted_refresh();']
+    ]);
+    expect(JSON.stringify(calls.map(({ args }) => args))).not.toContain('private');
+    expect(calls.every(({ options }) => options?.env?.PGPASSWORD === 'private')).toBe(true);
   });
 });
 
