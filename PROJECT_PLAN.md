@@ -81,6 +81,21 @@
   and exact Dashboard Session pooler URL are configured in GitHub production; readiness remains
   blocked on separate Worker and verified backup/offline-key gates. Production lacks runtime
   credentials, and any `staging -> main` merge requires fresh explicit owner confirmation.
+- **Edge pooler continuation (2026-10-01)**: PR #19 passed all ten CI checks on
+  `36788076272` and merged at `bb5787d5babeef1aafefa850cb3fc6b58e66b17b`.
+  Exact staging run `36788526081` passed the deployment transaction but failed hosted draft
+  cleanup. PostgreSQL logs in the failed gate window record four remaining-connection-slot
+  errors; direct Edge connections are the leading hypothesis, not a proven per-request cause.
+  Two exact-window synthetic drafts were removed with an identity/count guard; readback confirms
+  one existing draft remains and zero in that test window. Owner approved the bounded Edge
+  Transaction pooler design on 2026-10-01. Dashboard confirms staging host
+  `aws-0-eu-central-1.pooler.supabase.com`, user `postgres.qpexxwmrnreooxftfucv`, port 6543.
+  Slice: RED bundled-entry alias precedence and protected env-file lifecycle; implement custom
+  `MIRAICHI_DATABASE_URL` with built-in fallback and upload through a temporary 0600 file;
+  focused/local checks, independent review, green PR, exact-SHA hosted staging gate.
+  Focused 17 tests, full local 200 files / 1,354 tests, integration/browser/PWA and Edge
+  build/module graph pass; independent review reports no actionable findings. Migration/probe
+  Session pooler bindings and application schema remain unchanged. Hosted gate remains pending.
 - **Active implementation track**: repository delivery foundations through automatic staging,
   exact-candidate production, encrypted backup/restore verification, migration safety, readiness,
   and operations documentation are being completed on the isolated implementation branch. Remote
