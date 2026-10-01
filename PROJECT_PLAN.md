@@ -101,7 +101,17 @@
   and the custom alias. Follow-up RED/GREEN adds a safe allowlisted startup-log classification on
   exhausted CI health warmup, without printing raw logs or changing the exit failure. Focused 35
   tests and full local 200 files / 1,358 tests pass; independent review finds no actionable issues.
-  Hosted gate remains pending.
+  PR #20 passed all ten checks on CI `36826502213`, then merged into staging at
+  `e1a3638ffb46fbe1e3cdef145d7eb37aa9ce6d5b`. Exact Deploy Staging `36827002686`
+  succeeded, including deployment transaction, committed hosted browser checks, cleanup, immutable
+  artifact and deployment status. Downloaded deployment evidence passes the canonical verifier;
+  shell/release/health independently return HTTP 200 with matching release headers and health body.
+  Database readback: one pre-existing draft, zero synthetic manual drafts, zero drafts in the gate
+  window, three active scheduler jobs. Logs in the gate window contain zero remaining-slot errors
+  and zero function HTTP 5xx. Staging exit gate is satisfied for this exact candidate.
+  Earliest next work is remote production readiness/preparation, blocked on missing production
+  Supabase/Cloudflare deployment tokens and independent backup-key confirmation. Clean production
+  baseline and staging-to-main promotion still require fresh exact owner approval before action.
 - **Active implementation track**: repository delivery foundations through automatic staging,
   exact-candidate production, encrypted backup/restore verification, migration safety, readiness,
   and operations documentation are being completed on the isolated implementation branch. Remote
