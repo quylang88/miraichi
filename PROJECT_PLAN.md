@@ -95,7 +95,13 @@
   focused/local checks, independent review, green PR, exact-SHA hosted staging gate.
   Focused 17 tests, full local 200 files / 1,354 tests, integration/browser/PWA and Edge
   build/module graph pass; independent review reports no actionable findings. Migration/probe
-  Session pooler bindings and application schema remain unchanged. Hosted gate remains pending.
+  Session pooler bindings and application schema remain unchanged. CI `36825411708` passed eight
+  child jobs but failed local Edge health warmup before smoke; no staging merge occurred. The same
+  commit passes actual local Edge health and complete Postgres/auth smoke both with built-in fallback
+  and the custom alias. Follow-up RED/GREEN adds a safe allowlisted startup-log classification on
+  exhausted CI health warmup, without printing raw logs or changing the exit failure. Focused 35
+  tests and full local 200 files / 1,358 tests pass; independent review finds no actionable issues.
+  Hosted gate remains pending.
 - **Active implementation track**: repository delivery foundations through automatic staging,
   exact-candidate production, encrypted backup/restore verification, migration safety, readiness,
   and operations documentation are being completed on the isolated implementation branch. Remote

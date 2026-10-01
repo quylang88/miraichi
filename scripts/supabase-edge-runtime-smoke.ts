@@ -211,6 +211,19 @@ function readLocalSecrets(file: string): Record<string, string> {
 }
 
 async function main(): Promise<void> {
+  if (process.argv[2] === '--startup-log') {
+    let log = '';
+    try { log = readFileSync(process.argv[3] ?? '', 'utf8'); } catch { /* Only safe codes leave this diagnostic. */ }
+    const errorCode = /failed to resolve|module not found|import.*failed/iu.test(log)
+      ? 'edge_module_resolution_failed'
+      : /SyntaxError/iu.test(log) ? 'edge_syntax_error'
+      : /TypeError/iu.test(log) ? 'edge_type_error'
+      : /permission denied|requires .* access/iu.test(log) ? 'edge_permission_denied'
+      : /worker.*(?:boot|creation).*error|worker boot.*fail/iu.test(log) ? 'edge_boot_failed'
+      : 'edge_health_unavailable';
+    console.log(JSON.stringify({ stage: 'health', errorCode }));
+    return;
+  }
   const args = parseEdgeRuntimeSmokeArgs(process.argv.slice(2));
   const secrets = readLocalSecrets(path.resolve('.secrets/edge.local.env'));
   const result = await runEdgeRuntimeSmoke({
