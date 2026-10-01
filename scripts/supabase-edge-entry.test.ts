@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { buildSupabaseEdgeFunction } from './build-supabase-edge-function.js';
 
 describe('deployed Supabase Edge entry', () => {
-  it('returns configured release identity from health without database access', async () => {
+  it.each([undefined, 'postgresql://postgres.fixture:disposable@pooler.example:6543/postgres?sslmode=require'])('uses the configured Edge database while health avoids queries (%s)', async (databaseUrl) => {
     const outputRoot = await mkdtemp(path.join(os.tmpdir(), 'miraichi-edge-entry-'));
     try {
       const runtime = await buildSupabaseEdgeFunction({ outputRoot });
@@ -18,7 +18,8 @@ describe('deployed Supabase Edge entry', () => {
           context.onResolve({ filter: /miraichi-edge-runtime\.js$/ }, () => ({ path: runtime.outputFile }));
           context.onResolve({ filter: /postgres-runtime\.ts$/ }, () => ({ path: 'driver', namespace: 'fixture' }));
           context.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: `
-            export function createPostgresRuntime() {
+            export function createPostgresRuntime(databaseUrl) {
+              Deno.observeDriver(databaseUrl);
               return { unsafe() { throw new Error('Health must not query the database'); } };
             }
           ` }));
@@ -35,8 +36,10 @@ describe('deployed Supabase Edge entry', () => {
         MIRAICHI_RELEASE_ARTIFACT: release.artifactVersion,
         MIRAICHI_SCHEMA_COMPAT_VERSION: release.compatibilityVersion
       };
+      if (databaseUrl) env.MIRAICHI_DATABASE_URL = databaseUrl;
+      let observedDatabaseUrl: string | undefined;
       let handler: ((request: Request) => Promise<Response>) | undefined;
-      const deno = { env: { get: (name: string) => env[name] },
+      const deno = { observeDriver: (url: string) => { observedDatabaseUrl = url; }, env: { get: (name: string) => env[name] },
         serve: (value: typeof handler) => { handler = value; } };
       new Function('require', 'Deno', bundle.outputFiles[0]!.text)(createRequire(import.meta.url), deno);
       expect(handler).toBeTypeOf('function');
@@ -45,6 +48,7 @@ describe('deployed Supabase Edge entry', () => {
       }));
       expect(response.status).toBe(200);
       await expect(response.json()).resolves.toMatchObject({ status: 'ok', release });
+      expect(observedDatabaseUrl).toBe(databaseUrl ?? env.SUPABASE_DB_URL);
     } finally {
       await rm(outputRoot, { recursive: true, force: true });
     }

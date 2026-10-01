@@ -211,3 +211,23 @@ it('exits the real smoke CLI with a safe failure after aborting a stalled native
     rmSync(root, { recursive: true, force: true });
   }
 }, 35_000);
+
+it.each([
+  ['Error: failed to resolve npm:postgres@3.4.7; password=fixture-private', 'edge_module_resolution_failed'],
+  ['worker boot error: SyntaxError with token=fixture-private', 'edge_syntax_error'],
+  ['TypeError: fixture-private', 'edge_type_error'],
+  ['Serving functions with cookie=fixture-private', 'edge_health_unavailable']
+])('prints only a safe startup classification for %s', async (log, errorCode) => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'miraichi-startup-log-'));
+  try {
+    const file = path.join(directory, 'edge.log');
+    writeFileSync(file, log);
+    const result = await new Promise<{stdout: string; stderr: string}>((resolve, reject) => {
+      execFile(process.execPath, ['node_modules/tsx/dist/cli.mjs', 'scripts/supabase-edge-runtime-smoke.ts', '--startup-log', file],
+        { timeout: 10000 }, (error, stdout, stderr) => error ? reject(error) : resolve({ stdout, stderr }));
+    });
+    expect(JSON.parse(result.stdout)).toEqual({ stage: 'health', errorCode });
+    expect(result.stderr).toBe('');
+    expect(result.stdout).not.toContain('fixture-private');
+  } finally { rmSync(directory, {recursive: true, force: true}); }
+});

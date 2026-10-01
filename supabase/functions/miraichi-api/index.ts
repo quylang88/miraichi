@@ -26,8 +26,11 @@ const environment = Object.fromEntries([
   'SPORTSCORE_LIVE_MODE',
   'LIVE_DATA_MODE',
   'SPORTSCORE_WIDGET_TIMEOUT_MS',
+  'MIRAICHI_DATABASE_URL',
   'SUPABASE_DB_URL'
 ].map((name) => [name, Deno.env.get(name)]));
+
+environment.SUPABASE_DB_URL = environment.MIRAICHI_DATABASE_URL?.trim() || environment.SUPABASE_DB_URL;
 
 let queryClient: ReturnType<typeof createPostgresJsQueryClient> | undefined;
 const getQueryClient = () => {

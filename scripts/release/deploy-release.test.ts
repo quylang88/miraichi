@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { getReleaseTarget } from '../../packages/config/src/release-targets.js';
@@ -206,4 +206,34 @@ it('authenticates a password-free Dashboard URL with the existing environment DB
     expect(call.env?.PGPASSWORD).toBe('existing-p@ss:%2F#');
     expect(JSON.stringify(call.args)).not.toContain('existing-p@ss:%2F#');
   }
+});
+
+
+describe('Edge transaction pooler secret handoff', () => {
+  it.each([false, true])('uses a protected temporary env file and removes it after secret upload (failure=%s)', async (fail) => {
+    let file: string | undefined;
+    let directory: string | undefined;
+    const password = 'fixture-p@ss:/? #$';
+    const runner: CommandRunner = { run: async (_command, args) => {
+      expect(JSON.stringify(args)).not.toContain(password);
+      expect(JSON.stringify(args)).not.toContain(encodeURIComponent(password));
+      if (args.includes('--env-file')) {
+        file = args[args.indexOf('--env-file') + 1]!;
+        directory = path.dirname(file);
+        expect(statSync(file).mode & 0o777).toBe(0o600);
+        expect(statSync(directory).mode & 0o777).toBe(0o700);
+        expect(readFileSync(file, 'utf8')).toBe('MIRAICHI_DATABASE_URL=postgresql://postgres.abcdefghijklmnopqrst:fixture-p%40ss%3A%2F%3F%20%23%24@aws-7-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require\n');
+        if (fail) throw new Error('fixture upload failure');
+      }
+      return { stdout: '', stderr: '', exitCode: 0 };
+    } };
+    const operations = createCliReleaseOperations({ ...config,
+      databaseUrl: 'postgresql://postgres.abcdefghijklmnopqrst@aws-7-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require'
+    }, { runner, env: { SUPABASE_DB_PASSWORD: password } });
+    if (fail) await expect(operations.deployEdge()).rejects.toThrow('fixture upload failure');
+    else await operations.deployEdge();
+    expect(file).toBeTypeOf('string');
+    expect(existsSync(file!)).toBe(false);
+    expect(existsSync(directory!)).toBe(false);
+  });
 });

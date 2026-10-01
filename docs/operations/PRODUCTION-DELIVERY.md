@@ -138,6 +138,19 @@ Production secrets:
 Enter secret values only in provider/GitHub UI or a trusted interactive prompt. Never paste them
 into chat, commands that persist in shell history, artifacts, logs, or tracked files.
 
+## Transaction pooler for Edge requests
+
+Edge isolates use `MIRAICHI_DATABASE_URL`, falling back to the built-in `SUPABASE_DB_URL`
+for local/legacy deployments. Confirm the shared Transaction pooler host, project user and
+port 6543 in Dashboard before deployment. The release adapter reuses the validated Session
+pooler host/user/password with port 6543 and TLS; migrations and SQL probes keep port 5432.
+The driver disables prepared statements and limits each isolate to one connection.
+
+Deployment writes the database URL to a temporary 0600 env file in a 0700 directory, uploads
+it with Supabase `secrets set --env-file`, then removes the directory in `finally`, including
+upload failures. Credentials never enter command arguments. The custom secret persists across
+Edge version rollback; older entries ignore it and retain their built-in database binding.
+
 ## Session pooler for migration runners
 
 The GitHub runner cannot use the Free project's IPv6 direct endpoint. For each environment,

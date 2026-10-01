@@ -1,7 +1,8 @@
 import { releaseDatabaseConnection, remoteQueryCommand } from './supabase-query.js';
 import { createHash } from 'node:crypto';
-import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
   assertReleaseTargetBindings,
@@ -170,6 +171,20 @@ export function createCliReleaseOperations(
   const runSupabase = (args: readonly string[], commandEnv = env) => runner.run(process.execPath, [supabaseCli(config.root), ...args], {
     cwd: config.root, env: commandEnv, timeoutMs: 10 * 60_000
   });
+  const uploadEdgeDatabaseSecret = async () => {
+    if (!database) return;
+    const url = new URL(database.url);
+    url.port = '6543';
+    url.password = encodeURIComponent(database.password);
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'miraichi-edge-database-'));
+    try {
+      const envFile = path.join(directory, 'edge.env');
+      await writeFile(envFile, `MIRAICHI_DATABASE_URL=${url.toString()}\n`, { mode: 0o600, flag: 'wx' });
+      await runSupabase(['secrets', 'set', '--project-ref', config.projectRef, '--env-file', envFile]);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  };
   const runWrangler = (args: readonly string[]) => runner.run(pnpmCommand(), [
     '--filter', '@miraichi/cloudflare-gateway', 'exec', 'wrangler', ...args
   ], { cwd: config.root, env, timeoutMs: 10 * 60_000 });
@@ -250,6 +265,7 @@ export function createCliReleaseOperations(
       await runSupabase(['db', 'push', ...migrationTarget, '--include-all', '--yes'], migrationEnv);
     },
     deployEdge: async () => {
+      await uploadEdgeDatabaseSecret();
       await runSupabase(edgeReleaseSecretArgs(config.projectRef, expectedRelease(config)));
       await runSupabase(['functions', 'deploy', 'miraichi-api', '--project-ref', config.projectRef, '--use-api', '--workdir', config.root]);
       return { versionId: config.manifest.edgeHash };
