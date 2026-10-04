@@ -1,37 +1,56 @@
 # Miraichi
 
-An AI-driven football prediction and betting management application.
+Miraichi is an owner-only web application for factual football match data, manual bet/odds records, and bankroll management.
 
-## Purpose
-Miraichi provides an extensible platform for AI football prediction, betting management, risk limits, bankroll tracking, and collaborative agent workflows.
+## Current Product
 
-## Status
-- **Status**: Active
-- **Current Phase**: Pre-Phase 5.10 - Docs Hygiene Complete, Phase 5.10 Review Pending
-- **Phase Source of Truth**: `PROJECT_PLAN.md`
+- `Today`: daily factual match context.
+- `Matches`: browse configured club and national-team competitions, toggle LIVE, and open factual
+  match detail. Information refreshes only the selected match on an explicit user action.
+- `Bets`: create and manage manual drafts and bet records.
+- `Bankroll`: manage point accounts, ledger entries, and backups.
 
-## Scope
-This repository houses the entire monorepo system, including frontend, backend API, local AI modules, worker queues, and operational files. 
+The Frankfurt staging app uses the existing approved FotMob, SportScore widget and OpenFootball
+source boundaries. Hosted refresh reads and publishes canonical data in PostgreSQL; match detail
+uses a separate durable cache. Missing or conflicting provider detail remains unavailable. Source
+decisions and current phase evidence are recorded in `PROJECT_PLAN.md` and the ADR index.
 
-> [!IMPORTANT]
-> Miraichi work must follow `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
-> Business logic, production database schemas, prediction algorithms, betting calculations, secrets, and hard-coded competition logic still require explicit owner-approved ADRs and implementation plans before coding.
+## Architecture
 
-## Main Folder Structure
-The repository keeps a clean root structure with exactly 4 main folders:
-- **`apps/`**: Deployable applications (web client, backend API, local AI service, background worker).
-- **`packages/`**: Shared libraries and monorepo packages (shared types, global configs, UI library, agent protocols).
-- **`docs/`**: General documentation, architectural design records (ADRs), betting/bankroll plans, and agent workflow specifications.
-- **`ops/`**: Operational, deployment, docker, CI/CD pipelines, scripts, and monitoring infrastructure.
+```text
+browser -> Cloudflare Worker (static app + owner gateway)
+        -> Supabase Edge API -> private PostgreSQL canonical data / detail cache / owner records
 
-## Competition-Agnostic Principle
-The first real data and training path targets World Cup and related national-team competitions. Club competitions are later expansion scope.
-- World Cup and national-team competition metadata may be explicit in registry/config/data artifacts.
-- Do not put World Cup-only assumptions into core parser, route, model, or business logic.
-- Treat football competition metadata as dynamic, configurable registry data.
-- Football domain concepts (competitions, seasons, teams, matches, markets, bets, bankrolls) are modeled abstractly.
+approved providers -> bounded hosted refresh and explicit per-match detail
+owner-local hydration -> provider-neutral warehouse -> serving store / approved cloud sync
+```
 
-## TODO / Next Steps
-- [ ] Review draft Phase 5.10 planning after docs status hygiene cleanup.
-- [ ] Use `phase:plan`, `phase:implementation-plan`, `phase:code-slice`, `phase:integration-test`, `phase:staging`, `phase:owner-feedback`, `phase:production`, or `phase:maintenance` to make the active gate explicit.
-- [ ] Run `pnpm run verify:release` before staging or production promotion.
+Provider requests stay behind the API. Match detail has no cron, polling, prefetch or focus refresh.
+Production and historical-season hydration require separate owner decisions.
+
+## Commands
+
+```bash
+pnpm install
+pnpm run dev:web
+pnpm run dev:api
+pnpm run verify:product-boundary
+pnpm run verify:local
+pnpm run test:integration
+pnpm run verify:staging
+pnpm run detail:local-browser-smoke
+pnpm run detail:local-sql-smoke
+pnpm run verify:staging:hosted
+```
+
+Generic data projection commands:
+
+```bash
+pnpm run data:build:serving:matches
+pnpm run data:validate:serving:matches
+pnpm run data:sync:serving:cloud
+```
+
+See `PROJECT_PLAN.md` for the active phase and `ARCHITECTURE.md` for boundaries.
+See [the hosting runbook](docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md) for the exact
+Frankfurt target, saved local credentials, deployment, E2E and rollback procedure.

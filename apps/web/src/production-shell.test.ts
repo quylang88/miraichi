@@ -9,9 +9,25 @@ import { fileURLToPath } from 'node:url';
 import { renderAppShell } from './components/app-shell.js';
 import { renderBottomNavigation } from './components/bottom-navigation.js';
 import { createSettingsService } from './services/settings-service.js';
-import { resolveLocale, t } from './services/i18n-service.js';
+import {
+  createTranslator,
+  formatDateTime,
+  formatNumber,
+  getCatalogKeys,
+  resolveLocale,
+  t
+} from './services/i18n-service.js';
 import { getTodayDateTileParts } from './components/app-shell.js';
-import type { LocalMatchStatus } from '@miraichi/shared';
+import { renderSettlementTimeline } from './components/screens/bets-screen.js';
+import { renderMatchDetailView } from './components/match-detail-view.js';
+import {
+  renderSkeletonMetrics,
+  renderSkeletonBetRows,
+  renderSkeletonMatchRows,
+  renderSkeletonLedgerRows,
+  renderSkeletonCard
+} from './components/screens/screen-shared.js';
+
 
 
 function createMemoryStorage(initial: Record<string, string> = {}): Storage {
@@ -36,16 +52,21 @@ function createMemoryStorage(initial: Record<string, string> = {}): Storage {
 }
 
 describe('production PWA shell configuration', () => {
-  it('uses the accepted five-tab domain navigation backbone only', () => {
+  it('keeps each primary screen renderer outside the app shell monolith', () => {
+    const appShell = readFileSync(fileURLToPath(new URL('./components/app-shell.ts', import.meta.url)), 'utf8');
+    expect(appShell).not.toContain('function renderMatchesPanel');
+    expect(readFileSync(fileURLToPath(new URL('./components/screens/matches-screen.ts', import.meta.url)), 'utf8')).toContain('export function renderMatchesScreen');
+  });
+
+  it('uses the accepted four-tab domain navigation backbone only', () => {
     expect(PRODUCTION_NAVIGATION_TAB_IDS).toEqual([
       'today',
       'matches',
       'bets',
-      'bankroll',
-      'miraichi'
+      'bankroll'
     ]);
     expect(navigationTabs.map((tab) => tab.id)).toEqual(PRODUCTION_NAVIGATION_TAB_IDS);
-    expect(navigationTabs).toHaveLength(5);
+    expect(navigationTabs).toHaveLength(4);
     expect(navigationTabs.map((tab) => tab.id)).not.toContain('settings');
     expect(navigationTabs.map((tab) => tab.id)).not.toContain('add');
   });
@@ -60,26 +81,433 @@ describe('production PWA shell configuration', () => {
 });
 
 describe('phase 9 cloud persistence workflows', () => {
+  it('asks only for an emotion with a calm default on new Add Bet', () => {
+    for (const locale of ['vi', 'en'] as const) {
+      const html = renderAppShell({ activeTabId: 'bets', translate: createTranslator(locale) });
+      expect(html).toContain('id="emotion-field"');
+      expect(html).toContain('<option value="calm" selected>');
+      expect(html).not.toContain('id="motivation-field"');
+      expect(html).not.toContain('id="pre-bet-plan-adherence"');
+    }
+  });
+  it('does not silently erase legacy psychology when an existing draft is edited or recorded', () => {
+    const source = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(source).toContain('existing?.preBetMotivation');
+    expect(source).toContain('existing?.preBetPlanAdherence');
+    expect(source).toContain('legacyDraft?.preBetMotivation');
+    expect(source).toContain('legacyDraft?.preBetPlanAdherence');
+  });
+  it('renders one stable Home vs Away row without duplicated manual-match summaries', () => {
+    const html = renderAppShell({ activeTabId: 'bets' });
+    const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
+    expect(html).toContain('class="add-bet-team-row"');
+    expect(html).toContain('class="add-bet-versus"');
+    expect(html).not.toContain('id="match-summary-readonly"');
+    expect(html).not.toContain('id="add-sheet-subtitle"');
+    expect(css).toMatch(/\.add-bet-team-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto\s+minmax\(0,\s*1fr\)/s);
+  });
+
+  it('renders guided standard market controls without a free-text selection field', () => {
+    const html = renderAppShell({ activeTabId: 'bets', translate: createTranslator('vi') });
+    const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
+    for (const market of ['1X2', 'over_under', 'handicap', 'corners', 'running']) {
+      expect(html).toContain(`data-bet-market="${market}"`);
+    }
+    expect(html).not.toContain('data-bet-market="custom"');
+    expect(html).not.toContain('id="selection-field"');
+    expect(html).toContain('id="selection-code-field"');
+    expect(html).toContain('data-bet-period="full_time"');
+    expect(html).toContain('data-manual-bet-line');
+    expect(html).toContain('Khác');
+    expect(css).toMatch(/\.bet-choice\s*\{[^}]*min-height:\s*44px/s);
+  });
+
+  it('renders running HT, FT, fixed-window and live-context controls', () => {
+    const html = renderAppShell({ activeTabId: 'bets', translate: createTranslator('vi') });
+    expect(html).toContain('data-bet-market="running" aria-pressed="false">');
+    expect(html).toContain('id="running-context-control"');
+    expect(html).toContain('data-running-window="to_half_time"');
+    expect(html).toContain('data-running-window="to_full_time"');
+    expect(html).toContain('data-running-window="fixed_15"');
+    expect(html).toContain('data-running-context-source="manual"');
+    expect(html).toContain('id="live-score-home-field"');
+    expect(html).toMatch(/id="live-score-home-field"[^>]*required/);
+    expect(html).toMatch(/id="live-score-away-field"[^>]*required/);
+    expect(html).toMatch(/id="live-minute-field"[^>]*>/);
+    expect(html).not.toMatch(/id="live-minute-field"[^>]*required/);
+    expect(html).toContain('id="running-threshold-control"');
+    expect(html).toContain('data-running-threshold="0.5"');
+    expect(html).toContain('data-running-threshold="0.75"');
+    expect(html).toContain('Phút (không bắt buộc)');
+    expect(html).toContain('id="running-settlement-guidance"');
+    expect(html).toContain('Kèo rung');
+  });
+
+  it('defaults new bets to calm and exposes only three emotions', () => {
+    const html = renderAppShell({ activeTabId: 'bets', translate: createTranslator('vi') });
+    const emotion = html.slice(html.indexOf('id="emotion-field"'), html.indexOf('id="note-field"'));
+    expect(emotion).toContain('<option value="calm" selected>Bình tĩnh</option>');
+    expect(emotion).toContain('<option value="excited">Hưng phấn</option>');
+    expect(emotion).toContain('<option value="tilted">Mất kiểm soát</option>');
+    expect(emotion).not.toContain('value="frustrated"');
+    expect(emotion).not.toContain('value="anxious"');
+    expect(emotion).not.toContain('value="tired"');
+  });
+
+  it('keeps mobile form controls at 16px and limits touch gestures to panning', () => {
+    const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
+    expect(css).toMatch(/html,\s*body\s*\{[^}]*touch-action:\s*pan-x pan-y/s);
+    expect(css).toMatch(/@media\s*\(max-width:\s*900px\)[\s\S]*\.field-input,[\s\S]*\.field-select,[\s\S]*\.field-textarea[\s\S]*font-size:\s*16px/);
+  });
+
+  it('starts isolated scoped and edit sessions before opening Add Bet', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellSource).toContain("startAddBetSession('manual'");
+    expect(shellSource).not.toContain("startAddBetSession('quick'");
+    expect(shellSource).toContain("startAddBetSession('scoped'");
+    expect(shellSource).toContain("startAddBetSession('edit'");
+    expect(shellSource).not.toContain("setText('add-summary-title'");
+    expect(shellSource).not.toContain("currentOpenMatchTitle.split(' vs ')");
+  });
+  it('localizes settlement timeline values and formats audit timestamps in the configured timezone', () => {
+    const html = renderSettlementTimeline([{ settlementEventId: 's1', ownerProfileId: 'owner-primary', betId: 'b1', bankrollAccountId: 'a', settlementType: 'full_win', planAdherence: 'yes', calculatedProfitLossPoints: 9, ledgerDeltaPoints: 9, effectiveAt: '2026-08-21T12:00:00.000Z', occurredAt: '2026-08-21T12:00:00.000Z' }], createTranslator('vi'), 'vi', 'Asia/Tokyo');
+    expect(html).toContain('Thắng đủ');
+    expect(html).not.toContain('full_win');
+    expect(html).not.toContain('2026-08-21T12:00:00.000Z');
+  });
+
   it('renders honest Bets loading, empty, unavailable, and durable record states', () => {
     expect(renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'loading' } })).toContain('data-bet-records-state="loading"');
     expect(renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'empty' } })).toContain('data-bet-records-state="empty"');
-    expect(renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'unavailable', reason: 'Setup required' } })).toContain('Setup required');
-    const html = renderAppShell({ activeTabId: 'bets', betRecordsState: { status: 'ready', drafts: [{ draftId: 'd1', matchGroupId: 'm1', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], pending: [{ betId: 'b1', ownerProfileId: 'owner-primary', matchGroupId: 'm1', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, status: 'pending', createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], settled: [] } });
-    expect(html).toContain('Japan vs Vietnam');
+    const unavailable = renderAppShell({ activeTabId: 'bets', translate: createTranslator('vi'), betRecordsState: { status: 'unavailable', reason: 'Setup required' } });
+    expect(unavailable).toContain('Không khả dụng');
+    expect(unavailable).not.toContain('Setup required');
+    const html = renderAppShell({ activeTabId: 'bets', betRecordFilter: 'drafts', betRecordsState: { status: 'ready', drafts: [{ draftId: 'd1', matchGroupId: 'm1', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], pending: [{ betId: 'b1', ownerProfileId: 'owner-primary', matchGroupId: 'm1', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, status: 'pending', createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], settled: [] } });
     expect(html).toContain('data-delete-draft-confirm="d1"');
+    expect(html).toContain('data-edit-draft="d1"');
+    expect(html).not.toContain('data-bet-id="b1"');
   });
 
-  it('renders persisted Bankroll and backup controls without formula placeholders', () => {
-    const html = renderAppShell({ activeTabId: 'bankroll', bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], ledger: [{ entryId: 'e', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'withdrawal', amountPoints: -10, occurredAt: '2026-07-02T00:00:00.000Z', createdAt: '2026-07-02T00:00:00.000Z' }] } });
-    expect(html).toContain('90 pts');
+  it('renders only the selected Bets segment and exposes manual ongoing and settlement workflows', () => {
+    const html = renderAppShell({
+      activeTabId: 'bets',
+      betRecordFilter: 'ongoing',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 10, availableBalance: 90, accounts: [] } },
+      betRecordsState: { status: 'ready', drafts: [{ draftId: 'd1', matchGroupId: 'm1', marketType: '1X2', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], pending: [{ betId: 'b1', ownerProfileId: 'owner-primary', bankrollAccountId: 'a', matchGroupId: 'm1', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2', selectionLabel: 'Japan', oddsFormat: 'HK', oddsValue: 0.9, stakePoints: 10, preBetEmotion: 'calm', preBetMotivation: 'planned_analysis', status: 'pending', disciplineSnapshot: { ruleVersion: 0, triggeredRules: ['overexposure', 'risky_motivation'], dailyProfitLossPoints: 0, weeklyProfitLossPoints: 0, thresholds: { dailyStopLossPoints: null, weeklyStopLossPoints: null, bigBetThresholdPoints: null }, acknowledgedAt: '2026-08-21T00:00:15.000Z' }, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], settled: [] }
+    });
+    expect(html).toContain('data-bet-filter="ongoing"');
+    expect(html).toContain('Japan vs Vietnam');
+    expect(html).toContain('data-open-settlement="b1"');
+    expect(html).toContain('Stake exceeds available bankroll');
+    expect(html).toContain('Risky motivation');
+    expect(html).not.toContain('overexposure');
+    expect(html).not.toContain('data-delete-draft-confirm="d1"');
+    expect(html).toContain('name="home-team"');
+    expect(html).toContain('id="record-ongoing-bet"');
+    expect(html).not.toContain('id="account-field"');
+    expect(html).not.toContain('id="pre-bet-plan-adherence"');
+    expect(html).toContain('id="settlement-form"');
+    expect(html).toContain('id="legacy-plan-adherence-field" hidden');
+  });
+
+  it('wires the manual-review evidence retry without hiding manual settlement', () => {
+    const shellEntrySource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellEntrySource).toContain("eventTarget.closest<HTMLElement>('[data-refresh-settlement-evidence]')");
+    expect(shellEntrySource).toContain('retryAutomaticSettlementEvidence');
+  });
+
+  it('renders real bankroll summaries, discipline nulls, and report analytics without forbidden metrics', () => {
+    const html = renderAppShell({
+      activeTabId: 'bankroll', bankrollView: 'discipline',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 90, openExposure: 20, availableBalance: 70, accounts: [] } },
+      disciplineConfigState: { status: 'ready', config: { ownerProfileId: 'owner-primary', dailyStopLossPoints: null, weeklyStopLossPoints: null, bigBetThresholdPoints: null, timeZone: 'Asia/Tokyo', cooldownSeconds: 15, version: 1, updatedAt: '2026-08-21T00:00:00.000Z' } }
+    });
+    expect(html).toContain('data-bankroll-view="discipline"');
+    expect(html).toContain('value=""');
+    expect(html).toContain('Discipline rules not configured');
+    expect(html).toContain('id="discipline-week-start-day"');
+    expect(html).not.toContain('id="discipline-timezone"');
+    expect(html).not.toContain('yield');
+    expect(html).not.toContain('ROI');
+  });
+
+  it('renders week start day selector and hint in discipline view for english and vietnamese', () => {
+    const mondayHtml = renderAppShell({
+      activeTabId: 'bankroll', bankrollView: 'discipline',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 90, openExposure: 20, availableBalance: 70, accounts: [] } },
+      disciplineConfigState: { status: 'ready', config: { ownerProfileId: 'owner-primary', dailyStopLossPoints: null, weeklyStopLossPoints: null, bigBetThresholdPoints: null, timeZone: 'Asia/Tokyo', weekStartDay: 'monday', cooldownSeconds: 15, version: 1, updatedAt: '2026-08-21T00:00:00.000Z' } }
+    });
+    expect(mondayHtml).toContain('id="discipline-week-start-day"');
+    expect(mondayHtml).toContain('<option value="monday" selected>Monday</option>');
+    expect(mondayHtml).toContain('<option value="sunday">Sunday</option>');
+    expect(mondayHtml).toContain('Daily and weekly limits reset at 00:00 in your App Settings timezone.');
+    expect(mondayHtml).not.toContain('id="discipline-timezone"');
+
+    const sundayHtml = renderAppShell({
+      activeTabId: 'bankroll', bankrollView: 'discipline',
+      translate: createTranslator('vi'),
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 90, openExposure: 20, availableBalance: 70, accounts: [] } },
+      disciplineConfigState: { status: 'ready', config: { ownerProfileId: 'owner-primary', dailyStopLossPoints: null, weeklyStopLossPoints: null, bigBetThresholdPoints: null, timeZone: 'Asia/Tokyo', weekStartDay: 'sunday', cooldownSeconds: 15, version: 1, updatedAt: '2026-08-21T00:00:00.000Z' } }
+    });
+    expect(sundayHtml).toContain('id="discipline-week-start-day"');
+    expect(sundayHtml).toContain('Ngày bắt đầu tuần');
+    expect(sundayHtml).toContain('<option value="monday">Thứ Hai</option>');
+    expect(sundayHtml).toContain('<option value="sunday" selected>Chủ Nhật</option>');
+    expect(sundayHtml).toContain('Mốc ngày và tuần được tính lúc 00:00 theo múi giờ Cài đặt ứng dụng.');
+    expect(sundayHtml).not.toContain('id="discipline-timezone"');
+  });
+
+  it('localizes report enum labels, includes outcome counts, and keeps manual settlement fields hidden by default', () => {
+    const html = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      translate: createTranslator('vi'),
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 109, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 109, openExposure: 0, availableBalance: 109, accounts: [] } },
+      reportState: { status: 'ready', report: { period: { kind: 'week', startDate: '2026-08-17', endDate: '2026-08-23', timeZone: 'Asia/Tokyo' }, netProfitLossPoints: 9, totalSettledBets: 1, totalStakePoints: 10, averageStakePoints: 10, winRatePercent: 100, outcomes: { full_win: 1 }, daily: [{ date: '2026-08-21', profitLossPoints: 9 }], market: { '1X2': { count: 1, profitLossPoints: 9 } }, psychology: { emotion: { calm: { count: 1, profitLossPoints: 9 } }, motivation: { planned_analysis: { count: 1, profitLossPoints: 9 } }, planAdherence: { yes: { count: 1, profitLossPoints: 9 } } }, disciplineOverrideCount: 1 } }
+    });
+    const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
+    const bankrollPanel = html.slice(html.indexOf('id="screen-bankroll"'), html.indexOf('id="screen-match-detail"'));
+    expect(html).toContain('Kết quả');
+    expect(html).toContain('Thắng đủ');
+    expect(html).toContain('Phân tích có kế hoạch');
+    expect(bankrollPanel).not.toContain('planned_analysis');
+    expect(bankrollPanel).toContain('n=1 · 9 pts');
+    expect(bankrollPanel).toContain('Các nhóm chỉ mô tả dữ liệu đã ghi và luôn kèm cỡ mẫu.');
+    expect(bankrollPanel.toLowerCase()).not.toContain('khuyến nghị');
+    expect(css).toMatch(/\.field\[hidden\]\s*\{[^}]*display:\s*none\s*!important/s);
+  });
+
+  it('renders an unavailable Today report as unavailable instead of invented zero P&L', () => {
+    const html = renderAppShell({
+      activeTabId: 'today', translate: createTranslator('vi'),
+      betRecordsState: { status: 'ready', drafts: [], pending: [], settled: [] },
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 10, availableBalance: 90, accounts: [] } },
+      todayReportState: { status: 'unavailable', code: 'request_failed' }
+    });
+    const todayPanel = html.slice(html.indexOf('id="screen-today"'), html.indexOf('id="screen-matches"'));
+    expect(todayPanel).toContain('Lãi/lỗ ròng</div><div class="points-value">Không khả dụng</div>');
+    expect(todayPanel).not.toContain('Lãi/lỗ ròng</div><div class="points-value">0 pts</div>');
+  });
+
+  it('renders bankroll analytics period presets in EN and VI with correct active highlights', () => {
+    const enHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      reportPeriod: 'previous_week',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'ready', report: { period: { kind: 'previous_week', startDate: '2026-08-10', endDate: '2026-08-16', timeZone: 'UTC' }, netProfitLossPoints: 0, totalSettledBets: 0, totalStakePoints: 0, averageStakePoints: 0, winRatePercent: 0, outcomes: {}, daily: [], market: {}, psychology: { emotion: {}, motivation: {}, planAdherence: {} }, disciplineOverrideCount: 0 } }
+    });
+    expect(enHtml).toContain('data-report-period="this_week"');
+    expect(enHtml).toContain('data-report-period="previous_week"');
+    expect(enHtml).toContain('data-report-period="this_month"');
+    expect(enHtml).toContain('data-report-period="all"');
+    expect(enHtml).toContain('data-report-period="custom"');
+    expect(enHtml).toContain('This Week');
+    expect(enHtml).toContain('Previous Week');
+    expect(enHtml).toContain('This Month');
+    expect(enHtml).toContain('All Time');
+    expect(enHtml).toContain('Custom');
+    expect(enHtml).toContain('<button class="active" type="button" data-report-period="previous_week">Previous Week</button>');
+    expect(enHtml).toContain('class="report-range-badge">📅 2026-08-10 – 2026-08-16</div>');
+
+    const viHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      translate: createTranslator('vi'),
+      locale: 'vi',
+      reportPeriod: 'this_week',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'ready', report: { period: { kind: 'this_week', startDate: '2026-08-17', endDate: '2026-08-23', timeZone: 'UTC' }, netProfitLossPoints: 0, totalSettledBets: 0, totalStakePoints: 0, averageStakePoints: 0, winRatePercent: 0, outcomes: {}, daily: [], market: {}, psychology: { emotion: {}, motivation: {}, planAdherence: {} }, disciplineOverrideCount: 0 } }
+    });
+    expect(viHtml).toContain('Tuần này');
+    expect(viHtml).toContain('Tuần trước');
+    expect(viHtml).toContain('Tháng này');
+    expect(viHtml).toContain('Tất cả');
+    expect(viHtml).toContain('Tùy chỉnh');
+    expect(viHtml).toContain('<button class="active" type="button" data-report-period="this_week">Tuần này</button>');
+    expect(viHtml).toContain('class="report-range-badge">📅 2026-08-17 – 2026-08-23</div>');
+  });
+
+  it('renders single interactive calendar picker for custom date filtering with range highlights and status hint', () => {
+    // 1. Initial custom view without selection (in August 2026)
+    const emptyCalendarHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      reportPeriod: 'custom',
+      customCalendarMonth: '2026-08',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'empty' }
+    });
+    expect(emptyCalendarHtml).toContain('class="calendar-picker"');
+    expect(emptyCalendarHtml).toContain('data-cal-nav="prev"');
+    expect(emptyCalendarHtml).toContain('data-cal-nav="next"');
+    expect(emptyCalendarHtml).toContain('August 2026');
+    expect(emptyCalendarHtml).toContain('data-cal-date="2026-08-01"');
+    expect(emptyCalendarHtml).toContain('data-cal-date="2026-08-31"');
+    expect(emptyCalendarHtml).toContain('Tap to select start date');
+    expect(emptyCalendarHtml).toContain('data-action="apply-custom-range" disabled');
+
+    // 2. Start date selected only
+    const startOnlyHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      reportPeriod: 'custom',
+      customCalendarMonth: '2026-08',
+      customRangeStart: '2026-08-05',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'empty' }
+    });
+    expect(startOnlyHtml).toContain('class="cal-day selected-start" data-cal-date="2026-08-05"');
+    expect(startOnlyHtml).toContain('From 2026-08-05 (Tap to select end date)');
+    expect(startOnlyHtml).not.toContain('data-action="apply-custom-range" disabled');
+
+    // 3. Full range selected with in-range days in Vietnamese
+    const rangeHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      translate: createTranslator('vi'),
+      locale: 'vi',
+      reportPeriod: 'custom',
+      customCalendarMonth: '2026-08',
+      customRangeStart: '2026-08-05',
+      customRangeEnd: '2026-08-10',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'ready', report: { period: { kind: 'custom', startDate: '2026-08-05', endDate: '2026-08-10', timeZone: 'UTC' }, netProfitLossPoints: 15, totalSettledBets: 2, totalStakePoints: 20, averageStakePoints: 10, winRatePercent: 100, outcomes: { full_win: 2 }, daily: [{ date: '2026-08-06', profitLossPoints: 15 }], market: { '1X2': { count: 2, profitLossPoints: 15 } }, psychology: { emotion: { calm: { count: 2, profitLossPoints: 15 } }, motivation: { planned_analysis: { count: 2, profitLossPoints: 15 } }, planAdherence: { yes: { count: 2, profitLossPoints: 15 } } }, disciplineOverrideCount: 0 } }
+    });
+    expect(rangeHtml).toContain('class="cal-day selected-start" data-cal-date="2026-08-05"');
+    expect(rangeHtml).toContain('class="cal-day in-range" data-cal-date="2026-08-06"');
+    expect(rangeHtml).toContain('class="cal-day in-range" data-cal-date="2026-08-07"');
+    expect(rangeHtml).toContain('class="cal-day in-range" data-cal-date="2026-08-08"');
+    expect(rangeHtml).toContain('class="cal-day in-range" data-cal-date="2026-08-09"');
+    expect(rangeHtml).toContain('class="cal-day selected-end" data-cal-date="2026-08-10"');
+    expect(rangeHtml).toContain('Từ 2026-08-05 đến 2026-08-10 (6 ngày)');
+    expect(rangeHtml).toContain('class="report-range-badge">📅 2026-08-05 – 2026-08-10</div>');
+  });
+
+  it('verifies calendar interaction logic and reset mechanics in shell-entry.ts source', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellSource).toContain('[data-cal-nav]');
+    expect(shellSource).toContain('[data-cal-date]');
+    expect(shellSource).toContain('[data-action="apply-custom-range"]');
+    expect(shellSource).toContain('customRangeStart = null');
+    expect(shellSource).toContain('customRangeEnd = null');
+  });
+
+  it('locks scoped team controls while retaining one manual entry action in Bets', () => {
+    const html = renderAppShell({ activeTabId: 'matches', matchFeed: { status: 'unavailable', date: '2026-08-21', reason: 'offline', warnings: [], snapshot: { snapshotId: 's', generatedAt: '2026-08-21T00:00:00.000Z', importedAt: '2026-08-21T00:00:00.000Z', matchCount: 0, competitions: [], sources: [], freshness: 'missing', warnings: [] } } });
+    expect(html).toContain('id="screen-bets"');
+    expect(html).toContain('data-open-manual-add');
+    expect(html).toContain('data-open-scoped-add');
+    expect(html).toMatch(/id="home-team"[^>]*readonly/);
+    expect(html).toMatch(/id="away-team"[^>]*readonly/);
+    expect(html).not.toMatch(/id="(?:home|away)-team"[^>]*disabled/);
+    const css = readFileSync(fileURLToPath(new URL('../../../packages/ui/src/index.css', import.meta.url)), 'utf8');
+    expect(css).toMatch(/#add-sheet \.add-bet-team-row \.field-input\[readonly\]\s*\{[^}]*background:\s*var\(--surface-2\)/s);
+    const source = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(source).toContain("eventTarget.closest('[data-open-manual-add]')");
+    expect(source).toContain('if (!currentOpenMatchId) return;');
+    expect(source).toContain("startAddBetSession('manual'");
+  });
+
+  it('removes only Today Quick Add and keeps Manual Add in Bets', () => {
+    const html = renderAppShell({ activeTabId: 'today' });
+    expect(html).not.toMatch(/id="screen-today"[\s\S]*?data-open-manual-add[\s\S]*?id="screen-matches"/);
+    expect(html).toMatch(/id="screen-bets"[\s\S]*?data-open-manual-add/);
+  });
+
+  it('renders the Matches screen and contextual detail shell from the VI catalog', () => {
+    const html = renderAppShell({ activeTabId: 'matches', translate: createTranslator('vi'), isFilterPanelOpen: true, matchFeed: { status: 'empty', date: '2026-08-21', warnings: [], snapshot: { snapshotId: 's', generatedAt: '2026-08-21T00:00:00.000Z', importedAt: '2026-08-21T00:00:00.000Z', matchCount: 0, competitions: [], sources: [], freshness: 'fresh', warnings: [] } } });
+    expect(html).toContain('Sắp xếp &amp; nhóm');
+    expect(html).toContain('Loại giải đấu');
+    expect(html).toContain('Không có trận đấu');
+    expect(html).toContain('Trận đã chọn');
+    expect(html).not.toContain('Search generic teams');
+    expect(html).not.toContain('Selected match');
+    expect(html).toContain('aria-label="Điều hướng chính"');
+    expect(html).toContain('Trên / Dưới');
+    expect(html).not.toContain('Over / Under');
+    expect(html).not.toContain('2026-08-21T00:00:00.000Z');
+    expect(html).toContain('id="date-picker-btn" class="calendar-btn" type="button" aria-label="Chọn ngày"');
+  });
+
+  it('renders persisted Bankroll without formula placeholders', () => {
+    const html = renderAppShell({ activeTabId: 'bankroll', bankrollView: 'ledger', bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 90, archived: false, createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '2026-07-02T00:00:00.000Z' }], ledger: [{ entryId: 'e', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'withdrawal', amountPoints: -10, occurredAt: '2026-07-02T00:00:00.000Z', createdAt: '2026-07-02T00:00:00.000Z' }], summary: { realizedBalance: 90, openExposure: 0, availableBalance: 90, accounts: [] } } });
+    expect(html).toContain('-10 pts');
     expect(html).toContain('data-ledger-type="deposit"');
     expect(html).toContain('data-ledger-type="withdrawal"');
-    expect(html).toContain('data-ledger-type="transfer_out"');
+    expect(html).not.toContain('data-open-transfer');
+    expect(html).not.toContain('data-bankroll-account-select');
     expect(html).toContain('data-ledger-type="correction"');
-    expect(html).toContain('data-backup-export');
-    expect(html).toContain('data-backup-import');
     expect(html).not.toContain('24,500 pts');
     expect(html).not.toContain('Formula status');
+    expect(html).toContain('id="ledger-adjustment-form"');
+    expect(html).not.toContain('2026-07-02T00:00:00.000Z');
+    const shellEntry = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellEntry).not.toContain('window.prompt');
+    expect(shellEntry).toContain("form.get('weekStartDay')");
+    expect(shellEntry).toContain('settingsService.getSettings()');
+  });
+
+  it('renders one opening-capital setup and an actionable Add Bet guard when bankroll is empty', () => {
+    const html = renderAppShell({ activeTabId: 'bankroll', bankrollView: 'overview', bankrollState: { status: 'empty' } });
+    expect(html).toContain('class="note-card warning" data-bankroll-state="empty"');
+    expect(html).toContain('id="setup-bankroll-form"');
+    expect(html).not.toContain('name="label"');
+    expect(html).toContain('data-bankroll-setup-required');
+  });
+
+  it('renders a professional analytics empty state when no settled bets exist', () => {
+    const html = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'empty' }
+    });
+    expect(html).toContain('data-report-period="this_week"');
+    expect(html).toContain('data-analytics-empty');
+    expect(html).toContain('No analytics data yet');
+    expect(html).toContain('Performance trends, market win rates, and psychology insights will appear here once settled bets are recorded.');
+    expect(html).not.toMatch(/id="screen-today"[\s\S]*?data-open-manual-add[\s\S]*?id="screen-matches"/);
+    expect(html).toMatch(/id="screen-bets"[\s\S]*?data-open-manual-add/);
+    expect(html).toContain('data-tab-target="bets"');
+    expect(html).not.toContain('No settled bets.');
+
+    const viHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      translate: createTranslator('vi'),
+      locale: 'vi',
+      bankrollState: { status: 'ready', selectedAccountId: 'a', accounts: [{ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', unit: 'points', openingBalancePoints: 100, currentBalancePoints: 100, archived: false, createdAt: '2026-08-21T00:00:00.000Z', updatedAt: '2026-08-21T00:00:00.000Z' }], ledger: [], summary: { realizedBalance: 100, openExposure: 0, availableBalance: 100, accounts: [] } },
+      reportState: { status: 'ready', report: { period: { kind: 'this_week', startDate: '2026-08-25', endDate: '2026-08-31', timeZone: 'UTC' }, netProfitLossPoints: 0, totalSettledBets: 0, totalStakePoints: 0, averageStakePoints: 0, winRatePercent: 0, outcomes: { full_win: 0, half_win: 0, push: 0, void: 0, half_loss: 0, full_loss: 0, manual_adjustment: 0 }, daily: [], market: {}, psychology: { emotion: {}, motivation: {}, planAdherence: {} }, disciplineOverrideCount: 0 } }
+    });
+    expect(viHtml).toContain('Chưa có dữ liệu phân tích');
+    expect(viHtml).not.toContain('Ghi vé cược');
+    expect(viHtml).toContain('Xem danh sách cược');
+
+    const emptyBankrollAnalytics = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollView: 'analytics',
+      bankrollState: { status: 'empty' }
+    });
+    expect(emptyBankrollAnalytics).toContain('data-bankroll-state="empty"');
+    expect(emptyBankrollAnalytics).toContain('Set opening capital before recording an ongoing bet.');
+    expect(emptyBankrollAnalytics).toContain('data-bankroll-view="overview"');
+  });
+
+  it('renders business-friendly default zero metrics and setup prompt on Today screen when bankroll is uninitialized', () => {
+    const html = renderAppShell({
+      activeTabId: 'today',
+      bankrollState: { status: 'empty' },
+      betRecordsState: { status: 'empty' },
+      todayReportState: { status: 'empty' },
+      disciplineConfigState: { status: 'unavailable', code: 'not_configured' }
+    });
+    expect(html).toContain('data-today-setup-prompt');
+    expect(html).toContain('Set up opening capital');
+    expect(html).toContain('data-tab-target="bankroll"');
+    expect(html).toContain('0 pts');
+    expect(html).toContain('0');
+    expect(html).not.toContain('Net P&amp;L: Unavailable');
   });
 });
 
@@ -93,8 +521,8 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('data-shell-tab-panel="matches"');
     expect(html).toContain('data-shell-tab-panel="bets"');
     expect(html).toContain('data-shell-tab-panel="bankroll"');
-    expect(html).toContain('data-shell-tab-panel="miraichi"');
-    expect(html).toContain('data-settings-entry="miraichi-tab"');
+    expect(html).not.toContain('data-shell-tab-panel="miraichi"');
+    expect(html).not.toContain('data-settings-entry="miraichi-tab"');
     expect(html).not.toContain('data-primary-tab="settings"');
     expect(html).not.toContain('data-primary-tab="add"');
   });
@@ -143,17 +571,17 @@ describe('production PWA shell rendering', () => {
     expect(html).not.toContain('class="notice"');
     expect(html).toContain('class="main-scroll"');
     expect(html).toContain('class="screen active" id="screen-today"');
-    expect(html).toContain('class="summary-list"');
-    expect(html).toContain('class="segmented"');
-    expect(html).toContain('class="match-card" data-match-card');
+    expect(html).toContain('class="metric-grid"');
+    expect(html).not.toMatch(/id="screen-today"[\s\S]*?data-open-manual-add[\s\S]*?id="screen-matches"/);
+    expect(html).toMatch(/id="screen-bets"[\s\S]*?data-open-manual-add/);
     expect(html).toContain('id="screen-match-detail"');
     expect(html).toContain('data-open-match');
     expect(html).toContain('data-open-scoped-add');
     expect(html).toContain('data-bet-records-state');
-    expect(html).toContain('data-backup-export');
     expect(html).toContain('class="sheet-backdrop"');
     expect(html).toContain('class="sheet" id="add-sheet"');
-    expect(html).toContain('id="match-summary-readonly"');
+    expect(html).not.toContain('id="match-summary-readonly"');
+    expect(html).toContain('class="add-bet-team-row"');
     expect(html).not.toContain('id="match-field"');
     expect(html).not.toContain('data-primary-add');
   });
@@ -162,9 +590,9 @@ describe('production PWA shell rendering', () => {
     const html = renderAppShell({ activeTabId: 'today', translate: t });
     const today = getTodayDateTileParts();
 
-    expect(html).toContain(`aria-label="Current date ${today.day} ${today.month}"`);
-    expect(html).toContain(`<span class="date-day">${today.day}</span>`);
-    expect(html).toContain(`<span class="date-month">${today.month}</span>`);
+    expect(html).toContain('Today command center');
+    expect(today.day).toMatch(/^\d{1,2}$/);
+    expect(today.month).toMatch(/^[A-Z]{3}$/);
     expect(html).not.toContain('5.9');
     expect(html).not.toContain('PWA</span>');
   });
@@ -201,7 +629,9 @@ describe('production PWA shell rendering', () => {
     expect(serverSource).toContain('function resolveSourcePath');
     expect(serverSource).toContain('filePath = resolveSourcePath(url);');
     expect(staticBuildSource).toContain("'packages/config/src'");
-    expect(serviceWorkerSource).toContain('/packages/config/src/competition-registry.mock.js');
+    // Production dependencies are bundled; legacy module URLs remain served for updates/dev.
+    expect(serviceWorkerSource).toContain('/apps/web/src/auth-bootstrap.js');
+    expect(staticBuildSource).toContain('bundle: true');
   });
 
   it('renders accessible bottom navigation buttons with the active tab marked', () => {
@@ -230,7 +660,7 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('data-icon="stadium"');
   });
 
-  it('renders the Date Navigator and LIVE filter button on the matches panel', () => {
+  it('renders the Date Navigator without a match-feed LIVE filter', () => {
     const html = renderAppShell({
       activeTabId: 'matches',
       translate: t,
@@ -255,7 +685,7 @@ describe('production PWA shell rendering', () => {
     expect(html).toContain('id="date-prev-btn"');
     expect(html).toContain('id="date-next-btn"');
     expect(html).toContain('id="date-picker-btn"');
-    expect(html).toContain('id="date-picker-input"');
+    expect(html).not.toContain('id="date-picker-input"');
     expect(html).toContain('class="date-ribbon"');
     
     // It should render 5 dates centered around 2026-06-30:
@@ -269,9 +699,40 @@ describe('production PWA shell rendering', () => {
     // The center date should be active
     expect(html).toContain('class="date-chip active" type="button" data-date="2026-06-30"');
 
-    // LIVE filter button should be rendered
-    expect(html).toContain('id="live-filter-btn"');
-    expect(html).toContain('LIVE</button>');
+    expect(html).not.toContain('id="live-filter-btn"');
+    expect(html).toContain('aria-pressed="false">LIVE</button>');
+  });
+
+  it('renders interactive month calendar picker when isMatchesCalendarOpen is true', () => {
+    const html = renderAppShell({
+      activeTabId: 'matches',
+      isMatchesCalendarOpen: true,
+      matchesCalendarMonth: '2026-08',
+      matchFeed: {
+        status: 'ready',
+        date: '2026-08-25',
+        warnings: [],
+        snapshot: {
+          snapshotId: 'test-snapshot',
+          generatedAt: '2026-08-25T00:00:00.000Z',
+          importedAt: '2026-08-25T00:00:00.000Z',
+          matchCount: 0,
+          competitions: [],
+          sources: [],
+          freshness: 'fresh' as const,
+          warnings: []
+        },
+        matches: []
+      }
+    });
+
+    expect(html).toContain('id="matches-calendar-picker"');
+    expect(html).toContain('class="calendar-picker matches-calendar-picker"');
+    expect(html).toContain('data-matches-cal-nav="prev"');
+    expect(html).toContain('data-matches-cal-nav="next"');
+    expect(html).toContain('data-matches-cal-date="2026-08-25"');
+    expect(html).toMatch(/class="[^"]*selected-start[^"]*" data-matches-cal-date="2026-08-25"/);
+    expect(html).toContain('class="calendar-btn active"');
   });
 });
 
@@ -282,18 +743,18 @@ describe('production shell settings and i18n boundaries', () => {
     expect(resolveLocale({ storedLocale: 'en', navigatorLanguages: ['vi-VN'] })).toBe('en');
   });
 
-  it('stores only tiny shell settings and rejects betting history persistence', () => {
+  it('defaults the product to English until the owner explicitly changes locale', () => {
     const storage = createMemoryStorage();
     const settings = createSettingsService({ storage, navigatorLanguages: ['vi-VN'] });
 
     expect(settings.getSettings()).toMatchObject({
-      locale: 'vi',
+      locale: 'en',
       theme: 'dark',
       displayDensity: 'standard'
     });
 
-    settings.setSetting('locale', 'en');
-    expect(settings.getSettings().locale).toBe('en');
+    settings.setSetting('locale', 'vi');
+    expect(settings.getSettings().locale).toBe('vi');
 
     expect(() => settings.setSetting('bettingHistory', [])).toThrow(
       'Unsupported shell setting key: bettingHistory'
@@ -304,9 +765,18 @@ describe('production shell settings and i18n boundaries', () => {
     );
   });
 
-  it('keeps translation lookups as a fallback-first stub', () => {
+  it('keeps EN and VI catalogs in parity and resolves named placeholders', () => {
+    expect(getCatalogKeys('en')).toEqual(getCatalogKeys('vi'));
+    expect(createTranslator('en')('bets.count', { count: 2 })).toBe('2 bets');
+    expect(createTranslator('vi')('bets.count', { count: 2 })).toBe('2 cược');
     expect(t('nav.today', 'Today')).toBe('Today');
-    expect(t('settings.language', 'Language')).toBe('Language');
+    expect(createTranslator('vi')('settings.language')).toBe('Ngôn ngữ');
+  });
+
+  it('formats numbers and dates through locale-aware Intl helpers', () => {
+    expect(formatNumber(1234.5, 'en', { maximumFractionDigits: 1 })).toBe('1,234.5');
+    expect(formatNumber(1234.5, 'vi', { maximumFractionDigits: 1 })).toContain('1.234,5');
+    expect(formatDateTime('2026-08-21T10:00:00.000Z', 'en', 'UTC')).toContain('Aug');
   });
 
   it('supports timezone and display density settings', () => {
@@ -335,6 +805,14 @@ describe('production shell settings and i18n boundaries', () => {
     expect(settings.getSettings().displayDensity).toBe('compact');
 
     expect(() => settings.setSetting('displayDensity', 'invalid-density')).toThrow();
+
+    // Verify settings sheet renders timezone select
+    const html = renderAppShell({ translate: t });
+    expect(html).toContain('id="settings-timezone"');
+    expect(html).toContain('name="timezone"');
+    expect(html).toContain('value="local"');
+    expect(html).toContain('value="UTC"');
+    expect(html).toContain('value="Asia/Ho_Chi_Minh"');
   });
 
   it('respects timezone settings when rendering kickoff times in app shell', () => {
@@ -392,14 +870,14 @@ describe('production shell settings and i18n boundaries', () => {
   });
 });
 
-describe('production shell live match feed rendering', () => {
-  it('renders loading and unavailable states for local snapshot feed', () => {
+describe('production shell match snapshot rendering', () => {
+  it('renders loading and unavailable states for serving match feed', () => {
     const loadingHtml = renderAppShell({
       activeTabId: 'today',
       translate: t,
       matchFeed: { status: 'loading', date: '2026-06-29' }
     });
-    expect(loadingHtml).toContain('Loading match snapshot');
+    expect(loadingHtml).toContain('Loading match store');
 
     const unavailableHtml = renderAppShell({
       activeTabId: 'matches',
@@ -407,15 +885,41 @@ describe('production shell live match feed rendering', () => {
       matchFeed: {
         status: 'unavailable',
         date: '2026-06-29',
-        reason: 'Local match snapshot is missing. Run the national-team data update before using match workflows.',
-        warnings: ['local_snapshot_missing']
+        reason: 'Serving match store is missing. Build it from canonical warehouse before using match workflows.',
+        warnings: ['serving_match_store_missing']
       }
     });
     expect(unavailableHtml).toContain('Data update required');
-    expect(unavailableHtml).toContain('Local match snapshot is missing. Run the national-team data update before using match workflows.');
+    expect(unavailableHtml).not.toContain('Data status:');
+    expect(unavailableHtml).toContain('Match feed unavailable. Select a match after data returns to record a new bet.');
+    expect(unavailableHtml).not.toContain('Build it from canonical warehouse');
+
+    const missingSnapshotHtml = renderAppShell({
+      activeTabId: 'matches',
+      translate: t,
+      matchFeed: {
+        status: 'unavailable',
+        date: '2026-06-29',
+        reason: 'Match snapshot is unavailable.',
+        warnings: ['cloud_match_snapshot_missing'],
+        snapshot: {
+          snapshotId: 'cloud-missing',
+          generatedAt: '2026-08-02T00:00:00.000Z',
+          importedAt: '2026-08-02T00:00:00.000Z',
+          matchCount: 0,
+          competitions: [],
+          sources: [],
+          freshness: 'missing',
+          warnings: ['Cloud match snapshot is unavailable.']
+        }
+      }
+    });
+    expect(missingSnapshotHtml).not.toContain('Data status:');
+    expect(missingSnapshotHtml).not.toContain('No matches found');
+    expect(missingSnapshotHtml).not.toContain('Snapshot generated:');
   });
 
-  it('renders local snapshot matches and removes visible hardcoded live feed labels', () => {
+  it('renders serving store matches and removes visible hardcoded live feed labels', () => {
     const html = renderAppShell({
       activeTabId: 'matches',
       translate: t,
@@ -457,7 +961,10 @@ describe('production shell live match feed rendering', () => {
 
     expect(html).toContain('Japan vs Vietnam');
     expect(html).toContain('FIFA World Cup');
-    expect(html).toContain('Local match ID match-1');
+    expect(html).toContain('data-match-id="match-1"');
+    expect(html).not.toContain('Data status:');
+    expect(html).not.toContain('Snapshot generated:');
+    expect(html).not.toContain('2026-07-01T00:00:00.000Z');
     expect(html).not.toContain('provider fixture context');
     expect(html).not.toContain('No provider matches');
 
@@ -473,6 +980,28 @@ describe('production shell live match feed rendering', () => {
     expect(todayPanelHtml).not.toContain('Team Gamma vs Team Delta');
     expect(matchesPanelHtml).not.toContain('Team Alpha vs Team Beta');
     expect(matchesPanelHtml).not.toContain('Team Gamma vs Team Delta');
+
+    const staleHtml = renderAppShell({
+      activeTabId: 'matches',
+      matchFeed: {
+        status: 'empty',
+        date: '2026-06-29',
+        warnings: [],
+        snapshot: {
+          snapshotId: 'stale-snapshot',
+          generatedAt: '2026-06-28T00:00:00.000Z',
+          importedAt: '2026-06-28T00:01:00.000Z',
+          matchCount: 0,
+          competitions: [],
+          sources: [],
+          freshness: 'stale',
+          warnings: []
+        }
+      }
+    });
+    expect(staleHtml).not.toContain('Data status:');
+    expect(staleHtml).not.toContain('Snapshot generated:');
+    expect(staleHtml).not.toContain('2026-06-28T00:00:00.000Z');
   });
 });
 
@@ -524,12 +1053,12 @@ describe('production shell match filters panel', () => {
         id: 'm2',
         competition: {
           id: 'c2',
-          name: 'English Premier League',
-          type: 'national-team' as const,
+          name: 'FIFA World Cup Club',
+          type: 'club' as const,
           season: '2026'
         },
         kickoffUtc: '2026-06-30T16:00:00.000Z',
-        status: 'in_play' as unknown as LocalMatchStatus,
+        status: 'scheduled' as const,
         homeTeam: { id: 't3', name: 'Arsenal' },
         awayTeam: { id: 't4', name: 'Chelsea' },
         score: { home: 1, away: 0 },
@@ -579,7 +1108,7 @@ describe('production shell match filters panel', () => {
     
     // Check dynamic league checklist population
     expect(html).toContain('value="FIFA World Cup"');
-    expect(html).toContain('value="English Premier League"');
+    expect(html).toContain('value="FIFA World Cup Club"');
     expect(html).toContain('value="Women Friendly"');
   });
 
@@ -588,20 +1117,6 @@ describe('production shell match filters panel', () => {
     const end = html.indexOf('</section>', start);
     return html.slice(start, end);
   };
-
-  it('filters matches by LIVE state', () => {
-    const html = renderAppShell({
-      activeTabId: 'matches',
-      translate: t,
-      matchFeed: testMatchFeed,
-      isLiveFilterActive: true
-    });
-    const panel = getMatchesPanelHtml(html);
-
-    expect(panel).toContain('Arsenal vs Chelsea');
-    expect(panel).not.toContain('Japan vs Vietnam');
-    expect(panel).not.toContain('USA Women vs Germany');
-  });
 
   it('filters matches by search query', () => {
     const html = renderAppShell({
@@ -632,7 +1147,7 @@ describe('production shell match filters panel', () => {
     const panelNational = getMatchesPanelHtml(htmlNational);
     expect(panelNational).toContain('Japan vs Vietnam'); // FIFA World Cup is national
     expect(panelNational).toContain('USA Women vs Germany'); // Women Friendly is national
-    expect(panelNational).not.toContain('Arsenal vs Chelsea'); // English Premier League is club
+    expect(panelNational).not.toContain('Arsenal vs Chelsea'); // canonical type is club
 
     const htmlClub = renderAppShell({
       activeTabId: 'matches',
@@ -694,7 +1209,7 @@ describe('production shell match filters panel', () => {
         groupby: 'league',
         type: 'all',
         gender: 'all',
-        selectedLeagues: new Set<string>(['English Premier League', 'FIFA World Cup'])
+        selectedLeagues: new Set<string>(['FIFA World Cup Club', 'FIFA World Cup'])
       }
     });
     const panelLeagues = getMatchesPanelHtml(htmlLeagues);
@@ -736,7 +1251,7 @@ describe('production shell match filters panel', () => {
     });
     // When grouped by league, there are league group headers:
     expect(htmlLeague).toContain('<div class="group-label">FIFA World Cup</div>');
-    expect(htmlLeague).toContain('<div class="group-label">English Premier League</div>');
+    expect(htmlLeague).toContain('<div class="group-label">FIFA World Cup Club</div>');
     expect(htmlLeague).toContain('<div class="group-label">Women Friendly</div>');
   });
 
@@ -749,7 +1264,294 @@ describe('production shell match filters panel', () => {
     });
 
     expect(html).toContain('style="display: block;"');
-    expect(html).toContain('No local snapshot matches match the current filters.');
+    expect(html).toContain('No serving match store matches match the current filters.');
     expect(html).not.toContain('No provider matches');
+  });
+});
+
+describe('production shell smooth tab navigation and skeleton loading', () => {
+  it('generates accessible skeleton placeholder markup for metrics, cards, and list rows', () => {
+    const metricSkeleton = renderSkeletonMetrics(3);
+    expect(metricSkeleton).toContain('class="metric-grid" aria-hidden="true"');
+    expect(metricSkeleton).toContain('class="skeleton-text heading"');
+
+    const betSkeleton = renderSkeletonBetRows(2);
+    expect(betSkeleton).toContain('class="bet-row bet-card"');
+    expect(betSkeleton).toContain('class="skeleton-pill"');
+
+    const matchSkeleton = renderSkeletonMatchRows(3);
+    expect(matchSkeleton).toContain('class="match-row"');
+    expect(matchSkeleton).toContain('class="date-group" aria-hidden="true"');
+
+    const ledgerSkeleton = renderSkeletonLedgerRows(2);
+    expect(ledgerSkeleton).toContain('class="ledger-row"');
+
+    const cardSkeleton = renderSkeletonCard();
+    expect(cardSkeleton).toContain('class="note-card" aria-hidden="true"');
+  });
+
+  it('renders skeleton placeholders on Today, Matches, Bets, and Bankroll screens during API loading', () => {
+    // Today loading state
+    const todayHtml = renderAppShell({
+      activeTabId: 'today',
+      bankrollState: { status: 'loading' },
+      reportState: { status: 'loading' },
+      betRecordsState: { status: 'loading' },
+      disciplineConfigState: { status: 'loading' }
+    });
+    expect(todayHtml).toContain('class="skeleton-text heading"');
+    expect(todayHtml).toContain('class="skeleton-pill"');
+
+    // Matches loading state
+    const matchesHtml = renderAppShell({
+      activeTabId: 'matches',
+      matchFeed: { status: 'loading', date: '2026-08-25' }
+    });
+    expect(matchesHtml).toContain('data-match-feed-state="loading"');
+    expect(matchesHtml).toContain('class="match-row"');
+
+    // Bets loading state
+    const betsHtml = renderAppShell({
+      activeTabId: 'bets',
+      betRecordsState: { status: 'loading' }
+    });
+    expect(betsHtml).toContain('data-bet-records-state="loading"');
+    expect(betsHtml).toContain('class="bet-row bet-card"');
+
+    // Bankroll loading state
+    const bankrollHtml = renderAppShell({
+      activeTabId: 'bankroll',
+      bankrollState: { status: 'loading' }
+    });
+    expect(bankrollHtml).toContain('data-bankroll-state="loading"');
+  });
+
+  it('wires non-destructive active screen switching and flicker-free sub-tab updates in shell entry', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellSource).toContain('setActiveScreen(tabId);');
+    expect(shellSource).toContain('updateUrl(tabId);');
+    expect(shellSource).toContain('function setActiveScreen(screenName: string): void');
+    expect(shellSource).toContain('existing.innerHTML = newEl.innerHTML;');
+    expect(shellSource).toContain('updateBetsScreenView();');
+    expect(shellSource).toContain('updateBankrollScreenView();');
+    expect(shellSource).toContain('updateMatchesScreenView();');
+    expect(shellSource).toContain('updateTodayScreenView();');
+  });
+});
+
+describe('Slice 8 basic match detail UI and guardrails', () => {
+  it('contains all required match detail translation keys in EN and VI catalogs with exact parity', () => {
+    const enKeys = getCatalogKeys('en');
+    const viKeys = getCatalogKeys('vi');
+    expect(enKeys).toEqual(viKeys);
+
+    const requiredDetailKeys = [
+      'detail.title',
+      'detail.back',
+      'detail.loading',
+      'detail.pendingRefresh',
+      'detail.unavailable',
+      'detail.retry',
+      'detail.referee',
+      'detail.venue',
+      'detail.kickoff',
+      'detail.status',
+      'detail.elapsed',
+      'detail.score',
+      'detail.halftime',
+      'detail.fulltime',
+      'detail.extratime',
+      'detail.penalty',
+      'detail.stats',
+      'detail.timeline',
+      'detail.noData',
+      'detail.stat.cornerKicks',
+      'detail.stat.yellowCards',
+      'detail.stat.redCards',
+      'detail.stat.totalShots',
+      'detail.stat.shotsOnGoal',
+      'detail.stat.possession',
+      'detail.event.goal',
+      'detail.event.ownGoal',
+      'detail.event.penaltyGoal',
+      'detail.event.yellowCard',
+      'detail.event.redCard',
+      'detail.event.missedPenalty',
+      'detail.event.substitution',
+      'detail.noEvents',
+      'detail.noStats',
+      'detail.partialData',
+      'detail.assist',
+      'detail.playerIn'
+    ];
+
+    for (const key of requiredDetailKeys) {
+      expect(enKeys).toContain(key);
+      expect(viKeys).toContain(key);
+    }
+  });
+
+  it('wires explicit match detail actions and cancels them without any retry timer', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellSource).toContain('createMatchDetailController');
+    expect(shellSource).toContain('matchDetailController.open(matchId)');
+    expect(shellSource).not.toContain('matchDetailRetryTimer');
+    expect(shellSource).not.toContain('retryCount');
+    expect(shellSource).toContain("eventTarget.closest('#match-detail-back')");
+    expect(shellSource).toContain("eventTarget.closest('[data-match-detail-retry]')");
+    expect(shellSource).toContain('matchDetailController.cancel();');
+  });
+
+  it('does not request match detail until the owner opens the Info tab', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    const openMatchStart = shellSource.indexOf("const openMatchTarget = eventTarget.closest<HTMLElement>('[data-open-match]')");
+    const scopedAddStart = shellSource.indexOf("if (eventTarget.closest('[data-open-scoped-add]'))", openMatchStart);
+    const openMatchBlock = shellSource.slice(openMatchStart, scopedAddStart);
+
+    expect(openMatchBlock).not.toContain('loadAndRenderMatchDetail(');
+  });
+
+  it('renders competition, round, score context, chronological events, assist and both team rows', () => {
+    const html = renderMatchDetailView({
+      status: 'ready',
+      detail: {
+        match: {
+          id: 'match-1',
+          competition: { id: 'competition-1', name: 'Featured League', type: 'club', season: '2026' },
+          kickoffUtc: '2026-08-25T19:00:00.000Z',
+          status: 'completed',
+          homeTeam: { id: 'home-1', name: 'Arsenal' },
+          awayTeam: { id: 'away-1', name: 'Liverpool' },
+          score: { home: 2, away: 1 },
+          venue: 'Emirates Stadium',
+          round: 'Round 3',
+          sourceRefs: [],
+          updatedAt: '2026-08-25T21:00:00.000Z'
+        },
+        status: 'completed',
+        elapsedMinute: 90,
+        referee: 'Jane Referee',
+        scoreBreakdown: {
+          halftime: { home: 1, away: 0 },
+          fulltime: { home: 2, away: 1 },
+          extratime: { home: null, away: null },
+          penalty: { home: null, away: null }
+        },
+        events: [
+          { minute: 90, extraMinute: 4, teamId: 'home-1', type: 'goal', detail: 'Normal Goal', player: 'Late Scorer', assist: 'Final Pass', label: 'late' },
+          { minute: 45, teamId: 'away-1', type: 'card', detail: 'Red Card', player: 'Away Player', label: 'card' }
+        ],
+        teamStats: [
+          { teamId: 'away-1', teamName: 'Liverpool', cornerKicks: 6, yellowCards: 2, redCards: 1, totalShots: 11, shotsOnGoal: 4, possessionPercentage: 48 },
+          { teamId: 'home-1', teamName: 'Arsenal', cornerKicks: 5, yellowCards: 1, redCards: 0, totalShots: 14, shotsOnGoal: 6, possessionPercentage: 52 }
+        ],
+        updatedAt: '2026-08-25T21:00:00.000Z'
+      }
+    }, createTranslator('en'), 'en', 'UTC');
+
+    expect(html).toContain('Featured League');
+    expect(html).toContain('2026 · Round 3');
+    expect(html).toContain('Emirates Stadium');
+    expect(html).toContain('Jane Referee');
+    expect(html).toContain('90+4&#39;');
+    expect(html).toContain('Final Pass');
+    expect(html).toContain('Arsenal');
+    expect(html).toContain('Liverpool');
+    expect(html.indexOf('45&#39;')).toBeLessThan(html.indexOf('90+4&#39;'));
+  });
+
+  it('renders null factual values as localized unavailable and escapes all supplied labels', () => {
+    const html = renderMatchDetailView({
+      status: 'ready',
+      detail: {
+        match: {
+          id: 'match-1',
+          competition: { id: 'competition-1', name: '<img src=x onerror=alert(1)>', type: 'national-team', season: '2026' },
+          kickoffUtc: '2026-08-25T19:00:00.000Z',
+          status: 'completed',
+          homeTeam: { id: 'home-1', name: '<Home>' },
+          awayTeam: { id: 'away-1', name: 'Away & Co' },
+          score: { home: null, away: null },
+          sourceRefs: [],
+          updatedAt: '2026-08-25T21:00:00.000Z'
+        },
+        status: 'completed',
+        elapsedMinute: null,
+        referee: null,
+        scoreBreakdown: {
+          halftime: { home: null, away: null },
+          fulltime: { home: null, away: null },
+          extratime: { home: null, away: null },
+          penalty: { home: null, away: null }
+        },
+        events: [{ minute: null, type: 'other', label: '<script>alert(1)</script>' }],
+        teamStats: [
+          { teamId: 'home-1', cornerKicks: null, yellowCards: null, redCards: null, totalShots: null, shotsOnGoal: null, possessionPercentage: null },
+          { teamId: 'away-1', cornerKicks: null, yellowCards: null, redCards: null, totalShots: null, shotsOnGoal: null, possessionPercentage: null }
+        ],
+        updatedAt: '2026-08-25T21:00:00.000Z'
+      }
+    }, createTranslator('vi'), 'vi', 'UTC');
+
+    expect(html).not.toContain('<img');
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain("null'");
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    expect(html).toContain('<td>–</td>');
+    expect(html).not.toMatch(/>0<\/td>/);
+  });
+
+  it('renders bounded pending/unavailable states with a manual retry control', () => {
+    const pending = renderMatchDetailView({
+      status: 'pending',
+      match: {
+        id: 'match-1',
+        competition: { id: 'competition-1', name: 'League', type: 'club', season: '2026' },
+        kickoffUtc: '2026-08-25T19:00:00.000Z',
+        status: 'completed',
+        homeTeam: { id: 'home-1', name: 'Home' },
+        awayTeam: { id: 'away-1', name: 'Away' },
+        score: { home: 1, away: 0 },
+        sourceRefs: [],
+        updatedAt: '2026-08-25T21:00:00.000Z'
+      },
+      retryAfterSeconds: 150
+    }, createTranslator('vi'), 'vi', 'UTC');
+    const unavailable = renderMatchDetailView({ status: 'unavailable', match: null, warnings: ['detail_request_failed'] }, createTranslator('vi'), 'vi', 'UTC');
+
+    expect(pending).toContain('Chi tiết chưa sẵn sàng');
+    expect(unavailable).toContain('data-match-detail-retry');
+    expect(unavailable).toContain('Thử lại');
+    expect(unavailable).not.toContain('detail_request_failed');
+  });
+
+  it('renders factual context only without betting advice, predictions, xG, confidence, or AI picks', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    const forbiddenTerms = [
+      'prediction',
+      'expected_goals',
+      'expectedGoals',
+      'confidence',
+      'recommendedBet',
+      'aiPick',
+      'kelly',
+      'roi',
+      'clv'
+    ];
+    for (const term of forbiddenTerms) {
+      expect(shellSource.toLowerCase()).not.toContain(term.toLowerCase());
+    }
+  });
+
+  it('enforces edge swipe back only for child screens with back buttons, replaces history for primary tabs, and prevents swipe back from 4 primary tabs', () => {
+    const shellSource = readFileSync(fileURLToPath(new URL('./shell-entry.ts', import.meta.url)), 'utf8');
+    expect(shellSource).toContain("window.history.replaceState({ tabId }, '', url);");
+    expect(shellSource).toContain("window.history.pushState({ screen: 'match-detail', returnScreen: matchDetailReturnScreen }");
+    expect(shellSource).toContain("if (currentScreenName === 'match-detail')");
+    expect(shellSource).toContain("if (isPrimaryTabId(currentScreenName))");
+    expect(shellSource).toContain('triggerEdgeSwipeBack()');
+    expect(shellSource).toContain('isPrimaryTabId(currentScreenName)');
+    expect(shellSource).toContain("activeScreen.querySelector<HTMLElement>('.back-button, #match-detail-back, [data-screen-back]')");
+    expect(shellSource).toContain("window.addEventListener('touchstart', handleTouchStart, { passive: true });");
   });
 });

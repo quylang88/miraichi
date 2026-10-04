@@ -22,7 +22,7 @@ graph TD
 ```
 
 ### 1. Local Mock Fixtures Only
-- No network requests to live third-party sports APIs (Sportmonks, API-Football, etc.) are allowed during Phase 3 scaffold and testing.
+- No network requests to live third-party sources are allowed during scaffold and mock testing.
 - The `apps/worker` ingestion process reads only from local mock files.
 - Sample fixtures utilize generic identifiers (`competition-alpha`, `season-alpha-2026`, `team-alpha`, `team-beta`, `match-alpha-001`).
 

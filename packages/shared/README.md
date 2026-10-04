@@ -1,20 +1,5 @@
-# Shared Package
+# Shared Contracts
 
-Common TypeScript types, utility libraries, and helper methods.
+`@miraichi/shared` contains TypeScript contracts and validators shared by the web, API, worker, and scripts.
 
-## Purpose
-Enforces domain standard interfaces, date parses, validation helpers, and mathematical utility functions.
-
-## Status
-- **Status**: Active
-
-## Scope
-Shared monorepo helper libraries, data model type definitions, and core football schemas.
-
-## Guidelines
-- Types must maintain a competition-agnostic interface (e.g. `Competition`, `Season`, `Match` instead of `WorldCupMatch`).
-- Utility functions must be pure and well-tested.
-
-## TODO / Next Steps
-- [ ] Export common validation types.
-- [ ] Establish directory configurations.
+Current domains include factual match data, provider-neutral ingestion, market/odds records, bet drafts and records, bankroll persistence, and backup envelopes.

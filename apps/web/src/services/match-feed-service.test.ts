@@ -36,7 +36,7 @@ describe('web match feed service', () => {
     warnings: []
   };
 
-  it('returns a ready state from the local snapshot API payload', async () => {
+  it('returns a ready state from the serving match API payload', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
       matches: [validMatch],
       snapshot: validSnapshot
@@ -64,26 +64,65 @@ describe('web match feed service', () => {
     }
   });
 
-  it('returns unavailable state and maps local_snapshot_missing to actionable copy', async () => {
+  it('returns unavailable before empty when an HTTP 200 snapshot is missing', async () => {
+    const missingSnapshot: LocalDataSnapshotStatus = {
+      ...validSnapshot,
+      generatedAt: '2026-08-02T00:00:00.000Z',
+      importedAt: '2026-08-02T00:00:00.000Z',
+      matchCount: 0,
+      freshness: 'missing',
+      warnings: ['Cloud match snapshot is unavailable.']
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      matches: [],
+      snapshot: missingSnapshot
+    }), { status: 200 })));
+
+    const result = await getMatchFeed('2026-06-11');
+
+    expect(result.status).toBe('unavailable');
+    if (result.status === 'unavailable') {
+      expect(result.snapshot?.freshness).toBe('missing');
+    }
+  });
+
+  it('returns unavailable state and maps serving_match_store_missing to actionable copy', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
       error: {
-        code: 'local_snapshot_missing',
-        message: 'Snapshot not found'
+        code: 'serving_match_store_missing',
+        message: 'Serving store not found'
       }
     }), { status: 503 })));
 
     const result = await getMatchFeed('2026-06-11');
     expect(result.status).toBe('unavailable');
     if (result.status === 'unavailable') {
-      expect(result.reason).toContain('Local match snapshot is missing. Run the national-team data update before using match workflows.');
-      expect(result.warnings).toContain('local_snapshot_missing');
+      expect(result.reason).toContain('Serving match store is missing. Build it from canonical warehouse before using match workflows.');
+      expect(result.warnings).toContain('serving_match_store_missing');
+    }
+  });
+
+  it('does not invent live-feed copy for an unsupported status response', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        code: 'unsupported_match_status',
+        message: 'Canonical match status is unsupported.'
+      }
+    }), { status: 422 })));
+
+    const result = await getMatchFeed('2026-06-11');
+
+    expect(result.status).toBe('unavailable');
+    if (result.status === 'unavailable') {
+      expect(result.reason).toBe('Canonical match status is unsupported.');
+      expect(result.reason).not.toContain('live match');
     }
   });
 
   it('fails normalization when response contains sourceProviderId or providerFixtureId', async () => {
     const invalidMatch = {
       ...validMatch,
-      sourceProviderId: 'api-football'
+      sourceProviderId: 'retired-provider'
     };
 
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({

@@ -21,7 +21,7 @@ Phase 9 has removed API-Football from the active match-data path and added a loc
 - `Bets`
 - `Bankroll`
 
-The app needs durable cloud persistence for user-owned records and normalized match snapshot metadata, but it must not introduce betting advice, stake sizing, bankroll risk formulas, prediction runtime, live polling, odds ingestion, or AI training.
+The app needs durable cloud persistence for user-owned records and normalized match snapshot metadata, but it must not introduce automated advice, stake sizing, bankroll risk formulas, live polling, or odds ingestion.
 
 ADR-0033 approved a local-first persistence and backup boundary. ADR-0042 requires a separate cloud database provider ADR before implementing production cloud persistence.
 
@@ -226,7 +226,6 @@ This ADR does not approve:
 - odds provider integration;
 - ROI, yield, CLV, Kelly, stake sizing, bankroll risk, or recommendation formulas;
 - prediction runtime tables;
-- `Miraichi AI` training or runtime;
 - production promotion.
 
 ## 9. Required Implementation Plan Constraints

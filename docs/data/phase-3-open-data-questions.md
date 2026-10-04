@@ -20,7 +20,7 @@ Identifies critical unknowns that must be investigated and resolved before Phase
 
 ### Q2: Third-Party Sports API Selection
 - **Description**: Which external provider offers the best balance of fixture data depth, historical odds, coverage, and API pricing?
-- **Candidates**: Sportmonks, API-Football, Odds API, or custom scraping feeds.
+- **Candidates**: Public factual match websites evaluated under the current source-selection phase.
 - **Status**: Open. Deferred to ADR-0014 candidate review.
 
 ### Q3: Generic Odds Normalization & Schema Mapping

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "miraichi.sportscore-openapi-approval.v1",
+  "fixture": "tests/fixtures/sportscore-openapi.approved.json",
+  "sha256": "20e537bd4e83f6bdd6ed4ed8a4e630cf41a57b8eb8280a2aacc8d06a264919fd",
+  "reviewedAt": "2026-09-02",
+  "sourceUrl": "https://sportscore.com/developers/openapi.yaml",
+  "scope": "Reviewed local excerpt for widget-only live list and bounded terminal-check boundaries; no SportScore REST v1 runtime is approved."
+}

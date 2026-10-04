@@ -1,0 +1,108 @@
+import { spawn } from 'node:child_process';
+
+export interface CommandRunOptions {
+  readonly cwd?: string;
+  readonly env?: NodeJS.ProcessEnv;
+  readonly timeoutMs?: number;
+  readonly input?: string;
+}
+
+export interface CommandResult {
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly exitCode: 0;
+}
+
+export interface CommandRunner {
+  run(command: string, args: readonly string[], options?: CommandRunOptions): Promise<CommandResult>;
+}
+
+export class CommandExecutionError extends Error {
+  constructor(readonly exitCode: number | null, readonly code = 'command_failed') {
+    super('Release command failed');
+    this.name = 'CommandExecutionError';
+  }
+}
+
+const MAX_CAPTURE_BYTES = 2 * 1024 * 1024;
+
+function classifyFailure(diagnostic: string, exceeded: boolean): string {
+  if (exceeded) return 'command_output_limit_exceeded';
+  if (/Aborting the upload operation because of conflicts/iu.test(diagnostic)) {
+    return 'cloudflare_remote_conflict';
+  }
+  if (/A request to the Cloudflare API/iu.test(diagnostic)) {
+    const apiCode = /\[code: ([0-9]{5})\]/u.exec(diagnostic)?.[1];
+    if (apiCode === '10000') return 'cloudflare_authentication_failed';
+    return apiCode ? `cloudflare_api_error_${apiCode}` : 'cloudflare_api_failed';
+  }
+  if (/password authentication failed|authentication failed|invalid (?:access )?token|unauthorized|forbidden/iu.test(diagnostic)) {
+    return 'authentication_failed';
+  }
+  if (/IPv6 is not supported|network is unreachable|no route to host/iu.test(diagnostic)) {
+    return 'ipv6_connection_unavailable';
+  }
+  if (/pooler\.supabase\.com/iu.test(diagnostic) && /failed to connect|failed to receive|timeout|unexpected EOF/iu.test(diagnostic)) {
+    return 'pooler_connection_failed';
+  }
+  if (/lookup .*(?:no such host|server misbehaving)|could not translate host/iu.test(diagnostic)) {
+    return 'dns_resolution_failed';
+  }
+  if (/failed to connect|connection refused|network is unreachable|no such host|could not translate host|dial tcp|connection reset|i\/o timeout/iu.test(diagnostic)) {
+    return 'connection_failed';
+  }
+  if (/migration history.*(?:mismatch|out of sync)|repair the migration history|remote migration versions?.*(?:not found|do not match)|local migration files.*inserted before/iu.test(diagnostic)) {
+    return 'migration_history_mismatch';
+  }
+  if (/unknown (?:command|flag)|usage:/iu.test(diagnostic)) return 'release_cli_usage_failed';
+  return 'command_failed';
+}
+
+function assertLiteral(value: string, label: string): void {
+  if (!value || value.includes('\0')) throw new Error(`${label} is invalid`);
+}
+
+export function createCommandRunner(): CommandRunner {
+  return {
+    run: async (command, args, options = {}) => {
+      assertLiteral(command, 'Command');
+      args.forEach((arg) => assertLiteral(arg, 'Command argument'));
+      const timeoutMs = options.timeoutMs ?? 120_000;
+      if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 15 * 60_000) {
+        throw new Error('Command timeout is invalid');
+      }
+      return await new Promise<CommandResult>((resolve, reject) => {
+        const child = spawn(command, [...args], {
+          cwd: options.cwd,
+          env: options.env ?? process.env,
+          shell: false,
+          windowsHide: true,
+          stdio: ['pipe', 'pipe', 'pipe']
+        });
+        let stdout = '';
+        let stderr = '';
+        let exceeded = false;
+        const append = (current: string, chunk: Buffer): string => {
+          if (Buffer.byteLength(current) + chunk.byteLength > MAX_CAPTURE_BYTES) {
+            exceeded = true;
+            child.kill();
+            return current;
+          }
+          return current + chunk.toString('utf8');
+        };
+        child.stdout.on('data', (chunk: Buffer) => { stdout = append(stdout, chunk); });
+        child.stderr.on('data', (chunk: Buffer) => { stderr = append(stderr, chunk); });
+        child.on('error', () => reject(new CommandExecutionError(null)));
+        const timeout = setTimeout(() => child.kill(), timeoutMs);
+        child.on('close', (exitCode) => {
+          clearTimeout(timeout);
+          if (exceeded || exitCode !== 0) {
+            reject(new CommandExecutionError(exitCode, classifyFailure(`${stdout}\n${stderr}`, exceeded)));
+          } else resolve({ stdout, stderr, exitCode: 0 });
+        });
+        if (options.input !== undefined) child.stdin.end(options.input);
+        else child.stdin.end();
+      });
+    }
+  };
+}

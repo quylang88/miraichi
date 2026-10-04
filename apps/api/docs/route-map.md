@@ -1,22 +1,22 @@
 # API Route Map
 
-Backend HTTP endpoint layouts and definitions.
+## Factual Match Data
 
-## Purpose
-Exposes planned routing paths, query options, and response structures.
+- `GET /api/v1/health`
+- `GET /api/v1/matches`
+- `GET /api/v1/matches/detail?id=<matchId>`
+- `GET /api/v1/data-snapshot/status`
+- `GET /api/v1/ingestion/status`
 
-## Status
-- **Status**: Active
+## Owner Records
 
-## Scope
-Maps all public, authenticated, and service-to-service endpoints in apps/api.
+- `/api/v1/bet-drafts`
+- `/api/v1/bets`
+- `/api/v1/bankroll/accounts`
+- `/api/v1/bankroll/ledger`
+- `/api/v1/backups/export`
+- `/api/v1/backups/import`
+- `/api/v1/backups/log`
+- `/api/v1/cloud-persistence/status`
 
-## Route Schema
-- `POST /api/v1/auth/login` - Authenticate user credentials
-- `GET /api/v1/competitions` - Fetch active sports competitions (generic response)
-- `GET /api/v1/matches` - Get matches listing with dynamic filtering
-- `POST /api/v1/bets` - Record user bets and audit logs
-- `POST /api/v1/predictions` - Query model predictions for matches
-
-## TODO / Next Steps
-- [ ] Detail endpoint payloads and validator definitions.
+Any unregistered route returns JSON `404`.

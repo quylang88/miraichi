@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { handleMatches } from './matches.js';
-import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
-import { LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery } from '@miraichi/shared';
+import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
+import type { LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery } from '@miraichi/shared';
 
 function responseMock() {
   return {
@@ -32,7 +32,12 @@ const mockMatch: LocalMatch = {
   homeTeam: { id: 'team-mexico', name: 'Mexico' },
   awayTeam: { id: 'team-safrica', name: 'South Africa' },
   score: { home: null, away: null },
-  sourceRefs: [],
+  sourceRefs: [{
+    sourceId: 'sportscore',
+    sourceMatchId: 'private-provider-slug',
+    sourceUrl: 'https://sportscore.com/private-provider-slug',
+    importedAt: '2026-07-01T00:00:00.000Z'
+  }],
   updatedAt: '2026-07-01T00:00:00.000Z'
 };
 
@@ -46,7 +51,17 @@ const mockFeedResponse: LocalMatchFeedResponse = {
     competitions: [
       { id: 'world-cup-2026', name: 'FIFA World Cup', seasons: ['2026'], matchCount: 1 }
     ],
-    sources: [],
+    sources: [{
+      sourceId: 'sportscore',
+      sourceMatchId: 'private-provider-slug',
+      sourceUrl: 'https://sportscore.com/private-provider-slug',
+      importedAt: '2026-07-01T00:00:00.000Z'
+    }, {
+      sourceId: 'sportscore',
+      sourceMatchId: 'newer-private-provider-slug',
+      sourceUrl: 'https://sportscore.com/newer-private-provider-slug',
+      importedAt: '2026-07-01T01:00:00.000Z'
+    }],
     freshness: 'fresh',
     warnings: []
   }
@@ -57,7 +72,7 @@ describe('matches route', () => {
     const response = responseMock();
     const mockRepo = {
       listMatches: async () => mockFeedResponse
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleMatches(
       { url: '/api/v1/matches', method: 'GET' } as import('http').IncomingMessage,
@@ -67,17 +82,26 @@ describe('matches route', () => {
 
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
-    expect(body.matches).toEqual([mockMatch]);
+    expect(body.matches).toEqual([{
+      ...mockMatch,
+      sourceRefs: [{ sourceId: 'sportscore', importedAt: '2026-07-01T00:00:00.000Z' }]
+    }]);
     expect(body.snapshot.snapshotId).toBe('test-snapshot');
+    expect(body.snapshot.sources).toEqual([
+      { sourceId: 'sportscore', importedAt: '2026-07-01T01:00:00.000Z' }
+    ]);
 
-    // Assert absence of old API-Football/cache/quota structures
+    // Assert absence of provider-specific cache/quota structures.
     expect(body.quota).toBeUndefined();
     expect(body.cache).toBeUndefined();
     expect(body.sourceProviderId).toBeUndefined();
     expect(body.matches[0].providerFixtureId).toBeUndefined();
+    expect(response.body).not.toContain('private-provider-slug');
+    expect(response.body).not.toContain('newer-private-provider-slug');
+    expect(response.body).not.toContain('sourceUrl');
   });
 
-  it('filters by date when provided', async () => {
+  it('filters by date and timezone when provided', async () => {
     const response = responseMock();
     let calledQuery: LocalMatchSnapshotQuery | null = null;
     const mockRepo = {
@@ -85,17 +109,18 @@ describe('matches route', () => {
         calledQuery = query;
         return mockFeedResponse;
       }
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleMatches(
-      { url: '/api/v1/matches?date=2026-06-11', method: 'GET' } as import('http').IncomingMessage,
+      { url: '/api/v1/matches?date=2026-09-01&timezone=Asia/Ho_Chi_Minh', method: 'GET' } as import('http').IncomingMessage,
       response as unknown as import('http').ServerResponse,
       { repository: mockRepo }
     );
 
     expect(response.statusCode).toBe(200);
     expect(calledQuery).toEqual({
-      date: '2026-06-11',
+      date: '2026-09-01',
+      timezone: 'Asia/Ho_Chi_Minh',
       competitionId: undefined,
       status: undefined
     });
@@ -125,17 +150,17 @@ describe('matches route', () => {
     expect(JSON.parse(response.body).error.code).toBe('unsupported_match_status');
   });
 
-  it('returns 503 when snapshot is missing', async () => {
+  it('returns 503 when serving match store is missing', async () => {
     const response = responseMock();
     const mockRepo = {
       listMatches: async () => {
-        const error = new Error('Local snapshot file not found');
+        const error = new Error('Serving match store manifest not found');
         const errObj = error as unknown as { code: string; statusCode: number };
-        errObj.code = 'local_snapshot_missing';
+        errObj.code = 'serving_match_store_missing';
         errObj.statusCode = 503;
         throw error;
       }
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleMatches(
       { url: '/api/v1/matches', method: 'GET' } as import('http').IncomingMessage,
@@ -144,20 +169,20 @@ describe('matches route', () => {
     );
 
     expect(response.statusCode).toBe(503);
-    expect(JSON.parse(response.body).error.code).toBe('local_snapshot_missing');
+    expect(JSON.parse(response.body).error.code).toBe('serving_match_store_missing');
   });
 
-  it('returns 500 when snapshot is invalid', async () => {
+  it('returns 500 when serving match store is invalid', async () => {
     const response = responseMock();
     const mockRepo = {
       listMatches: async () => {
-        const error = new Error('Malformed snapshot');
+        const error = new Error('Malformed serving match store');
         const errObj = error as unknown as { code: string; statusCode: number };
-        errObj.code = 'local_snapshot_invalid';
+        errObj.code = 'serving_match_store_invalid';
         errObj.statusCode = 500;
         throw error;
       }
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleMatches(
       { url: '/api/v1/matches', method: 'GET' } as import('http').IncomingMessage,
@@ -166,6 +191,6 @@ describe('matches route', () => {
     );
 
     expect(response.statusCode).toBe(500);
-    expect(JSON.parse(response.body).error.code).toBe('local_snapshot_invalid');
+    expect(JSON.parse(response.body).error.code).toBe('serving_match_store_invalid');
   });
 });

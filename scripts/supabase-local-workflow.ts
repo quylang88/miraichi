@@ -4,10 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { readCloudPersistenceConfig } from '../apps/api/src/config/cloud-persistence-config.js';
 import { createCloudPersistenceAdapter } from '../apps/api/src/persistence/create-cloud-persistence-adapter.js';
 import { createPostgresQueryClient, type PostgresQueryClient } from '../apps/api/src/persistence/supabase/postgres-query-client.js';
-import { LocalMatchSnapshotRepository } from '../apps/api/src/repositories/local-match-snapshot-repository.js';
-import { runNationalTeamCloudSync } from './sync-national-team-data-to-cloud.js';
+import { ServingMatchStoreRepository } from '../apps/api/src/repositories/serving-match-store-repository.js';
+import { runServingMatchStoreCloudSync } from './sync-serving-match-store-to-cloud.js';
 
-export const LOCAL_SUPABASE_DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
+export const LOCAL_SUPABASE_DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:15422/postgres';
 export const PHASE9_CLOUD_MIGRATION_VERSION = '20260702052851';
 export const EXPECTED_MIRAICHI_TABLES = [
   'app_profile',
@@ -78,7 +78,7 @@ export function buildLocalSupabaseEnv(baseEnv: NodeJS.ProcessEnv = process.env):
 export function buildDbeaverConnectionInfo() {
   return {
     host: '127.0.0.1',
-    port: 54322,
+    port: 15422,
     database: 'postgres',
     username: 'postgres',
     password: 'postgres',
@@ -92,8 +92,8 @@ export function resolveSupabaseCliScriptPath(root: string = process.cwd()): stri
 
 async function defaultSyncOperation(options: { env: NodeJS.ProcessEnv; log: (message: string) => void }): Promise<void> {
   const config = readCloudPersistenceConfig(options.env);
-  await runNationalTeamCloudSync({
-    localRepository: new LocalMatchSnapshotRepository(),
+  await runServingMatchStoreCloudSync({
+    servingRepository: new ServingMatchStoreRepository(),
     adapter: createCloudPersistenceAdapter(config),
     ownerProfileId: config.ownerProfileId,
     log: options.log
@@ -175,7 +175,7 @@ export async function syncLocalSupabaseSnapshot(options: {
   const log = options.log ?? console.log;
   const syncOperation = options.syncOperation ?? defaultSyncOperation;
   await syncOperation({ env, log });
-  log('[Supabase Local] Synced national-team snapshot into local Supabase.');
+  log('[Supabase Local] Synced serving match store into local Supabase.');
 }
 
 function printStatus(): void {

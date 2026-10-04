@@ -1,76 +1,58 @@
-import type { IncomingMessage, ServerResponse } from 'http';
-import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { toProviderNeutralLocalMatch, validateLocalMatchDetail, type LocalMatchDetail } from '@miraichi/shared';
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
-import type { LocalMatchDetail } from '@miraichi/shared';
-
-const repository = new LocalMatchSnapshotRepository();
-
-export async function handleMatchDetail(
-  req: IncomingMessage,
-  res: ServerResponse,
-  dependencies: { repository?: MatchSnapshotRepository } = {}
-): Promise<void> {
-  const repo = dependencies.repository ?? repository;
-  const parsedUrl = new URL(req.url || '/', 'http://localhost');
-  const id = parsedUrl.searchParams.get('id');
-
-  if (!id || id.trim() === '') {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      error: {
-        code: 'match_id_required',
-        message: 'id parameter is required.'
-      }
-    }));
-    return;
+import type { HostedMatchDetailCoordinator } from '../detail/hosted-match-detail.js';
+import type { TerminalBetReconciliationCoordinator } from '../services/terminal-bet-reconciliation.js';
+export interface MatchDetailStore {getDetail(matchId:string):Promise<LocalMatchDetail|null>}
+export interface MatchDetailQueue {enqueue(matchId:string):Promise<{status:string}>}
+export interface MatchDetailRouteDependencies {
+  repository?:MatchSnapshotRepository;
+  detailStore?:MatchDetailStore;
+  coordinator?:Pick<HostedMatchDetailCoordinator,'read'|'refresh'>;
+  terminalReconciler?:Pick<TerminalBetReconciliationCoordinator,'reconcile'>;
+  /** Legacy injection compatibility only. Detail routes never enqueue work. */
+  queue?:MatchDetailQueue;
+  dataRoot?:string;
+}
+export type MatchDetailResponse=LocalMatchDetail;
+function sanitize(detail:LocalMatchDetail):LocalMatchDetail {
+  return {match:toProviderNeutralLocalMatch(detail.match),status:detail.status,elapsedMinute:detail.elapsedMinute,events:detail.events,updatedAt:detail.updatedAt,
+    ...(detail.referee!==undefined?{referee:detail.referee}:{}),...(detail.scoreBreakdown?{scoreBreakdown:detail.scoreBreakdown}:{}),
+    ...(detail.teamStats?{teamStats:detail.teamStats}:{}),...(detail.lineups?{lineups:detail.lineups}:{}),
+    ...(detail.warnings?{warnings:detail.warnings}:{}),...(detail.notes?{notes:detail.notes}:{}),
+    ...(detail.enrichment?{enrichment:detail.enrichment}:{}),...(detail.refresh?{refresh:detail.refresh}:{})};
+}
+export async function handleMatchDetail(req:IncomingMessage,res:ServerResponse,deps:MatchDetailRouteDependencies={}):Promise<void> {
+  const send=(status:number,payload:unknown)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(payload));};
+  const error=(status:number,code:string,message:string)=>send(status,{error:{code,message}});
+  const url=new URL(req.url||'/','http://localhost');
+  const refresh=url.pathname==='/api/v1/matches/detail/refresh';
+  if(req.method!==(refresh?'POST':'GET')) {error(405,'method_not_allowed','Method not allowed.');return;}
+  const id=url.searchParams.get('id');
+  if(!id || !/^[a-zA-Z0-9_-]{1,200}$/u.test(id) || [...url.searchParams.keys()].length!==1) {
+    error(400,'match_id_required','Exactly one canonical id parameter is required.');return;
   }
-
-  if (id.startsWith('api-football-fixture-')) {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      error: {
-        code: 'legacy_provider_id_not_supported',
-        message: 'API-Football fixture IDs are no longer supported in Phase 9.'
-      }
-    }));
-    return;
-  }
-
   try {
-    const match = await repo.findById(id);
-    if (!match) {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        error: {
-          code: 'match_not_found',
-          message: `Match with ID ${id} was not found in the local snapshot.`
-        }
-      }));
-      return;
+    let detail:LocalMatchDetail|null;
+    if(deps.coordinator) detail=await (refresh?deps.coordinator.refresh(id):deps.coordinator.read(id));
+    else {
+      if(!deps.repository) throw new Error('Match repository unavailable');
+      const match=await deps.repository.findById(id);
+      if(!match) {error(404,'match_not_found','Match was not found.');return;}
+      const cached=await deps.detailStore?.getDetail(id);
+      detail=cached?{...cached,refresh:{outcome:refresh?'unsupported':'cached',lastSuccessAt:cached.updatedAt,retryAfterSeconds:null}}:
+        {match:toProviderNeutralLocalMatch(match),status:match.status,elapsedMinute:null,events:[],updatedAt:match.updatedAt,
+          refresh:{outcome:refresh?'unsupported':'unavailable',lastSuccessAt:null,retryAfterSeconds:null}};
     }
-
-    const payload: LocalMatchDetail = {
-      match,
-      referee: undefined,
-      events: [],
-      notes: [
-        'Local snapshot detail does not include live event telemetry.'
-      ]
-    };
-
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(payload));
-  } catch (error) {
-    const err = error as { statusCode?: number; code?: string; message?: string };
-    const statusCode = err.statusCode || 500;
-    const code = err.code || 'match_detail_route_error';
-    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      error: {
-        code,
-        message: err.message || 'Failed to load match detail.'
-      }
-    }));
+    if(!detail) {error(404,'match_not_found','Match was not found.');return;}
+    const publicDetail=sanitize(detail);
+    if(!validateLocalMatchDetail(publicDetail).ok || publicDetail.match.id!==id) throw new Error('Invalid detail response');
+    if(refresh && detail.status==='completed' && detail.refresh?.lastSuccessAt && deps.terminalReconciler) {
+      try {await deps.terminalReconciler.reconcile([detail.match]);} catch { /* Detail publication remains successful. */ }
+    }
+    send(200,publicDetail);
+  } catch(failure) {
+    const status=typeof failure==='object' && failure!==null && 'statusCode' in failure && failure.statusCode===503?503:500;
+    error(status,status===503?'match_detail_unavailable':'match_detail_route_error','Match detail service is temporarily unavailable.');
   }
 }
-export type MatchDetailResponse = LocalMatchDetail;

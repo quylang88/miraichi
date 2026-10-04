@@ -25,7 +25,7 @@ create table if not exists miraichi_app.match_record (
   snapshot_id text not null references miraichi_app.match_snapshot(snapshot_id) on delete cascade,
   competition_id text not null,
   competition_name text not null,
-  competition_type text not null check (competition_type = 'national-team'),
+  competition_type text not null check (competition_type in ('national-team', 'club')),
   season text not null,
   kickoff_utc timestamptz not null,
   status text not null check (status in ('scheduled','completed','postponed','cancelled','unknown')),

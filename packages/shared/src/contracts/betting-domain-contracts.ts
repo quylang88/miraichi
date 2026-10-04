@@ -2,12 +2,10 @@ export type IsoDateTimeString = string;
 export type BetId = string;
 export type MatchId = string;
 export type MatchGroupId = string;
-export type PredictionTraceId = string;
-export type RecommendationId = string;
 
 export type BetTimeType = 'pre_match' | 'live' | (string & {});
 export type BetRecordStatus = 'pending' | 'settled' | (string & {});
-export type BetRecordSource = 'manual' | 'ai_recommendation';
+export type BetRecordSource = 'manual';
 
 export type OddsFormat = 'HK';
 
@@ -18,6 +16,7 @@ export interface OddsValueFields {
 }
 
 export type MarketType = '1X2' | 'over_under' | 'handicap' | 'corners' | 'custom';
+export type PersistedMarketType = MarketType | 'running';
 export type LineValue = number;
 export type NonStandardLinePolicy = 'warning_only';
 
@@ -48,8 +47,6 @@ export interface MarketCatalog {
   markets: readonly MarketDefinition[];
 }
 
-export type TraceMetadata = Readonly<Record<string, unknown>>;
-
 export interface BetRecordEnvelope extends OddsValueFields {
   betId: BetId;
   matchGroupId: MatchGroupId;
@@ -75,9 +72,6 @@ export interface BetRecordEnvelope extends OddsValueFields {
   notes?: string;
   tags?: readonly string[];
   source?: BetRecordSource;
-  trace?: TraceMetadata;
-  predictionTraceId?: PredictionTraceId;
-  recommendationId?: RecommendationId;
 }
 
 export interface MatchBettingGroup {

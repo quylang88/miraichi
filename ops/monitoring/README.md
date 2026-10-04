@@ -14,7 +14,7 @@ Directly plans monitoring structures, tracking metrics, and alert routing levels
 
 ## Guidelines
 - Mask personal user betting information and passwords inside server logs.
-- Group metrics by application tags (web, api, worker, local-ai).
+- Group metrics by application tags (`web`, `api`, and approved `worker` jobs).
 
 ## TODO / Next Steps
 - [ ] Review `ops/PHASE-6-TESTING-DEPLOYMENT-HARDENING-PLAN.md`.

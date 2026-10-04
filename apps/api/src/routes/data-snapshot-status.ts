@@ -1,25 +1,24 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
 import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
-
-const repository = new LocalMatchSnapshotRepository();
+import { toPublicSnapshotStatus } from './public-match-metadata.js';
 
 export async function handleDataSnapshotStatus(
   req: IncomingMessage,
   res: ServerResponse,
   dependencies: { repository?: MatchSnapshotRepository } = {}
 ): Promise<void> {
-  const repo = dependencies.repository ?? repository;
+  const repo = dependencies.repository;
 
   try {
-    const status = await repo.getStatus();
+    if (!repo) throw new Error('Match repository is not configured');
+    const status = toPublicSnapshotStatus(await repo.getStatus());
 
     if (status.freshness === 'missing') {
       res.writeHead(503, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         error: {
-          code: 'local_snapshot_missing',
-          message: 'Local match snapshot is missing. Run the national-team data update before using match workflows.'
+          code: 'serving_match_store_missing',
+          message: 'Serving match store is missing. Build the serving match store from canonical warehouse before using match workflows.'
         },
         snapshot: status
       }));
@@ -31,7 +30,7 @@ export async function handleDataSnapshotStatus(
   } catch (error) {
     const err = error as { statusCode?: number; code?: string; message?: string };
     const statusCode = err.statusCode || 500;
-    const code = err.code || 'local_snapshot_invalid';
+    const code = err.code || 'serving_match_store_invalid';
     res.writeHead(statusCode, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       error: {

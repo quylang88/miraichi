@@ -103,7 +103,7 @@ External sports feeds represent concepts (tournaments, matches, odds) differentl
 Corrupted or stale odds feeds can lead to bad prediction outputs, which compromises system integrity. We must validate ingested feeds and audit the data state that triggered any given prediction.
 
 ### Options
-* **Option A**: Process all incoming feed records as-is and delegate validations to the prediction engine.
+* **Option A**: Process all incoming feed records as-is and delegate validation to downstream consumers.
 * **Option B**: Enforce validation checks at the ingestion parser boundary and stamp metadata (timestamp, provider source) onto all normalized objects.
 * **Option C**: Set up a secondary offline data validation and reconciliation process.
 

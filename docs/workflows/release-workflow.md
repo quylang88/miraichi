@@ -6,22 +6,31 @@ Steps for building, tagging, and releasing updates.
 Ensures that deployment milestones are achieved safely and tracked.
 
 ## Status
-- **Status**: Draft
+- **Status**: Active under ADR-0055
 
 ## Scope
 Directly plans versioning tags and release tasks.
 
 ## Release Steps
-1. Load `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
-2. Run `pnpm run verify:release`.
-3. Deploy to staging only if staging targets are configured. Phase 5.11 uses Cloudflare Pages project `miraichi-staging` for web/PWA staging.
-4. Run staging smoke checks and prepare phase closeout evidence.
-5. For intermediate phases, recommend the next safe phase instead of entering formal owner-feedback or production promotion.
-6. Enter final owner review only after all planned release phases are complete or explicitly removed from scope.
-7. Wait for explicit owner approval at final release review.
-8. Increment the version tag in CHANGELOG.md.
-9. Compile and package app container images if the final release scope requires them.
-10. Promote to production only after final owner approval.
 
-## TODO / Next Steps
-- [ ] Implement semantic-release workflow scripts.
+1. Load `.agent/skills/miraichi-delivery-lifecycle/SKILL.md` and follow `PROJECT_PLAN.md`.
+2. Make changes on a short-lived branch based on protected `staging`.
+3. Open a pull request to protected `staging`; `quality-gate` must pass with no deployment secrets.
+4. Merge to `staging`. The exact SHA automatically deploys through Cloudflare Worker Static Assets
+   and the Frankfurt Supabase Edge Function, then runs hosted verification.
+5. Review exact-SHA evidence and clean synthetic owner rows in the test finalizer.
+6. Open the sole `staging -> main` production pull request. Both `quality-gate` and
+   `release-candidate` must pass; no production-only content edit is allowed.
+7. The owner's merge is final production approval. The main push automatically runs backup-first
+   deployment to the isolated Singapore production environment and read-only smoke.
+8. Preserve the exact deployment/artifact evidence. On failure, use exact prior runtime IDs; never
+   roll schema backward or reset a linked database.
+
+Hotfixes follow protected main -> staging -> main, never a direct production push. Detailed steps,
+stop conditions, and recovery are in `docs/operations/PRODUCTION-DELIVERY.md` and
+`docs/operations/OWNER-DATA-RECOVERY.md`.
+
+## Required Checks
+
+- `staging`: `quality-gate`
+- `main`: `quality-gate`, `release-candidate`

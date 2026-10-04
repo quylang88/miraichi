@@ -14,12 +14,21 @@ const filesToVerify = [
   'apps/web/public/service-worker.ts',
   'apps/web/public/icons/icon.svg',
   'apps/web/src/pwa/register-service-worker.ts',
+  'apps/web/src/pwa/zoom-controller.ts',
+  'apps/web/src/auth-bootstrap.ts',
   'apps/web/src/shell-entry.ts',
   'apps/web/src/config/navigation-tabs.ts',
   'apps/web/src/components/app-shell.ts',
   'apps/web/src/components/bottom-navigation.ts',
+  'apps/web/src/components/screens/today-screen.ts',
+  'apps/web/src/components/screens/matches-screen.ts',
+  'apps/web/src/components/screens/bets-screen.ts',
+  'apps/web/src/components/screens/bankroll-screen.ts',
   'apps/web/src/services/settings-service.ts',
-  'apps/web/src/services/i18n-service.ts'
+  'apps/web/src/services/i18n-service.ts',
+  'apps/web/src/services/live-match-service.ts',
+  'apps/web/src/live/live-refresh-lifecycle.ts',
+  'apps/web/src/live/pull-down-refresh.ts'
 ];
 
 let failed = false;
@@ -40,8 +49,9 @@ if (fs.existsSync(webServerPath)) {
   const content = fs.readFileSync(webServerPath, 'utf8');
   
   // Verify viewport corrected
-  if (!content.includes('viewport-fit=cover') || !content.includes('initial-scale=1')) {
-    console.error('  ❌ Viewport viewport-fit=cover or initial-scale=1 missing or incorrect.');
+  if (!content.includes('viewport-fit=cover') || !content.includes('initial-scale=1')
+    || !content.includes('maximum-scale=1') || !content.includes('user-scalable=no')) {
+    console.error('  ❌ Viewport zoom constraints, viewport-fit=cover, or initial-scale=1 missing or incorrect.');
     failed = true;
   } else {
     console.log('  ✅ Viewport corrected for notch and iOS safe area.');
@@ -80,11 +90,17 @@ if (fs.existsSync(webServerPath)) {
     console.log('  ✅ Service worker registration script import found.');
   }
 
-  if (!content.includes('/apps/web/src/shell-entry.js')) {
-    console.error('  ❌ Production shell missing shell-entry.js script import.');
+  if (!content.includes('/apps/web/src/auth-bootstrap.js')) {
+    console.error('  ❌ Production shell missing owner auth bootstrap script import.');
     failed = true;
   } else {
-    console.log('  ✅ Production shell entry script import found.');
+    console.log('  ✅ Owner auth bootstrap script import found.');
+  }
+  if (content.includes('src="/apps/web/src/shell-entry.js"')) {
+    console.error('  ❌ Production shell bypasses owner auth with a direct shell-entry script import.');
+    failed = true;
+  } else {
+    console.log('  ✅ Production shell does not bypass owner auth.');
   }
 
   if (!content.includes('id="app-root"')) {
@@ -98,8 +114,9 @@ if (fs.existsSync(webServerPath)) {
   failed = true;
 }
 
-// 2a. Verify production shell is TypeScript-first and uses the accepted five-tab backbone
+// 2a. Verify production shell is TypeScript-first and uses the accepted four-tab backbone
 const productionShellFiles = [
+  'apps/web/src/auth-bootstrap.ts',
   'apps/web/src/shell-entry.ts',
   'apps/web/src/config/navigation-tabs.ts',
   'apps/web/src/components/app-shell.ts',
@@ -132,18 +149,57 @@ const serviceWorkerPath = path.join(ROOT_DIR, 'apps/web/public/service-worker.ts
 if (fs.existsSync(serviceWorkerPath)) {
   const content = fs.readFileSync(serviceWorkerPath, 'utf8');
   const requiredCacheMarkers = [
-    "miraichi-shell-v5-phase-5-12-quality-up",
-    "/apps/web/src/shell-entry.js",
-    "/apps/web/src/config/navigation-tabs.js",
-    "/apps/web/src/components/app-shell.js"
+    "miraichi-shell-__MIRAICHI_WEB_HASH__",
+    "/apps/web/src/auth-bootstrap.js",
+    "/apps/web/src/pwa/register-service-worker.js",
+    "/packages/ui/src/index.css"
   ];
 
   for (const marker of requiredCacheMarkers) {
     if (!content.includes(marker)) {
-      console.error(`  ❌ Service worker missing Phase 5.12 cache marker: ${marker}`);
+      console.error(`  ❌ Service worker missing structured Add Bet cache marker: ${marker}`);
       failed = true;
     } else {
-      console.log(`  ✅ Service worker Phase 5.12 cache marker found: ${marker}`);
+      console.log(`  ✅ Service worker structured Add Bet cache marker found: ${marker}`);
+    }
+  }
+}
+
+const ownerAuthBootstrapPath = path.join(ROOT_DIR, 'apps/web/src/auth-bootstrap.ts');
+if (fs.existsSync(ownerAuthBootstrapPath)) {
+  const content = fs.readFileSync(ownerAuthBootstrapPath, 'utf8');
+  for (const marker of ["/api/v1/auth/session", "import('./shell-entry.js')"]) {
+    if (!content.includes(marker)) {
+      console.error(`  ❌ Owner auth bootstrap missing gated-shell marker: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Owner auth bootstrap marker found: ${marker}`);
+    }
+  }
+}
+
+const zoomControllerPath = path.join(ROOT_DIR, 'apps/web/src/pwa/zoom-controller.ts');
+if (fs.existsSync(zoomControllerPath)) {
+  const content = fs.readFileSync(zoomControllerPath, 'utf8');
+  for (const marker of ['gesturestart', 'gesturechange', 'gestureend', "addEventListener('touchend'", 'passive: false']) {
+    if (!content.includes(marker)) {
+      console.error(`  ❌ Zoom controller missing best-effort gesture marker: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Zoom controller marker found: ${marker}`);
+    }
+  }
+}
+
+const shellStylesPath = path.join(ROOT_DIR, 'packages/ui/src/index.css');
+if (fs.existsSync(shellStylesPath)) {
+  const content = fs.readFileSync(shellStylesPath, 'utf8');
+  for (const marker of ['touch-action: pan-x pan-y', 'font-size: 16px']) {
+    if (!content.includes(marker)) {
+      console.error(`  ❌ Mobile zoom CSS marker missing: ${marker}`);
+      failed = true;
+    } else {
+      console.log(`  ✅ Mobile zoom CSS marker found: ${marker}`);
     }
   }
 }
@@ -165,8 +221,7 @@ if (fs.existsSync(navigationConfigPath)) {
     "'today'",
     "'matches'",
     "'bets'",
-    "'bankroll'",
-    "'miraichi'"
+    "'bankroll'"
   ];
 
   for (const marker of requiredTabs) {
@@ -195,21 +250,28 @@ if (fs.existsSync(navigationConfigPath)) {
 
 const appShellPath = path.join(ROOT_DIR, 'apps/web/src/components/app-shell.ts');
 if (fs.existsSync(appShellPath)) {
-  const content = fs.readFileSync(appShellPath, 'utf8');
+  const rendererPaths = [
+    appShellPath,
+    path.join(ROOT_DIR, 'apps/web/src/components/screens/today-screen.ts'),
+    path.join(ROOT_DIR, 'apps/web/src/components/screens/matches-screen.ts'),
+    path.join(ROOT_DIR, 'apps/web/src/components/screens/bets-screen.ts'),
+    path.join(ROOT_DIR, 'apps/web/src/components/screens/bankroll-screen.ts')
+  ];
+  const content = rendererPaths.filter((file) => fs.existsSync(file)).map((file) => fs.readFileSync(file, 'utf8')).join('\n');
   const requiredShellMarkers = [
     'data-production-shell="phase-5-9"',
     'data-production-baseline="black-apple-ledger"',
-    'data-settings-entry="miraichi-tab"',
     'data-add-bet-boundary="planned"',
     'class="main-scroll"',
     'id="screen-today"',
     'id="screen-match-detail"',
     'data-open-match',
     'data-open-scoped-add',
-    'data-open-edit',
-    'data-review-only',
+    'data-open-settlement',
+    'data-open-settled-detail',
+    'id="settlement-form"',
     'class="sheet-backdrop"',
-    'id="match-summary-readonly"'
+    'class="add-bet-team-row"'
   ];
 
   for (const marker of requiredShellMarkers) {

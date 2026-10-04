@@ -2,7 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as ts from 'typescript';
+import { buildSync } from 'esbuild';
 import { getIndexHtml } from '../src/index.js';
+import { readReleaseMetadata, type ReleaseMetadata } from '@miraichi/shared';
+import { sha256FileTree } from '../../../scripts/release/release-manifest.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,7 +17,8 @@ const SOURCE_ROOTS = [
   'apps/web/src',
   'packages/ui/src',
   'packages/shared/src',
-  'packages/config/src'
+  'packages/config/src',
+  'packages/agent-protocol/src'
 ];
 
 const PUBLIC_DIR = path.join(WEB_DIR, 'public');
@@ -106,14 +110,46 @@ function exportSourceTree(sourceRoot: string) {
 
 removeDirectory(DIST_DIR);
 ensureDirectory(DIST_DIR);
-fs.writeFileSync(path.join(DIST_DIR, 'index.html'), getIndexHtml());
+fs.writeFileSync(path.join(DIST_DIR, 'index.html'), getIndexHtml(''));
 copyDirectory(PUBLIC_DIR, DIST_DIR);
 
 for (const sourceRoot of SOURCE_ROOTS) {
   exportSourceTree(sourceRoot);
 }
 
-console.log(`[Web Static Build] Wrote Cloudflare Pages artifact to ${DIST_DIR}`);
+// Keep legacy module URLs for already-open older installations during the update.
+// New launches need only these two cached entries, with no network import waterfall.
+buildSync({
+  absWorkingDir: ROOT_DIR,
+  entryPoints: ['apps/web/src/auth-bootstrap.ts', 'apps/web/src/pwa/register-service-worker.ts'],
+  outbase: ROOT_DIR,
+  outdir: DIST_DIR,
+  bundle: true,
+  splitting: false,
+  format: 'esm',
+  platform: 'browser',
+  target: ['es2022', 'safari16.4'],
+  minify: true
+});
+
+const releaseMetadata: ReleaseMetadata = process.env.MIRAICHI_RELEASE_ENVIRONMENT
+  ? readReleaseMetadata(process.env)
+  : {
+      environment: 'local',
+      gitSha: '0'.repeat(40),
+      artifactVersion: 'local-build',
+      compatibilityVersion: 'owner-v1'
+    };
+const webHash = await sha256FileTree(DIST_DIR, { exclude: ['release.json'] });
+const serviceWorkerPath = path.join(DIST_DIR, 'service-worker.js');
+const serviceWorker = fs.readFileSync(serviceWorkerPath, 'utf8');
+if (!serviceWorker.includes('__MIRAICHI_WEB_HASH__')) {
+  throw new Error('Service worker cache placeholder is missing');
+}
+fs.writeFileSync(serviceWorkerPath, serviceWorker.replaceAll('__MIRAICHI_WEB_HASH__', webHash));
+fs.writeFileSync(path.join(DIST_DIR, 'release.json'), `${JSON.stringify(releaseMetadata, null, 2)}\n`);
+
+console.log(`[Web Static Build] Wrote Cloudflare Worker Static Assets artifact ${webHash} to ${DIST_DIR}`);
 
 function transpileTypeScriptFile(sourcePath: string) {
   const source = fs.readFileSync(sourcePath, 'utf8');

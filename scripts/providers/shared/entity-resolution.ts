@@ -1,16 +1,18 @@
+import { createHash } from 'node:crypto';
+
 /**
  * Provider-neutral entity resolution utilities.
  *
- * Canonical match IDs are derived from observable facts (date, team names)
- * — never from provider-specific IDs. This ensures the ID survives
- * deleting or swapping any provider adapter.
+ * Canonical match IDs are derived from stable competition and team identity
+ * fields — never from provider-specific IDs or a reschedulable kickoff.
  */
 
 export interface CanonicalMatchIdInput {
-  /** ISO 8601 UTC kickoff datetime */
-  kickoffUtc: string;
-  homeTeamName: string;
-  awayTeamName: string;
+  competitionId: string;
+  season: string;
+  normalizedRound: string;
+  homeTeamId: string;
+  awayTeamId: string;
 }
 
 export interface ProviderMatchCandidateInput {
@@ -23,18 +25,20 @@ export interface ProviderMatchCandidateInput {
 }
 
 /**
- * Build a stable, provider-neutral canonical match ID from the kickoff date
- * and normalized team names.
+ * Build a stable, provider-neutral canonical match ID from the configured
+ * competition, season, round, and canonical team IDs.
  *
- * Format: `match-<YYYYMMDD>-<home-slug>-<away-slug>`
- *
- * Example: `match-20260702-japan-vietnam`
+ * Format: `match-<first 24 SHA-256 hex chars>`.
  */
 export function buildCanonicalMatchId(input: CanonicalMatchIdInput): string {
-  const datePart = input.kickoffUtc.slice(0, 10).replace(/-/g, ''); // YYYYMMDD
-  const homeSlug = normalizeTeamName(input.homeTeamName);
-  const awaySlug = normalizeTeamName(input.awayTeamName);
-  return `match-${datePart}-${homeSlug}-${awaySlug}`;
+  const key = [
+    input.competitionId,
+    input.season,
+    input.normalizedRound,
+    input.homeTeamId,
+    input.awayTeamId
+  ].join('|');
+  return `match-${createHash('sha256').update(key, 'utf8').digest('hex').slice(0, 24)}`;
 }
 
 /**

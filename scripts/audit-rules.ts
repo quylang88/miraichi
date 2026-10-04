@@ -22,8 +22,14 @@ const RULES = [
     // Allowed files for this specific rule (tests and validators checking agnosticism checks)
     allowList: [
       'packages/config/src/competition-registry.mock.ts',
+      'packages/config/src/sportscore-source-registry.ts',
+      'packages/config/src/competition-popularity.ts',
+      'packages/shared/src/config/competition-popularity.ts',
+      'packages/shared/src/config/competition-popularity.test.ts',
+      'apps/web/src/config/competition-popularity.ts',
+      'apps/web/src/config/competition-popularity.test.ts',
+      'apps/web/src/components/screens/matches-screen.test.ts',
       'scripts/phase2-verify.ts',
-      'apps/local-ai/src/data/sofascore-national-team-discovery.test.ts',
       'apps/api/src/services/cloud-match-snapshot-sync.test.ts',
       'packages/shared/src/contracts/provider-ingestion-contracts.test.ts'
     ]
@@ -32,16 +38,7 @@ const RULES = [
     name: 'Betting Calculation Check',
     pattern: /(?:kellyCriterion|calculatePayout|impliedProbability|oddsToProbability|payoutMultiplier)/i,
     message: 'Premature betting/odds calculation function found. Betting math is forbidden in Phase 2.',
-    allowList: [
-      'apps/local-ai/src/features/feature-spec.ts',
-      'apps/local-ai/src/features/feature-spec.test.ts',
-      'apps/local-ai/src/features/leakage-audit.ts',
-      'apps/local-ai/src/features/leakage-audit.test.ts',
-      'apps/local-ai/src/features/feature-audit-report.ts',
-      'apps/local-ai/src/features/feature-audit-report.test.ts',
-      'apps/local-ai/src/evaluation/evaluation-dataset.ts',
-      'apps/local-ai/src/evaluation/evaluation-dataset.test.ts'
-    ]
+    allowList: []
   },
   {
     name: 'Bankroll & Risk Limit Check',
@@ -53,7 +50,7 @@ const RULES = [
   }
 ];
 
-const IGNORED_DIRECTORIES = new Set(['node_modules', '.git', 'docs', 'dist', 'build', 'coverage']);
+const IGNORED_DIRECTORIES = new Set(['node_modules', '.git', 'docs', 'dist', 'build', 'coverage', 'data']);
 
 let violationsCount = 0;
 

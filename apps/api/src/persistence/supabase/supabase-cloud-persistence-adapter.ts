@@ -1,11 +1,16 @@
 import type {
-  AddBetDraft, BackupExportReceipt, BankrollAccount, BankrollLedgerEntry, CloudBackupEnvelope,
-  CloudBetRecord, CloudMatchSnapshot, CreateBankrollAccountInput, CreateBankrollLedgerEntryInput,
-  LocalDataSnapshotStatus, LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery,
-  UpdateBankrollAccountInput
+  AddBetDraft, ApplyBetSettlementInput, BackupExportReceipt, BankrollAccount, BankrollLedgerEntry, BankrollTransferResult,
+  BetSettlementEvent, CloudBackupEnvelope, CloudBetRecord, CloudMatchSnapshot, CreateBankrollAccountInput, CreateBankrollLedgerEntryInput,
+  CreateBankrollTransferInput, DisciplineChallenge, DisciplineConfig, LocalDataSnapshotStatus, LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery,
+  UpdateBankrollAccountInput, AcquireLiveRefreshLeaseInput, FinishLiveRefreshInput, LiveMatchSnapshot, LiveRefreshState,
+  MarkBetSettlementManualReviewInput, OwnerProfileBackup
 } from '@miraichi/shared/src/contracts/index.js';
+import { createCloudBackupEnvelopeV3, verifyCloudBackupEnvelopeV3 } from '@miraichi/shared/src/contracts/index.js';
+import { assertValidLiveMatchSnapshot, sanitizeLiveRefreshErrorCode } from '@miraichi/shared/src/contracts/live-match-contracts.js';
 import type { CloudPersistenceAdapter } from '../cloud-persistence-adapter.js';
 import type { PostgresQueryClient } from './postgres-query-client.js';
+import { postgresJson, type PostgresJsonParameter } from './postgres-parameters.js';
+import { classifyMatchSnapshotFreshness } from '../../match-snapshot-freshness.js';
 
 type Row = Record<string, unknown>;
 export interface SupabaseCloudPersistenceOptions { client: PostgresQueryClient; ownerProfileId: string; now?: () => string }
@@ -14,14 +19,128 @@ const number = (value: unknown) => typeof value === 'number' ? value : Number(va
 const text = (value: unknown) => String(value ?? '');
 const optionalText = (value: unknown) => value == null ? undefined : String(value);
 const dateText = (value: unknown) => value instanceof Date ? value.toISOString() : text(value);
-const jsonb = (value: unknown): string => JSON.stringify(value);
+const jsonb = (value: unknown): PostgresJsonParameter => postgresJson(value);
+const MATCH_UPSERT_BATCH_SIZE = 500;
+
+function mapOwnerProfile(row: Row): OwnerProfileBackup {
+  const settings = typeof row.settings === 'object' && row.settings !== null && !Array.isArray(row.settings)
+    ? structuredClone(row.settings as Record<string, unknown>)
+    : {};
+  return {
+    ownerProfileId: text(row.id),
+    label: text(row.label),
+    settings,
+    createdAt: dateText(row.created_at),
+    updatedAt: dateText(row.updated_at)
+  };
+}
+
+function matchUpsertRow(match: LocalMatch): Row {
+  return {
+    id: match.id,
+    competition_id: match.competition.id,
+    competition_name: match.competition.name,
+    competition_type: match.competition.type,
+    season: match.competition.season,
+    kickoff_utc: match.kickoffUtc,
+    status: match.status,
+    home_team_id: match.homeTeam.id,
+    home_team_name: match.homeTeam.name,
+    home_country_code: match.homeTeam.countryCode ?? null,
+    away_team_id: match.awayTeam.id,
+    away_team_name: match.awayTeam.name,
+    away_country_code: match.awayTeam.countryCode ?? null,
+    home_score: match.score.home,
+    away_score: match.score.away,
+    venue: match.venue ?? null,
+    round_label: match.round ?? null,
+    stage: match.stage ?? null,
+    neutral_venue: match.neutralVenue ?? null,
+    source_refs: match.sourceRefs,
+    updated_at: match.updatedAt
+  };
+}
+
+async function upsertMatchBatch(
+  client: PostgresQueryClient,
+  owner: string,
+  snapshotId: string,
+  matches: readonly LocalMatch[]
+): Promise<void> {
+  await client.query(`
+    insert into miraichi_app.match_record (
+      id, owner_profile_id, snapshot_id, competition_id, competition_name, competition_type,
+      season, kickoff_utc, status, home_team_id, home_team_name, home_country_code,
+      away_team_id, away_team_name, away_country_code, home_score, away_score, venue,
+      round_label, stage, neutral_venue, source_refs, updated_at
+    )
+    select
+      row.id, $1, $2, row.competition_id, row.competition_name, row.competition_type,
+      row.season, row.kickoff_utc, row.status, row.home_team_id, row.home_team_name,
+      row.home_country_code, row.away_team_id, row.away_team_name, row.away_country_code,
+      row.home_score, row.away_score, row.venue, row.round_label, row.stage,
+      row.neutral_venue, row.source_refs, row.updated_at
+    from jsonb_to_recordset($3::jsonb) as row (
+      id text, competition_id text, competition_name text, competition_type text,
+      season text, kickoff_utc timestamptz, status text, home_team_id text,
+      home_team_name text, home_country_code text, away_team_id text, away_team_name text,
+      away_country_code text, home_score integer, away_score integer, venue text,
+      round_label text, stage text, neutral_venue boolean, source_refs jsonb, updated_at timestamptz
+    )
+    on conflict (id) do update set
+      snapshot_id=excluded.snapshot_id,
+      kickoff_utc=excluded.kickoff_utc,
+      competition_name=excluded.competition_name,
+      competition_type=excluded.competition_type,
+      home_team_name=excluded.home_team_name,
+      away_team_name=excluded.away_team_name,
+      home_country_code=excluded.home_country_code,
+      away_country_code=excluded.away_country_code,
+      venue=excluded.venue,
+      round_label=excluded.round_label,
+      stage=excluded.stage,
+      neutral_venue=excluded.neutral_venue,
+      status=excluded.status,
+      home_score=excluded.home_score,
+      away_score=excluded.away_score,
+      source_refs=excluded.source_refs,
+      updated_at=excluded.updated_at
+    where miraichi_app.match_record.owner_profile_id=excluded.owner_profile_id
+      and miraichi_app.match_record.competition_id=excluded.competition_id
+      and miraichi_app.match_record.season=excluded.season
+      and miraichi_app.match_record.home_team_id=excluded.home_team_id
+      and miraichi_app.match_record.away_team_id=excluded.away_team_id
+      and miraichi_app.match_record.updated_at <= excluded.updated_at
+      and (miraichi_app.match_record.status <> 'completed' or excluded.status = 'completed')
+  `, [owner, snapshotId, jsonb(matches.map(matchUpsertRow))]);
+}
 
 function mapDraft(row: Row): AddBetDraft {
   return {
     draftId: text(row.draft_id), matchGroupId: text(row.match_group_id), marketType: text(row.market_type) as AddBetDraft['marketType'],
+    ...(row.home_team_name == null ? {} : { homeTeamName: text(row.home_team_name) }),
+    ...(row.away_team_name == null ? {} : { awayTeamName: text(row.away_team_name) }),
+    ...(row.selection_label == null ? {} : { selectionLabel: text(row.selection_label) }),
+    ...(row.selection_code == null ? {} : { selectionCode: text(row.selection_code) as NonNullable<AddBetDraft['selectionCode']> }),
     ...(row.custom_market_label == null ? {} : { customMarketLabel: text(row.custom_market_label) }),
-    ...(row.line_value == null ? {} : { lineValue: number(row.line_value) }), oddsFormat: 'HK', oddsValue: number(row.odds_value),
-    stakePoints: number(row.stake_points), ...(row.notes == null ? {} : { notes: text(row.notes) }),
+    ...(row.market_period == null ? {} : { marketPeriod: text(row.market_period) as NonNullable<AddBetDraft['marketPeriod']> }),
+    ...(row.line_value == null ? {} : { lineValue: number(row.line_value) }),
+    ...(row.running_window == null ? {} : { runningWindow: text(row.running_window) as NonNullable<AddBetDraft['runningWindow']> }),
+    ...(row.running_goal_threshold == null ? {} : { runningGoalThreshold: number(row.running_goal_threshold) as NonNullable<AddBetDraft['runningGoalThreshold']> }),
+    ...(row.window_start_minute == null ? {} : { windowStartMinute: number(row.window_start_minute) }),
+    ...(row.window_end_minute == null ? {} : { windowEndMinute: number(row.window_end_minute) }),
+    ...(row.live_score_home == null ? {} : { liveScoreHome: number(row.live_score_home) }),
+    ...(row.live_score_away == null ? {} : { liveScoreAway: number(row.live_score_away) }),
+    ...(row.live_minute == null ? {} : { liveMinute: number(row.live_minute) }),
+    ...(row.live_context_source == null ? {} : { liveContextSource: text(row.live_context_source) as NonNullable<AddBetDraft['liveContextSource']> }),
+    ...(row.live_context_observed_at == null ? {} : { liveContextObservedAt: dateText(row.live_context_observed_at) }),
+    oddsFormat: 'HK', oddsValue: number(row.odds_value),
+    stakePoints: number(row.stake_points),
+    ...(row.pre_bet_emotion == null ? {} : { preBetEmotion: text(row.pre_bet_emotion) as NonNullable<AddBetDraft['preBetEmotion']> }),
+    ...(row.pre_bet_motivation == null ? {} : { preBetMotivation: text(row.pre_bet_motivation) as NonNullable<AddBetDraft['preBetMotivation']> }),
+    ...(row.pre_bet_plan_adherence == null ? {} : { preBetPlanAdherence: text(row.pre_bet_plan_adherence) as NonNullable<AddBetDraft['preBetPlanAdherence']> }),
+    ...(row.pre_bet_note == null ? {} : { preBetNote: text(row.pre_bet_note) }),
+    ...(row.notes == null ? {} : { notes: text(row.notes) }),
     tags: Array.isArray(row.tags) ? row.tags.map(String) : [], createdAt: dateText(row.created_at), updatedAt: dateText(row.updated_at)
   };
 }
@@ -31,9 +150,36 @@ function mapBet(row: Row): CloudBetRecord {
     ...(row.match_id == null ? {} : { matchId: text(row.match_id) }), homeTeamName: text(row.home_team_name), awayTeamName: text(row.away_team_name),
     ...(row.competition_label == null ? {} : { competitionLabel: text(row.competition_label) }), ...(row.season_label == null ? {} : { seasonLabel: text(row.season_label) }),
     marketType: text(row.market_type) as CloudBetRecord['marketType'], ...(row.custom_market_label == null ? {} : { customMarketLabel: text(row.custom_market_label) }),
-    selectionLabel: text(row.selection_label), ...(row.line_value == null ? {} : { lineValue: number(row.line_value) }), oddsFormat: 'HK', oddsValue: number(row.odds_value),
+    selectionLabel: text(row.selection_label),
+    ...(row.selection_code == null ? {} : { selectionCode: text(row.selection_code) as NonNullable<CloudBetRecord['selectionCode']> }),
+    ...(row.market_period == null ? {} : { marketPeriod: text(row.market_period) as NonNullable<CloudBetRecord['marketPeriod']> }),
+    ...(row.line_value == null ? {} : { lineValue: number(row.line_value) }),
+    ...(row.running_window == null ? {} : { runningWindow: text(row.running_window) as NonNullable<CloudBetRecord['runningWindow']> }),
+    ...(row.running_goal_threshold == null ? {} : { runningGoalThreshold: number(row.running_goal_threshold) as NonNullable<CloudBetRecord['runningGoalThreshold']> }),
+    ...(row.window_start_minute == null ? {} : { windowStartMinute: number(row.window_start_minute) }),
+    ...(row.window_end_minute == null ? {} : { windowEndMinute: number(row.window_end_minute) }),
+    ...(row.live_score_home == null ? {} : { liveScoreHome: number(row.live_score_home) }),
+    ...(row.live_score_away == null ? {} : { liveScoreAway: number(row.live_score_away) }),
+    ...(row.live_minute == null ? {} : { liveMinute: number(row.live_minute) }),
+    ...(row.live_context_source == null ? {} : { liveContextSource: text(row.live_context_source) as NonNullable<CloudBetRecord['liveContextSource']> }),
+    ...(row.live_context_observed_at == null ? {} : { liveContextObservedAt: dateText(row.live_context_observed_at) }),
+    oddsFormat: 'HK', oddsValue: number(row.odds_value),
     stakePoints: number(row.stake_points), status: text(row.status) as CloudBetRecord['status'],
     ...(row.settlement_note == null ? {} : { settlementNote: text(row.settlement_note) }), ...(row.manual_result_points == null ? {} : { manualResultPoints: number(row.manual_result_points) }),
+    ...(row.bankroll_account_id == null ? {} : { bankrollAccountId: text(row.bankroll_account_id) }),
+    ...(row.pre_bet_emotion == null ? {} : { preBetEmotion: text(row.pre_bet_emotion) as NonNullable<CloudBetRecord['preBetEmotion']> }),
+    ...(row.pre_bet_motivation == null ? {} : { preBetMotivation: text(row.pre_bet_motivation) as NonNullable<CloudBetRecord['preBetMotivation']> }),
+    ...(row.pre_bet_plan_adherence == null ? {} : { preBetPlanAdherence: text(row.pre_bet_plan_adherence) as NonNullable<CloudBetRecord['preBetPlanAdherence']> }),
+    ...(row.pre_bet_note == null ? {} : { preBetNote: text(row.pre_bet_note) }),
+    ...(row.discipline_snapshot == null ? {} : { disciplineSnapshot: row.discipline_snapshot as NonNullable<CloudBetRecord['disciplineSnapshot']> }),
+    ...(row.settlement_type == null ? {} : { settlementType: text(row.settlement_type) as NonNullable<CloudBetRecord['settlementType']> }),
+    ...(row.profit_loss_points == null ? {} : { profitLossPoints: number(row.profit_loss_points) }),
+    ...(row.settled_at == null ? {} : { settledAt: dateText(row.settled_at) }),
+    ...(row.settlement_review_status == null ? {} : { settlementReviewStatus: text(row.settlement_review_status) as NonNullable<CloudBetRecord['settlementReviewStatus']> }),
+    ...(row.settlement_review_reason == null ? {} : { settlementReviewReason: text(row.settlement_review_reason) as NonNullable<CloudBetRecord['settlementReviewReason']> }),
+    ...(row.settlement_evidence_at == null ? {} : { settlementEvidenceAt: dateText(row.settlement_evidence_at) }),
+    ...(row.post_bet_plan_adherence == null ? {} : { postBetPlanAdherence: text(row.post_bet_plan_adherence) as NonNullable<CloudBetRecord['postBetPlanAdherence']> }),
+    ...(row.post_bet_lesson_note == null ? {} : { postBetLessonNote: text(row.post_bet_lesson_note) }),
     ...(row.notes == null ? {} : { notes: text(row.notes) }), tags: Array.isArray(row.tags) ? row.tags.map(String) : [],
     createdAt: dateText(row.created_at), updatedAt: dateText(row.updated_at)
   };
@@ -42,10 +188,42 @@ function mapAccount(row: Row): BankrollAccount {
   return { accountId: text(row.account_id), ownerProfileId: text(row.owner_profile_id), label: text(row.label), unit: 'points', openingBalancePoints: number(row.opening_balance_points), currentBalancePoints: number(row.current_balance_points), archived: Boolean(row.archived), createdAt: dateText(row.created_at), updatedAt: dateText(row.updated_at) };
 }
 function mapLedger(row: Row): BankrollLedgerEntry {
-  return { entryId: text(row.entry_id), ownerProfileId: text(row.owner_profile_id), accountId: text(row.account_id), entryType: text(row.entry_type) as BankrollLedgerEntry['entryType'], amountPoints: number(row.amount_points), ...(row.note == null ? {} : { note: text(row.note) }), occurredAt: dateText(row.occurred_at), createdAt: dateText(row.created_at) };
+  return { entryId: text(row.entry_id), ownerProfileId: text(row.owner_profile_id), accountId: text(row.account_id), entryType: text(row.entry_type) as BankrollLedgerEntry['entryType'], amountPoints: number(row.amount_points), ...(row.note == null ? {} : { note: text(row.note) }), ...(row.transfer_id == null ? {} : { transferId: text(row.transfer_id) }), ...(row.bet_id == null ? {} : { betId: text(row.bet_id) }), ...(row.settlement_event_id == null ? {} : { settlementEventId: text(row.settlement_event_id) }), ...(row.effective_at == null ? {} : { effectiveAt: dateText(row.effective_at) }), occurredAt: dateText(row.occurred_at), createdAt: dateText(row.created_at) };
+}
+function mapDisciplineConfig(row: Row): DisciplineConfig {
+  return { ownerProfileId: text(row.owner_profile_id), dailyStopLossPoints: row.daily_stop_loss_points == null ? null : number(row.daily_stop_loss_points), weeklyStopLossPoints: row.weekly_stop_loss_points == null ? null : number(row.weekly_stop_loss_points), bigBetThresholdPoints: row.big_bet_threshold_points == null ? null : number(row.big_bet_threshold_points), timeZone: text(row.time_zone), weekStartDay: (row.week_start_day as 'monday' | 'sunday') ?? 'monday', cooldownSeconds: 15, version: number(row.version), updatedAt: dateText(row.updated_at) };
+}
+function mapChallenge(row: Row): DisciplineChallenge {
+  return { challengeId: text(row.challenge_id), ownerProfileId: text(row.owner_profile_id), payloadHash: text(row.payload_hash), ruleVersion: number(row.rule_version), triggeredRules: Array.isArray(row.triggered_rules) ? row.triggered_rules as DisciplineChallenge['triggeredRules'] : [], dailyProfitLossPoints: number(row.daily_profit_loss_points), weeklyProfitLossPoints: number(row.weekly_profit_loss_points), availableAt: dateText(row.available_at), createdAt: dateText(row.created_at), ...(row.consumed_at == null ? {} : { consumedAt: dateText(row.consumed_at) }) };
+}
+function mapSettlementEvent(row: Row): BetSettlementEvent {
+  return { settlementEventId: text(row.settlement_event_id), ownerProfileId: text(row.owner_profile_id), betId: text(row.bet_id), bankrollAccountId: text(row.bankroll_account_id), settlementType: text(row.settlement_type) as BetSettlementEvent['settlementType'], ...(row.plan_adherence == null ? {} : { planAdherence: text(row.plan_adherence) as NonNullable<BetSettlementEvent['planAdherence']> }), ...(row.lesson_note == null ? {} : { lessonNote: text(row.lesson_note) }), ...(row.profit_loss_points == null ? {} : { profitLossPoints: number(row.profit_loss_points) }), ...(row.adjustment_reason == null ? {} : { adjustmentReason: text(row.adjustment_reason) }), calculatedProfitLossPoints: number(row.calculated_profit_loss_points), ledgerDeltaPoints: number(row.ledger_delta_points), effectiveAt: dateText(row.effective_at), occurredAt: dateText(row.occurred_at), ...(row.corrects_settlement_event_id == null ? {} : { correctsSettlementEventId: text(row.corrects_settlement_event_id) }) };
 }
 function mapMatch(row: Row): LocalMatch {
-  return { id: text(row.id), competition: { id: text(row.competition_id), name: text(row.competition_name), type: 'national-team', season: text(row.season) }, kickoffUtc: dateText(row.kickoff_utc), status: text(row.status) as LocalMatch['status'], homeTeam: { id: text(row.home_team_id), name: text(row.home_team_name), ...(row.home_country_code == null ? {} : { countryCode: text(row.home_country_code) }) }, awayTeam: { id: text(row.away_team_id), name: text(row.away_team_name), ...(row.away_country_code == null ? {} : { countryCode: text(row.away_country_code) }) }, score: { home: row.home_score == null ? null : number(row.home_score), away: row.away_score == null ? null : number(row.away_score) }, ...(row.venue == null ? {} : { venue: text(row.venue) }), ...(row.round_label == null ? {} : { round: text(row.round_label) }), ...(row.stage == null ? {} : { stage: text(row.stage) }), ...(row.neutral_venue == null ? {} : { neutralVenue: Boolean(row.neutral_venue) }), sourceRefs: Array.isArray(row.source_refs) ? row.source_refs as LocalMatch['sourceRefs'] : [], updatedAt: dateText(row.updated_at) };
+  return { id: text(row.id), competition: { id: text(row.competition_id), name: text(row.competition_name), type: text(row.competition_type) as LocalMatch['competition']['type'], season: text(row.season) }, kickoffUtc: dateText(row.kickoff_utc), status: text(row.status) as LocalMatch['status'], homeTeam: { id: text(row.home_team_id), name: text(row.home_team_name), ...(row.home_country_code == null ? {} : { countryCode: text(row.home_country_code) }) }, awayTeam: { id: text(row.away_team_id), name: text(row.away_team_name), ...(row.away_country_code == null ? {} : { countryCode: text(row.away_country_code) }) }, score: { home: row.home_score == null ? null : number(row.home_score), away: row.away_score == null ? null : number(row.away_score) }, ...(row.venue == null ? {} : { venue: text(row.venue) }), ...(row.round_label == null ? {} : { round: text(row.round_label) }), ...(row.stage == null ? {} : { stage: text(row.stage) }), ...(row.neutral_venue == null ? {} : { neutralVenue: Boolean(row.neutral_venue) }), sourceRefs: Array.isArray(row.source_refs) ? row.source_refs as LocalMatch['sourceRefs'] : [], updatedAt: dateText(row.updated_at) };
+}
+
+function mapLiveSnapshot(row: Row): LiveMatchSnapshot {
+  const payload = typeof row.overlay_json === 'string' ? JSON.parse(row.overlay_json) as unknown : row.overlay_json;
+  assertValidLiveMatchSnapshot(payload as LiveMatchSnapshot);
+  return clone(payload as LiveMatchSnapshot);
+}
+
+function mapLiveRefreshState(row: Row): LiveRefreshState {
+  const leaseId = optionalText(row.lease_id);
+  const leaseAcquiredAt = row.lease_acquired_at == null ? undefined : dateText(row.lease_acquired_at);
+  const leaseExpiresAt = row.lease_expires_at == null ? undefined : dateText(row.lease_expires_at);
+  return {
+    status: text(row.status) as LiveRefreshState['status'],
+    reason: text(row.reason) as LiveRefreshState['reason'],
+    lastAttemptAt: dateText(row.last_attempt_at),
+    lastSuccessAt: row.last_success_at == null ? null : dateText(row.last_success_at),
+    lastCompletedAt: row.last_completed_at == null ? null : dateText(row.last_completed_at),
+    lastErrorCode: row.last_error_code == null ? null : sanitizeLiveRefreshErrorCode(row.last_error_code),
+    lease: leaseId && leaseAcquiredAt && leaseExpiresAt
+      ? { leaseId, acquiredAt: leaseAcquiredAt, expiresAt: leaseExpiresAt }
+      : null
+  };
 }
 
 export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPersistenceOptions): CloudPersistenceAdapter {
@@ -54,29 +232,179 @@ export function createSupabaseCloudPersistenceAdapter(options: SupabaseCloudPers
   const status = async (): Promise<LocalDataSnapshotStatus> => {
     const snapshot = await client.query<Row>('select snapshot_id, generated_at, imported_at, sources from miraichi_app.match_snapshot where owner_profile_id = $1 order by imported_at desc limit 1', [ownerProfileId]);
     if (!snapshot.rows[0]) return { snapshotId: 'cloud-missing', generatedAt: now(), importedAt: now(), matchCount: 0, competitions: [], sources: [], freshness: 'missing', warnings: ['Cloud match snapshot is unavailable.'] };
-    const counts = await client.query<Row>('select competition_id as id, competition_name as name, array_agg(distinct season) as seasons, count(*)::int as match_count from miraichi_app.match_record where owner_profile_id = $1 and snapshot_id = $2 group by competition_id, competition_name', [ownerProfileId, snapshot.rows[0].snapshot_id]);
-    return { snapshotId: text(snapshot.rows[0].snapshot_id), generatedAt: dateText(snapshot.rows[0].generated_at), importedAt: dateText(snapshot.rows[0].imported_at), matchCount: counts.rows.reduce((sum, row) => sum + number(row.match_count), 0), competitions: counts.rows.map((row) => ({ id: text(row.id), name: text(row.name), seasons: Array.isArray(row.seasons) ? row.seasons.map(String) : [], matchCount: number(row.match_count) })), sources: Array.isArray(snapshot.rows[0].sources) ? snapshot.rows[0].sources as LocalDataSnapshotStatus['sources'] : [], freshness: 'fresh', warnings: [] };
+    const counts = await client.query<Row>('select competition_id as id, competition_name as name, array_agg(distinct season) as seasons, count(*)::int as match_count from miraichi_app.match_record where owner_profile_id = $1 group by competition_id, competition_name', [ownerProfileId]);
+    const generatedAt = dateText(snapshot.rows[0].generated_at);
+    return { snapshotId: text(snapshot.rows[0].snapshot_id), generatedAt, importedAt: dateText(snapshot.rows[0].imported_at), matchCount: counts.rows.reduce((sum, row) => sum + number(row.match_count), 0), competitions: counts.rows.map((row) => ({ id: text(row.id), name: text(row.name), seasons: Array.isArray(row.seasons) ? row.seasons.map(String) : [], matchCount: number(row.match_count) })), sources: Array.isArray(snapshot.rows[0].sources) ? snapshot.rows[0].sources as LocalDataSnapshotStatus['sources'] : [], freshness: classifyMatchSnapshotFreshness(generatedAt, now()), warnings: [] };
   };
   return {
     getStatus: async () => { try { await client.query('select 1 as ok'); return { provider: 'supabase-postgres', mode: 'supabase', state: 'ready', checkedAt: now() }; } catch { return { provider: 'supabase-postgres', mode: 'supabase', state: 'unavailable', checkedAt: now(), message: 'Cloud database is unavailable.' }; } },
-    saveBetDraft: async (owner, draft) => { assertOwner(owner); const result = await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.bet_draft (draft_id,owner_profile_id,match_group_id,market_type,custom_market_label,line_value,odds_format,odds_value,stake_points,notes,tags,created_at,updated_at) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) on conflict (owner_profile_id,draft_id) do update set match_group_id=excluded.match_group_id,market_type=excluded.market_type,custom_market_label=excluded.custom_market_label,line_value=excluded.line_value,odds_value=excluded.odds_value,stake_points=excluded.stake_points,notes=excluded.notes,tags=excluded.tags,updated_at=excluded.updated_at returning *`, [owner,draft.draftId,draft.matchGroupId,draft.marketType,draft.customMarketLabel ?? null,draft.lineValue ?? null,draft.oddsFormat,draft.oddsValue,draft.stakePoints,draft.notes ?? null,jsonb(draft.tags ?? []),draft.createdAt,draft.updatedAt]); return result.rows[0] ? mapDraft(result.rows[0]) : clone(draft); },
+    saveBetDraft: async (owner, draft) => {
+      assertOwner(owner);
+      const result = await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing)
+        insert into miraichi_app.bet_draft (
+          draft_id,owner_profile_id,match_group_id,home_team_name,away_team_name,selection_label,selection_code,
+          market_type,custom_market_label,market_period,line_value,running_window,window_start_minute,window_end_minute,
+          live_score_home,live_score_away,live_minute,live_context_source,live_context_observed_at,
+          odds_format,odds_value,stake_points,pre_bet_emotion,pre_bet_motivation,pre_bet_plan_adherence,
+          pre_bet_note,notes,tags,created_at,updated_at,running_goal_threshold
+        ) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31)
+        on conflict (owner_profile_id,draft_id) do update set
+          match_group_id=excluded.match_group_id,home_team_name=excluded.home_team_name,away_team_name=excluded.away_team_name,
+          selection_label=excluded.selection_label,selection_code=excluded.selection_code,market_type=excluded.market_type,
+          custom_market_label=excluded.custom_market_label,market_period=excluded.market_period,line_value=excluded.line_value,
+          running_window=excluded.running_window,running_goal_threshold=excluded.running_goal_threshold,window_start_minute=excluded.window_start_minute,
+          window_end_minute=excluded.window_end_minute,live_score_home=excluded.live_score_home,
+          live_score_away=excluded.live_score_away,live_minute=excluded.live_minute,
+          live_context_source=excluded.live_context_source,live_context_observed_at=excluded.live_context_observed_at,
+          odds_format=excluded.odds_format,odds_value=excluded.odds_value,stake_points=excluded.stake_points,
+          pre_bet_emotion=excluded.pre_bet_emotion,pre_bet_motivation=excluded.pre_bet_motivation,
+          pre_bet_plan_adherence=excluded.pre_bet_plan_adherence,pre_bet_note=excluded.pre_bet_note,
+          notes=excluded.notes,tags=excluded.tags,updated_at=excluded.updated_at returning *`, [
+        owner,draft.draftId,draft.matchGroupId,draft.homeTeamName ?? null,draft.awayTeamName ?? null,
+        draft.selectionLabel ?? null,draft.selectionCode ?? null,draft.marketType,draft.customMarketLabel ?? null,
+        draft.marketPeriod ?? null,draft.lineValue ?? null,draft.runningWindow ?? null,draft.windowStartMinute ?? null,
+        draft.windowEndMinute ?? null,draft.liveScoreHome ?? null,draft.liveScoreAway ?? null,draft.liveMinute ?? null,
+        draft.liveContextSource ?? null,draft.liveContextObservedAt ?? null,draft.oddsFormat,draft.oddsValue,
+        draft.stakePoints,draft.preBetEmotion ?? null,draft.preBetMotivation ?? null,draft.preBetPlanAdherence ?? null,
+        draft.preBetNote ?? null,draft.notes ?? null,jsonb(draft.tags ?? []),draft.createdAt,draft.updatedAt,
+        draft.runningGoalThreshold ?? null
+      ]);
+      return result.rows[0] ? mapDraft(result.rows[0]) : clone(draft);
+    },
     listBetDrafts: async (owner) => { assertOwner(owner); const result = await client.query<Row>('select * from miraichi_app.bet_draft where owner_profile_id = $1 order by updated_at desc', [owner]); return result.rows.map(mapDraft); },
     deleteBetDraft: async (owner,id) => { assertOwner(owner); return (await client.query('delete from miraichi_app.bet_draft where owner_profile_id = $1 and draft_id = $2',[owner,id])).rowCount > 0; },
-    createBetRecord: async (record) => { assertOwner(record.ownerProfileId); const result = await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.bet_record (bet_id,owner_profile_id,match_group_id,match_id,home_team_name,away_team_name,competition_label,season_label,market_type,custom_market_label,selection_label,line_value,odds_format,odds_value,stake_points,status,settlement_note,manual_result_points,notes,tags,created_at,updated_at) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) returning *`, [record.ownerProfileId,record.betId,record.matchGroupId,record.matchId ?? null,record.homeTeamName,record.awayTeamName,record.competitionLabel ?? null,record.seasonLabel ?? null,record.marketType,record.customMarketLabel ?? null,record.selectionLabel,record.lineValue ?? null,record.oddsFormat,record.oddsValue,record.stakePoints,record.status,record.settlementNote ?? null,record.manualResultPoints ?? null,record.notes ?? null,jsonb(record.tags ?? []),record.createdAt,record.updatedAt]); return result.rows[0] ? mapBet(result.rows[0]) : clone(record); },
+    createBetRecord: async (record) => {
+      assertOwner(record.ownerProfileId);
+      const result = await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing)
+        insert into miraichi_app.bet_record (
+          bet_id,owner_profile_id,match_group_id,match_id,home_team_name,away_team_name,competition_label,season_label,
+          market_type,custom_market_label,selection_label,selection_code,market_period,line_value,running_window,
+          window_start_minute,window_end_minute,live_score_home,live_score_away,live_minute,live_context_source,
+          live_context_observed_at,odds_format,odds_value,stake_points,status,settlement_note,manual_result_points,
+          notes,tags,created_at,updated_at,bankroll_account_id,pre_bet_emotion,pre_bet_motivation,
+          pre_bet_plan_adherence,pre_bet_note,discipline_snapshot,settlement_type,profit_loss_points,settled_at,
+          post_bet_plan_adherence,post_bet_lesson_note,running_goal_threshold,settlement_review_status,
+          settlement_review_reason,settlement_evidence_at
+        ) values ($2,$1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47) returning *`, [
+        record.ownerProfileId,record.betId,record.matchGroupId,record.matchId ?? null,record.homeTeamName,
+        record.awayTeamName,record.competitionLabel ?? null,record.seasonLabel ?? null,record.marketType,
+        record.customMarketLabel ?? null,record.selectionLabel,record.selectionCode ?? null,record.marketPeriod ?? null,
+        record.lineValue ?? null,record.runningWindow ?? null,record.windowStartMinute ?? null,
+        record.windowEndMinute ?? null,record.liveScoreHome ?? null,record.liveScoreAway ?? null,record.liveMinute ?? null,
+        record.liveContextSource ?? null,record.liveContextObservedAt ?? null,record.oddsFormat,record.oddsValue,
+        record.stakePoints,record.status,record.settlementNote ?? null,record.manualResultPoints ?? null,
+        record.notes ?? null,jsonb(record.tags ?? []),record.createdAt,record.updatedAt,record.bankrollAccountId ?? null,
+        record.preBetEmotion ?? null,record.preBetMotivation ?? null,record.preBetPlanAdherence ?? null,
+        record.preBetNote ?? null,record.disciplineSnapshot ? jsonb(record.disciplineSnapshot) : null,
+        record.settlementType ?? null,record.profitLossPoints ?? null,record.settledAt ?? null,
+        record.postBetPlanAdherence ?? null,record.postBetLessonNote ?? null,record.runningGoalThreshold ?? null,
+        record.settlementReviewStatus ?? null,record.settlementReviewReason ?? null,record.settlementEvidenceAt ?? null
+      ]);
+      return result.rows[0] ? mapBet(result.rows[0]) : clone(record);
+    },
     listBetRecords: async (owner) => { assertOwner(owner); return (await client.query<Row>('select * from miraichi_app.bet_record where owner_profile_id = $1 order by updated_at desc',[owner])).rows.map(mapBet); },
-    updateBetRecord: async (record) => { assertOwner(record.ownerProfileId); const result = await client.query<Row>('update miraichi_app.bet_record set status=$3,settlement_note=$4,manual_result_points=$5,notes=$6,tags=$7,updated_at=$8 where owner_profile_id=$1 and bet_id=$2 returning *',[record.ownerProfileId,record.betId,record.status,record.settlementNote ?? null,record.manualResultPoints ?? null,record.notes ?? null,jsonb(record.tags ?? []),record.updatedAt]); if (!result.rows[0]) throw new Error('Bet record not found'); return mapBet(result.rows[0]); },
-    createBankrollAccount: async (input: CreateBankrollAccountInput) => { assertOwner(input.ownerProfileId); const created=now(); const result=await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.bankroll_account (account_id,owner_profile_id,label,unit,opening_balance_points,current_balance_points,archived,created_at,updated_at) values ($2,$1,$3,'points',$4,$4,false,$5,$5) returning *`,[input.ownerProfileId,input.accountId,input.label,input.openingBalancePoints,created]); return result.rows[0] ? mapAccount(result.rows[0]) : { ...input, unit:'points',currentBalancePoints:input.openingBalancePoints,archived:false,createdAt:created,updatedAt:created }; },
+    listPendingBetRecordsByMatchIds: async (owner,matchIds,limit) => { assertOwner(owner); if(!matchIds.length)return []; const result=await client.query<Row>("select * from miraichi_app.bet_record where owner_profile_id=$1 and status='pending' and match_id=any($2::text[]) order by created_at,bet_id limit $3",[owner,matchIds,limit]);return result.rows.map(mapBet); },
+    updateBetRecord: async (record) => { assertOwner(record.ownerProfileId); const result = await client.query<Row>('update miraichi_app.bet_record set status=$3,settlement_note=$4,manual_result_points=$5,notes=$6,tags=$7,updated_at=$8,bankroll_account_id=$9,pre_bet_emotion=$10,pre_bet_motivation=$11,pre_bet_plan_adherence=$12,pre_bet_note=$13,discipline_snapshot=$14,settlement_type=$15,profit_loss_points=$16,settled_at=$17,post_bet_plan_adherence=$18,post_bet_lesson_note=$19,settlement_review_status=$20,settlement_review_reason=$21,settlement_evidence_at=$22 where owner_profile_id=$1 and bet_id=$2 returning *',[record.ownerProfileId,record.betId,record.status,record.settlementNote ?? null,record.manualResultPoints ?? null,record.notes ?? null,jsonb(record.tags ?? []),record.updatedAt,record.bankrollAccountId ?? null,record.preBetEmotion ?? null,record.preBetMotivation ?? null,record.preBetPlanAdherence ?? null,record.preBetNote ?? null,record.disciplineSnapshot ? jsonb(record.disciplineSnapshot) : null,record.settlementType ?? null,record.profitLossPoints ?? null,record.settledAt ?? null,record.postBetPlanAdherence ?? null,record.postBetLessonNote ?? null,record.settlementReviewStatus ?? null,record.settlementReviewReason ?? null,record.settlementEvidenceAt ?? null]); if (!result.rows[0]) throw new Error('Bet record not found'); return mapBet(result.rows[0]); },
+    markBetSettlementManualReview: async (input:MarkBetSettlementManualReviewInput) => { assertOwner(input.ownerProfileId); const row=(await client.query<Row>("update miraichi_app.bet_record set settlement_review_status='manual_required',settlement_review_reason=$3,settlement_evidence_at=$4,updated_at=$5 where owner_profile_id=$1 and bet_id=$2 and status='pending' returning *",[input.ownerProfileId,input.betId,input.reason,input.evidenceAt,input.updatedAt])).rows[0];return row?mapBet(row):null; },
+    getDisciplineConfig: async (owner) => { assertOwner(owner); const row=(await client.query<Row>('select * from miraichi_app.discipline_config where owner_profile_id=$1',[owner])).rows[0]; return row ? mapDisciplineConfig(row) : null; },
+    upsertDisciplineConfig: async (config) => { assertOwner(config.ownerProfileId); const row=(await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.discipline_config (owner_profile_id,daily_stop_loss_points,weekly_stop_loss_points,big_bet_threshold_points,time_zone,week_start_day,cooldown_seconds,version,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict (owner_profile_id) do update set daily_stop_loss_points=excluded.daily_stop_loss_points,weekly_stop_loss_points=excluded.weekly_stop_loss_points,big_bet_threshold_points=excluded.big_bet_threshold_points,time_zone=excluded.time_zone,week_start_day=excluded.week_start_day,cooldown_seconds=excluded.cooldown_seconds,version=excluded.version,updated_at=excluded.updated_at returning *`,[config.ownerProfileId,config.dailyStopLossPoints,config.weeklyStopLossPoints,config.bigBetThresholdPoints,config.timeZone,config.weekStartDay ?? 'monday',config.cooldownSeconds,config.version,config.updatedAt])).rows[0]; return row ? mapDisciplineConfig(row) : clone({ ...config, weekStartDay: config.weekStartDay ?? 'monday' }); },
+    createDisciplineChallenge: async (challenge) => { assertOwner(challenge.ownerProfileId); const row=(await client.query<Row>('insert into miraichi_app.discipline_challenge (challenge_id,owner_profile_id,payload_hash,rule_version,triggered_rules,daily_profit_loss_points,weekly_profit_loss_points,available_at,created_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *',[challenge.challengeId,challenge.ownerProfileId,challenge.payloadHash,challenge.ruleVersion,jsonb(challenge.triggeredRules),challenge.dailyProfitLossPoints,challenge.weeklyProfitLossPoints,challenge.availableAt,challenge.createdAt])).rows[0]; return row ? mapChallenge(row) : clone(challenge); },
+    findDisciplineChallenge: async (owner,id) => { assertOwner(owner); const row=(await client.query<Row>('select * from miraichi_app.discipline_challenge where owner_profile_id=$1 and challenge_id=$2',[owner,id])).rows[0]; return row ? mapChallenge(row) : null; },
+    consumeDisciplineChallenge: async (owner,id,consumedAt) => { assertOwner(owner); const row=(await client.query<Row>('update miraichi_app.discipline_challenge set consumed_at=$3 where owner_profile_id=$1 and challenge_id=$2 and consumed_at is null returning *',[owner,id,consumedAt])).rows[0]; return row ? mapChallenge(row) : null; },
+    applyBetSettlement: async (input: ApplyBetSettlementInput) => { assertOwner(input.record.ownerProfileId); return client.transaction(async (tx) => {
+      const locked=(await tx.query<Row>('select * from miraichi_app.bet_record where owner_profile_id=$1 and bet_id=$2 for update',[input.record.ownerProfileId,input.record.betId])).rows[0];
+      if(!locked)throw new Error('Bet record not found');
+      const existing=(await tx.query<Row>('select * from miraichi_app.bet_settlement_event where owner_profile_id=$1 and settlement_event_id=$2',[input.event.ownerProfileId,input.event.settlementEventId])).rows[0];
+      if(existing){if(text(existing.bet_id)!==input.event.betId||text(existing.bankroll_account_id)!==input.event.bankrollAccountId||text(existing.settlement_type)!==input.event.settlementType)throw new Error('Settlement idempotency conflict');const entry=(await tx.query<Row>('select * from miraichi_app.bankroll_ledger_entry where owner_profile_id=$1 and settlement_event_id=$2',[input.event.ownerProfileId,input.event.settlementEventId])).rows[0];const account=(await tx.query<Row>('select * from miraichi_app.bankroll_account where owner_profile_id=$1 and account_id=$2',[input.event.ownerProfileId,input.event.bankrollAccountId])).rows[0];if(!entry||!account)throw new Error('Settlement idempotency state is incomplete');return{record:mapBet(locked),event:mapSettlementEvent(existing),ledgerEntry:mapLedger(entry),account:mapAccount(account)};}
+      if(text(locked.status)!=='pending'&&!input.event.correctsSettlementEventId)throw new Error('Bet is already settled');
+      const eventRow=(await tx.query<Row>('insert into miraichi_app.bet_settlement_event (settlement_event_id,owner_profile_id,bet_id,bankroll_account_id,settlement_type,plan_adherence,lesson_note,profit_loss_points,adjustment_reason,calculated_profit_loss_points,ledger_delta_points,effective_at,occurred_at,corrects_settlement_event_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) returning *',[input.event.settlementEventId,input.event.ownerProfileId,input.event.betId,input.event.bankrollAccountId,input.event.settlementType,input.event.planAdherence??null,input.event.lessonNote??null,input.event.profitLossPoints??null,input.event.adjustmentReason??null,input.event.calculatedProfitLossPoints,input.event.ledgerDeltaPoints,input.event.effectiveAt,input.event.occurredAt,input.event.correctsSettlementEventId??null])).rows[0];
+      const recordRow=(await tx.query<Row>('update miraichi_app.bet_record set status=$3,settlement_type=$4,profit_loss_points=$5,settled_at=$6,post_bet_plan_adherence=$7,post_bet_lesson_note=$8,updated_at=$9,settlement_review_status=$10,settlement_review_reason=$11,settlement_evidence_at=$12 where owner_profile_id=$1 and bet_id=$2 returning *',[input.record.ownerProfileId,input.record.betId,input.record.status,input.record.settlementType??null,input.record.profitLossPoints??null,input.record.settledAt??null,input.record.postBetPlanAdherence??null,input.record.postBetLessonNote??null,input.record.updatedAt,input.record.settlementReviewStatus??null,input.record.settlementReviewReason??null,input.record.settlementEvidenceAt??null])).rows[0];
+      const entryRow=(await tx.query<Row>('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,bet_id,settlement_event_id,effective_at,occurred_at,created_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning *',[input.ledgerEntry.entryId,input.ledgerEntry.ownerProfileId,input.ledgerEntry.accountId,input.ledgerEntry.entryType,input.ledgerEntry.amountPoints,input.ledgerEntry.note??null,input.ledgerEntry.betId??null,input.ledgerEntry.settlementEventId??null,input.ledgerEntry.effectiveAt??null,input.ledgerEntry.occurredAt,now()])).rows[0];
+      const accountRow=(await tx.query<Row>('update miraichi_app.bankroll_account set current_balance_points=current_balance_points+$3,updated_at=$4 where owner_profile_id=$1 and account_id=$2 returning *',[input.event.ownerProfileId,input.event.bankrollAccountId,input.ledgerEntry.amountPoints,now()])).rows[0];
+      if(!eventRow||!recordRow||!entryRow||!accountRow)throw new Error('Settlement transaction failed');return{record:mapBet(recordRow),event:mapSettlementEvent(eventRow),ledgerEntry:mapLedger(entryRow),account:mapAccount(accountRow)};
+    }); },
+    listBetSettlementEvents: async (owner,betId) => { assertOwner(owner); const result=betId?await client.query<Row>('select * from miraichi_app.bet_settlement_event where owner_profile_id=$1 and bet_id=$2 order by occurred_at',[owner,betId]):await client.query<Row>('select * from miraichi_app.bet_settlement_event where owner_profile_id=$1 order by occurred_at',[owner]); return result.rows.map(mapSettlementEvent); },
+    createBankrollAccount: async (input: CreateBankrollAccountInput) => { assertOwner(input.ownerProfileId); if(!Number.isFinite(input.openingBalancePoints)||input.openingBalancePoints<=0)throw new Error('Opening bankroll must be positive'); const created=now(); const result=await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.bankroll_account (account_id,owner_profile_id,label,unit,opening_balance_points,current_balance_points,archived,created_at,updated_at) values ($2,$1,$3,'points',$4,$4,false,$5,$5) returning *`,[input.ownerProfileId,input.accountId,input.label,input.openingBalancePoints,created]); return result.rows[0] ? mapAccount(result.rows[0]) : { ...input, unit:'points',currentBalancePoints:input.openingBalancePoints,archived:false,createdAt:created,updatedAt:created }; },
     listBankrollAccounts: async (owner) => { assertOwner(owner); return (await client.query<Row>('select * from miraichi_app.bankroll_account where owner_profile_id=$1 order by created_at',[owner])).rows.map(mapAccount); },
     updateBankrollAccount: async (input: UpdateBankrollAccountInput) => { assertOwner(input.ownerProfileId); const result=await client.query<Row>('update miraichi_app.bankroll_account set label=coalesce($3,label),archived=coalesce($4,archived),updated_at=$5 where owner_profile_id=$1 and account_id=$2 returning *',[input.ownerProfileId,input.accountId,input.label ?? null,input.archived ?? null,now()]); if(!result.rows[0]) throw new Error('Bankroll account not found'); return mapAccount(result.rows[0]); },
-    createBankrollLedgerEntry: async (input: CreateBankrollLedgerEntryInput) => { assertOwner(input.ownerProfileId); const created=now(); return client.transaction(async (tx) => { const inserted=await tx.query<Row>('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,occurred_at,created_at) values ($1,$2,$3,$4,$5,$6,$7,$8) returning *',[input.entryId,input.ownerProfileId,input.accountId,input.entryType,input.amountPoints,input.note ?? null,input.occurredAt,created]); const updated=await tx.query<Row>('update miraichi_app.bankroll_account set current_balance_points=current_balance_points+$3,updated_at=$4 where owner_profile_id=$1 and account_id=$2 and archived=false returning account_id',[input.ownerProfileId,input.accountId,input.amountPoints,created]); if(!updated.rowCount) throw new Error('Bankroll account not found or archived'); return inserted.rows[0] ? mapLedger(inserted.rows[0]) : { ...input, createdAt:created }; }); },
+    createBankrollLedgerEntry: async (input: CreateBankrollLedgerEntryInput) => { assertOwner(input.ownerProfileId); if((input.entryType==='deposit'&&input.amountPoints<=0)||(input.entryType==='withdrawal'&&input.amountPoints>=0))throw new Error('Manual ledger entry sign is invalid');if(!Number.isFinite(input.amountPoints)||input.amountPoints===0)throw new Error('Manual ledger amount is invalid'); const created=now(); return client.transaction(async (tx) => { const inserted=await tx.query<Row>('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,occurred_at,created_at) values ($1,$2,$3,$4,$5,$6,$7,$8) returning *',[input.entryId,input.ownerProfileId,input.accountId,input.entryType,input.amountPoints,input.note ?? null,input.occurredAt,created]); const balanceGuard=input.entryType==='withdrawal'?' and current_balance_points+$3>=0':'';const updated=await tx.query<Row>(`update miraichi_app.bankroll_account set current_balance_points=current_balance_points+$3,updated_at=$4 where owner_profile_id=$1 and account_id=$2 and archived=false${balanceGuard} returning account_id`,[input.ownerProfileId,input.accountId,input.amountPoints,created]); if(!updated.rowCount) throw new Error(input.entryType==='withdrawal'?'Insufficient bankroll balance or account unavailable':'Bankroll account not found or archived'); return inserted.rows[0] ? mapLedger(inserted.rows[0]) : { ...input, createdAt:created }; }); },
     listBankrollLedgerEntries: async (owner,accountId) => { assertOwner(owner); return (await client.query<Row>('select * from miraichi_app.bankroll_ledger_entry where owner_profile_id=$1 and account_id=$2 order by occurred_at desc',[owner,accountId])).rows.map(mapLedger); },
-    upsertMatchSnapshot: async (owner,snapshot: CloudMatchSnapshot) => { assertOwner(owner); await client.transaction(async (tx) => { await tx.query(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.match_snapshot (snapshot_id,owner_profile_id,generated_at,imported_at,sources) values ($2,$1,$3,$4,$5) on conflict (snapshot_id) do update set generated_at=excluded.generated_at,imported_at=excluded.imported_at,sources=excluded.sources`,[owner,snapshot.snapshotId,snapshot.generatedAt,snapshot.importedAt,jsonb(snapshot.sources)]); for(const match of snapshot.matches) await tx.query(`insert into miraichi_app.match_record (id,owner_profile_id,snapshot_id,competition_id,competition_name,competition_type,season,kickoff_utc,status,home_team_id,home_team_name,home_country_code,away_team_id,away_team_name,away_country_code,home_score,away_score,venue,round_label,stage,neutral_venue,source_refs,updated_at) values ($1,$2,$3,$4,$5,'national-team',$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) on conflict (id) do update set snapshot_id=excluded.snapshot_id,status=excluded.status,home_score=excluded.home_score,away_score=excluded.away_score,source_refs=excluded.source_refs,updated_at=excluded.updated_at`,[match.id,owner,snapshot.snapshotId,match.competition.id,match.competition.name,match.competition.season,match.kickoffUtc,match.status,match.homeTeam.id,match.homeTeam.name,match.homeTeam.countryCode ?? null,match.awayTeam.id,match.awayTeam.name,match.awayTeam.countryCode ?? null,match.score.home,match.score.away,match.venue ?? null,match.round ?? null,match.stage ?? null,match.neutralVenue ?? null,jsonb(match.sourceRefs),match.updatedAt]); }); },
-    listCloudMatches: async (owner,query: LocalMatchSnapshotQuery): Promise<LocalMatchFeedResponse> => { assertOwner(owner); const values: unknown[]=[owner]; const where=['owner_profile_id=$1']; if(query.date){values.push(query.date);where.push(`kickoff_utc::date=$${values.length}::date`);} if(query.competitionId){values.push(query.competitionId);where.push(`competition_id=$${values.length}`);} if(query.status){values.push(query.status);where.push(`status=$${values.length}`);} const rows=await client.query<Row>(`select * from miraichi_app.match_record where ${where.join(' and ')} order by kickoff_utc`,values); return {matches:rows.rows.map(mapMatch),snapshot:await status()}; },
+    createBankrollTransfer: async (input: CreateBankrollTransferInput): Promise<BankrollTransferResult> => { assertOwner(input.ownerProfileId); if(input.fromAccountId===input.toAccountId||!Number.isFinite(input.amountPoints)||input.amountPoints<=0)throw new Error('Transfer payload is invalid'); return client.transaction(async(tx)=>{const created=now();const out=(await tx.query<Row>('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,transfer_id,occurred_at,created_at) values ($1,$2,$3,\'transfer_out\',$4,$5,$6,$7,$8) returning *',[`transfer:${input.transferId}:out`,input.ownerProfileId,input.fromAccountId,-input.amountPoints,input.note??null,input.transferId,input.occurredAt,created])).rows[0];const incoming=(await tx.query<Row>('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,transfer_id,occurred_at,created_at) values ($1,$2,$3,\'transfer_in\',$4,$5,$6,$7,$8) returning *',[`transfer:${input.transferId}:in`,input.ownerProfileId,input.toAccountId,input.amountPoints,input.note??null,input.transferId,input.occurredAt,created])).rows[0];const from=(await tx.query<Row>('update miraichi_app.bankroll_account set current_balance_points=current_balance_points-$3,updated_at=$4 where owner_profile_id=$1 and account_id=$2 and archived=false and current_balance_points>=$3 returning *',[input.ownerProfileId,input.fromAccountId,input.amountPoints,created])).rows[0];if(!from)throw new Error('Insufficient bankroll balance or source account unavailable');const to=(await tx.query<Row>('update miraichi_app.bankroll_account set current_balance_points=current_balance_points+$3,updated_at=$4 where owner_profile_id=$1 and account_id=$2 and archived=false returning *',[input.ownerProfileId,input.toAccountId,input.amountPoints,created])).rows[0];if(!out||!incoming||!to)throw new Error('Transfer transaction failed');return{fromAccount:mapAccount(from),toAccount:mapAccount(to),outEntry:mapLedger(out),inEntry:mapLedger(incoming)};}); },
+    upsertMatchSnapshot: async (owner,snapshot: CloudMatchSnapshot) => { assertOwner(owner); await client.transaction(async (tx) => { await tx.query(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.match_snapshot (snapshot_id,owner_profile_id,generated_at,imported_at,sources) values ($2,$1,$3,$4,$5) on conflict (snapshot_id) do update set generated_at=excluded.generated_at,imported_at=excluded.imported_at,sources=excluded.sources`,[owner,snapshot.snapshotId,snapshot.generatedAt,snapshot.importedAt,jsonb(snapshot.sources)]); for(let index=0;index<snapshot.matches.length;index+=MATCH_UPSERT_BATCH_SIZE)await upsertMatchBatch(tx,owner,snapshot.snapshotId,snapshot.matches.slice(index,index+MATCH_UPSERT_BATCH_SIZE)); }); },
+    listCloudMatches: async (owner,query: LocalMatchSnapshotQuery): Promise<LocalMatchFeedResponse> => { assertOwner(owner); const values: unknown[]=[owner]; const where=['owner_profile_id=$1']; if(query.date){ if(query.timezone && query.timezone !== 'UTC'){ values.push(query.date, query.timezone); where.push(`timezone($${values.length}, kickoff_utc)::date=$${values.length-1}::date`); } else { values.push(query.date); where.push(`kickoff_utc::date=$${values.length}::date`); } } if(query.competitionId){values.push(query.competitionId);where.push(`competition_id=$${values.length}`);} if(query.status){values.push(query.status);where.push(`status=$${values.length}`);} const rows=await client.query<Row>(`select * from miraichi_app.match_record where ${where.join(' and ')} order by kickoff_utc`,values); return {matches:rows.rows.map(mapMatch),snapshot:await status()}; },
     findCloudMatchById: async (owner,id) => { assertOwner(owner); const row=(await client.query<Row>('select * from miraichi_app.match_record where owner_profile_id=$1 and id=$2',[owner,id])).rows[0]; return row ? mapMatch(row) : null; },
     getCloudMatchSnapshotStatus: async (owner) => { assertOwner(owner); return status(); },
-    exportOwnerData: async (owner,exportedAt): Promise<CloudBackupEnvelope> => { assertOwner(owner); return {schemaVersion:'miraichi.cloud-backup.v1',exportedAt,ownerProfileId:owner,drafts:[...(await client.query<Row>('select * from miraichi_app.bet_draft where owner_profile_id=$1 order by draft_id',[owner])).rows.map(mapDraft)],bets:[...(await client.query<Row>('select * from miraichi_app.bet_record where owner_profile_id=$1 order by bet_id',[owner])).rows.map(mapBet)],bankrollAccounts:[...(await client.query<Row>('select * from miraichi_app.bankroll_account where owner_profile_id=$1 order by account_id',[owner])).rows.map(mapAccount)],bankrollLedgerEntries:[...(await client.query<Row>('select * from miraichi_app.bankroll_ledger_entry where owner_profile_id=$1 order by entry_id',[owner])).rows.map(mapLedger)]}; },
-    importOwnerData: async (owner,envelope) => { assertOwner(owner); if(envelope.ownerProfileId!==owner) throw new Error('Backup owner mismatch'); await client.transaction(async (tx)=>{ for(const draft of envelope.drafts) await tx.query('insert into miraichi_app.bet_draft (draft_id,owner_profile_id,match_group_id,market_type,odds_format,odds_value,stake_points,created_at,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)',[draft.draftId,owner,draft.matchGroupId,draft.marketType,draft.oddsFormat,draft.oddsValue,draft.stakePoints,draft.createdAt,draft.updatedAt]); for(const bet of envelope.bets) await tx.query('insert into miraichi_app.bet_record (bet_id,owner_profile_id,match_group_id,home_team_name,away_team_name,market_type,selection_label,odds_format,odds_value,stake_points,status,created_at,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',[bet.betId,owner,bet.matchGroupId,bet.homeTeamName,bet.awayTeamName,bet.marketType,bet.selectionLabel,bet.oddsFormat,bet.oddsValue,bet.stakePoints,bet.status,bet.createdAt,bet.updatedAt]); for(const account of envelope.bankrollAccounts) await tx.query('insert into miraichi_app.bankroll_account (account_id,owner_profile_id,label,unit,opening_balance_points,current_balance_points,archived,created_at,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)',[account.accountId,owner,account.label,account.unit,account.openingBalancePoints,account.currentBalancePoints,account.archived,account.createdAt,account.updatedAt]); for(const entry of envelope.bankrollLedgerEntries) await tx.query('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,occurred_at,created_at) values ($1,$2,$3,$4,$5,$6,$7,$8)',[entry.entryId,owner,entry.accountId,entry.entryType,entry.amountPoints,entry.note ?? null,entry.occurredAt,entry.createdAt]); }); },
+    getLiveMatchSnapshot: async (owner) => { assertOwner(owner); const row=(await client.query<Row>('select overlay_json from miraichi_app.live_match_snapshot where owner_profile_id=$1',[owner])).rows[0]; return row ? mapLiveSnapshot(row) : null; },
+    getLiveRefreshState: async (owner) => { assertOwner(owner); const row=(await client.query<Row>('select * from miraichi_app.live_refresh_state where owner_profile_id=$1',[owner])).rows[0]; return row ? mapLiveRefreshState(row) : null; },
+    acquireLiveRefreshLease: async (owner,input:AcquireLiveRefreshLeaseInput) => { assertOwner(owner); const acquiredAt=Date.parse(input.acquiredAt);const expiresAt=Date.parse(input.expiresAt);if(!Number.isFinite(acquiredAt)||!Number.isFinite(expiresAt)||expiresAt<=acquiredAt)throw new Error('Live refresh lease timestamps are invalid');const result=await client.query<Row>(`with owner_row as (insert into miraichi_app.app_profile (id,label) values ($1,$1) on conflict (id) do nothing) insert into miraichi_app.live_refresh_state (owner_profile_id,status,reason,last_attempt_at,last_success_at,last_completed_at,last_error_code,lease_id,lease_acquired_at,lease_expires_at,updated_at) values ($1,'running',$3,$4,null,null,null,$2,$4,$5,$4) on conflict (owner_profile_id) do update set status='running',reason=excluded.reason,last_attempt_at=excluded.last_attempt_at,last_error_code=null,lease_id=excluded.lease_id,lease_acquired_at=excluded.lease_acquired_at,lease_expires_at=excluded.lease_expires_at,updated_at=excluded.updated_at where miraichi_app.live_refresh_state.last_attempt_at + case when miraichi_app.live_refresh_state.last_error_code='upstream_blocked' then interval '15 minutes' else interval '60 seconds' end <= excluded.last_attempt_at and (miraichi_app.live_refresh_state.lease_expires_at is null or miraichi_app.live_refresh_state.lease_expires_at <= excluded.last_attempt_at) returning owner_profile_id`,[owner,input.leaseId,input.reason,input.acquiredAt,input.expiresAt]);return result.rows.length===1; },
+    finishLiveRefresh: async (owner,input:FinishLiveRefreshInput) => { assertOwner(owner);if(!Number.isFinite(Date.parse(input.completedAt)))throw new Error('Live refresh completion timestamp is invalid');if(input.outcome==='succeeded')assertValidLiveMatchSnapshot(input.snapshot);await client.transaction(async(tx)=>{const errorCode=input.outcome==='failed'?sanitizeLiveRefreshErrorCode(input.errorCode):null;const updated=await tx.query<Row>(`update miraichi_app.live_refresh_state set status=$3,last_success_at=case when $3='succeeded' then $4 else last_success_at end,last_completed_at=$4,last_error_code=$5,lease_id=null,lease_acquired_at=null,lease_expires_at=null,updated_at=$4 where owner_profile_id=$1 and lease_id=$2 and status='running' and last_attempt_at <= $4 and lease_expires_at > $4 returning owner_profile_id`,[owner,input.leaseId,input.outcome,input.completedAt,errorCode]);if(!updated.rows[0])throw new Error('Live refresh lease is no longer owned or expired');if(input.outcome==='succeeded')await tx.query(`insert into miraichi_app.live_match_snapshot (owner_profile_id,snapshot_id,schema_version,generated_at,overlay_json,updated_at) values ($1,$2,$3,$4,$5,$6) on conflict (owner_profile_id) do update set snapshot_id=excluded.snapshot_id,schema_version=excluded.schema_version,generated_at=excluded.generated_at,overlay_json=excluded.overlay_json,updated_at=excluded.updated_at`,[owner,input.snapshot.snapshotId,input.snapshot.schemaVersion,input.snapshot.generatedAt,jsonb(input.snapshot),input.completedAt]);}); },
+    exportOwnerData: async (owner,exportedAt): Promise<CloudBackupEnvelope> => {
+      assertOwner(owner);
+      const ownerRow=(await client.query<Row>('select * from miraichi_app.app_profile where id=$1',[owner])).rows[0];
+      return createCloudBackupEnvelopeV3({
+        exportedAt,ownerProfileId:owner,ownerProfile:ownerRow?mapOwnerProfile(ownerRow):null,
+        drafts:[...(await client.query<Row>('select * from miraichi_app.bet_draft where owner_profile_id=$1 order by draft_id',[owner])).rows.map(mapDraft)],
+        bets:[...(await client.query<Row>('select * from miraichi_app.bet_record where owner_profile_id=$1 order by bet_id',[owner])).rows.map(mapBet)],
+        bankrollAccounts:[...(await client.query<Row>('select * from miraichi_app.bankroll_account where owner_profile_id=$1 order by account_id',[owner])).rows.map(mapAccount)],
+        bankrollLedgerEntries:[...(await client.query<Row>('select * from miraichi_app.bankroll_ledger_entry where owner_profile_id=$1 order by entry_id',[owner])).rows.map(mapLedger)],
+        disciplineConfigs:[...(await client.query<Row>('select * from miraichi_app.discipline_config where owner_profile_id=$1',[owner])).rows.map(mapDisciplineConfig)],
+        settlementEvents:[...(await client.query<Row>('select * from miraichi_app.bet_settlement_event where owner_profile_id=$1 order by settlement_event_id',[owner])).rows.map(mapSettlementEvent)]
+      });
+    },
+    importOwnerData: async (owner,envelope) => { assertOwner(owner); if(envelope.ownerProfileId!==owner) throw new Error('Backup owner mismatch'); if(envelope.schemaVersion==='miraichi.cloud-backup.v3'&&!await verifyCloudBackupEnvelopeV3(envelope))throw new Error('Backup payload hash mismatch'); await client.transaction(async (tx)=>{
+      const hasDurableData=envelope.drafts.length+envelope.bets.length+envelope.bankrollAccounts.length+envelope.bankrollLedgerEntries.length+(envelope.schemaVersion==='miraichi.cloud-backup.v1'?0:envelope.disciplineConfigs.length+envelope.settlementEvents.length)>0;
+      if(envelope.schemaVersion==='miraichi.cloud-backup.v3'&&envelope.ownerProfile){const profile=envelope.ownerProfile;await tx.query('insert into miraichi_app.app_profile (id,label,settings,created_at,updated_at) values ($1,$2,$3,$4,$5) on conflict (id) do update set label=excluded.label,settings=excluded.settings,created_at=excluded.created_at,updated_at=excluded.updated_at',[owner,profile.label,jsonb(profile.settings),profile.createdAt,profile.updatedAt]);}
+      else if(hasDurableData)await tx.query('insert into miraichi_app.app_profile (id,label,created_at,updated_at) values ($1,$1,$2,$2) on conflict (id) do nothing',[owner,envelope.exportedAt]);
+      for(const account of envelope.bankrollAccounts) await tx.query('insert into miraichi_app.bankroll_account (account_id,owner_profile_id,label,unit,opening_balance_points,current_balance_points,archived,created_at,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)',[account.accountId,owner,account.label,account.unit,account.openingBalancePoints,account.currentBalancePoints,account.archived,account.createdAt,account.updatedAt]);
+      for(const draft of envelope.drafts) await tx.query(`insert into miraichi_app.bet_draft (
+        draft_id,owner_profile_id,match_group_id,home_team_name,away_team_name,selection_label,selection_code,
+        market_type,custom_market_label,market_period,line_value,running_window,window_start_minute,window_end_minute,
+        live_score_home,live_score_away,live_minute,live_context_source,live_context_observed_at,
+        odds_format,odds_value,stake_points,pre_bet_emotion,pre_bet_motivation,pre_bet_plan_adherence,
+        pre_bet_note,notes,tags,created_at,updated_at,running_goal_threshold
+      ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31)`,[
+        draft.draftId,owner,draft.matchGroupId,draft.homeTeamName??null,draft.awayTeamName??null,
+        draft.selectionLabel??null,draft.selectionCode??null,draft.marketType,draft.customMarketLabel??null,
+        draft.marketPeriod??null,draft.lineValue??null,draft.runningWindow??null,draft.windowStartMinute??null,
+        draft.windowEndMinute??null,draft.liveScoreHome??null,draft.liveScoreAway??null,draft.liveMinute??null,
+        draft.liveContextSource??null,draft.liveContextObservedAt??null,draft.oddsFormat,draft.oddsValue,
+        draft.stakePoints,draft.preBetEmotion??null,draft.preBetMotivation??null,draft.preBetPlanAdherence??null,
+        draft.preBetNote??null,draft.notes??null,jsonb(draft.tags??[]),draft.createdAt,draft.updatedAt,
+        draft.runningGoalThreshold??null
+      ]);
+      for(const bet of envelope.bets) await tx.query(`insert into miraichi_app.bet_record (
+        bet_id,owner_profile_id,match_group_id,match_id,home_team_name,away_team_name,competition_label,season_label,
+        market_type,custom_market_label,selection_label,selection_code,market_period,line_value,running_window,
+        window_start_minute,window_end_minute,live_score_home,live_score_away,live_minute,live_context_source,
+        live_context_observed_at,odds_format,odds_value,stake_points,status,settlement_note,manual_result_points,
+        notes,tags,created_at,updated_at,bankroll_account_id,pre_bet_emotion,pre_bet_motivation,
+        pre_bet_plan_adherence,pre_bet_note,discipline_snapshot,settlement_type,profit_loss_points,settled_at,
+        post_bet_plan_adherence,post_bet_lesson_note,running_goal_threshold,settlement_review_status,
+        settlement_review_reason,settlement_evidence_at
+      ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47)`,[
+        bet.betId,owner,bet.matchGroupId,bet.matchId??null,bet.homeTeamName,bet.awayTeamName,
+        bet.competitionLabel??null,bet.seasonLabel??null,bet.marketType,bet.customMarketLabel??null,
+        bet.selectionLabel,bet.selectionCode??null,bet.marketPeriod??null,bet.lineValue??null,
+        bet.runningWindow??null,bet.windowStartMinute??null,bet.windowEndMinute??null,bet.liveScoreHome??null,
+        bet.liveScoreAway??null,bet.liveMinute??null,bet.liveContextSource??null,bet.liveContextObservedAt??null,
+        bet.oddsFormat,bet.oddsValue,bet.stakePoints,bet.status,bet.settlementNote??null,bet.manualResultPoints??null,
+        bet.notes??null,jsonb(bet.tags??[]),bet.createdAt,bet.updatedAt,bet.bankrollAccountId??null,
+        bet.preBetEmotion??null,bet.preBetMotivation??null,bet.preBetPlanAdherence??null,bet.preBetNote??null,
+        bet.disciplineSnapshot?jsonb(bet.disciplineSnapshot):null,bet.settlementType??(bet.status==='void'?'void':null),
+        bet.profitLossPoints??bet.manualResultPoints??(bet.status==='void'?0:null),
+        bet.settledAt??(bet.status==='void'?bet.updatedAt:null),bet.postBetPlanAdherence??null,
+        bet.postBetLessonNote??null,bet.runningGoalThreshold??null,bet.settlementReviewStatus??null,
+        bet.settlementReviewReason??null,bet.settlementEvidenceAt??null
+      ]);
+      if(envelope.schemaVersion==='miraichi.cloud-backup.v2'||envelope.schemaVersion==='miraichi.cloud-backup.v3'){
+        for(const config of envelope.disciplineConfigs) await tx.query('insert into miraichi_app.discipline_config (owner_profile_id,daily_stop_loss_points,weekly_stop_loss_points,big_bet_threshold_points,time_zone,week_start_day,cooldown_seconds,version,updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)',[owner,config.dailyStopLossPoints,config.weeklyStopLossPoints,config.bigBetThresholdPoints,config.timeZone,config.weekStartDay ?? 'monday',config.cooldownSeconds,config.version,config.updatedAt]);
+        for(const event of envelope.settlementEvents) await tx.query('insert into miraichi_app.bet_settlement_event (settlement_event_id,owner_profile_id,bet_id,bankroll_account_id,settlement_type,plan_adherence,lesson_note,profit_loss_points,adjustment_reason,calculated_profit_loss_points,ledger_delta_points,effective_at,occurred_at,corrects_settlement_event_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)',[event.settlementEventId,owner,event.betId,event.bankrollAccountId,event.settlementType,event.planAdherence??null,event.lessonNote??null,event.profitLossPoints??null,event.adjustmentReason??null,event.calculatedProfitLossPoints,event.ledgerDeltaPoints,event.effectiveAt,event.occurredAt,event.correctsSettlementEventId??null]);
+      }
+      for(const entry of envelope.bankrollLedgerEntries) await tx.query('insert into miraichi_app.bankroll_ledger_entry (entry_id,owner_profile_id,account_id,entry_type,amount_points,note,transfer_id,bet_id,settlement_event_id,effective_at,occurred_at,created_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',[entry.entryId,owner,entry.accountId,entry.entryType,entry.amountPoints,entry.note??null,entry.transferId??null,entry.betId??null,entry.settlementEventId??null,entry.effectiveAt??null,entry.occurredAt,entry.createdAt]);
+    }); },
     recordBackupExport: async (receipt) => { assertOwner(receipt.ownerProfileId); await client.query('insert into miraichi_app.backup_export_log (export_id,owner_profile_id,schema_version,exported_at,sha256,record_counts) values ($1,$2,$3,$4,$5,$6)',[receipt.exportId,receipt.ownerProfileId,receipt.schemaVersion,receipt.exportedAt,receipt.sha256,jsonb(receipt.recordCounts)]); },
-    listBackupExports: async (owner) => { assertOwner(owner); const result=await client.query<Row>('select * from miraichi_app.backup_export_log where owner_profile_id=$1 order by exported_at desc',[owner]); return result.rows.map((row)=>({exportId:text(row.export_id),ownerProfileId:text(row.owner_profile_id),schemaVersion:'miraichi.cloud-backup.v1',exportedAt:dateText(row.exported_at),sha256:text(row.sha256),recordCounts:row.record_counts as BackupExportReceipt['recordCounts']})); }
+    listBackupExports: async (owner) => { assertOwner(owner); const result=await client.query<Row>('select * from miraichi_app.backup_export_log where owner_profile_id=$1 order by exported_at desc',[owner]); return result.rows.map((row)=>{const schema=text(row.schema_version);return{exportId:text(row.export_id),ownerProfileId:text(row.owner_profile_id),schemaVersion:(schema==='miraichi.cloud-backup.v3'?'miraichi.cloud-backup.v3':schema==='miraichi.cloud-backup.v2'?'miraichi.cloud-backup.v2':'miraichi.cloud-backup.v1'),exportedAt:dateText(row.exported_at),sha256:text(row.sha256),recordCounts:row.record_counts as BackupExportReceipt['recordCounts']};}); }
   };
 }
+
+export { mapMatch as mapCloudMatchRow, upsertMatchBatch };

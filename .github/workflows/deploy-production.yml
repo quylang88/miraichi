@@ -1,0 +1,414 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  actions: read
+  contents: read
+  deployments: write
+  pull-requests: read
+
+concurrency:
+  group: miraichi-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    name: Verify staging promotion and deploy Singapore production
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: production
+    env:
+      MIRAICHI_RELEASE_ENVIRONMENT: production
+      MIRAICHI_EDGE_REGION: ap-southeast-1
+      MIRAICHI_RELEASE_MANIFEST_PATH: ${{ github.workspace }}/.release-production/candidate/release-manifest.json
+      MIRAICHI_DEPLOYMENT_EVIDENCE_PATH: ${{ github.workspace }}/artifacts/production/deployment-evidence.json
+      MIRAICHI_SCHEMA_COMPAT_VERSION: owner-v3
+      OWNER_BACKUP_ENVIRONMENT: production
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      MIRAICHI_PUBLIC_ORIGIN: ${{ vars.MIRAICHI_PUBLIC_ORIGIN }}
+      MIRAICHI_EDGE_FUNCTION_URL: ${{ vars.MIRAICHI_EDGE_FUNCTION_URL }}
+      OWNER_BACKUP_R2_ENDPOINT: ${{ vars.OWNER_BACKUP_R2_ENDPOINT }}
+      OWNER_BACKUP_R2_BUCKET: ${{ vars.OWNER_BACKUP_R2_BUCKET }}
+      OWNER_BACKUP_KEY_ID: ${{ vars.OWNER_BACKUP_KEY_ID }}
+      MIRAICHI_OWNER_PROFILE_ID: ${{ vars.MIRAICHI_OWNER_PROFILE_ID }}
+
+    steps:
+      - name: Reject non-main events
+        shell: bash
+        run: node -e "if (process.env.GITHUB_REF_NAME !== 'main') throw new Error('This workflow deploys only the main branch')"
+
+      - name: Checkout immutable main commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install frozen workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve exact merged staging candidate
+        id: candidate
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs/promises');
+            const { owner, repo } = context.repo;
+            const associated = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
+              owner,
+              repo,
+              commit_sha: context.sha,
+              per_page: 100
+            });
+            const matching = associated.filter((pullRequest) => pullRequest.merged_at
+              && pullRequest.base.ref === 'main'
+              && pullRequest.head.repo?.full_name === context.payload.repository.full_name
+              && pullRequest.base.repo?.full_name === context.payload.repository.full_name
+              && pullRequest.merge_commit_sha === context.sha);
+            if (matching.length !== 1) throw new Error('Main commit must belong to one exact merged staging pull request');
+            const pullRequest = matching[0];
+            if (pullRequest.head.ref !== 'staging') throw new Error('Merged production source must be staging');
+            const candidateSha = pullRequest.head.sha;
+            if (!/^[a-f0-9]{40}$/.test(candidateSha)) throw new Error('Candidate SHA is not immutable');
+            const artifactName = `miraichi-release-${candidateSha}`;
+
+            const deployments = await github.paginate(github.rest.repos.listDeployments, {
+              owner, repo, sha: candidateSha, environment: 'staging', per_page: 100
+            });
+            deployments.sort((left, right) => right.id - left.id);
+            const deployment = deployments[0];
+            if (!deployment || deployment.sha !== candidateSha || deployment.environment !== 'staging') {
+              throw new Error('Exact staging deployment is missing');
+            }
+            const statuses = await github.paginate(github.rest.repos.listDeploymentStatuses, {
+              owner, repo, deployment_id: deployment.id, per_page: 100
+            });
+            statuses.sort((left, right) => right.id - left.id);
+            if (statuses[0]?.state !== 'success') throw new Error('Latest staging deployment is not successful');
+
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+              owner, repo, name: artifactName, per_page: 100
+            });
+            const artifact = artifacts
+              .filter((value) => value.name === artifactName && !value.expired
+                && value.workflow_run?.head_branch === 'staging'
+                && value.workflow_run?.head_sha === candidateSha)
+              .sort((left, right) => Date.parse(right.created_at ?? '') - Date.parse(left.created_at ?? ''))[0];
+            if (!artifact?.workflow_run?.id || !artifact.digest) throw new Error('Exact staging artifact is unavailable');
+
+            await fs.mkdir('.release-production', { recursive: true });
+            await fs.writeFile('.release-production/github-evidence.json', JSON.stringify({
+              pullRequest: {
+                baseRef: pullRequest.base.ref,
+                headRef: pullRequest.head.ref,
+                baseRepository: pullRequest.base.repo.full_name,
+                headRepository: pullRequest.head.repo.full_name,
+                headSha: candidateSha,
+                headIsTag: false,
+                merged: Boolean(pullRequest.merged_at),
+                mergeCommitSha: pullRequest.merge_commit_sha
+              },
+              deployment: {
+                environment: deployment.environment,
+                state: statuses[0].state,
+                sha: deployment.sha,
+                id: deployment.id
+              },
+              artifact: {
+                name: artifact.name,
+                digest: artifact.digest,
+                expired: artifact.expired,
+                createdAt: artifact.created_at,
+                expiresAt: artifact.expires_at,
+                workflowHeadBranch: artifact.workflow_run.head_branch,
+                workflowHeadSha: artifact.workflow_run.head_sha
+              },
+              now: new Date().toISOString()
+            }));
+            core.setOutput('candidate-sha', candidateSha);
+            core.setOutput('artifact-name', artifactName);
+            core.setOutput('run-id', String(artifact.workflow_run.id));
+
+      - name: Download exact verified staging artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.candidate.outputs.artifact-name }}
+          path: .release-production/candidate
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.candidate.outputs.run-id }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+
+      - name: Verify merged candidate provenance and tree equality
+        id: provenance
+        run: >-
+          pnpm run verify:release-candidate --github-production
+          .release-production/github-evidence.json
+          .release-production/candidate
+
+      - name: Bind verified candidate identity
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.candidate-sha }}
+          CANDIDATE_ARTIFACT: ${{ steps.candidate.outputs.artifact-name }}
+        run: |
+          {
+            echo "MIRAICHI_CANDIDATE_SHA=$CANDIDATE_SHA"
+            echo "MIRAICHI_RELEASE_SHA=$CANDIDATE_SHA"
+            echo "MIRAICHI_RELEASE_ARTIFACT=$CANDIDATE_ARTIFACT"
+          } >> "$GITHUB_ENV"
+
+      - name: Install exact candidate deploy artifacts
+        shell: bash
+        run: |
+          mkdir -p apps/web/dist supabase/functions artifacts/production
+          cp -R .release-production/candidate/apps/web/dist/. apps/web/dist/
+          cp -R .release-production/candidate/supabase/functions/. supabase/functions/
+          pnpm exec tsx scripts/release/materialize-release-metadata.ts
+
+      - name: Create production deployment record
+        id: deployment
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const response = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'production',
+              required_contexts: [],
+              auto_merge: false,
+              description: `Singapore production ${context.sha}`
+            });
+            if (!response.data || typeof response.data !== 'object' || !('id' in response.data)) {
+              throw new Error('GitHub did not create a production deployment record');
+            }
+            core.setOutput('deployment-id', String(response.data.id));
+
+      - name: Link exact Supabase production project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Resolve prior successful production rollback artifact
+        id: prior
+        uses: actions/github-script@v9
+        env:
+          CURRENT_DEPLOYMENT_ID: ${{ steps.deployment.outputs.deployment-id }}
+        with:
+          script: |
+            const deployments = await github.paginate(github.rest.repos.listDeployments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment: 'production',
+              per_page: 100
+            });
+            deployments.sort((left, right) => right.id - left.id);
+            let prior = null;
+            for (const deployment of deployments) {
+              if (String(deployment.id) === process.env.CURRENT_DEPLOYMENT_ID || deployment.sha === context.sha) continue;
+              const statuses = await github.paginate(github.rest.repos.listDeploymentStatuses, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deployment.id,
+                per_page: 100
+              });
+              statuses.sort((left, right) => right.id - left.id);
+              if (statuses[0]?.state === 'success') {
+                prior = deployment;
+                break;
+              }
+            }
+            if (!prior) {
+              core.setOutput('mode', 'baseline');
+              return;
+            }
+            const artifactName = `miraichi-production-${prior.sha}`;
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: artifactName,
+              per_page: 100
+            });
+            const artifact = artifacts
+              .filter((candidate) => candidate.name === artifactName && !candidate.expired
+                && candidate.workflow_run?.head_branch === 'main'
+                && candidate.workflow_run?.head_sha === prior.sha)
+              .sort((left, right) => Date.parse(right.created_at ?? '') - Date.parse(left.created_at ?? ''))[0];
+            if (!artifact?.workflow_run?.id) throw new Error(`Exact production rollback artifact ${artifactName} is missing or expired`);
+            core.setOutput('mode', 'artifact');
+            core.setOutput('artifact-name', artifactName);
+            core.setOutput('prior-sha', prior.sha);
+            core.setOutput('run-id', String(artifact.workflow_run.id));
+
+      - name: Download exact production rollback artifact
+        if: ${{ steps.prior.outputs.mode == 'artifact' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.prior.outputs.artifact-name }}
+          path: .release-production/prior
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.prior.outputs.run-id }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+
+      - name: Load prior production runtime and release identity
+        if: ${{ steps.prior.outputs.mode == 'artifact' }}
+        shell: bash
+        env:
+          PRIOR_DEPLOYMENT_SHA: ${{ steps.prior.outputs.prior-sha }}
+        run: |
+          pnpm exec tsx scripts/release/deployment-evidence.ts .release-production/prior/deployment-evidence.json
+          node --input-type=module <<'NODE' >> "$GITHUB_ENV"
+          import { readFileSync } from 'node:fs';
+          const evidence = JSON.parse(readFileSync('.release-production/prior/deployment-evidence.json', 'utf8'));
+          const release = JSON.parse(readFileSync('.release-production/prior/apps/web/dist/release.json', 'utf8'));
+          if (evidence.status !== 'succeeded'
+            || evidence.environment !== 'production'
+            || evidence.release?.deploymentSha !== process.env.PRIOR_DEPLOYMENT_SHA
+            || release.environment !== 'production'
+            || release.gitSha !== evidence.release.sourceSha
+            || release.artifactVersion !== evidence.release.artifactVersion) {
+            throw new Error('Prior production rollback identity is inconsistent');
+          }
+          for (const [name, value] of Object.entries({
+            MIRAICHI_PRIOR_EDGE_VERSION_ID: evidence.runtime?.edgeVersionId,
+            MIRAICHI_PRIOR_WORKER_VERSION_ID: evidence.runtime?.workerVersionId,
+            MIRAICHI_PRIOR_RELEASE_SHA: release.gitSha,
+            MIRAICHI_PRIOR_RELEASE_ARTIFACT: release.artifactVersion,
+            MIRAICHI_PRIOR_SCHEMA_COMPAT_VERSION: release.compatibilityVersion
+          })) {
+            if (typeof value !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value) || value.toLowerCase() === 'latest') {
+              throw new Error(`Invalid prior production identity: ${name}`);
+            }
+            console.log(`${name}=${value}`);
+          }
+          console.log(`MIRAICHI_PRIOR_EDGE_ARTIFACT_ROOT=${process.env.GITHUB_WORKSPACE}/.release-production/prior`);
+          NODE
+
+      - name: Materialize first production rollback baseline
+        if: ${{ steps.prior.outputs.mode == 'baseline' }}
+        shell: bash
+        env:
+          BASELINE_SHA: ${{ vars.MIRAICHI_PRODUCTION_BASELINE_SHA }}
+          BASELINE_EDGE_VERSION_ID: ${{ vars.MIRAICHI_PRODUCTION_BASELINE_EDGE_VERSION_ID }}
+          BASELINE_WORKER_VERSION_ID: ${{ vars.MIRAICHI_PRODUCTION_BASELINE_WORKER_VERSION_ID }}
+          BASELINE_RELEASE_SHA: ${{ vars.MIRAICHI_PRODUCTION_BASELINE_RELEASE_SHA }}
+          BASELINE_RELEASE_ARTIFACT: ${{ vars.MIRAICHI_PRODUCTION_BASELINE_RELEASE_ARTIFACT }}
+          BASELINE_SCHEMA_COMPAT_VERSION: ${{ vars.MIRAICHI_PRODUCTION_BASELINE_SCHEMA_COMPAT_VERSION }}
+        run: |
+          node --input-type=module <<'NODE'
+          const gitSha = process.env.BASELINE_SHA ?? '';
+          const releaseSha = process.env.BASELINE_RELEASE_SHA ?? '';
+          const immutable = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+          if (!/^[a-f0-9]{40}$/.test(gitSha) || releaseSha !== gitSha) throw new Error('Production baseline SHA is invalid');
+          for (const name of ['BASELINE_EDGE_VERSION_ID', 'BASELINE_WORKER_VERSION_ID', 'BASELINE_RELEASE_ARTIFACT', 'BASELINE_SCHEMA_COMPAT_VERSION']) {
+            const value = process.env[name] ?? '';
+            if (!immutable.test(value) || value.toLowerCase() === 'latest') throw new Error(`${name} is not immutable`);
+          }
+          NODE
+          mkdir -p .release-production/prior
+          git worktree add --detach .release-production/prior/baseline "$BASELINE_SHA"
+          pnpm --dir .release-production/prior/baseline install --frozen-lockfile
+          pnpm --dir .release-production/prior/baseline run edge:function:build
+          {
+            echo "MIRAICHI_PRIOR_EDGE_VERSION_ID=$BASELINE_EDGE_VERSION_ID"
+            echo "MIRAICHI_PRIOR_WORKER_VERSION_ID=$BASELINE_WORKER_VERSION_ID"
+            echo "MIRAICHI_PRIOR_RELEASE_SHA=$BASELINE_RELEASE_SHA"
+            echo "MIRAICHI_PRIOR_RELEASE_ARTIFACT=$BASELINE_RELEASE_ARTIFACT"
+            echo "MIRAICHI_PRIOR_SCHEMA_COMPAT_VERSION=$BASELINE_SCHEMA_COMPAT_VERSION"
+            echo "MIRAICHI_PRIOR_EDGE_ARTIFACT_ROOT=$GITHUB_WORKSPACE/.release-production/prior/baseline"
+          } >> "$GITHUB_ENV"
+
+      - name: Run backup-first production release transaction
+        id: deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          SUPABASE_DATABASE_CA_BASE64: ${{ secrets.SUPABASE_DATABASE_CA_BASE64 }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MIRAICHI_GATEWAY_TOKEN: ${{ secrets.MIRAICHI_GATEWAY_TOKEN }}
+          OWNER_BACKUP_R2_ACCESS_KEY_ID: ${{ secrets.OWNER_BACKUP_R2_ACCESS_KEY_ID }}
+          OWNER_BACKUP_R2_SECRET_ACCESS_KEY: ${{ secrets.OWNER_BACKUP_R2_SECRET_ACCESS_KEY }}
+          OWNER_BACKUP_KEY_BASE64: ${{ secrets.OWNER_BACKUP_KEY_BASE64 }}
+        run: pnpm run release:deploy
+
+      - name: Run committed read-only production smoke
+        id: hosted
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          MIRAICHI_GATEWAY_TOKEN: ${{ secrets.MIRAICHI_GATEWAY_TOKEN }}
+        run: pnpm run verify:production:hosted
+
+      - name: Assemble immutable production rollback artifact
+        id: assemble
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          mkdir -p artifacts/production-package/apps/web artifacts/production-package/supabase
+          cp .release-production/candidate/release-manifest.json artifacts/production-package/release-manifest.json
+          cp artifacts/production/deployment-evidence.json artifacts/production-package/deployment-evidence.json
+          cp -R apps/web/dist artifacts/production-package/apps/web/dist
+          cp supabase/config.toml artifacts/production-package/supabase/config.toml
+          cp -R supabase/functions artifacts/production-package/supabase/functions
+
+      - name: Retain exact production deployment evidence
+        id: artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: miraichi-production-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: artifacts/production-package
+
+      - name: Mark production deployment successful
+        id: mark-success
+        if: ${{ always() && steps.deploy.outcome == 'success' && steps.hosted.outcome == 'success' && steps.assemble.outcome == 'success' && steps.artifact.outcome == 'success' }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.deployment-id }}'),
+              state: 'success',
+              environment: 'production',
+              environment_url: process.env.MIRAICHI_PUBLIC_ORIGIN,
+              description: 'Production release and read-only smoke passed'
+            });
+
+      - name: Mark production deployment failed
+        if: ${{ always() && steps.deployment.outputs.deployment-id != '' && (steps.deploy.outcome != 'success' || steps.hosted.outcome != 'success' || steps.assemble.outcome != 'success' || steps.artifact.outcome != 'success' || steps.mark-success.outcome == 'failure') }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.deployment-id }}'),
+              state: 'failure',
+              environment: 'production',
+              environment_url: process.env.MIRAICHI_PUBLIC_ORIGIN,
+              description: 'Production release or read-only smoke failed'
+            });

@@ -2,8 +2,7 @@ export const PRODUCTION_NAVIGATION_TAB_IDS = Object.freeze([
   'today',
   'matches',
   'bets',
-  'bankroll',
-  'miraichi'
+  'bankroll'
 ] as const);
 
 export type ProductionNavigationTabId = typeof PRODUCTION_NAVIGATION_TAB_IDS[number];
@@ -49,14 +48,6 @@ export const navigationTabs = Object.freeze([
     iconLabel: 'K',
     descriptionKey: 'bankroll.description',
     fallbackDescription: 'Points and risk notes'
-  },
-  {
-    id: 'miraichi',
-    labelKey: 'nav.miraichi',
-    fallbackLabel: 'Miraichi',
-    iconLabel: 'I',
-    descriptionKey: 'miraichi.description',
-    fallbackDescription: 'Assistant boundary'
   }
 ] satisfies readonly NavigationTab[]);
 

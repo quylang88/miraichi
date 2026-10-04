@@ -6,6 +6,7 @@ import {
   buildStagingSmokeChecks,
   normalizeBaseUrl,
   resolveCliBaseUrl,
+  resolveStagingApiBaseUrl,
   runStagingSmokeCheck
 } from './staging-smoke-check.js';
 
@@ -42,6 +43,9 @@ function createFetchStub(responsesByUrl: Record<string, TestResponse>) {
 }
 
 describe('staging smoke check helpers', () => {
+  it('pins the deployed Manual Add shell cache generation', () => {
+    expect(DEFAULT_PHASE_5_12_CACHE_MARKER).toBe('miraichi-shell-v17-manual-add');
+  });
   it('normalizes base URLs and rejects empty URLs', () => {
     expect(normalizeBaseUrl('https://example.pages.dev/')).toBe('https://example.pages.dev');
     expect(() => normalizeBaseUrl('   ')).toThrow('Staging URL is required');
@@ -56,12 +60,27 @@ describe('staging smoke check helpers', () => {
     );
   });
 
+  it('requires the runtime API URL to stay on the Worker origin', () => {
+    expect(resolveStagingApiBaseUrl(
+      '<script>window.MIRAICHI_ENV={API_URL:""}</script>',
+      'https://example.pages.dev'
+    )).toBe('https://example.pages.dev');
+    expect(() => resolveStagingApiBaseUrl('<div>Miraichi</div>', 'https://example.pages.dev')).toThrow(
+      'root shell does not expose API_URL'
+    );
+    expect(() => resolveStagingApiBaseUrl(
+      '<script>window.MIRAICHI_ENV={API_URL:"https://api.example.com"}</script>',
+      'https://example.pages.dev'
+    )).toThrow('API_URL must stay same-origin');
+  });
+
   it('builds Phase 5.12 smoke targets from a base URL', () => {
     expect(buildStagingSmokeChecks('https://example.pages.dev')).toEqual([
       {
         label: 'root shell',
         url: 'https://example.pages.dev/',
-        markers: ['Miraichi', 'shell-entry', 'app-root']
+        markers: ['Miraichi', 'auth-bootstrap', 'app-root', 'type="importmap"', 'window.MIRAICHI_ENV', 'API_URL'],
+        forbiddenMarkers: ['API_URL: "http://localhost', 'API_URL: "http://127.0.0.1']
       },
       {
         label: 'manifest',
@@ -78,12 +97,26 @@ describe('staging smoke check helpers', () => {
       {
         label: 'shell entry',
         url: 'https://example.pages.dev/apps/web/src/shell-entry.js',
-        markers: ['renderAppShell']
+        markers: ['renderAppShell'],
+        forbiddenMarkers: ['<!DOCTYPE html>']
+      },
+      {
+        label: 'client environment',
+        url: 'https://example.pages.dev/apps/web/src/config/client-env.js',
+        markers: ['getApiBaseUrl'],
+        forbiddenMarkers: ['<!DOCTYPE html>']
+      },
+      {
+        label: 'match feed service',
+        url: 'https://example.pages.dev/apps/web/src/services/match-feed-service.js',
+        markers: ['/api/v1/matches'],
+        forbiddenMarkers: ['<!DOCTYPE html>']
       },
       {
         label: 'ui css',
         url: 'https://example.pages.dev/packages/ui/src/index.css',
-        markers: ['main-scroll']
+        markers: ['main-scroll'],
+        forbiddenMarkers: ['<!DOCTYPE html>']
       }
     ]);
   });
@@ -91,11 +124,14 @@ describe('staging smoke check helpers', () => {
   it('passes when every staging endpoint returns expected markers', async () => {
     const baseUrl = 'https://example.pages.dev';
     const fetchStub = createFetchStub({
-      [`${baseUrl}/`]: createResponse('<div id="app-root">Miraichi shell-entry</div>'),
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script src="/apps/web/src/auth-bootstrap.js"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi</div>'),
       [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),
       [`${baseUrl}/service-worker.js`]: createResponse(DEFAULT_PHASE_5_12_CACHE_MARKER),
       [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
-      [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }')
+      [`${baseUrl}/apps/web/src/config/client-env.js`]: createResponse('export function getApiBaseUrl() {}'),
+      [`${baseUrl}/apps/web/src/services/match-feed-service.js`]: createResponse('fetch("/api/v1/matches")'),
+      [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }'),
+      [`${baseUrl}/api/v1/health`]: createResponse(JSON.stringify({ status: 'ok' }))
     });
 
     const result = await runStagingSmokeCheck({
@@ -104,18 +140,25 @@ describe('staging smoke check helpers', () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(result.results.map((entry) => entry.ok)).toEqual([true, true, true, true, true]);
-    expect(fetchStub.calls).toEqual(buildStagingSmokeChecks(baseUrl).map((check) => check.url));
+    expect(result.results.map((entry) => entry.ok)).toEqual([true, true, true, true, true, true, true, true, true]);
+    expect(fetchStub.calls).toEqual([
+      ...buildStagingSmokeChecks(baseUrl).map((check) => check.url),
+      `${baseUrl}/`,
+      `${baseUrl}/api/v1/health`
+    ]);
   });
 
   it('reports missing markers without leaking response bodies', async () => {
     const baseUrl = 'https://example.pages.dev';
     const fetchStub = createFetchStub({
-      [`${baseUrl}/`]: createResponse('<div id="app-root">Miraichi shell-entry</div>'),
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script src="/apps/web/src/auth-bootstrap.js"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi</div>'),
       [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),
       [`${baseUrl}/service-worker.js`]: createResponse('old-cache-marker-secret-like-text'),
       [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
-      [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }')
+      [`${baseUrl}/apps/web/src/config/client-env.js`]: createResponse('export function getApiBaseUrl() {}'),
+      [`${baseUrl}/apps/web/src/services/match-feed-service.js`]: createResponse('fetch("/api/v1/matches")'),
+      [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }'),
+      [`${baseUrl}/api/v1/health`]: createResponse(JSON.stringify({ status: 'ok' }))
     });
 
     const result = await runStagingSmokeCheck({
@@ -136,11 +179,14 @@ describe('staging smoke check helpers', () => {
   it('reports malformed manifest JSON', async () => {
     const baseUrl = 'https://example.pages.dev';
     const fetchStub = createFetchStub({
-      [`${baseUrl}/`]: createResponse('<div id="app-root">Miraichi shell-entry</div>'),
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script src="/apps/web/src/auth-bootstrap.js"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi</div>'),
       [`${baseUrl}/manifest.webmanifest`]: createResponse('{bad-json'),
       [`${baseUrl}/service-worker.js`]: createResponse(DEFAULT_PHASE_5_12_CACHE_MARKER),
       [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
-      [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }')
+      [`${baseUrl}/apps/web/src/config/client-env.js`]: createResponse('export function getApiBaseUrl() {}'),
+      [`${baseUrl}/apps/web/src/services/match-feed-service.js`]: createResponse('fetch("/api/v1/matches")'),
+      [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }'),
+      [`${baseUrl}/api/v1/health`]: createResponse(JSON.stringify({ status: 'ok' }))
     });
 
     const result = await runStagingSmokeCheck({
@@ -151,6 +197,50 @@ describe('staging smoke check helpers', () => {
     expect(result.ok).toBe(false);
     expect(result.results.find((entry) => entry.label === 'manifest')?.message).toBe(
       'invalid JSON response'
+    );
+  });
+
+  it('rejects a Pages SPA fallback returned for a missing JavaScript module', async () => {
+    const baseUrl = 'https://example.pages.dev';
+    const shellHtml = '<!DOCTYPE html><div id="app-root">Miraichi auth-bootstrap</div>';
+    const fetchStub = createFetchStub({
+      [`${baseUrl}/`]: createResponse('<script type="importmap"></script><script src="/apps/web/src/auth-bootstrap.js"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi</div>'),
+      [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),
+      [`${baseUrl}/service-worker.js`]: createResponse(DEFAULT_PHASE_5_12_CACHE_MARKER),
+      [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
+      [`${baseUrl}/apps/web/src/config/client-env.js`]: createResponse(shellHtml),
+      [`${baseUrl}/apps/web/src/services/match-feed-service.js`]: createResponse('fetch("/api/v1/matches")'),
+      [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }'),
+      [`${baseUrl}/api/v1/health`]: createResponse(JSON.stringify({ status: 'ok' }))
+    });
+
+    const result = await runStagingSmokeCheck({ baseUrl, fetchImpl: fetchStub });
+
+    expect(result.ok).toBe(false);
+    expect(result.results.find((entry) => entry.label === 'client environment')?.message).toBe(
+      'missing marker: getApiBaseUrl'
+    );
+  });
+
+  it('fails when the configured staging API health route returns Pages fallback HTML', async () => {
+    const baseUrl = 'https://example.pages.dev';
+    const rootHtml = '<script type="importmap"></script><script src="/apps/web/src/auth-bootstrap.js"></script><script>window.MIRAICHI_ENV={API_URL:""}</script><div id="app-root">Miraichi</div>';
+    const fetchStub = createFetchStub({
+      [`${baseUrl}/`]: createResponse(rootHtml),
+      [`${baseUrl}/manifest.webmanifest`]: createResponse(JSON.stringify({ name: 'Miraichi' })),
+      [`${baseUrl}/service-worker.js`]: createResponse(DEFAULT_PHASE_5_12_CACHE_MARKER),
+      [`${baseUrl}/apps/web/src/shell-entry.js`]: createResponse('export function renderAppShell() {}'),
+      [`${baseUrl}/apps/web/src/config/client-env.js`]: createResponse('export function getApiBaseUrl() {}'),
+      [`${baseUrl}/apps/web/src/services/match-feed-service.js`]: createResponse('fetch("/api/v1/matches")'),
+      [`${baseUrl}/packages/ui/src/index.css`]: createResponse('.main-scroll { overflow-y: auto; }'),
+      [`${baseUrl}/api/v1/health`]: createResponse('<!DOCTYPE html><div>Miraichi</div>')
+    });
+
+    const result = await runStagingSmokeCheck({ baseUrl, fetchImpl: fetchStub });
+
+    expect(result.ok).toBe(false);
+    expect(result.results.find((entry) => entry.label === 'API health')?.message).toBe(
+      'forbidden marker: <!DOCTYPE html>'
     );
   });
 

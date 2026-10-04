@@ -8,7 +8,7 @@
 - **Date**: 2026-06-23
 
 ## Context
-Miraichi needs a boundary for external data-provider polling, normalization, freshness tracking, and data-quality checks. That boundary must keep provider-specific details out of core user-facing and local AI concepts.
+Miraichi needs a boundary for external data-source polling, normalization, freshness tracking, and data-quality checks. That boundary must keep source-specific details out of core user-facing concepts.
 
 ## Decision to Be Made
 Decide whether provider ingestion and normalization responsibilities should live behind an `apps/worker` boundary before implementation begins.

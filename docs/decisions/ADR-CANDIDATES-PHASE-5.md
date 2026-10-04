@@ -523,7 +523,7 @@ Local-first planning keeps v1 simple and user-controlled. Required JSON backup r
 ### 1. Problem
 Phase 5 introduces increasingly complex cross-app domain boundaries such as `BetRecordEnvelope`, `MatchBettingGroup`, `MarketCatalog`, `OddsFormatAdapter`, `SettlementStrategy`, `ReportAggregator`, `AiRecommendationBoundary`, and `RiskRuleStrategy`.
 
-Keeping these contracts as loose JavaScript objects for too long increases the risk of field drift and app-to-app contract mismatch across `apps/web`, `apps/api`, `apps/local-ai`, `apps/worker`, and `packages/shared`.
+Keeping these contracts as loose JavaScript objects for too long increases the risk of field drift and app-to-app contract mismatch across `apps/web`, `apps/api`, `apps/worker`, and `packages/shared`.
 
 ### 2. Owner-Applied Technical Direction
 The owner agrees that Miraichi should adopt TypeScript as a technical architecture direction.

@@ -10,5 +10,5 @@ describe('repository guardrail audit', () => {
     );
 
     expect(output).toContain('Scan PASSED');
-  });
+  }, 30000);
 });

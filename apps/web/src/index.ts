@@ -3,11 +3,15 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import pathModule from 'path';
 import * as ts from 'typescript';
+import { renderAppShell } from './components/app-shell.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = pathModule.dirname(__filename);
 const ROOT_DIR = pathModule.resolve(__dirname, '../../../');
+
+// Dev live-reload: track connected SSE clients
+const liveReloadClients: Set<http.ServerResponse> = new Set();
 
 function loadEnv(rootDir: string) {
   const envFiles = ['.env'];
@@ -40,6 +44,19 @@ const server = http.createServer((req, res) => {
   const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   const url = requestUrl.pathname;
 
+  // Dev live-reload SSE endpoint
+  if (url === '/dev/live-reload') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+    res.write('data: connected\n\n');
+    liveReloadClients.add(res);
+    req.on('close', () => liveReloadClients.delete(res));
+    return;
+  }
+
   // SPA Entry
   if (url === '/' || url === '/index.html') {
     res.writeHead(200, { 'Content-Type': 'text/html' });
@@ -70,7 +87,7 @@ const server = http.createServer((req, res) => {
   // Static File Routing for Packages and Web Client Code
   else if (url.startsWith('/apps/web/src/')) {
     filePath = resolveSourcePath(url);
-    contentType = 'application/javascript';
+    contentType = url.endsWith('.json') ? 'application/json' : 'application/javascript';
   } else if (url.startsWith('/packages/ui/src/')) {
     filePath = resolveSourcePath(url);
     if (url.endsWith('.css')) {
@@ -82,6 +99,9 @@ const server = http.createServer((req, res) => {
     filePath = resolveSourcePath(url);
     contentType = 'application/javascript';
   } else if (url.startsWith('/packages/config/src/')) {
+    filePath = resolveSourcePath(url);
+    contentType = 'application/javascript';
+  } else if (url.startsWith('/packages/agent-protocol/src/')) {
     filePath = resolveSourcePath(url);
     contentType = 'application/javascript';
   }
@@ -142,35 +162,91 @@ if (process.argv[1] === __filename) {
   server.listen(PORT, () => {
     console.log(`[Web Server] Running at ${process.env.APP_URL}`);
   });
+
+  // Live-reload: watch source directories and notify browsers via SSE
+  const watchDirs = [
+    pathModule.join(ROOT_DIR, 'apps/web/src'),
+    pathModule.join(ROOT_DIR, 'packages/ui/src'),
+    pathModule.join(ROOT_DIR, 'packages/shared/src'),
+    pathModule.join(ROOT_DIR, 'packages/config/src'),
+  ];
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  for (const dir of watchDirs) {
+    if (fs.existsSync(dir)) {
+      fs.watch(dir, { recursive: true }, (_event, filename) => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          const type = filename && filename.endsWith('.css') ? 'css' : 'reload';
+          console.log(`[Live Reload] ${type}: ${filename}`);
+          for (const client of liveReloadClients) {
+            client.write(`data: ${type}\n\n`);
+          }
+        }, 100);
+      });
+    }
+  }
 }
 
-export function getIndexHtml() {
+export function getIndexHtml(apiUrl = process.env.API_URL || '') {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Miraichi Dashboard</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Miraichi">
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/icon-180.png">
   <link rel="stylesheet" href="/packages/ui/src/index.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "@miraichi/shared": "/packages/shared/src/index.js",
+        "@miraichi/shared/": "/packages/shared/src/",
+        "@miraichi/ui": "/packages/ui/src/index.js",
+        "@miraichi/ui/": "/packages/ui/src/",
+        "@miraichi/config": "/packages/config/src/index.js",
+        "@miraichi/config/": "/packages/config/src/",
+        "@miraichi/agent-protocol": "/packages/agent-protocol/src/index.js",
+        "@miraichi/agent-protocol/": "/packages/agent-protocol/src/"
+      }
+    }
+  </script>
   <script>
     window.MIRAICHI_ENV = {
-      API_URL: "${process.env.API_URL || ''}"
+      API_URL: "${apiUrl}"
     };
   </script>
   <script type="module" src="/apps/web/src/pwa/register-service-worker.js"></script>
-  <script type="module" src="/apps/web/src/shell-entry.js"></script>
+  <script type="module" src="/apps/web/src/auth-bootstrap.js"></script>
 </head>
 <body>
-  <div id="app-root" aria-live="polite">
-    <div class="shell-loading">Loading Miraichi...</div>
+  <div id="app-root" aria-live="polite" data-owner-session="pending">
+    ${renderAppShell().replace('id="main-scroll"', 'id="main-scroll" inert')}
   </div>
+  <footer class="static-provider-attribution" data-static-provider-attribution="sportscore">
+    <a href="https://sportscore.com/" rel="dofollow" title="Sports data by SportScore">Powered by SportScore</a>
+  </footer>
+  <script>
+    (function() {
+      if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
+      var es = new EventSource('/dev/live-reload');
+      es.onmessage = function(e) {
+        if (e.data === 'css') {
+          document.querySelectorAll('link[rel=stylesheet]').forEach(function(link) {
+            var href = link.getAttribute('href');
+            if (href) link.setAttribute('href', href.split('?')[0] + '?t=' + Date.now());
+          });
+        } else if (e.data === 'reload') {
+          location.reload();
+        }
+      };
+    })();
+  </script>
 </body>
 </html>
 `;

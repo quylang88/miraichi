@@ -1,21 +1,5 @@
-# Redis Queue Design
+# Worker Queue Plan
 
-Message broker definitions, queue hierarchies, and failover workflows.
+No external queue is required for the current owner-only scaffold.
 
-## Purpose
-Establishes how tasks are distributed across Redis channels.
-
-## Status
-- **Status**: Active
-
-## Scope
-Queue channels, priority structures, message schemas, and retry policies.
-
-## Queue Definitions
-- `sports-data-ingestion` - Processing external API fixture data.
-- `ai-prediction-runs` - Triggering ML prediction steps in apps/local-ai.
-- `notifications` - Email alerts and user telegram notifications.
-
-## TODO / Next Steps
-- [ ] Write schema validations for queue message payloads.
-- [ ] Connect dead-letter queues to alerts.
+A future crawler plan may introduce jobs for source fetch, raw-cache validation, normalization, serving-store publication, and freshness reporting. Queue technology, retry policy, rate limits, and dead-letter handling require approval in the crawler implementation plan.

@@ -1,111 +1,69 @@
-import { describe, expect, it } from 'vitest';
-import { handleMatchDetail } from './match-detail.js';
-import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
-import { LocalMatch, LocalMatchDetail } from '@miraichi/shared';
-
-function responseMock() {
-  return {
-    statusCode: 0,
-    headers: undefined as Record<string, string> | undefined,
-    body: '',
-    setHeader() {},
-    writeHead(statusCode: number, headers?: Record<string, string>) {
-      this.statusCode = statusCode;
-      this.headers = headers;
-    },
-    end(body?: unknown) {
-      this.body = typeof body === 'string' ? body : '';
-    }
-  };
+import { describe, expect, it, vi } from 'vitest';
+import { handleMatchDetail, type MatchDetailRouteDependencies } from './match-detail.js';
+import { validateLocalMatchDetail } from '@miraichi/shared';
+import { detailCanonicalFixture, fotmobDetailFixture } from '../../../../tests/fixtures/fotmob-detail.js';
+import { adaptFotMobDetail } from '../../../worker/src/sources/fotmob/fotmob-detail-adapter.js';
+const match=detailCanonicalFixture;
+const detail=adaptFotMobDetail({match,payload:fotmobDetailFixture,providerMatchId:'100',leagueId:47,observedAt:match.updatedAt});
+function dependencies() {
+  return {repository:{findById:vi.fn(async()=>match),listMatches:vi.fn(),getStatus:vi.fn()},
+    detailStore:{getDetail:vi.fn(async()=>null)},queue:{enqueue:vi.fn()},
+    terminalReconciler:{reconcile:vi.fn(async()=>({examined:1,settled:1,manualRequired:0,failed:0}))},
+    coordinator:{read:vi.fn(async()=>({...detail,refresh:{outcome:'cached',lastSuccessAt:detail.updatedAt,retryAfterSeconds:0}})),
+      refresh:vi.fn(async()=>({...detail,refresh:{outcome:'refreshed',lastSuccessAt:detail.updatedAt,retryAfterSeconds:60}}))}};
 }
-
-const mockMatch: LocalMatch = {
-  id: 'match-world-cup-2026-group-a-mexico-south-africa-2026-06-11',
-  competition: {
-    id: 'world-cup-2026',
-    name: 'FIFA World Cup',
-    type: 'national-team',
-    season: '2026'
-  },
-  kickoffUtc: '2026-06-11T19:00:00.000Z',
-  status: 'scheduled',
-  homeTeam: { id: 'team-mexico', name: 'Mexico' },
-  awayTeam: { id: 'team-safrica', name: 'South Africa' },
-  score: { home: null, away: null },
-  sourceRefs: [],
-  updatedAt: '2026-07-01T00:00:00.000Z'
-};
-
-const mockDetail: LocalMatchDetail = {
-  match: mockMatch,
-  referee: undefined,
-  events: [],
-  notes: ['Local snapshot detail does not include live event telemetry.']
-};
-
-describe('match detail route', () => {
-  it('returns LocalMatchDetail for valid id', async () => {
-    const response = responseMock();
-    const mockRepo = {
-      findById: async (id: string) => {
-        expect(id).toBe('match-world-cup-2026-group-a-mexico-south-africa-2026-06-11');
-        return mockMatch;
-      }
-    } as unknown as LocalMatchSnapshotRepository;
-
-    await handleMatchDetail(
-      { url: `/api/v1/matches/detail?id=${mockMatch.id}`, method: 'GET' } as import('http').IncomingMessage,
-      response as unknown as import('http').ServerResponse,
-      { repository: mockRepo }
-    );
-
-    expect(response.statusCode).toBe(200);
-    const body = JSON.parse(response.body) as LocalMatchDetail;
-    expect(body.match.id).toBe(mockMatch.id);
-    expect(body.events).toEqual([]);
-    expect(body.notes).toContain('Local snapshot detail does not include live event telemetry.');
+async function call(url:string,method='GET',deps:unknown=dependencies()) {
+  const out={statusCode:0,body:'',headers:{} as Record<string,string>,writeHead(status:number,headers:Record<string,string>){this.statusCode=status;this.headers=headers;},end(body:string){this.body=body;}};
+  await handleMatchDetail({url,method} as never,out as never,deps as MatchDetailRouteDependencies);
+  return {...out,payload:JSON.parse(out.body)};
+}
+describe('explicit owner match detail route',()=>{
+  it('GET reads rich cache without a source refresh or a background queue',async()=>{
+    const deps=dependencies(); const out=await call(`/api/v1/matches/detail?id=${match.id}`,'GET',deps);
+    expect(out.statusCode).toBe(200); expect(out.payload.enrichment.shots).toHaveLength(1);
+    expect(out.payload.refresh.outcome).toBe('cached'); expect(out.headers['Cache-Control']).toBe('no-store');
+    expect(deps.coordinator.read).toHaveBeenCalledWith(match.id); expect(deps.coordinator.refresh).not.toHaveBeenCalled(); expect(deps.queue.enqueue).not.toHaveBeenCalled();
   });
-
-  it('returns 400 if id is missing', async () => {
-    const response = responseMock();
-
-    await handleMatchDetail(
-      { url: '/api/v1/matches/detail', method: 'GET' } as import('http').IncomingMessage,
-      response as unknown as import('http').ServerResponse
-    );
-
-    expect(response.statusCode).toBe(400);
-    const body = JSON.parse(response.body);
-    expect(body.error.code).toBe('match_id_required');
+  it('POST refresh invokes only the selected canonical match',async()=>{
+    const deps=dependencies(); const out=await call(`/api/v1/matches/detail/refresh?id=${match.id}`,'POST',deps);
+    expect(out.statusCode).toBe(200); expect(out.payload.refresh.outcome).toBe('refreshed');
+    expect(deps.coordinator.refresh).toHaveBeenCalledExactlyOnceWith(match.id); expect(deps.coordinator.read).not.toHaveBeenCalled();
+    expect(deps.terminalReconciler.reconcile).toHaveBeenCalledExactlyOnceWith([detail.match]);
+    expect(validateLocalMatchDetail(out.payload).ok).toBe(true);
   });
-
-  it('returns 400 with legacy_provider_id_not_supported for api-football-fixture- prefix', async () => {
-    const response = responseMock();
-
-    await handleMatchDetail(
-      { url: '/api/v1/matches/detail?id=api-football-fixture-123', method: 'GET' } as import('http').IncomingMessage,
-      response as unknown as import('http').ServerResponse
-    );
-
-    expect(response.statusCode).toBe(400);
-    const body = JSON.parse(response.body);
-    expect(body.error.code).toBe('legacy_provider_id_not_supported');
+  it('keeps a successful detail refresh available when settlement retry fails',async()=>{
+    const deps=dependencies(); deps.terminalReconciler.reconcile.mockRejectedValue(new Error('settlement retry failed'));
+    const out=await call(`/api/v1/matches/detail/refresh?id=${match.id}`,'POST',deps);
+    expect(out.statusCode).toBe(200); expect(out.payload.refresh.outcome).toBe('refreshed');
+    expect(deps.terminalReconciler.reconcile).toHaveBeenCalledTimes(1);
   });
-
-  it('returns 404 if match is not found in the local snapshot', async () => {
-    const response = responseMock();
-    const mockRepo = {
-      findById: async () => null
-    } as unknown as LocalMatchSnapshotRepository;
-
-    await handleMatchDetail(
-      { url: '/api/v1/matches/detail?id=non-existent-id', method: 'GET' } as import('http').IncomingMessage,
-      response as unknown as import('http').ServerResponse,
-      { repository: mockRepo }
-    );
-
-    expect(response.statusCode).toBe(404);
-    const body = JSON.parse(response.body);
-    expect(body.error.code).toBe('match_not_found');
+  it.each([['/api/v1/matches/detail','POST'],['/api/v1/matches/detail/refresh','GET'],['/api/v1/matches/detail','DELETE']])('rejects the wrong method for %s',async(path,method)=>{
+    const deps=dependencies(); expect((await call(`${path}?id=${match.id}`,method,deps)).statusCode).toBe(405);
+    expect(deps.coordinator.refresh).not.toHaveBeenCalled(); expect(deps.coordinator.read).not.toHaveBeenCalled();
+  });
+  it.each(['','?id=','?id=%20','?id=a&id=b','?id=a&sourceId=fotmob','?id=https://bad.example'])('rejects ambiguous/invalid query %s',async(query)=>{
+    const deps=dependencies(); expect((await call(`/api/v1/matches/detail/refresh${query}`,'POST',deps)).statusCode).toBe(400);
+    expect(deps.coordinator.refresh).not.toHaveBeenCalled();
+  });
+  it('returns 404 for an unknown canonical match without exposing input or upstream errors',async()=>{
+    const deps=dependencies(); deps.coordinator.read.mockResolvedValue(null as never);
+    expect((await call('/api/v1/matches/detail?id=unknown','GET',deps)).statusCode).toBe(404);
+    deps.coordinator.read.mockRejectedValue(new Error('private source URL and credentials'));
+    const failed=await call('/api/v1/matches/detail?id=unknown','GET',deps);
+    expect(failed.statusCode).toBe(500); expect(failed.body).not.toContain('private source');
+  });
+  it.each(['club','national-team'] as const)('returns canonical-only GET without enqueueing for %s when hosted detail is absent',async(type)=>{
+    const deps=dependencies(); const {coordinator:_,...fallback}=deps;
+    fallback.repository.findById.mockResolvedValue({...match,competition:{...match.competition,type}});
+    const out=await call(`/api/v1/matches/detail?id=${match.id}`,'GET',fallback);
+    expect(out.statusCode).toBe(200); expect(out.payload.status).toBe('completed'); expect(out.payload.refresh.outcome).toBe('unavailable');
+    expect(deps.queue.enqueue).not.toHaveBeenCalled(); expect(out.body).not.toMatch(/sourceMatchId|sourceUrl|fotmob\.com/);
+  });
+  it('preserves rich last-good and retry metadata while stripping provider locators',async()=>{
+    const deps=dependencies(); deps.coordinator.refresh.mockResolvedValue({...detail,match,
+      refresh:{outcome:'cooldown',lastSuccessAt:detail.updatedAt,retryAfterSeconds:21600}});
+    const out=await call(`/api/v1/matches/detail/refresh?id=${match.id}`,'POST',deps);
+    expect(out.payload.enrichment.players).toHaveLength(1); expect(out.payload.refresh.retryAfterSeconds).toBe(21600);
+    expect(out.body).not.toMatch(/sourceMatchId|sourceUrl/);
   });
 });

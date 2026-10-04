@@ -1,9 +1,11 @@
-import { mkdir, appendFile } from 'node:fs/promises';
+import { mkdir, appendFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type {
   ProviderId,
-  ProviderCaptureManifestEntry
+  ProviderCaptureManifestEntry,
+  ProviderSourceBindingPolicy
 } from '../../../packages/shared/src/contracts/provider-ingestion-contracts.js';
+import { validateProviderCaptureManifestEntry } from '../../../packages/shared/src/contracts/provider-ingestion-contracts.js';
 
 /**
  * Append a manifest entry for a provider capture run to:
@@ -14,10 +16,104 @@ import type {
 export async function appendProviderManifestEntry(
   root: string,
   provider: ProviderId,
-  entry: ProviderCaptureManifestEntry
+  entry: ProviderCaptureManifestEntry,
+  bindingPolicy?: ProviderSourceBindingPolicy
 ): Promise<void> {
+  assertValidProviderManifestEntry(provider, entry, bindingPolicy);
+
   const dir = join(root, 'providers', provider, 'manifests');
   await mkdir(dir, { recursive: true });
   const filePath = join(dir, 'capture-manifest.jsonl');
   await appendFile(filePath, JSON.stringify(entry) + '\n', 'utf8');
+}
+
+export async function readLatestProviderManifestEntry(
+  root: string,
+  provider: ProviderId,
+  endpointKey: string,
+  bindingPolicy?: ProviderSourceBindingPolicy
+): Promise<ProviderCaptureManifestEntry | null> {
+  const filePath = join(root, 'providers', provider, 'manifests', 'capture-manifest.jsonl');
+  let content: string;
+
+  try {
+    content = await readFile(filePath, 'utf8');
+  } catch (error) {
+    if (isMissingPathError(error)) {
+      return null;
+    }
+    throw error;
+  }
+
+  let latest: ProviderCaptureManifestEntry | null = null;
+  let latestFetchedAt = Number.NEGATIVE_INFINITY;
+
+  for (const line of content.split(/\r?\n/)) {
+    if (line.trim() === '') {
+      continue;
+    }
+
+    const entry = parseProviderManifestEntry(line, bindingPolicy);
+    if (entry.provider !== provider) {
+      throw providerManifestInvalid('Manifest provider does not match its evidence path');
+    }
+    if (entry.endpointKey !== endpointKey) {
+      continue;
+    }
+
+    const fetchedAt = entry.fetchedAt === undefined ? Number.NEGATIVE_INFINITY : Date.parse(entry.fetchedAt);
+    if (Number.isNaN(fetchedAt)) {
+      throw providerManifestInvalid('Manifest fetchedAt is not a valid timestamp');
+    }
+    if (latest === null || fetchedAt > latestFetchedAt) {
+      latest = entry;
+      latestFetchedAt = fetchedAt;
+    }
+  }
+
+  return latest;
+}
+
+function assertValidProviderManifestEntry(
+  provider: ProviderId,
+  entry: ProviderCaptureManifestEntry,
+  bindingPolicy?: ProviderSourceBindingPolicy
+): void {
+  if (entry.provider !== provider) {
+    throw providerManifestInvalid('Manifest provider does not match its evidence path');
+  }
+
+  const validation = validateProviderCaptureManifestEntry(entry, bindingPolicy);
+  if (!validation.ok) {
+    throw providerManifestInvalid(validation.errors.join('; '));
+  }
+}
+
+function parseProviderManifestEntry(
+  line: string,
+  bindingPolicy?: ProviderSourceBindingPolicy
+): ProviderCaptureManifestEntry {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(line);
+  } catch {
+    throw providerManifestInvalid('Manifest evidence is not valid JSON');
+  }
+
+  assertValidProviderManifestEntry(
+    (parsed as { provider?: ProviderId }).provider ?? 'manual-snapshot',
+    parsed as ProviderCaptureManifestEntry,
+    bindingPolicy
+  );
+  return parsed as ProviderCaptureManifestEntry;
+}
+
+function providerManifestInvalid(message: string): Error & { code: 'provider_manifest_invalid' } {
+  return Object.assign(new Error(`provider_manifest_invalid: ${message}`), {
+    code: 'provider_manifest_invalid' as const
+  });
+}
+
+function isMissingPathError(error: unknown): error is NodeJS.ErrnoException {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
 }

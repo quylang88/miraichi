@@ -1,0 +1,85 @@
+import { spawnSync } from 'node:child_process';
+import { gate } from './staging-hosted-config.js';
+import { remoteQueryCommand } from './release/supabase-query.js';
+let querySequence = 0;
+
+type StagingRefreshKind = 'current' | 'live' | 'terminal';
+
+export function expectedStagingSchedulerCommand(kind: StagingRefreshKind): string {
+  return `select miraichi_app.invoke_hosted_refresh('${kind}','eu-central-1');`;
+}
+
+export function linkedStagingQuery(sql: string): Record<string, unknown>[] {
+  const queryId = ++querySequence;
+  const queryCommand = remoteQueryCommand({ projectRef: process.env.SUPABASE_PROJECT_REF ?? '',
+    ...(process.env.SUPABASE_DATABASE_URL?.trim() ? { databaseUrl: process.env.SUPABASE_DATABASE_URL.trim() } : {}) }, process.env);
+  const execute = () => spawnSync(process.execPath, ['node_modules/supabase/dist/supabase.js', ...queryCommand.args], {
+    input: sql, env: queryCommand.env, encoding: 'utf8', windowsHide: true, timeout: 45_000
+  });
+  let result = execute();
+  const metadataRead = /^select (?:name|jobname|status_code|\(select)\b/u.test(sql) && !sql.includes(';');
+  for (let attempt = 1; metadataRead && result.status !== 0 && attempt < 3; attempt++) {
+    const message = (result.stderr ?? '').toLowerCase();
+    const reasons = ['too many connections','remaining connection slots','too many clients','connection refused',
+      'connection reset','connection terminated','timeout','timed out','password authentication failed',
+      'sasl','certificate','rate limit','429','500','could not connect','circuit breaker','no such file']
+      .filter((reason) => message.includes(reason));
+    console.log(JSON.stringify({ gate: 'hosted-scheduler', stage: 'metadata-read-retry', queryId, attempt, reasons }));
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1_000);
+    result = execute();
+  }
+  const sqlState = /SQLSTATE\s+([A-Z0-9]{5})/u.exec(result.stderr ?? '')?.[1] ?? 'none';
+  gate(result.status === 0, `linked Frankfurt query ${queryId}; exit=${result.status}; sqlstate=${sqlState}`);
+  const offset = result.stdout.indexOf('{');
+  gate(offset >= 0, 'linked query response');
+  const parsed = JSON.parse(result.stdout.slice(offset)) as { rows?: Record<string, unknown>[] };
+  gate(Array.isArray(parsed.rows), 'linked query rows');
+  return parsed.rows;
+}
+
+export async function runStagingSchedulerSmoke(): Promise<void> {
+  const vault = linkedStagingQuery("select name from vault.secrets where name like 'miraichi_%' order by name").map((row) => row.name);
+  const expectedVault = ['miraichi_edge_function_url','miraichi_edge_gateway_token','miraichi_live_refresh_token','miraichi_provider_refresh_token'];
+  gate(JSON.stringify(vault) === JSON.stringify(expectedVault), 'exact four Vault names');
+  const jobs = linkedStagingQuery("select jobname,schedule,command,active from cron.job where jobname like 'miraichi-%' order by jobname");
+  gate(jobs.length === 3, 'exact three cron jobs');
+  for (const kind of ['current','live','terminal'] as const) {
+    const job = jobs.find((row) => row.jobname === `miraichi-${kind}-refresh`);
+    gate(job?.active === true && job.schedule === (kind === 'terminal' ? '* * * * *' : '*/5 * * * *')
+      && job.command === expectedStagingSchedulerCommand(kind), 'exact active scheduler contract');
+  }
+  const outcomes: Record<string, string> = {};
+  for (const kind of ['current','terminal','live'] as const) {
+    console.log(JSON.stringify({ gate: 'hosted-scheduler', stage: kind }));
+    const before = linkedStagingQuery(`select (select revision from miraichi_app.provider_refresh_control where owner_profile_id='owner-primary') as revision,
+      (select count(*)::int from miraichi_app.match_record) as matches,
+      (select generated_at from miraichi_app.live_match_snapshot where owner_profile_id='owner-primary') as live_at`)[0];
+    const invoked = linkedStagingQuery(`select miraichi_app.invoke_hosted_refresh('${kind}','eu-central-1') as request_id`)[0];
+    const id = Number(invoked.request_id);
+    gate(Number.isSafeInteger(id) && id > 0, 'controlled scheduler request ID');
+    let delivery: Record<string, unknown> | undefined;
+    for (let attempt = 0; attempt < 40; attempt++) {
+      delivery = linkedStagingQuery(`select status_code,content,timed_out from net._http_response where id=${id}`)[0];
+      if (delivery) break;
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+    gate(delivery && Number(delivery.status_code) >= 200 && Number(delivery.status_code) < 300 && !delivery.timed_out, `scheduler ${kind} delivered 2xx`);
+    const content = JSON.parse(String(delivery.content)) as { outcome?: string; requests?: number; publications?: number; refresh?: { outcome?: string }; snapshot?: { generatedAt?: string } };
+    const outcome = kind === 'live' ? content.refresh?.outcome : content.outcome;
+    gate(['fresh','refreshed'].includes(outcome ?? ''), `scheduler ${kind} completed or fresh (lease contention requires rerun)`);
+    const after = linkedStagingQuery(`select (select revision from miraichi_app.provider_refresh_control where owner_profile_id='owner-primary') as revision,
+      (select count(*)::int from miraichi_app.match_record) as matches,
+      (select generated_at from miraichi_app.live_match_snapshot where owner_profile_id='owner-primary') as live_at`)[0];
+    gate(Number(after.matches) >= Number(before.matches), 'last-good matches preserved');
+    if (kind === 'live') gate(Boolean(after.live_at)
+      && Date.now() - Date.parse(String(after.live_at)) < 10 * 60_000
+      && (!before.live_at || Date.parse(String(after.live_at)) >= Date.parse(String(before.live_at))), 'live last-good freshness');
+    else {
+      gate(Number(after.revision) >= Number(before.revision ?? 0), 'durable checkpoint revision');
+      gate(Number.isInteger(content.requests) && content.requests! <= (kind === 'current' ? 9 : 2), 'request cap');
+      if (outcome === 'refreshed') gate(Number(after.revision) > Number(before.revision ?? 0), 'completed checkpoint progress');
+    }
+    outcomes[kind] = outcome!;
+  }
+  console.log(JSON.stringify({ gate: 'hosted-scheduler', status: 'passed', vaultNames: 4, jobs: 3, outcomes }));
+}

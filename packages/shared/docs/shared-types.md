@@ -1,21 +1,16 @@
-# Shared Types Design
+# Shared Types
 
-Common data model interfaces and definitions.
+## Factual Match Domain
 
-## Purpose
-Defines interfaces for Match, Player, Market, Prediction, and Bet Slips.
+- `LocalMatch`, `LocalMatchDetail`, and snapshot/feed contracts.
+- `LocalCompetitionType`: `club | national-team`.
+- Provider-neutral raw envelopes, canonical entities, provider links, and field provenance.
 
-## Status
-- **Status**: Active
+## Owner Domain
 
-## Scope
-Governs data modeling and type safety across all apps.
+- Manual odds and bet record contracts.
+- Bet draft and backup contracts.
+- Bankroll account and ledger contracts.
+- Cloud persistence status and snapshot contracts.
 
-## Key Types
-- `Match`: id, competitionId, seasonId, homeTeam, awayTeam, startTime, status.
-- `Market`: id, matchId, type (e.g. 1X2, OverUnder), odds, status.
-- `Prediction`: id, matchId, predictedOutcome, confidenceScore, modelName.
-- `Bet`: id, userId, selection, stake, payout, status.
-
-## TODO / Next Steps
-- [ ] Implement TypeScript interface files.
+Shared contracts must not embed a provider ID into canonical entity IDs or make one competition type structurally privileged.

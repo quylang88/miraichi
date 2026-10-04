@@ -1,8 +1,10 @@
 import type {
   AddBetDraft, BackupExportReceipt, BankrollAccount, BankrollLedgerEntry,
   CloudBackupEnvelope, CloudBetRecord, CloudMatchSnapshot, CloudPersistenceStatus,
-  CreateBankrollAccountInput, CreateBankrollLedgerEntryInput, LocalDataSnapshotStatus,
-  LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery, UpdateBankrollAccountInput
+  ApplyBetSettlementInput, ApplyBetSettlementResult, BankrollTransferResult, BetSettlementEvent,
+  CreateBankrollAccountInput, CreateBankrollLedgerEntryInput, CreateBankrollTransferInput, DisciplineChallenge, DisciplineConfig, LocalDataSnapshotStatus,
+  AcquireLiveRefreshLeaseInput, FinishLiveRefreshInput, LiveMatchSnapshot, LiveRefreshState,
+  LocalMatch, LocalMatchFeedResponse, LocalMatchSnapshotQuery, MarkBetSettlementManualReviewInput, UpdateBankrollAccountInput
 } from '@miraichi/shared/src/contracts/index.js';
 
 export interface CloudPersistenceAdapter {
@@ -12,16 +14,30 @@ export interface CloudPersistenceAdapter {
   deleteBetDraft(ownerProfileId: string, draftId: string): Promise<boolean>;
   createBetRecord(record: CloudBetRecord): Promise<CloudBetRecord>;
   listBetRecords(ownerProfileId: string): Promise<readonly CloudBetRecord[]>;
+  listPendingBetRecordsByMatchIds(ownerProfileId: string, matchIds: readonly string[], limit: number): Promise<readonly CloudBetRecord[]>;
   updateBetRecord(record: CloudBetRecord): Promise<CloudBetRecord>;
+  markBetSettlementManualReview(input: MarkBetSettlementManualReviewInput): Promise<CloudBetRecord | null>;
+  getDisciplineConfig(ownerProfileId: string): Promise<DisciplineConfig | null>;
+  upsertDisciplineConfig(config: DisciplineConfig): Promise<DisciplineConfig>;
+  createDisciplineChallenge(challenge: DisciplineChallenge): Promise<DisciplineChallenge>;
+  findDisciplineChallenge(ownerProfileId: string, challengeId: string): Promise<DisciplineChallenge | null>;
+  consumeDisciplineChallenge(ownerProfileId: string, challengeId: string, consumedAt: string): Promise<DisciplineChallenge | null>;
+  applyBetSettlement(input: ApplyBetSettlementInput): Promise<ApplyBetSettlementResult>;
+  listBetSettlementEvents(ownerProfileId: string, betId?: string): Promise<readonly BetSettlementEvent[]>;
   createBankrollAccount(input: CreateBankrollAccountInput): Promise<BankrollAccount>;
   listBankrollAccounts(ownerProfileId: string): Promise<readonly BankrollAccount[]>;
   updateBankrollAccount(input: UpdateBankrollAccountInput): Promise<BankrollAccount>;
   createBankrollLedgerEntry(input: CreateBankrollLedgerEntryInput): Promise<BankrollLedgerEntry>;
   listBankrollLedgerEntries(ownerProfileId: string, accountId: string): Promise<readonly BankrollLedgerEntry[]>;
+  createBankrollTransfer(input: CreateBankrollTransferInput): Promise<BankrollTransferResult>;
   upsertMatchSnapshot(ownerProfileId: string, snapshot: CloudMatchSnapshot): Promise<void>;
   listCloudMatches(ownerProfileId: string, query: LocalMatchSnapshotQuery): Promise<LocalMatchFeedResponse>;
   findCloudMatchById(ownerProfileId: string, matchId: string): Promise<LocalMatch | null>;
   getCloudMatchSnapshotStatus(ownerProfileId: string): Promise<LocalDataSnapshotStatus>;
+  getLiveMatchSnapshot(ownerProfileId: string): Promise<LiveMatchSnapshot | null>;
+  getLiveRefreshState(ownerProfileId: string): Promise<LiveRefreshState | null>;
+  acquireLiveRefreshLease(ownerProfileId: string, input: AcquireLiveRefreshLeaseInput): Promise<boolean>;
+  finishLiveRefresh(ownerProfileId: string, input: FinishLiveRefreshInput): Promise<void>;
   exportOwnerData(ownerProfileId: string, exportedAt: string): Promise<CloudBackupEnvelope>;
   importOwnerData(ownerProfileId: string, envelope: CloudBackupEnvelope): Promise<void>;
   recordBackupExport(receipt: BackupExportReceipt): Promise<void>;

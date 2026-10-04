@@ -2,10 +2,19 @@ import type {
   BetRecordEnvelope,
   IsoDateTimeString,
   LineValue,
-  MarketType,
   MatchGroupId,
-  OddsFormat
+  OddsFormat,
+  PersistedMarketType
 } from './betting-domain-contracts.js';
+import type { PlanAdherence, PreBetEmotion, PreBetMotivation } from './core-betting-contracts.js';
+import { PRE_BET_EMOTIONS } from './core-betting-contracts.js';
+import type {
+  LiveContextSource,
+  MarketPeriod,
+  RunningWindow,
+  RunningGoalThreshold,
+  SelectionCode
+} from './structured-bet-selection.js';
 
 export type { IsoDateTimeString, MatchGroupId } from './betting-domain-contracts.js';
 
@@ -17,12 +26,30 @@ export type AddBetDraftId = string;
 export interface AddBetDraft {
   readonly draftId: AddBetDraftId;
   readonly matchGroupId: MatchGroupId;
-  readonly marketType: MarketType;
+  readonly homeTeamName?: string;
+  readonly awayTeamName?: string;
+  readonly selectionLabel?: string;
+  readonly marketType: PersistedMarketType;
   readonly customMarketLabel?: string;
+  readonly selectionCode?: SelectionCode;
+  readonly marketPeriod?: MarketPeriod;
   readonly lineValue?: LineValue | null;
+  readonly runningWindow?: RunningWindow;
+  readonly runningGoalThreshold?: RunningGoalThreshold;
+  readonly windowStartMinute?: number;
+  readonly windowEndMinute?: number;
+  readonly liveScoreHome?: number;
+  readonly liveScoreAway?: number;
+  readonly liveMinute?: number;
+  readonly liveContextSource?: LiveContextSource;
+  readonly liveContextObservedAt?: IsoDateTimeString;
   readonly oddsFormat: OddsFormat;
   readonly oddsValue: number;
   readonly stakePoints: number;
+  readonly preBetEmotion?: PreBetEmotion;
+  readonly preBetMotivation?: PreBetMotivation;
+  readonly preBetPlanAdherence?: PlanAdherence;
+  readonly preBetNote?: string;
   readonly notes?: string;
   readonly tags?: readonly string[];
   readonly createdAt: IsoDateTimeString;
@@ -92,6 +119,10 @@ function hasFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+function decimalsAtMost(value: number, places: number): boolean {
+  return Math.abs(value * (10 ** places) - Math.round(value * (10 ** places))) < 1e-7;
+}
+
 export function cloneAddBetDraft(draft: AddBetDraft): AddBetDraft {
   const { tags, ...rest } = draft;
   return tags ? { ...rest, tags: [...tags] } : rest;
@@ -110,7 +141,14 @@ export function isAddBetDraftReviewReady(draft: Partial<AddBetDraft>): boolean {
     return false;
   }
 
-  if (!hasFiniteNumber(draft.oddsValue) || !hasFiniteNumber(draft.stakePoints)) {
+  if (draft.oddsFormat !== 'HK'
+    || !hasFiniteNumber(draft.oddsValue) || draft.oddsValue <= 0 || !decimalsAtMost(draft.oddsValue, 4)
+    || !hasFiniteNumber(draft.stakePoints) || draft.stakePoints <= 0 || !decimalsAtMost(draft.stakePoints, 2)) {
+    return false;
+  }
+
+  if (draft.preBetEmotion !== undefined
+    && !PRE_BET_EMOTIONS.includes(draft.preBetEmotion)) {
     return false;
   }
 

@@ -3,16 +3,7 @@ import {
   LocalDataSnapshotStatus,
   validateLocalMatchFeedResponse
 } from '@miraichi/shared';
-
-declare global {
-  interface Window {
-    MIRAICHI_ENV?: {
-      API_URL?: string;
-    };
-  }
-}
-
-const API_BASE_URL = (typeof window !== 'undefined' && window.MIRAICHI_ENV?.API_URL) || '';
+import { buildApiUrl } from '../config/client-env.js';
 
 export type MatchFeedViewState =
   | { status: 'loading'; date: string }
@@ -20,9 +11,10 @@ export type MatchFeedViewState =
   | { status: 'empty'; date: string; snapshot: LocalDataSnapshotStatus; warnings: string[] }
   | { status: 'unavailable'; date: string; reason: string; warnings: string[]; snapshot?: LocalDataSnapshotStatus | undefined };
 
-export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
+export async function getMatchFeed(date: string, timezone?: string): Promise<MatchFeedViewState> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/matches?date=${encodeURIComponent(date)}`);
+    const tzQuery = timezone ? `&timezone=${encodeURIComponent(timezone)}` : '';
+    const response = await fetch(buildApiUrl(`/api/v1/matches?date=${encodeURIComponent(date)}${tzQuery}`));
 
     if (!response.ok) {
       let message = `Match feed unavailable with HTTP ${response.status}.`;
@@ -37,12 +29,10 @@ export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
         // Response is not JSON
       }
 
-      if (code === 'local_snapshot_missing') {
-        message = 'Local match snapshot is missing. Run the national-team data update before using match workflows.';
-      } else if (code === 'local_snapshot_invalid') {
-        message = 'Local match snapshot is invalid. Fix the snapshot file and rerun validation.';
-      } else if (code === 'unsupported_match_status') {
-        message = 'This app does not support live match status in Phase 9.';
+      if (code === 'serving_match_store_missing') {
+        message = 'Serving match store is missing. Build it from canonical warehouse before using match workflows.';
+      } else if (code === 'serving_match_store_invalid') {
+        message = 'Serving match store is invalid. Rebuild it from canonical warehouse after fixing canonical data.';
       }
 
       return {
@@ -63,6 +53,16 @@ export async function getMatchFeed(date: string): Promise<MatchFeedViewState> {
     const warnings: string[] = Array.isArray(payload.warnings) ? payload.warnings : [];
     const matches = payload.matches as LocalMatch[];
     const snapshot = payload.snapshot as LocalDataSnapshotStatus;
+
+    if (snapshot.freshness === 'missing') {
+      return {
+        status: 'unavailable',
+        date,
+        reason: snapshot.warnings[0] ?? 'Match snapshot is unavailable.',
+        warnings: [...new Set([...warnings, ...snapshot.warnings])],
+        snapshot
+      };
+    }
 
     if (matches.length === 0) {
       return { status: 'empty', date, snapshot, warnings };

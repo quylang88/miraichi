@@ -8,8 +8,22 @@ async function importFreshRegisterModule() {
 
 describe('PWA service worker registration', () => {
   afterEach(() => {
+    vi.resetModules();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it('registers the emitted ES module worker on the hosted app', async () => {
+    const register = vi.fn(() => Promise.resolve({ scope: 'https://miraichi.example/' }));
+    vi.stubGlobal('window', {
+      addEventListener: vi.fn((_event, callback) => callback()),
+      location: { hostname: 'miraichi.example' }
+    });
+    vi.stubGlobal('navigator', { serviceWorker: { register } });
+
+    await importFreshRegisterModule();
+
+    expect(register).toHaveBeenCalledWith('/service-worker.js', { type: 'module' });
   });
 
   it('removes service workers and caches on localhost instead of registering a cache-first shell', async () => {

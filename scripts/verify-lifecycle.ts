@@ -40,7 +40,8 @@ export const REQUIRED_ROOT_SCRIPTS = [
   'test:unit:coverage',
   'test:integration',
   'verify:local',
-  'verify:release'
+  'verify:release',
+  'verify:product-boundary'
 ];
 
 export const REQUIRED_LIFECYCLE_REFERENCE_FILES = [
@@ -93,7 +94,6 @@ export const REQUIRED_DOC_INDEX_REFERENCES: MarkerRequirement[] = [
   { file: 'docs/README.md', marker: 'docs/governance/OWNER-DECISION-GATES.md' },
   { file: 'docs/README.md', marker: 'apps/api/docs/api-architecture.md' },
   { file: 'docs/README.md', marker: 'apps/web/docs/frontend-architecture.md' },
-  { file: 'docs/README.md', marker: 'apps/local-ai/docs/ai-architecture.md' },
   { file: 'docs/README.md', marker: 'apps/worker/docs/worker-architecture.md' },
   { file: 'docs/README.md', marker: 'packages/ui/docs/design-system.md' },
   { file: 'docs/README.md', marker: 'packages/config/docs/environment-strategy.md' },

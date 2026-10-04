@@ -41,6 +41,9 @@ python/
 .env.production.local
 *.env
 !.env.example
+.secrets/
+apps/cloudflare-gateway/.dev.vars
+apps/cloudflare-gateway/.wrangler/
 
 # Logs and databases
 logs/
@@ -77,26 +80,27 @@ desktop.ini
 *.sln
 *.sw?
 
-# Machine Learning / AI models
-*.bin
-*.pkl
-*.h5
-*.onnx
-*.pt
-*.pth
-*.ckpt
-models/
-checkpoint-*/
-cache/
-.huggingface/
-
 # Provider capture data — local raw payloads and manifests are gitignored;
 # .gitkeep sentinels are explicitly unignored to preserve directory structure.
-# Warehouse JSONL files are NOT globally ignored; promotion is an explicit decision.
 apps/api/data/providers/*/raw/**
 apps/api/data/providers/*/manifests/**
 apps/api/data/providers/*/reports/**
+apps/api/data/providers/*/state/**
 !apps/api/data/providers/*/raw/.gitkeep
 !apps/api/data/providers/*/manifests/.gitkeep
 !apps/api/data/providers/*/reports/.gitkeep
 
+# Serving store and warehouse generated data
+apps/api/data/api-football/**
+apps/api/data/match-details/**
+apps/api/data/match-detail-refresh/**
+apps/api/data/serving/manifest.json
+apps/api/data/serving/versions/**
+apps/api/data/warehouse/versions/**
+apps/api/data/warehouse/runs/**
+supabase/functions/_shared/generated/**
+artifacts/cloudflare-dry-run/**
+output/playwright/
+!apps/api/data/serving/README.md
+!apps/api/data/serving/.gitkeep
+!apps/api/data/warehouse/.gitkeep

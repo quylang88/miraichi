@@ -1,0 +1,406 @@
+import { describe, expect, it } from 'vitest';
+import { toProviderNeutralLiveMatchSnapshot, type LocalMatch, type LocalMatchDetail } from '@miraichi/shared';
+import { liveSnapshotFixture } from '../../../../../tests/fixtures/live-match-snapshot.js';
+import { renderMatchesScreen, renderMatchDetailScreen, getRibbonDates, formatMatchTitleHtml, formatMatchTeamsHtml, formatMatchTitle } from './matches-screen.js';
+import { renderMatchDetailView } from '../match-detail-view.js';
+import { createTranslator } from '../../services/i18n-service.js';
+import type { MatchFeedViewState } from '../../services/match-feed-service.js';
+
+const mockPremierLeagueMatch: LocalMatch = {
+  id: 'match-epl-1',
+  competition: { id: 'eng-premier-league', name: 'Premier League', type: 'club', season: '2026-27' },
+  kickoffUtc: '2026-09-02T19:00:00.000Z',
+  status: 'scheduled',
+  homeTeam: { id: 'arsenal', name: 'Arsenal' },
+  awayTeam: { id: 'chelsea', name: 'Chelsea' },
+  score: { home: null, away: null },
+  sourceRefs: [],
+  updatedAt: '2026-09-01T00:00:00.000Z'
+};
+
+const mockAustrianBundesligaMatch: LocalMatch = {
+  id: 'match-aut-1',
+  competition: { id: 'aut-bundesliga', name: 'Austrian Bundesliga', type: 'club', season: '2026-27' },
+  kickoffUtc: '2026-09-02T17:30:00.000Z',
+  status: 'scheduled',
+  homeTeam: { id: 'wolfsberger', name: 'Wolfsberger AC' },
+  awayTeam: { id: 'lask', name: 'LASK' },
+  score: { home: null, away: null },
+  sourceRefs: [],
+  updatedAt: '2026-09-01T00:00:00.000Z'
+};
+
+const mockChampionsLeagueMatch: LocalMatch = {
+  id: 'match-ucl-1',
+  competition: { id: 'uefa-champions-league', name: 'UEFA Champions League', type: 'club', season: '2026-27' },
+  kickoffUtc: '2026-09-02T20:00:00.000Z',
+  status: 'scheduled',
+  homeTeam: { id: 'real-madrid', name: 'Real Madrid' },
+  awayTeam: { id: 'bayern', name: 'Bayern München' },
+  score: { home: null, away: null },
+  sourceRefs: [],
+  updatedAt: '2026-09-01T00:00:00.000Z'
+};
+
+describe('matches screen UI refinements', () => {
+  it('has exactly one LIVE toggle and replaces the date list with only live states', () => {
+    const common = { activeTabId: 'matches' as const, translate: createTranslator('en'), locale: 'en' as const,
+      matchFeed: { status: 'loading' as const, date: '2026-01-01' }, timezone: 'UTC' as const,
+      filters: { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set<string>() }, searchQuery: 'saved search', isFilterPanelOpen: true };
+    const off = renderMatchesScreen(common);
+    expect(off).toContain('aria-pressed="false">LIVE</button>');
+    expect(off).not.toContain('data-live-state');
+    const snapshot = toProviderNeutralLiveMatchSnapshot(liveSnapshotFixture);
+    snapshot.matches.push({ ...snapshot.matches[0], matchId: 'completed-test', status: 'completed' });
+    const on = renderMatchesScreen({ ...common, liveMode: true,
+      liveMatches: { status: 'ready', snapshot, stale: false, partial: false, warningCode: null } });
+    expect(on.match(/>LIVE<\/button>/gu)).toHaveLength(1);
+    expect(on).toContain('aria-pressed="true">LIVE</button>');
+    expect(on).not.toContain('live-panel');
+    expect(on).not.toContain('completed-test');
+    expect(on).toContain('class="match-row');
+    expect(on).toContain('data-status="live"');
+    expect(on).not.toContain('id="date-prev-btn"');
+    expect(on).not.toContain('id="match-search"');
+    const empty = renderMatchesScreen({ ...common, liveMode: true,
+      liveMatches: { status: 'ready', snapshot: { ...snapshot, matches: [] }, stale: false, partial: false, warningCode: null } });
+    expect(empty).toContain('data-live-empty');
+  });
+  it('renders factual live score/minute and partial stale states without a refresh button', () => {
+    const translate = createTranslator('en');
+    const html = renderMatchesScreen({
+      activeTabId: 'matches',
+      liveMode: true,
+      translate,
+      locale: 'en',
+      matchFeed: { status: 'loading', date: '2026-09-02' },
+      liveMatches: {
+        status: 'ready',
+        snapshot: toProviderNeutralLiveMatchSnapshot(liveSnapshotFixture),
+        stale: true,
+        partial: true,
+        warningCode: 'upstream_timeout'
+      },
+      timezone: 'UTC',
+      filters: { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set() },
+      searchQuery: '',
+      isFilterPanelOpen: false
+    });
+
+    expect(html).toContain('data-live-match-id="match-premier-league-arsenal-liverpool-2026-09-02"');
+    expect(html).toContain('2 – 1');
+    expect(html).toContain("67&#39;");
+    expect(html).not.toContain('Partial coverage');
+    expect(html).toContain('Last update is stale');
+    expect(html).toContain('class="date-group"');
+    expect(html).toContain('class="group-label">Premier League</div>');
+    expect(html).toContain('class="match-row clickable"');
+    expect(html).toContain('data-open-match');
+    expect(html).toContain('class="row-score live"');
+    expect(html).toContain('class="row-live-time" data-live-minute');
+    expect(html).toContain('<span class="match-vs">vs</span>');
+    expect(html).toContain('<div class="row-meta">11:00</div>');
+    expect(html).not.toMatch(/<button[^>]*>[^<]*Refresh/iu);
+  });
+
+  it('formats stoppage time correctly as 45+X and 90+X in live status', () => {
+    const translate = createTranslator('en');
+    const snapshot = toProviderNeutralLiveMatchSnapshot(liveSnapshotFixture);
+    snapshot.matches = [
+      {
+        ...snapshot.matches[0]!,
+        matchId: 'live-stoppage-1',
+        period: 'first_half',
+        elapsedMinute: 47,
+        status: 'live',
+        score: { home: 1, away: 0 }
+      },
+      {
+        ...snapshot.matches[0]!,
+        matchId: 'live-stoppage-2',
+        period: 'second_half',
+        elapsedMinute: 94,
+        status: 'live',
+        score: { home: 2, away: 2 }
+      }
+    ];
+
+    const html = renderMatchesScreen({
+      activeTabId: 'matches',
+      liveMode: true,
+      translate,
+      locale: 'en',
+      matchFeed: { status: 'loading', date: '2026-09-02' },
+      liveMatches: { status: 'ready', snapshot, stale: false, partial: false, warningCode: null },
+      timezone: 'UTC',
+      filters: { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set() },
+      searchQuery: '',
+      isFilterPanelOpen: false
+    });
+
+    expect(html).toContain("45+2&#39;");
+    expect(html).toContain("90+4&#39;");
+  });
+
+  it('groups live matches by league sorted by popularity and formats halftime status', () => {
+    const translate = createTranslator('en');
+    const snapshot = toProviderNeutralLiveMatchSnapshot(liveSnapshotFixture);
+    snapshot.matches = [
+      {
+        ...snapshot.matches[0]!,
+        matchId: 'live-aut-1',
+        competition: { id: 'aut-bundesliga', name: 'Austrian Bundesliga' },
+        status: 'halftime',
+        elapsedMinute: 45,
+        score: { home: 1, away: 0 }
+      },
+      {
+        ...snapshot.matches[0]!,
+        matchId: 'live-epl-1',
+        competition: { id: 'eng-premier-league', name: 'Premier League' },
+        status: 'live',
+        elapsedMinute: 60,
+        score: { home: 2, away: 1 }
+      },
+      {
+        ...snapshot.matches[0]!,
+        matchId: 'live-ucl-1',
+        competition: { id: 'uefa-champions-league', name: 'UEFA Champions League' },
+        status: 'live',
+        elapsedMinute: 15,
+        score: { home: 0, away: 0 }
+      }
+    ];
+
+    const html = renderMatchesScreen({
+      activeTabId: 'matches',
+      liveMode: true,
+      translate,
+      locale: 'en',
+      matchFeed: { status: 'loading', date: '2026-09-02' },
+      liveMatches: { status: 'ready', snapshot, stale: false, partial: false, warningCode: null },
+      timezone: 'UTC',
+      filters: { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set() },
+      searchQuery: '',
+      isFilterPanelOpen: false
+    });
+
+    const uclPos = html.indexOf('class="group-label">UEFA Champions League</div>');
+    const eplPos = html.indexOf('class="group-label">Premier League</div>');
+    const autPos = html.indexOf('class="group-label">Austrian Bundesliga</div>');
+
+    expect(uclPos).toBeGreaterThan(-1);
+    expect(eplPos).toBeGreaterThan(uclPos);
+    expect(autPos).toBeGreaterThan(eplPos);
+
+    expect(html).toContain('data-live-match-id="live-aut-1"');
+    expect(html).toContain('>HT<');
+    expect(html).not.toContain('class="live-badges"');
+  });
+
+  it('does not render Data status or Snapshot generated metadata bar on matches screen', () => {
+    const translate = createTranslator('en');
+    const feed: MatchFeedViewState = {
+      status: 'ready',
+      date: '2026-09-02',
+      matches: [mockPremierLeagueMatch],
+      warnings: [],
+      snapshot: {
+        snapshotId: 'test-snapshot',
+        generatedAt: '2026-08-31T11:46:00.000Z',
+        importedAt: '2026-08-31T11:46:00.000Z',
+        matchCount: 1,
+        competitions: [],
+        sources: [],
+        freshness: 'stale',
+        warnings: []
+      }
+    };
+
+    const html = renderMatchesScreen({
+      activeTabId: 'matches',
+      translate,
+      locale: 'en',
+      matchFeed: feed,
+      timezone: 'UTC',
+      filters: { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set() },
+      searchQuery: '',
+      isFilterPanelOpen: false
+    });
+
+    expect(html).not.toContain('Data status:');
+    expect(html).not.toContain('Data status: Stale');
+    expect(html).not.toContain('Snapshot generated:');
+    expect(html).not.toContain('Aug 31, 2026');
+  });
+
+  it('does not render debug context section (Grouping key, matchGroupId, Entry rule) in match detail screen', () => {
+    const translate = createTranslator('en');
+    const html = renderMatchDetailScreen(translate);
+
+    expect(html).not.toContain('Grouping key');
+    expect(html).not.toContain('matchGroupId');
+    expect(html).not.toContain('Entry rule');
+    expect(html).not.toContain('Add through this match');
+    expect(html).not.toContain('match-context');
+  });
+
+  it('sorts competition groups by popularity ranking by default instead of alphabetical', () => {
+    const translate = createTranslator('en');
+    // Austrian Bundesliga (alphabetically first 'A') vs Premier League ('P') vs UEFA Champions League ('U')
+    // Popularity order: UEFA Champions League (1), Premier League (2), Austrian Bundesliga (35)
+    const feed: MatchFeedViewState = {
+      status: 'ready',
+      date: '2026-09-02',
+      matches: [mockAustrianBundesligaMatch, mockPremierLeagueMatch, mockChampionsLeagueMatch],
+      warnings: [],
+      snapshot: {
+        snapshotId: 'test-snapshot',
+        generatedAt: '2026-09-01T00:00:00.000Z',
+        importedAt: '2026-09-01T00:00:00.000Z',
+        matchCount: 3,
+        competitions: [],
+        sources: [],
+        freshness: 'fresh',
+        warnings: []
+      }
+    };
+
+    const html = renderMatchesScreen({
+      activeTabId: 'matches',
+      translate,
+      locale: 'en',
+      matchFeed: feed,
+      timezone: 'UTC',
+      filters: { groupby: 'league', type: 'all', gender: 'all', selectedLeagues: new Set() },
+      searchQuery: '',
+      isFilterPanelOpen: false
+    });
+
+    const uclPos = html.indexOf('UEFA Champions League');
+    const eplPos = html.indexOf('Premier League');
+    const autPos = html.indexOf('Austrian Bundesliga');
+
+    expect(uclPos).toBeGreaterThan(-1);
+    expect(eplPos).toBeGreaterThan(-1);
+    expect(autPos).toBeGreaterThan(-1);
+
+    // UCL (rank 1) should appear before EPL (rank 2), which appears before Austrian Bundesliga (rank 35)
+    expect(uclPos).toBeLessThan(eplPos);
+    expect(eplPos).toBeLessThan(autPos);
+  });
+});
+
+describe('match detail view business formatting', () => {
+  it('renders scheduled match score as vs and displays clean dash for unavailable info', () => {
+    const translate = createTranslator('en');
+    const scheduledDetail: LocalMatchDetail = {
+      match: mockAustrianBundesligaMatch,
+      status: 'scheduled',
+      elapsedMinute: null,
+      events: [],
+      referee: null,
+      warnings: [],
+      updatedAt: '2026-09-01T00:00:00.000Z'
+    };
+
+    const html = renderMatchDetailView(
+      { status: 'ready', detail: scheduledDetail },
+      translate,
+      'en',
+      'UTC'
+    );
+
+    // Scoreline for scheduled match should show stylized 'vs', not 'Unavailable – Unavailable'
+    expect(html).toContain('Wolfsberger AC');
+    expect(html).toContain('LASK');
+    expect(html).toContain('<strong><span class="match-vs">vs</span></strong>');
+    expect(html).not.toContain('Unavailable – Unavailable');
+    expect(formatMatchTitleHtml('Arsenal vs Chelsea')).toBe('Arsenal <span class="match-vs">vs</span> Chelsea');
+    expect(formatMatchTeamsHtml('Arsenal', 'Chelsea')).toBe('Arsenal <span class="match-vs">vs</span> Chelsea');
+    expect(formatMatchTitle('Arsenal', 'Chelsea')).toBe('Arsenal vs Chelsea');
+    expect(formatMatchTitleHtml('Arsenal')).toBe('Arsenal');
+
+    // Elapsed, venue, referee should display '–' rather than 'Unavailable'
+    expect(html).toContain('<dd>–</dd>');
+    expect(html).not.toContain('<dd>Unavailable</dd>');
+  });
+
+  it('renders completed match with real scoreline', () => {
+    const translate = createTranslator('en');
+    const completedDetail: LocalMatchDetail = {
+      match: {
+        ...mockAustrianBundesligaMatch,
+        status: 'completed',
+        score: { home: 2, away: 1 }
+      },
+      status: 'completed',
+      elapsedMinute: 90,
+      events: [],
+      referee: 'John Doe',
+      warnings: [],
+      updatedAt: '2026-09-01T00:00:00.000Z'
+    };
+
+    const html = renderMatchDetailView(
+      { status: 'ready', detail: completedDetail },
+      translate,
+      'en',
+      'UTC'
+    );
+
+    expect(html).toContain('<strong>2 – 1</strong>');
+    expect(html).toContain('90&#39;');
+    expect(html).toContain('John Doe');
+  });
+});
+
+describe('timezone date partitioning', () => {
+  it('correctly determines match calendar date across 00:00 midnight based on user timezone', async () => {
+    const { getLocalDateFromUtc } = await import('@miraichi/shared');
+    // Match at 19:30 UTC on 2026-08-31
+    const kickoffUtc = '2026-08-31T19:30:00.000Z';
+
+    // In UTC, date is 2026-08-31
+    expect(getLocalDateFromUtc(kickoffUtc, 'UTC')).toBe('2026-08-31');
+
+    // In Asia/Ho_Chi_Minh (UTC+7, 02:30 AM), date is 2026-09-01
+    expect(getLocalDateFromUtc(kickoffUtc, 'Asia/Ho_Chi_Minh')).toBe('2026-09-01');
+
+    // Match at 16:59:59 UTC on 2026-08-31 is 23:59:59 on Aug 31 in Asia/Ho_Chi_Minh
+    expect(getLocalDateFromUtc('2026-08-31T16:59:59.000Z', 'Asia/Ho_Chi_Minh')).toBe('2026-08-31');
+
+    // Match at 17:00:00 UTC on 2026-08-31 is 00:00:00 on Sept 1 in Asia/Ho_Chi_Minh
+    expect(getLocalDateFromUtc('2026-08-31T17:00:00.000Z', 'Asia/Ho_Chi_Minh')).toBe('2026-09-01');
+  });
+});
+
+describe('getRibbonDates label formatting', () => {
+  it('displays weekday names for all days except today, omitting yesterday and tomorrow', () => {
+    const translateEn = createTranslator('en');
+    const translateVi = createTranslator('vi');
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const datesEn = getRibbonDates(todayStr, translateEn, 'UTC');
+
+    const center = datesEn[2]!;
+    expect(center.label).toBe(translateEn('matches.today'));
+
+    const yesterday = datesEn[1]!;
+    const expectedEnWeekdays = [0, 1, 2, 3, 4, 5, 6].map((day) => translateEn(`matches.weekday.${day}`));
+    expect(expectedEnWeekdays).toContain(yesterday.label);
+    expect(yesterday.label).not.toBe(translateEn('matches.today'));
+
+    const tomorrow = datesEn[3]!;
+    expect(expectedEnWeekdays).toContain(tomorrow.label);
+    expect(tomorrow.label).not.toBe(translateEn('matches.today'));
+
+    const datesVi = getRibbonDates(todayStr, translateVi, 'UTC');
+    expect(datesVi[2]!.label).toBe(translateVi('matches.today'));
+    const expectedViWeekdays = [0, 1, 2, 3, 4, 5, 6].map((day) => translateVi(`matches.weekday.${day}`));
+    expect(expectedViWeekdays).toContain(datesVi[1]!.label);
+    expect(datesVi[1]!.label).not.toBe(translateVi('matches.today'));
+    expect(expectedViWeekdays).toContain(datesVi[3]!.label);
+    expect(datesVi[3]!.label).not.toBe(translateVi('matches.today'));
+  });
+});
+

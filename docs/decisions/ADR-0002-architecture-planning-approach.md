@@ -30,13 +30,13 @@ Phase 1 will not finalize production schemas, API contracts, infrastructure choi
 - Agents must keep documentation high-level and competition-agnostic during this phase.
 
 ## Alternatives Considered
-- **Lock the final architecture in Phase 1**: Rejected for now because the product, data, local AI, storage, deployment, and responsible-use boundaries still need owner review.
+- **Lock the final architecture in Phase 1**: Rejected because product, data, storage, deployment, and responsible-use boundaries still needed owner review.
 - **Proceed directly to app skeletons**: Rejected for now because core boundaries and open questions need to be visible before code appears.
 - **Plan only one initial competition**: Rejected because Miraichi must remain competition-agnostic and support multiple competitions later.
 
 ## Open Questions
 - Which architecture options should become accepted ADRs before app skeleton work begins?
-- What minimum data and prediction traceability requirements must exist before local AI implementation?
+- What minimum data provenance and traceability requirements must exist before a real source integration?
 - Which storage and deployment choices can remain deferred without blocking Phase 2?
 - What competition-agnostic review checks should be automated later?
 

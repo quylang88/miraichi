@@ -1,0 +1,19 @@
+{
+  "sport": "football",
+  "count": 1,
+  "matches": [
+    {
+      "home": "Northbridge Athletic",
+      "away": "Rivergate City",
+      "home_logo": "https://assets.example.invalid/northbridge-athletic.png",
+      "away_logo": "https://assets.example.invalid/rivergate-city.png",
+      "home_score": 2,
+      "away_score": 1,
+      "status": "finished",
+      "status_text": "FT",
+      "time": "2026-08-26T18:00:00Z",
+      "slug": "northbridge-athletic-vs-rivergate-city"
+    }
+  ],
+  "updated": "2026-08-26T20:00:00Z"
+}

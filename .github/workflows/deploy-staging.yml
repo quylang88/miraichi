@@ -1,0 +1,325 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  deployments: write
+
+concurrency:
+  group: miraichi-staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging:
+    name: Verify and deploy Frankfurt staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: staging
+    env:
+      MIRAICHI_RELEASE_ENVIRONMENT: staging
+      MIRAICHI_EDGE_REGION: eu-central-1
+      MIRAICHI_RELEASE_SHA: ${{ github.sha }}
+      MIRAICHI_CANDIDATE_SHA: ${{ github.sha }}
+      MIRAICHI_RELEASE_ARTIFACT: miraichi-release-${{ github.sha }}
+      MIRAICHI_RELEASE_MANIFEST_PATH: ${{ github.workspace }}/artifacts/release/release-manifest.json
+      MIRAICHI_DEPLOYMENT_EVIDENCE_PATH: ${{ github.workspace }}/artifacts/release/deployment-evidence.json
+      MIRAICHI_SCHEMA_COMPAT_VERSION: owner-v3
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      MIRAICHI_PUBLIC_ORIGIN: ${{ vars.MIRAICHI_PUBLIC_ORIGIN }}
+      MIRAICHI_EDGE_FUNCTION_URL: ${{ vars.MIRAICHI_EDGE_FUNCTION_URL }}
+      STAGING_URL: ${{ vars.MIRAICHI_PUBLIC_ORIGIN }}
+
+    steps:
+      - name: Reject non-staging recovery runs
+        shell: bash
+        run: node -e "if (process.env.GITHUB_REF_NAME !== 'staging') throw new Error('This workflow deploys only the staging branch')"
+
+      - name: Create staging deployment record
+        id: deployment
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const response = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'staging',
+              required_contexts: [],
+              auto_merge: false,
+              transient_environment: true,
+              description: `Frankfurt staging ${context.sha}`
+            });
+            if (!response.data || typeof response.data !== 'object' || !('id' in response.data)) {
+              throw new Error('GitHub did not create a deployment record');
+            }
+            core.setOutput('deployment-id', String(response.data.id));
+
+      - name: Checkout immutable candidate
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install frozen workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium webkit
+
+      - name: Resolve migration comparison base
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          MIGRATION_BASE_SHA="$(git merge-base "$GITHUB_SHA" origin/main)"
+          test -n "$MIGRATION_BASE_SHA"
+          echo "MIGRATION_BASE_SHA=$MIGRATION_BASE_SHA" >> "$GITHUB_ENV"
+
+      - name: Start disposable local Postgres
+        run: pnpm exec supabase db start
+
+      - name: Run full staging verification
+        id: verify
+        run: pnpm run verify:staging
+
+      - name: Stop disposable local Postgres
+        if: ${{ always() }}
+        run: pnpm exec supabase stop --no-backup
+
+      - name: Build deployable Edge artifact
+        run: pnpm run edge:function:build
+
+      - name: Verify deployable Cloudflare artifact
+        run: pnpm run cloudflare:artifact:verify
+
+      - name: Create immutable release manifest
+        run: pnpm exec tsx scripts/release/release-manifest.ts create-workspace artifacts/release/release-manifest.json
+
+      - name: Link exact Supabase staging project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Resolve prior successful rollback artifact
+        id: prior
+        uses: actions/github-script@v9
+        env:
+          CURRENT_DEPLOYMENT_ID: ${{ steps.deployment.outputs.deployment-id }}
+        with:
+          script: |
+            const deployments = await github.paginate(github.rest.repos.listDeployments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment: 'staging',
+              per_page: 100
+            });
+            deployments.sort((left, right) => right.id - left.id);
+            let prior = null;
+            for (const deployment of deployments) {
+              if (String(deployment.id) === process.env.CURRENT_DEPLOYMENT_ID || deployment.sha === context.sha) continue;
+              const statuses = await github.paginate(github.rest.repos.listDeploymentStatuses, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deployment.id,
+                per_page: 100
+              });
+              statuses.sort((left, right) => right.id - left.id);
+              if (statuses[0]?.state === 'success') {
+                prior = deployment;
+                break;
+              }
+            }
+            if (!prior) {
+              core.setOutput('mode', 'baseline');
+              return;
+            }
+            const artifactName = `miraichi-release-${prior.sha}`;
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: artifactName,
+              per_page: 100
+            });
+            const artifact = artifacts
+              .filter((candidate) => candidate.name === artifactName && candidate.workflow_run?.head_sha === prior.sha)
+              .sort((left, right) => Date.parse(right.created_at ?? '') - Date.parse(left.created_at ?? ''))[0];
+            if (!artifact || artifact.expired || !artifact.workflow_run?.id) {
+              throw new Error(`Exact rollback artifact ${artifactName} is missing or expired`);
+            }
+            core.setOutput('mode', 'artifact');
+            core.setOutput('artifact-name', artifactName);
+            core.setOutput('prior-sha', prior.sha);
+            core.setOutput('run-id', String(artifact.workflow_run.id));
+
+      - name: Download exact prior rollback artifact
+        if: ${{ steps.prior.outputs.mode == 'artifact' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.prior.outputs.artifact-name }}
+          path: artifacts/prior
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.prior.outputs.run-id }}
+          digest-mismatch: error
+
+      - name: Load prior immutable runtime versions
+        if: ${{ steps.prior.outputs.mode == 'artifact' }}
+        shell: bash
+        run: |
+          pnpm exec tsx scripts/release/deployment-evidence.ts artifacts/prior/deployment-evidence.json
+          node --input-type=module <<'NODE' >> "$GITHUB_ENV"
+          import { readFileSync } from 'node:fs';
+          const evidence = JSON.parse(readFileSync('artifacts/prior/deployment-evidence.json', 'utf8'));
+          const release = JSON.parse(readFileSync('artifacts/prior/apps/web/dist/release.json', 'utf8'));
+          if (evidence.status !== 'succeeded' || evidence.release?.sourceSha !== process.env.PRIOR_SHA) {
+            throw new Error('Prior rollback evidence does not match its deployment SHA');
+          }
+          if (release.environment !== 'staging'
+            || release.gitSha !== evidence.release.sourceSha
+            || release.artifactVersion !== evidence.release.artifactVersion
+            || typeof release.compatibilityVersion !== 'string') {
+            throw new Error('Prior rollback release identity is inconsistent');
+          }
+          for (const [name, value] of Object.entries({
+            MIRAICHI_PRIOR_EDGE_VERSION_ID: evidence.runtime?.edgeVersionId,
+            MIRAICHI_PRIOR_WORKER_VERSION_ID: evidence.runtime?.workerVersionId,
+            MIRAICHI_PRIOR_RELEASE_SHA: release.gitSha,
+            MIRAICHI_PRIOR_RELEASE_ARTIFACT: release.artifactVersion,
+            MIRAICHI_PRIOR_SCHEMA_COMPAT_VERSION: release.compatibilityVersion
+          })) {
+            if (typeof value !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value) || value.toLowerCase() === 'latest') {
+              throw new Error(`Invalid prior runtime version: ${name}`);
+            }
+            console.log(`${name}=${value}`);
+          }
+          console.log(`MIRAICHI_PRIOR_EDGE_ARTIFACT_ROOT=${process.env.GITHUB_WORKSPACE}/artifacts/prior`);
+          NODE
+        env:
+          PRIOR_SHA: ${{ steps.prior.outputs.prior-sha }}
+
+      - name: Materialize first-run rollback baseline
+        if: ${{ steps.prior.outputs.mode == 'baseline' }}
+        shell: bash
+        env:
+          BASELINE_SHA: ${{ vars.MIRAICHI_STAGING_BASELINE_SHA }}
+          BASELINE_EDGE_VERSION_ID: ${{ vars.MIRAICHI_STAGING_BASELINE_EDGE_VERSION_ID }}
+          BASELINE_WORKER_VERSION_ID: ${{ vars.MIRAICHI_STAGING_BASELINE_WORKER_VERSION_ID }}
+          BASELINE_RELEASE_SHA: ${{ vars.MIRAICHI_STAGING_BASELINE_RELEASE_SHA }}
+          BASELINE_RELEASE_ARTIFACT: ${{ vars.MIRAICHI_STAGING_BASELINE_RELEASE_ARTIFACT }}
+          BASELINE_SCHEMA_COMPAT_VERSION: ${{ vars.MIRAICHI_STAGING_BASELINE_SCHEMA_COMPAT_VERSION }}
+        run: |
+          node --input-type=module <<'NODE'
+          const sha = process.env.BASELINE_SHA ?? '';
+          const releaseSha = process.env.BASELINE_RELEASE_SHA ?? '';
+          const immutable = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+          if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error('MIRAICHI_STAGING_BASELINE_SHA must be an exact Git SHA');
+          if (releaseSha !== sha) throw new Error('Staging baseline Git and release SHAs must match');
+          for (const name of ['BASELINE_EDGE_VERSION_ID', 'BASELINE_WORKER_VERSION_ID', 'BASELINE_RELEASE_ARTIFACT', 'BASELINE_SCHEMA_COMPAT_VERSION']) {
+            const value = process.env[name] ?? '';
+            if (!immutable.test(value) || value.toLowerCase() === 'latest') throw new Error(`${name} is not immutable`);
+          }
+          NODE
+          mkdir -p artifacts/prior
+          git worktree add --detach artifacts/prior/baseline "$BASELINE_SHA"
+          pnpm --dir artifacts/prior/baseline install --frozen-lockfile
+          pnpm --dir artifacts/prior/baseline run edge:function:build
+          {
+            echo "MIRAICHI_PRIOR_EDGE_VERSION_ID=$BASELINE_EDGE_VERSION_ID"
+            echo "MIRAICHI_PRIOR_WORKER_VERSION_ID=$BASELINE_WORKER_VERSION_ID"
+            echo "MIRAICHI_PRIOR_RELEASE_SHA=$BASELINE_RELEASE_SHA"
+            echo "MIRAICHI_PRIOR_RELEASE_ARTIFACT=$BASELINE_RELEASE_ARTIFACT"
+            echo "MIRAICHI_PRIOR_SCHEMA_COMPAT_VERSION=$BASELINE_SCHEMA_COMPAT_VERSION"
+            echo "MIRAICHI_PRIOR_EDGE_ARTIFACT_ROOT=$GITHUB_WORKSPACE/artifacts/prior/baseline"
+          } >> "$GITHUB_ENV"
+
+      - name: Deploy tested release transaction
+        id: deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MIRAICHI_GATEWAY_TOKEN: ${{ secrets.MIRAICHI_GATEWAY_TOKEN }}
+        run: pnpm run release:deploy
+
+      - name: Run committed hosted staging verification
+        id: hosted
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          MIRAICHI_OWNER_PASSWORD: ${{ secrets.MIRAICHI_OWNER_PASSWORD }}
+        run: pnpm run verify:staging:hosted
+
+      - name: Assemble immutable candidate artifact
+        id: assemble
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          mkdir -p artifacts/candidate/apps/web artifacts/candidate/supabase
+          cp artifacts/release/release-manifest.json artifacts/candidate/release-manifest.json
+          cp artifacts/release/deployment-evidence.json artifacts/candidate/deployment-evidence.json
+          cp -R apps/web/dist artifacts/candidate/apps/web/dist
+          cp supabase/config.toml artifacts/candidate/supabase/config.toml
+          cp -R supabase/functions artifacts/candidate/supabase/functions
+
+      - name: Retain immutable release and rollback evidence
+        id: artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: miraichi-release-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: artifacts/candidate
+
+      - name: Mark staging deployment successful
+        id: mark-success
+        if: ${{ always() && steps.deploy.outcome == 'success' && steps.hosted.outcome == 'success' && steps.assemble.outcome == 'success' && steps.artifact.outcome == 'success' }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.deployment-id }}'),
+              state: 'success',
+              environment: 'staging',
+              environment_url: process.env.MIRAICHI_PUBLIC_ORIGIN,
+              description: 'All staging release and hosted checks passed'
+            });
+
+      - name: Mark staging deployment failed
+        if: ${{ always() && steps.deployment.outputs.deployment-id != '' && (steps.deploy.outcome != 'success' || steps.hosted.outcome != 'success' || steps.assemble.outcome != 'success' || steps.artifact.outcome != 'success' || steps.mark-success.outcome == 'failure') }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.deployment-id }}'),
+              state: 'failure',
+              environment: 'staging',
+              environment_url: process.env.MIRAICHI_PUBLIC_ORIGIN,
+              description: 'Staging release or hosted verification failed'
+            });

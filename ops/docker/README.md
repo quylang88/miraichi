@@ -17,4 +17,4 @@ Directly maps out Dockerfiles, compose files, and registry tags strategies.
 - Do not store environment passwords or variables keys directly inside Docker images.
 
 ## TODO / Next Steps
-- [ ] Decide whether Docker remains planning-only until API, worker, and local-ai staging targets are approved.
+- [ ] Decide whether Docker remains planning-only until API and worker staging targets are approved.

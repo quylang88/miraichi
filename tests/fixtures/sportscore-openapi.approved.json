@@ -1,0 +1,94 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SportScore approved Miraichi widget contract excerpt",
+    "version": "reviewed-2026-09-02",
+    "description": "Local reviewed fixture for widget-only drift detection. It is not downloaded during verification."
+  },
+  "servers": [
+    { "url": "https://sportscore.com" }
+  ],
+  "paths": {
+    "/api/widget/matches/": {
+      "get": {
+        "operationId": "listWidgetMatches",
+        "parameters": [
+          {
+            "name": "sport",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["football"] }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 50 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Live and recent football match list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MatchesEnvelope" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/widget/match/": {
+      "get": {
+        "operationId": "getWidgetMatch",
+        "parameters": [
+          {
+            "name": "sport",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["football"] }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Single widget match detail envelope" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "MatchesEnvelope": {
+        "type": "object",
+        "properties": {
+          "sport": { "type": "string" },
+          "count": { "type": "integer", "minimum": 0 },
+          "matches": {
+            "type": "array",
+            "maxItems": 50,
+            "items": { "$ref": "#/components/schemas/MatchSummary" }
+          },
+          "updated": { "type": "string", "format": "date-time" }
+        }
+      },
+      "MatchSummary": {
+        "type": "object",
+        "properties": {
+          "home": { "type": "string" },
+          "away": { "type": "string" },
+          "home_score": { "type": "integer" },
+          "away_score": { "type": "integer" },
+          "status": { "type": "string" },
+          "status_text": { "type": "string" },
+          "time": { "type": "string", "format": "date-time" },
+          "slug": { "type": "string" }
+        }
+      }
+    }
+  }
+}

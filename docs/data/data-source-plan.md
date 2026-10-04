@@ -12,7 +12,7 @@ Identifies criteria for selecting future sports APIs (odds, fixtures, stats) and
 Guidelines for provider selection and mock data adapter specifications.
 
 ## Data Providers
-- **Primary Fixtures/Odds Feeds**: Deferred. The selection of third-party sports APIs (such as Sportmonks, API-Football, etc.) is deferred to the accepted ADR-0014. No production credentials or connectivity code will be established.
+- **Primary Fixtures/Odds Feeds**: Deferred. A public website source requires a new owner-approved ADR. No production credentials or connectivity code is authorized by this document.
 - **Phase 3 Local Source**: A static, generic mock JSON fixture source mimicking real-world payload structures. All identifiers use generic terms (e.g., `competition-alpha`, `team-alpha`, `match-alpha-001`).
 
 ## TODO / Next Steps

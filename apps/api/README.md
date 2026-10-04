@@ -1,20 +1,7 @@
-# Backend API Service
+# Miraichi API
 
-Central gateway and business logic orchestrator for Miraichi.
+The API is the only browser-facing boundary for factual match data and owner persistence.
 
-## Purpose
-Exposes data ingestion ports, serves client request endpoints, orchestrates AI predictions, and logs betting transaction histories.
+It serves health, matches, match detail, snapshot status, bet drafts, bet records, bankroll accounts/ledger, backups, cloud-persistence status, and ingestion status. Match reads prefer the local serving store and fall back to the configured cloud snapshot only when the local store is missing.
 
-## Status
-- **Status**: Active
-
-## Scope
-Defines core backend route logic, database query structures, external sports APIs interface, and client communication hooks.
-
-## Guidelines
-- Follow backend architecture guidelines in docs/api-architecture.md.
-- Maintain absolute separation from competition-specific properties.
-
-## TODO / Next Steps
-- [ ] Initialize server runtime skeleton.
-- [ ] Connect core database adapters.
+Run with `pnpm run dev:api`. Configure server-only persistence in `.env`; never expose database credentials to `apps/web`.

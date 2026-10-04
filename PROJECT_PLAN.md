@@ -1,251 +1,1041 @@
 # Project Plan
 
-Detailed implementation lifecycle and execution phases for Miraichi.
+## Current State
 
-## Purpose
-This document provides the roadmap and scope boundaries for all engineering phases from repo bootstrapping to operational deployment.
+- **Completed planning track**: `phase:plan Production delivery automation and owner-data safety` — the
+  owner selected protected `staging -> main`, automatic Frankfurt staging deployment, automatic
+  Singapore `ap-southeast-1` production deployment after a green release merge, encrypted private
+  R2 owner-data backups, additive expand/backfill/contract migrations, and a clean production owner
+  dataset on 2026-09-27. ADR-0055 records the accepted decisions and the owner approved the written
+  design at `docs/superpowers/specs/2026-09-27-production-delivery-automation-design.md` by asking
+  to proceed with the exact TDD plan.
+- **Completed implementation-plan gate**: `phase:implementation-plan Production delivery automation
+  and owner-data safety` — the owner approved the sequential RED -> GREEN -> review -> commit plan
+  and authorized execution through reviewed slice commits.
+- **Delivery continuation (2026-09-30)**: PR #13 passed all ten checks on CI run
+  `36714196513` and merged into `staging` at `d48df821a53608838d34128cb6ef8f6ef932e2f7`.
+  Reviewed timeout slice `b89bc17` proves seven bounded/aborted request stages, native stalled-body
+  handling, redacted failures, and real CLI exit; local 199 unit files / 1,329 tests,
+  integration/browser/PWA, migration preservation, actual Edge runtime, graph, and artifact passed.
+  Exact merge-SHA Deploy Staging run `36714649571` passed full staging verification, but stopped
+  before mutation at `migration_dry_run` with `ipv6_connection_unavailable` and only `validate`
+  completed. GitHub deployment status is failure; no new migration/Edge/Worker was deployed.
+  PR #14 implements the reviewed TDD Session pooler slice for dry-run/apply, validates project
+  identity and port 5432/TLS, and keeps the password out of command arguments. The exact Dashboard
+  URL is configured in staging `SUPABASE_DATABASE_URL`; its password-free form reuses the existing
+  `SUPABASE_DB_PASSWORD` secret unchanged. Secret metadata readback succeeded on 2026-09-30.
+  Linked SQL queries use the CLI Management API and retain their existing path. Local verification
+  passes 199 files / 1,339 tests. PR #14 passed all ten checks on `36719390926` and merged at
+  `9e28aa8e7a6c7290b4f8144e066d24a0ebe3515d`. Exact Deploy Staging run `36719831798`
+  passed migration dry-run/apply and Edge deployment, proving the pooler connection works, but
+  failed at `worker_deploy` with `command_failed`; rollback reported no errors. Cloudflare
+  Dashboard deployment history independently shows the new Worker upload followed by rollback
+  to baseline `62fac25e`. The reviewed diagnostic slice classifies both captured streams while
+  retaining only safe error codes, so the post-upload failure can be investigated without raw logs.
+  PR #15 passed all ten CI checks and merged at `bfbce77646e312aba0c8696377110942ef226a15`.
+  Exact staging run `36726968994` attempt 1 identified Cloudflare API authentication failure.
+  After the owner approved adding Workers Metadata Read-Only to the existing per-Worker Editor
+  token, attempt 2 passed Worker deployment but failed `scheduler_configure` with
+  `ipv6_connection_unavailable`; scheduler compensation reported the same failure. Connector
+  recovery subsequently paused all Miraichi staging jobs and read back zero active jobs.
+  The continuation slice covers `deploy-release`, standalone staging/production SQL probes, and
+  their workflow bindings: observe RED for pooler query/rollback transport, extract the existing
+  validated connection into `supabase-query`, run focused tests plus `verify:local`, characterize
+  the actual pinned CLI, review, then deliver a green PR to staging. No migration is added.
+  RED was observed for all three SQL consumers; final focused 21 tests and full local 199 files /
+  1,348 tests pass, as do integration/browser/PWA checks. The actual pinned CLI returns the expected
+  JSON row envelope using a password-free database argument and `PGPASSWORD` against disposable
+  local Postgres. Independent review reports no actionable findings. PR #16 passed all ten CI checks on
+  `36735607812` and merged at `04cfc94fd39cc59431cd2f383c0b82e5c47146c6`. Exact staging
+  deployment `36736065839` passed migration, Edge, Worker and scheduler configuration, then failed
+  smoke with `release_identity_mismatch`; rollback reported no errors. Actual hosted shell and
+  release metadata lacked release headers because API-only Worker-first routing bypassed the static
+  handler. The next minimal slice sets all-assets Worker-first routing, updates the artifact verifier
+  to reject API-only routing, then runs focused/local checks, independent review, green PR checks
+  and exact-SHA staging deployment. Actual Wrangler RED failed the root header check; GREEN passes
+  shell, manifest, service worker and release metadata with release headers. Focused 23 tests,
+  full local 199 files / 1,349 tests and the 77-file Wrangler artifact dry-run pass; independent
+  review reports no actionable findings. PR #17 passed all ten CI checks on `36738859917`
+  and merged at `75aa79c2929131c810a16b0e5ef7329e86b8a085`. Exact staging run `36739358533`
+  passed deployment/configuration but again failed release identity smoke; rollback succeeded.
+  The candidate Worker preview now independently proves correct shell/release headers and metadata,
+  while Edge health omits its release body. The real function entry omitted all four release
+  environment names. Next minimal slice: execute the bundled entry with disposable Deno environment
+  and a database driver that rejects queries; observe health RED without release, forward the four
+  reviewed names, verify GREEN/local/graph, independent review, commit, green PR and exact deployment.
+  No migration is added. PR #18 passed all ten CI checks on `36786704615` and merged at
+  `db85b342140a298c2e35ef1da7fe83714680bbe5`; exact staging run `36787024691` passed the
+  deployment transaction and read-only release smoke, but hosted browser verification failed at
+  logout cleanup. Candidate remains deployed with correct Worker/Edge identity. Provider readback
+  confirms zero synthetic manual drafts, the existing one draft remains, and three active jobs.
+  A minimal authenticated API probe returns login 204/session 200/logout 204; the complete browser
+  context failure still needs diagnosis before another deployment or promotion.
+  Production preparation also found that password-free pooler URLs need the separate password in
+  node-postgres backup processes. Minimal continuation: observe the production workflow binding
+  RED, bind `PGPASSWORD` only in backup-first/daily create steps, verify focused/local checks and
+  the actual pinned node-postgres password resolution, review, then deliver through green staging.
+  Disposable restore credentials and migrations remain unchanged.
+  Hosted staging still requires a successful exact-SHA deployment and smoke/artifact/status gates.
+  Owner-approved Free production project `xmjvvizihdrklakrmsav` reads back `ACTIVE_HEALTHY` at
+  Singapore `ap-southeast-1`, with no application or migration tables. Its ref, Edge URL, owner ID,
+  and exact Dashboard Session pooler URL are configured in GitHub production; readiness remains
+  blocked on separate Worker and verified backup/offline-key gates. Production lacks runtime
+  credentials, and any `staging -> main` merge requires fresh explicit owner confirmation.
+- **Edge pooler continuation (2026-10-01)**: PR #19 passed all ten CI checks on
+  `36788076272` and merged at `bb5787d5babeef1aafefa850cb3fc6b58e66b17b`.
+  Exact staging run `36788526081` passed the deployment transaction but failed hosted draft
+  cleanup. PostgreSQL logs in the failed gate window record four remaining-connection-slot
+  errors; direct Edge connections are the leading hypothesis, not a proven per-request cause.
+  Two exact-window synthetic drafts were removed with an identity/count guard; readback confirms
+  one existing draft remains and zero in that test window. Owner approved the bounded Edge
+  Transaction pooler design on 2026-10-01. Dashboard confirms staging host
+  `aws-0-eu-central-1.pooler.supabase.com`, user `postgres.qpexxwmrnreooxftfucv`, port 6543.
+  Slice: RED bundled-entry alias precedence and protected env-file lifecycle; implement custom
+  `MIRAICHI_DATABASE_URL` with built-in fallback and upload through a temporary 0600 file;
+  focused/local checks, independent review, green PR, exact-SHA hosted staging gate.
+  Focused 17 tests, full local 200 files / 1,354 tests, integration/browser/PWA and Edge
+  build/module graph pass; independent review reports no actionable findings. Migration/probe
+  Session pooler bindings and application schema remain unchanged. CI `36825411708` passed eight
+  child jobs but failed local Edge health warmup before smoke; no staging merge occurred. The same
+  commit passes actual local Edge health and complete Postgres/auth smoke both with built-in fallback
+  and the custom alias. Follow-up RED/GREEN adds a safe allowlisted startup-log classification on
+  exhausted CI health warmup, without printing raw logs or changing the exit failure. Focused 35
+  tests and full local 200 files / 1,358 tests pass; independent review finds no actionable issues.
+  PR #20 passed all ten checks on CI `36826502213`, then merged into staging at
+  `e1a3638ffb46fbe1e3cdef145d7eb37aa9ce6d5b`. Exact Deploy Staging `36827002686`
+  succeeded, including deployment transaction, committed hosted browser checks, cleanup, immutable
+  artifact and deployment status. Downloaded deployment evidence passes the canonical verifier;
+  shell/release/health independently return HTTP 200 with matching release headers and health body.
+  Database readback: one pre-existing draft, zero synthetic manual drafts, zero drafts in the gate
+  window, three active scheduler jobs. Logs in the gate window contain zero remaining-slot errors
+  and zero function HTTP 5xx. Staging exit gate is satisfied for this exact candidate.
+  Remote readiness and the clean production baseline subsequently passed as recorded below.
+  Staging-to-main promotion still requires fresh exact owner approval before merge.
+- **Production baseline and promotion continuation (2026-10-04)**: the owner explicitly approved
+  baseline SHA `e1a3638ffb46fbe1e3cdef145d7eb37aa9ce6d5b` at action time. Singapore project
+  `xmjvvizihdrklakrmsav` received all 20 committed forward migrations; exact history matches and
+  all seven durable owner tables read back zero. Session pooler 5432 and Dashboard-confirmed
+  Transaction pooler 6543 both authenticate through verified TLS. Candidate artifact
+  `11145832558` remains unexpired; migration, Edge, Worker and web hashes match its manifest.
+  Edge provider version 1 and Worker `f890dad7-1e6e-4892-a983-b3123c4bc4f7` are deployed separately
+  from staging at `https://miraichi-owner-gateway-production.quylang88.workers.dev`.
+  Production GET/read-only smoke passes all ten checks in `ap-southeast-1` with the exact release
+  identity. Encrypted empty backup receipt `backup-c003e12806e16f279c902778` passes R2 readback;
+  disposable local restore verifies matching payload SHA-256
+  `a6e642557af04688c282f92c520b9e3eeec8fd00cc041bb1a829917fee99ff03`, zero record counts and
+  relationships. The isolated restore database was destroyed. A bootstrap helper initially omitted
+  process-level `PGPASSWORD`; a read-only RED/GREEN connection probe proved the cause, the helper
+  was corrected, backup/restore then passed, and the paused scheduler was re-enabled. Final smoke,
+  zero owner readback, GitHub exact baseline variable readback and remote readiness all pass.
+  PR #21 is the sole staging-to-main promotion PR. Its CI passes, but release-candidate run
+  `37171761222` fails before provenance at `candidate_cli_arguments_invalid`: pinned pnpm forwards
+  the extra `--` from the workflow. Owner approved the bounded fix to both candidate/prod workflow
+  invocations. Two actual-pnpm workflow tests observed RED then GREEN at event validation; 28
+  focused tests and full local 201 files / 1,360 tests pass, and independent review reports no
+  actionable findings. No provenance/parser rule changes. The fix must pass CI and an exact staging
+  deployment before PR #21 can become green. Production stays on the approved baseline; main is
+  unchanged. PR #22 passed all ten CI checks on `37173796270` and merged at
+  `e79bc464ff3842541a275f83fdeaed181ce8d17a`. Exact staging run `37174015395` passed
+  migration/Edge/Worker/scheduler but failed smoke with `release_identity_mismatch`; rollback
+  reported no errors. Public shell/release/health read back the prior e1 identity, and failure
+  compensation leaves zero active staging refresh jobs. Artifact `11292742305` contains failed
+  evidence and cannot be promoted. Promotion CI `37174017578` passes; Release Candidate
+  `37174017580` stopped because the exact staging deployment was not successful. No blind rerun.
+  Candidate Worker bindings independently match the expected e79 identity; the generic smoke
+  error does not identify the failing boundary. Owner approved the bounded diagnostic slice:
+  separate safe codes for shell headers, release file, same-origin health body/headers and direct
+  Edge health body, preserving every rejection and rollback condition. Five diagnostic tests
+  observed RED then GREEN; focused 39 tests and full local 201 files / 1,365 tests pass.
+  Independent review reports no actionable findings. PR #23 passed all ten CI checks on
+  `37174887394` and merged at `7b7cc14bb847f4dd473c94f06e41a5668fd519a6`. Exact staging
+  run `37175052866` passes the complete deployment transaction and identity smoke. A finite
+  read-only public probe records Edge identity changing before Worker, followed by matching new
+  shell/release/health identities. The earlier e79 mismatch did not recur in this window; its
+  original failing component is still unproven. No identity gate was weakened. Hosted verification
+  then fails deliberately because the researched upcoming detail sample (October 1) has expired.
+  Candidate remains deployed; no successful GitHub deployment status or promotion exists yet.
+  Bounded test-data maintenance follows the fixture's existing instruction to replace expired
+  samples deliberately: select the staging-verified Everton/Chelsea scheduled match on October 17,
+  retain exact ID/kickoff/status and every upcoming/detail assertion, then run the same real hosted
+  browser gate, full local verification, independent review, green CI and exact staging deployment.
+  The real hosted gate provides RED for the expired sample; the unchanged full hosted browser
+  gate passes GREEN with the new sample, real provider refresh reporting scheduled, rich completed
+  detail, race/cooldown, redaction, logout and synthetic cleanup. Readback retains one existing draft,
+  zero drafts in the gate window and three active jobs. Full local 201 files / 1,365 tests,
+  lint/types and audits pass. Independent review reports no actionable findings; exact-SHA
+  CI/deployment remain pending.
+  The owner retained the new Cloudflare Account token and updated GitHub/protected local files.
+  It verifies active, permits Editor only on the production Worker plus Workers Metadata Read-Only,
+  expires January 3, 2027, and passes actual Wrangler versions readback. The temporary Admin
+  bootstrap token was revoked after fresh explicit owner confirmation. Latest production read-only
+  smoke passes ten checks. Scheduler hydration created one default profile and factual match data;
+  the six owner bet/bankroll/configuration tables remain empty. The recorded baseline creation
+  zero-row/empty-backup/restore evidence remains historical; no production records were deleted.
+- **Active implementation track**: repository delivery foundations through automatic staging,
+  exact-candidate production, encrypted backup/restore verification, migration safety, readiness,
+  and operations documentation are being completed on the isolated implementation branch. Remote
+  branch/rule changes, provider creation, secret entry, and deployment occur only in the explicit
+  provisioning/rehearsal slice after the repository closeout is green.
+- **Status**: The owner correction is deployed to Frankfurt Edge version 26 and Cloudflare Worker
+  `fc867def-cd30-4237-978d-7090f068cb99`. Today Quick Add is removed, while Bets retains a clean
+  Manual Add flow for matches outside the canonical feed. Local release gates, real scoped and
+  manual draft round-trips, owner/auth/redaction, Chromium/WebKit cache-v17/layout checks, scheduler
+  checks and final owner-data cleanup are green. No production promotion or push occurred.
+- **Completed boundary**: Product Reset — owner-only factual match data, manual bets/odds, and bankroll management.
+- **Superseded phase**: The API-Football staging path is cancelled. Its Free plan did not provide current-season entitlement, so no further provider request or production promotion is approved.
+- **Completed phase**: `phase:plan SportScore Public API Validation And Source Boundary` — owner accepted SportScore, visible attribution, optional local key handling, and complete API-Football implementation removal on 2026-08-26.
+- **Completed phase**: `phase:implementation-plan SportScore Public API Validation And Source Boundary` — ADR-0048, the design spec, and the exact TDD slice plan are written.
+- **Superseded operational path**: SportScore date hydration, local scheduling, worker injection, and all new `/api/v1` requests are retired because the free terms cover only `/api/widget/*` and the date scan is not viable.
+- **Completed phase**: `phase:integration-test Season-oriented provider-neutral hydration and coverage refactoring` — provider-neutral current-before-past planning, OpenFootball season-file ingestion, isolated checkpoints, and the complete local release gate passed on 2026-08-29.
+- **Completed phase**: `phase:code-slice FotMob unofficial current-season hydration` — the owner accepted ADR-0049 risk, all 45 executable current editions were checkpointed, and the final local release gate passed on 2026-08-31.
+- **Completed phase**: `phase:integration-test FotMob daily terminal results and current-edition revalidation` — all eight TDD slices and the local release gate passed on 2026-08-31.
+- **Completed phase**: `phase:maintenance FotMob owner-local current data operations` — guarded current hydration, 24-hour current revalidation, and terminal-result once/watch operation remain available, but no provider operation is part of the active product phase.
+- **Completed phase**: `phase:integration-test Single-bankroll usable owner flow` — the single visible bankroll, internal compatibility account, reviewed bankroll/bet/psychology remediations, sequential TDD slices, and complete local release gate all passed on 2026-09-01.
+- **Completed phase**: `phase:integration-test Owner-hosted API and visibility-driven live overlay` — all eight sequential TDD slices and the complete local release gate passed on 2026-09-02. No deployment, push, or production promotion occurred.
+- **Superseded hosting path**: Koyeb staging is blocked for this owner. Koyeb still documents a
+  Free Instance for eligible organizations, but its 2026 transition requires new users to provide a
+  payment method and subscribe to a paid plan. The owner rejected that dependency; no Koyeb setup,
+  secret entry, deployment, or smoke is still planned.
+- **Completed phase**: `phase:plan Supabase Edge Function and Cloudflare Worker owner hosting` —
+  the owner approved the replacement topology, ADR-0052 and the runtime/security design are
+  recorded, and the replacement staging runbook identifies the unproven runtime gates.
+- **Completed phase**: `phase:implementation-plan Supabase Edge Function and Cloudflare Worker
+  owner hosting` — ten sequential TDD slices now name exact files, RED observations, minimal
+  implementation, focused verification, and local commit boundaries.
+- **Completed phase**: `phase:integration-test Supabase Edge Function and Cloudflare Worker owner
+  hosting` — all ten local TDD slices, the complete local/release/staging command gates, actual
+  Supabase Edge runtime smoke, and Cloudflare artifact verification passed on 2026-09-07.
+- **Completed phase**: `phase:staging Supabase Edge Function and Cloudflare Worker owner hosting` —
+  the reviewed branch is pushed; Frankfurt migration, Edge Function, Worker, Vault cron, complete
+  hosted owner smoke, full staging gate, and rollback drill passed on 2026-09-08.
+- **Completed phase**: `phase:staging Hosted automatic provider refresh and Matches LIVE quality-up`.
+  The owner-authorized implementation, forward migrations, Frankfurt redeployment, committed hosted
+  E2E, and rollback/restore exit gates passed. Git delivery uses the existing approved branch.
+- **Completed phase**: `phase:staging User-triggered hosted match detail`.
+  The owner explicitly reopened lazy detail and authorized implementation through hosted E2E.
+  Research and exact TDD slices are recorded in ADR-0053 and
+  `docs/superpowers/plans/2026-09-09-user-triggered-match-detail.md`. Refresh only the selected match on an explicit
+  detail action; no detail cron, prefetch, polling, pending retry timer or automatic page-focus refresh.
+  The previous staging evidence is retained; moving phases is not production approval.
+- **Completed phase**: `phase:staging Daily LIVE recovery` — owner reopened the empty LIVE defect on 2026-09-12 and requested direct staging verification. Plan: `docs/superpowers/plans/2026-09-12-daily-live-recovery.md`; ADR-0054 records reuse of existing FotMob daily data in the independent LIVE overlay. The full staging gate passes 161 unit files / 985 tests, integration/PWA/build, actual Edge auth/Postgres runtime, provider SQL and artifact checks. The real browser gate failed on the old empty LIVE, then passed twice after deployment with real score changes. The final hosted scheduler and Chromium/WebKit PWA gates pass.
+- **Completed phase**: `phase:quality-up ui-ux-improve PWA instant startup` — owner reopened slow installed-app startup on 2026-09-13 and explicitly authorized the fix, deployment, verification, and local commit on existing Frankfurt staging. Follow `docs/superpowers/plans/2026-09-13-pwa-instant-startup.md`; preserve owner authentication and private-data boundaries.
+- **Active phase**: `phase:quality-up ui-ux-improve Structured Add Bet` — owner approved sequential reviewed TDD slices on 2026-09-15 for clean manual/quick/scoped entry sessions, normalized market selections including Running HT/FT/fixed 15-minute windows, simplified emotion, and maximum practical PWA zoom constraints. Delivery includes local verification and existing Frankfurt staging; each green reviewed slice receives one local commit. Follow `docs/superpowers/plans/2026-09-15-structured-add-bet.md`. Push and production promotion remain unapproved.
+- **Active continuation**: `phase:quality-up ui-ux-improve Evidence-gated Bet Settlement` — owner requested locked canonical teams, removal of Today Quick Add, retained Manual Add for unlisted matches, less pre-bet psychology, HT corner presets, score-led Running Over, and automatic settlement only when match evidence is sufficient. Follow `docs/superpowers/plans/2026-09-15-add-bet-settlement-quality-up.md` sequentially. Neither automatic detail requests nor production/push is approved.
+- **Completed phase**: `phase:staging National-team current competition coverage` — the owner approved
+  current/upcoming national-team expansion, Frankfurt staging deployment, hosted verification, and
+  a local commit on 2026-09-24. Fourteen exact FotMob competition/edition bindings were added
+  without fake SportScore identities or historical hydration. Local staging gates pass 178 unit
+  files / 1,165 tests plus 55 season integration tests and the complete integration/PWA/static
+  build chain. Frankfurt Edge v27 SHA `b1ed71b70f7fb55bc0bc95b74c7bdf8837022cd00207a55f72f72159908087f4`
+  and Cloudflare Worker `62fac25e-e956-426e-8778-6f81cdb4ca3e` serve 100% of staging traffic.
+  Hosted browser, detail, scheduler, auth/redaction, owner-data cleanup, and all 59 current
+  checkpoints pass. The serving database contains 12,236 matches across 59 competitions, including
+  all 14 national-team entries. No push or production promotion occurred.
+- **Match-detail local exit gate (2026-09-10)**: reviewed slices and integration correction through
+  `98cee02` pass `verify:staging` (157 files / 796 unit tests, complete integration/endpoint/PWA and
+  static build), actual detail PostgreSQL smoke, actual Edge runtime auth/Postgres smoke, module
+  graph and 67-file Cloudflare artifact gate. The old Frankfurt candidate fails the committed new
+  detail E2E because its Information action sends no POST refresh. New-candidate hosted E2E,
+  rollback/restore and the combined gate now pass; see the closeout below.
+- **Approved implementation plan**: `docs/superpowers/plans/2026-09-11-cross-league-score-live.md`.
+  Previous detail implementation: `docs/superpowers/plans/2026-09-09-user-triggered-match-detail.md`.
+  Previous DB-first refresh design: `docs/superpowers/specs/2026-09-09-hosted-provider-refresh-live-design.md`.
+- **Historical-season state**: **PENDING by owner decision on 2026-08-31**. Past-1 and past-2 execution must not run until the owner explicitly reopens `phase:plan` for exact provider-season verification.
+- **Lazy match-detail state**: **DELIVERED TO STAGING on 2026-09-10** through research, reviewed
+  TDD slices and Frankfurt E2E, retaining canonical IDs and nullable factual fields.
+  Existing source approvals apply; no paid source, bypass, historical hydration or production action.
+- **Promotion state**: Frankfurt Edge Function version 26 is ACTIVE with bundle SHA-256
+  `3b8a77ff5717bb1f519333b9edf320cd1b2b60e93f7e3a7d0f86500571c2ca92`; Cloudflare Worker
+  `fc867def-cd30-4237-978d-7090f068cb99` serves 100% of staging traffic with PWA cache
+  `miraichi-shell-v17-manual-add`. Eighteen migrations, three refresh jobs, and four Vault names are
+  present. The aggregate hosted gate passed at `2026-09-18T04:36:48.478Z`; the previous Edge v25
+  SHA and Worker `96f8a771-4419-4c67-9c67-4760dff43749` remain the recorded rollback baseline.
+  This evidence predates ADR-0055. Remote staging branch/rule provisioning, the separate Singapore
+  production project, and production promotion remain pending under the active delivery plan.
+- **Current lifecycle source of truth**: this file.
 
-## Status
-- **Status**: Active
+## Structured Add Bet — 2026-09-15 staging candidate
 
-## Scope
-Defines the sequential milestones and execution rules for developers and autonomous agents working on Miraichi.
+- **Delivered**: clean manual/quick/scoped sessions; one-row Home vs Away; guided 1X2,
+  Over/Under, handicap, corners and Running HT/FT/fixed-15 selection; canonical server labels;
+  strict new-entry validation; three-state emotion with calm default; and best-effort PWA zoom
+  constraints. Legacy Custom records remain readable but cannot be created.
+- **Local evidence**: `pnpm run verify:staging` passes 171 unit files / 1,040 tests plus all
+  integration, endpoint, structured browser, PWA, lint, typecheck, audit and static-build gates.
+  Local PostgreSQL migration/transaction smoke, actual Edge runtime `--scope all`, module graph,
+  and Cloudflare artifact verification pass. The reviewed artifact inventory is 72 production
+  modules, 692,397 bytes total, with largest file 202,550 bytes.
+- **Hosted evidence**: two forward migrations were the only pending migrations and are now applied.
+  A real owner UI flow created an Over 2.5 FT draft, received the server-generated canonical label,
+  read it back from PostgreSQL and removed it. Structured fixture flow, ten Chromium/WebKit layout
+  cases, both installed-cache checks, static/API smoke, match detail, owner auth/redaction and all
+  three scheduler deliveries pass; the restored aggregate gate completed at
+  `2026-09-15T07:56:15.805Z`.
+- **Data safety**: final audit shows one pre-existing draft, zero E2E drafts, zero bets, zero ledger
+  entries and zero Running records. Four Vault names and three scheduler jobs remain active. No
+  production, push, schema reset, owner-record deletion, or unapproved provider flow occurred.
+- **Rollback evidence**: pre-task Worker `79fac467-a2d0-43d8-b25a-6c06ef89feaf` and Edge v19
+  source at commit `674176a` were retained. Jobs were reduced from three to zero; the Worker was
+  restored to 100%, and the exact Edge bundle was redeployed as v21 with its original SHA-256
+  `de1351239a5cb1a725186b0b1acb6e227e487960a258b0c7488c22bb6a593491`. Direct Edge denial,
+  gateway health and all nine baseline cache-v14/static/API checks passed. Candidate Edge v22,
+  Worker, and the same three jobs were then restored and the full hosted gates rerun successfully.
+- **Remaining limit**: desktop WebKit is not an installed iPhone PWA. The owner must still test
+  focus, double-tap, pinch, rotation and close/reopen from Home Screen. Web constraints are
+  best-effort and reduce accessibility; they cannot guarantee that iOS will never zoom.
 
-## Execution Guidelines
-1. No implementation of business logic, prediction algorithms, betting calculations, or production database schemas during Phase 0 or Phase 1.
-2. Maintain strict competition-agnostic architecture throughout all phases.
-3. Every phase must pass verification guidelines defined in the workflow files.
-4. All implementation and release work must follow `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
-5. `PROJECT_PLAN.md` is the source of truth for the current project phase when root docs disagree.
-6. Intermediate phases must close with evidence and a next-phase recommendation, not formal owner-feedback or production promotion. Final owner review and production promotion happen only after all planned release phases are complete or explicitly removed from scope.
-7. Guardrail-sensitive decisions still require explicit owner direction before implementation, even when formal owner review is deferred.
-8. As of 2026-07-01, API-Football free-tier usage is removed from the active roadmap. Existing API-Football code and plans are legacy debt to remove during the next non-AI app completion phase, not a valid future dependency.
+## Evidence-gated Bet Settlement — 2026-09-17 staging candidate
 
-## Project Phases
+- **Delivered**: exact canonical match binding with locked Home/Away; removal of Today Quick Add;
+  retained clean Manual Add in Bets for unlisted matches; optional legacy-only Motivation/Plan; corrected HT corner presets;
+  score-led Running Over 0.5/0.75; and evidence-gated automatic settlement with visible manual
+  fallback. No automatic provider detail request or silent correction of settled ledger data.
+- **Local evidence**: `pnpm run verify:staging` passes 178 unit files / 1,116 tests plus all
+  integration, endpoint, browser/PWA, lint, typecheck, audit and build gates. PostgreSQL rollback,
+  Edge graph/runtime and the 74-module Cloudflare artifact gate pass.
+- **Hosted evidence**: three additive migrations are applied and all 18 migration versions match.
+  Edge v26 / Worker `fc867def-cd30-4237-978d-7090f068cb99` pass static/API smoke, canonical locked
+  and unlinked manual draft create/read/delete, owner auth/redaction, match detail/manual-review fixtures,
+  PWA layout, cache v17 and all three scheduler deliveries. Final audit retains exactly the one
+  pre-existing draft and zero bet, ledger, Running, Custom-create or legacy-emotion records.
+- **Rollback evidence**: jobs were paused at zero; prior Worker `dcf92724-1f08-4c3e-b877-3d6cebba2137`
+  and Edge SHA `a43b5a3d8acbd9306ee85b8f7fbbda115d1fd1b956d43082ca863ba158e293db`
+  served healthy traffic on the additive schema. Candidate Edge SHA
+  `395bf413b558ff3148b4db6398bef14e0f589f86bcc05e2129109b3861519296`, Worker and three jobs were
+  restored; the owner flow passed again with unchanged owner-data counts.
+- **Remaining limit**: the owner passed the physical installed-iPhone zoom/orientation/reopen
+  checks on stale cache v15. No final closeout commit, push or production promotion is allowed
+  until the same installed app upgrades to v16 and visibly shows the corrected Add Bet UI.
+- **Installed-PWA correction**: owner feedback exposed that the phase reused cache v15, so an
+  existing Home Screen install could keep the previous Structured Add Bet shell even though the
+  staging origin already served byte-identical current modules. TDD rotated the shell to
+  `miraichi-shell-v16-evidence-settlement`, explicitly deletes v15 during activation, and deployed
+  Worker `96f8a771-4419-4c67-9c67-4760dff43749`. Fresh hosted Chromium/WebKit cache and the
+  complete Structured Add Bet staging browser flow pass. Existing-iPhone upgrade visibility still
+  requires the owner's close/reopen confirmation.
+- **Manual Add owner correction**: the owner clarified that only Today Quick Add should be removed.
+  Bets now exposes Manual Add for unlisted matches; every manual session resets and unlocks team
+  names, while canonical scoped Add keeps both names readonly. The API accepts only strict
+  `manual:*` groups without `matchId`, still validates structured markets, and server-generates the
+  label. Cache v17 forces installed-shell delivery. A real staging manual draft was created, read
+  back without `matchId`, and deleted; final owner-data counts are unchanged.
 
-### Phase 0: Repo Bootstrap and Docs
-- **Goal**: Establish monorepo workspace and initial docs.
-- **Deliverables**: Directory trees, placeholder config files, agent rules, work-flow definitions, and ADRs.
-- **Status**: Completed.
+## Daily LIVE recovery — 2026-09-12 staging report
 
-### Phase 1: Architecture Planning
-- **Goal**: Explore architecture questions, trade-offs, draft boundaries, and planning options before implementation.
-- **Deliverables**: Phase 1 planning package, open architecture questions, candidate options, draft system boundaries, draft data flow, LLM/local AI boundary notes, competition-agnostic review, and ADR-0002.
-- **Status**: Completed.
+- **Root cause**: the widget returned 50 early-day fixtures, none active, while existing daily data contained known active matches. The previous parser fix could not discover records outside that response. A deployed Deno environment allowlist also needed `LIVE_DATA_MODE`; a failing executable bootstrap regression now protects it.
+- **Correction**: source the independent LIVE snapshot from guarded FotMob daily data for configured, known matches. Match provider ID, league root, kickoff and team direction strictly; retain the existing lease, refresh floors, circuit and last-good behavior. No detail polling or canonical in-play publication. The PWA accepts explicit registered daily coverage and receives the new cache version.
+- **Actual browser evidence**: 30 of 30 rendered active rows across 13 leagues matched independent source scores on both observations, with zero detail requests and no response fixtures. Snapshot timestamps advanced from `14:46:31.416Z` to `14:50:35.193Z`; Augsburg/Leverkusen changed 2–1 to 2–2, Mainz/Frankfurt 0–2 to 0–3, and Chelsea/Hull changed to halftime.
+- **Gates**: `verify:staging` passes 161 unit files / 985 tests and all integration/endpoint/PWA/build checks. Edge graph/auth/Postgres, provider SQL and 67-file Cloudflare artifact checks pass. `verify:staging:hosted` passes at `14:49:55.752Z`. Hosted PWA layout passes ten Chromium/WebKit cases and both real service-worker cache checks.
+- **Limits**: the snapshot still reports `identity_mismatch:1` and `ambiguous_matches:1`; these records are excluded instead of guessed. The two real samples establish current multi-league coverage, not guaranteed coverage at every time or reconciliation of the 32 previously identified historical rows. Morning-league mappings and midnight behavior have regression coverage, but those leagues were not playing during this hosted observation.
+- **Delivery**: the owner explicitly requested a local commit of all changes after staging verification, including the pre-existing UI navigation/label edits. No push or production action. The previous cross-league fixes were already committed as `91950a0` at the start of this correction. Detailed evidence and rollback are in `docs/superpowers/plans/2026-09-12-daily-live-recovery.md`.
 
-### Phase 2: App Skeleton and Scaffold
-- **Goal**: Define boundaries, mock contracts, and deploy running skeleton code for all major applications and packages.
-- **Deliverables**: Minimal app skeletons, frontend setup with UI package integration, local AI boundary stub, and worker boundary stub using technology choices accepted in later ADRs.
-- **Status**: Completed.
+## Cross-league scores and LIVE — 2026-09-11 staging report
 
-### Phase 3: Data Ingestion Planning
-- **Goal**: Plan and architect data ingestion adapters, quality rules, and abstraction interfaces before live integrations.
-- **Deliverables**: Phase 3 planning docs, data guardrails, candidate ADRs, and generic mock ingestion schemas.
-- **Status**: Completed.
+- **Fixed**: daily season/stage IDs now resolve through the stable league root; previously seen ETags and exhausted nonterminal attempts are repaired once within the existing due window. Widget URL-only identity, configured competition aliases, observed Flamengo/Pumas/León names, tracked terminal identity and period/minute parsing are corrected.
+- **Verified**: all 50 configured league identity cases; actual Libertadores 0–2, Sudamericana 2–0 and MLS 1–2 in hosted API/cards at UTC and Asia/Tokyo, with zero detail requests. Synthetic LIVE/halftime/completed transitions are tested separately from real source observations. Actual Pumas/León LIVE 1–0 was rendered at `2026-09-11T04:16:20.375Z`.
+- **Final gates**: `verify:staging` passes 157 unit files / 918 tests, all integrations, endpoint/PWA checks and build. Edge graph/auth/Postgres, provider SQL and artifact checks pass. `verify:staging:hosted` passes at `2026-09-11T04:17:29.360Z`, including three scheduler jobs and four Vault names; `test:e2e:staging:scores` passes both timezones on Edge 16.
+- **Limits**: LIVE is still a global 50-record recent window, with explicit partial coverage. The audit retains 32 old scheduled rows: six share provider IDs with completed rows under different names, and 26 carry retired SportScore hydration identities without an exact linked counterpart. No identity merge/delete or guessed score repair was performed on these records.
+- **Delivery**: accepted PWA baseline committed locally as `ce5e575`. This new fix remains in the working diff; no push. Edge 14 rollback bundle and full gate/screenshots are retained under ignored `output/playwright/score-live/`. Details and remaining reconciliation evidence: `docs/superpowers/plans/2026-09-11-cross-league-score-live.md`.
 
-### Phase 4: Local AI Skeleton
-- **Goal**: Hook up LLMs and local AI pipelines to digest generic football statistics.
-- **Deliverables**: Inference endpoints, local prediction pipeline tests, and prompt routing logs.
-- **Status**: Completed.
+## iPhone PWA tabbar quality-up — 2026-09-10
 
-### Phase 5: Betting History, Bankroll, Reports, AI Recommendation Boundary, and Extensible Business Logic Discovery
-- **Goal**: Gather owner requirements, formulate open questions, design extensible domain boundaries, accept Wave A foundation ADRs, plan future implementation, establish approved TypeScript tooling, add type-only shared contracts, add static typechecked market config for accepted Wave A boundaries, establish accepted UI design baseline, plan settings/localization/i18n, implement the production PWA shell, clean document statuses before Phase 5.10 starts, close Phase 5.10 Add Bet draft/form-state persistence planning, implement the Phase 5.11 local-first Add Bet draft persistence boundary, and complete Phase 5.12 owner-requested UI/UX quality-up before Phase 5 closeout.
-- **Deliverables**: Business logic discovery specs, open questions list, extensible boundaries design, candidate ADRs (ADR-0023 to ADR-0032), accepted Phase 5.2 Wave A foundation ADRs, accepted ADR-0034 TypeScript technical direction, Phase 5.3 Wave A implementation planning documents, Phase 5.4 TypeScript tooling setup, Phase 5.5 Typed Shared Domain Contracts, Phase 5.6 Market Catalog and Line Preset Config, Phase 5.7A Black Apple Ledger PWA UI preview closure, Phase 5.8 App Settings, Language/i18n, and UI Flexibility Planning package, Phase 5.9 Production PWA Shell Implementation, pre-Phase 5.10 document status hygiene, owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning, Phase 5.11 local-first Add Bet draft persistence and backup/import code slices, and Phase 5.12 quality-up UI/UX improvements.
-- **Status**: Completed.
+- **Scope**: preserve the owner's current cleanup diff and the four-tab contract; correct viewport sizing, bottom safe-area spacing, and installed-shell cache delivery. No API/schema/provider changes.
+- **Implementation slice**: add `tests/e2e/pwa-layout.ts` to measure the real rendered shell in Chromium/WebKit. Observe RED for a 49px control row, single bottom inset, viewport-edge anchoring, and scroll clearance; simplify `packages/ui/src/index.css`; retain the owner's opaque iOS status bar in `apps/web/src/index.ts`.
+- **Installed update**: advance the cache version in `apps/web/public/service-worker.ts` and the matching `scripts/pwa-verify.ts` gate so existing installations receive the new shell.
+- **Registration correction**: the hosted cache check exposed the existing ES-module worker being registered as a classic script. A RED unit test in `apps/web/src/pwa/register-service-worker.test.ts` precedes registering it with `type: 'module'`; the hosted cache/reload gate must pass after redeployment.
+- **Verification**: focused browser regression, `pnpm run verify:staging`, Cloudflare artifact gate, deploy the existing Frankfurt Worker, fresh hosted owner/browser and PWA layout checks. Browser emulation cannot certify an actual Home Screen installation on iPhone.
+- **Delivery**: no commit or push until the owner reviews the deployed result and explicitly confirms.
+- **Implemented**: preserved the owner's removed legacy CSS/unused labels/import cleanup and opaque iOS status bar. One root dynamic viewport height feeds the shell; shared tabbar tokens define a 49px control row, 1px border and one bottom safe inset. Content/attribution clear that same bar; landscape controls respect side insets.
+- **Local evidence**: `pnpm run verify:staging` passed 157 unit files / 799 tests, all local/release/integration/PWA checks and the static build. `cloudflare:artifact:verify` passed 67 files / 414,263 bytes. `pnpm exec tsx tests/e2e/pwa-layout.ts` passed Chromium and WebKit across five sizes with synthetic safe insets; the new E2E also passed a focused TypeScript check.
+- **Deployed candidate**: Frankfurt Worker `2b262278-b532-4b89-b3c6-25a69b99c914` serves 100% of staging traffic, uploaded from uncommitted HEAD `78840092ab25706ad496496ed9dc3ed252b8deb0` plus the current diff. All eight changed browser artifacts fetched from staging match local SHA-256 hashes. Pre-task rollback Worker: `34587440-944a-4bb3-a5f8-804386f53359`; Edge/schema were unchanged.
+- **Hosted PWA evidence**: `pnpm exec tsx tests/e2e/pwa-layout.ts --staging` passed all ten browser/size cases, four-tab anchoring, final-item scroll clearance, and actual service-worker activation/cache/reload in Chromium and WebKit. Cache `miraichi-shell-v12-pwa-tabbar` contains byte-identical current CSS. This is fresh-browser cache evidence, not certification of every existing iPhone installation.
+- **Final hosted gate**: `pnpm run verify:staging:hosted` passed at `2026-09-10T09:05:38.429Z` on the final Worker. Real owner login/four-tab/LIVE/detail/logout/redaction checks passed without creating owner data; four Vault names and three scheduler jobs passed, with current/terminal/live deliveries reporting valid `fresh` results.
+- **Evidence files**: gitignored `output/playwright/pwa-tabbar/` retains gate logs, SHA-256 comparisons and local/staging screenshots; `staging-webkit-portrait.png` shows the hosted Matches tab with a synthetic 34px bottom inset.
+- **Owner acceptance (2026-09-11)**: owner confirmed the PWA result is satisfactory and explicitly authorized a local commit. Agent verification remains browser-based; the owner's acceptance does not claim an agent-run physical-device test. Push and production remain unapproved.
 
-### Phase 6: Testing/Deployment Hardening
-- **Goal**: Perform end-to-end integration, security audits, staging deployment hardening, CI/CD automation planning, TypeScript strictness hardening, and non-production release readiness work.
-- **Deliverables**: Accepted CI/CD workflows, repeatable staging deployment artifacts, smoke-check automation, owner-approved repo-wide JavaScript-to-TypeScript source migration, TypeScript strictness hardening plan and code slices, rollback notes, and monitoring plan drafts.
-- **Status**: Completed.
+## User-triggered hosted match detail — 2026-09-10 closeout
 
-### Phase 7: Real Data Provider, Dataset, and Evaluation Planning
-- **Goal**: Plan real provider selection, dataset construction, data quality, evaluation methodology, and governance for future real prediction work. The first provider target may be full FIFA World Cup fixture coverage, but implementation must remain competition-agnostic and adapter-based.
-- **Deliverables**: Owner-approved ADRs for data provider strategy, full World Cup fixture source coverage, dataset boundaries, evaluation criteria, provider adapter contracts, and model-readiness gates.
-- **Status**: Completed.
+- **Delivered**: per-match cache-only GET and owner-triggered POST refresh, durable leases and
+  publication fencing, 60-second per-match floor, ETag/304, last-good preservation, request bounds,
+  and a provider circuit shared with hosted scheduled operations. No detail cron, prefetch,
+  polling, pending retry timer or automatic focus refresh.
+- **Information UI**: factual events, confirmed lineups/coaches, stadium/referee/attendance,
+  period/team/player statistics and a shot map/list. EN/VI labels match; missing values remain
+  absent/null, and unverified physical units are hidden. Canonical match/bankroll data is not
+  overwritten by detail observations.
+- **Real hosted acceptance**: completed Manchester United/Ipswich returned 3 statistic periods,
+  32 players and 43 shots. The pre-researched upcoming AFC Bournemouth/Brentford sample refreshed
+  successfully. Browser assertions cover selected-ID request counts, no card/Bets request,
+  manual cooldown, error/late-response/202 fixtures, mobile layout, owner login/logout/replay,
+  and credential/locator/internal-header redaction. Fixtures are identified separately from
+  real provider results. No owner bet, draft, bankroll or ledger data was created by these E2Es.
+- **Coverage limit**: two acceptance samples do not prove uniform detail availability across 45
+  competitions. Santos/Cruzeiro was rejected for conflicting canonical/provider names and kickoff;
+  no detail was published, and this observation does not establish which side is correct.
+  Upcoming fixture expiry is a hard failure; replace it with a newly verified current-season
+  sample when necessary. Never skip the gate or loosen identity matching to make it pass.
+- **Hosted exit gate**: `verify:staging:hosted` passed at `2026-09-10T06:11:26.413Z` after restoration.
+  Exact four Vault names and three cron jobs were verified; controlled current/terminal/live
+  deliveries returned 2xx and valid `fresh` no-ops. Thirteen forward migrations are applied.
+  A subsequent independent read confirmed zero drafts, bets, bankroll accounts and ledger entries.
+- **Rollback**: zero scheduler jobs during the drill; baseline Edge/Worker passed the previous
+  owner/LIVE suite against the additive schema. The new detail suite exposed the expected missing
+  POST in the old UI. Restored detail Edge/Worker passed browser E2E; three jobs, four Vault names,
+  match snapshots and detail caches were retained. Full evidence and bundle hashes are in the
+  hosting runbook. Every behavior slice was reviewed and committed locally before the next slice.
+- **Next**: requested `phase:owner-feedback`. The owner should exercise Information and report
+  acceptance or concrete corrections. No additional decision is needed for completed staging
+  work; production/Tokyo and historical hydration remain separate, unapproved actions.
 
-### Phase 8: Historical Model Training and Prediction Engine R&D
-- **Goal**: Research and prototype owner-only, free-tier model training approaches through World Cup and national-team competition datasets first, then leakage-safe feature specs, chronological evaluation, and model comparison reports before any real inference runtime is selected. Club competitions are expansion scope after the national-team-first path is reviewed.
-- **Deliverables**: Phase 8 owner-only R&D subphase plan, World Cup/national-team dataset snapshot and provenance plan, feature spec and leakage audit plan, evaluation harness and baseline reports, candidate model bake-off report, owner-approved model-selection ADR, and optional runtime packaging plan only if evidence justifies it.
-- **Status**: Paused/Superseded as the active phase on 2026-07-01. Phase 8 evidence remains historical R&D, but AI training/runtime work is no longer the next priority.
+## Hosted automatic provider refresh and Matches LIVE — 2026-09-09 closeout
 
-### Phase 9: Non-AI App Completion, Local Data API, Cloud Persistence, and Release Readiness
-- **Goal**: Urgently make the app usable across the four non-AI tabs (`Today`, `Matches`, `Bets`, `Bankroll`) before returning to Miraichi AI. Match data must come from an owner-controlled local/manual snapshot pipeline, not API-Football free tier. Bankroll/capital workflows and cloud database persistence must work smoothly without approving prediction, stake sizing, Kelly, ROI, CLV, or automated betting advice.
-- **Deliverables**: API-Football removal plan and code slices, local finished/scheduled match data API, national-team-first manual update workflow, World Cup 2026 first data coverage, Euro latest/past backfill path, cloud database provider ADR, cloud persistence implementation plan, four-tab app completion implementation slices, local/integration/staging verification evidence, and a disabled or honest unavailable state for `Miraichi AI`.
-- **Status**: Active.
+- **Delivered**: DB-first current/terminal refresh, shared durable lease and fenced atomic delta
+  publication, TTL/ETag checkpoints, bounded requests/timeouts/backoff, and five-minute background
+  widget live refresh. Current cap is nine, with an Edge default of three. Terminal requests remain
+  due-ledger driven; the 0–2 minute objective is best effort, not an upstream availability promise.
+- **Owner UI**: one Matches LIVE toggle replaces the date list, uses last-good state, renders only
+  live/halftime/suspended score/minute rows, shows a visible empty state, and restores the previous
+  date/search/filters. EN/VI parity and crawler-visible SportScore attribution are retained.
+- **Hosted gate**: `pnpm run verify:staging:hosted` passed after restoration at
+  `2026-09-09T04:38:29.867Z` on the exact Cloudflare origin. Real Chromium login/session/four-tab/
+  LIVE/logout/replay/redaction checks and explicit deterministic live/empty fixtures passed.
+  Controlled current/terminal/live deliveries returned 2xx with valid `fresh` no-ops; the earlier
+  complete gate at `01:23:40.919Z` also observed terminal `refreshed` with checkpoint progress.
+- **Local gate**: the final `pnpm run verify:staging` passed 150 unit files / 733 tests, lint,
+  TypeScript, product/lifecycle/architecture/type-safety audits, all integration suites, endpoint
+  E2E, PWA checks and the static build. Actual local PostgreSQL fencing/rollback/cleanup and Edge
+  runtime auth/persistence smokes also passed during this implementation.
+- **Remote persistence**: eleven forward migrations through `20260909150000` are applied. The
+  canonical registry has 45 current-edition checkpoints. No historical hydration or lazy detail
+  was enabled. E2E creates no owner bankroll/bet rows; finally logout and browser cleanup passed.
+- **Rollback evidence**: scheduler removal produced zero jobs while retaining Vault and data.
+  Prior Worker `1c71033f-f97f-42b9-9884-1862d64ad870` and the exact `f3113ed` Edge bundle were
+  deployed; browser checks exposed the expected old LIVE and session-replay limitations.
+  Current Worker/Edge restoration passed browser E2E, then reconfiguration restored three jobs.
+  Counts remained 11,163 matches / 17 snapshots. Migrations and owner data were preserved.
+- **Saved credentials**: both committed hosted commands reuse `STAGING_URL` and
+  `MIRAICHI_OWNER_PASSWORD` from the gitignored root `.env`; repeated entry is unnecessary.
+  Credential values are excluded from deployment artifacts, reports and Git.
+- **Owner decision required**: accept or reject this new staging candidate. The earliest safe
+  next phase is the explicitly requested `phase:owner-feedback`; production is a separate decision.
+- **Evidence/runbook**: `docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md` and
+  `docs/superpowers/plans/2026-09-09-hosted-provider-refresh-live.md`.
 
-### Phase 10: Final Miraichi AI Training and Runtime
-- **Goal**: Resume national-team-first model training only after Phase 9 has delivered a working non-AI app with cloud persistence and verified local/manual match data. This phase may revisit Phase 8 R&D evidence, improve datasets, run model training, and decide whether a runtime prediction surface is justified.
-- **Deliverables**: Updated dataset evidence, leakage audit, evaluation harness, model-selection ADR update, training run reports, runtime packaging plan if approved, `Miraichi AI` tab integration, and final release gating.
-- **Status**: Deferred. Do not start until Phase 9 passes staging and the owner explicitly approves returning to AI training.
+## Historical Owner-Hosted API And Visibility-Driven Live Overlay — 2026-09-02
 
-## TODO / Next Steps
-- [x] Review Phase 1 architecture planning package.
-- [x] Convert approved Phase 1 recommendations into accepted/proposed ADRs.
-- [x] Complete Phase 1 completion review.
-- [x] Complete Phase 2 App Skeleton and Scaffold.
-- [x] Begin Phase 3 Data Ingestion Planning.
-- [x] Review and approve Phase 3 Candidate ADRs (ADR-0013 to ADR-0016).
-- [x] Implement provider-agnostic parser interfaces and local mock data ingestion in worker.
-- [x] Begin Phase 4 Local AI Skeleton planning.
-- [x] Approve Phase 4 candidate ADRs (ADR-0017 to ADR-0021).
-- [x] Mock-up local-ai service and verify trace metadata pipeline.
-- [x] Establish PWA-first client delivery strategy and make web app PWA-ready.
-- [x] Begin Phase 5 Betting/History/Bankroll planning and draft candidate ADRs.
-- [x] Create Phase 5.2 Wave A ADR planning documents and 6 draft ADRs (ADR-0023, 0024, 0025, 0026, 0031, 0033).
-- [x] Accept Phase 5.2 Wave A foundation ADRs and ADR-0034 as architecture/planning boundaries only.
-- [x] Begin Phase 5.3 Wave A Implementation Planning without starting implementation.
-- [x] Complete Phase 5.4 TypeScript tooling setup execution.
-- [x] Complete Phase 5.5 Typed Shared Domain Contracts execution.
-- [x] Complete Phase 5.6 Market Catalog and Line Preset Config execution.
-- [x] Complete Phase 5.7A Black Apple Ledger PWA UI preview as a provisional preview baseline only (adjustable).
-- [x] Defer Phase 5.7B PWA Navigation Shell and Forms implementation until the owner explicitly approves a production UI implementation plan.
-- [x] Plan App Settings and Language/i18n, including English and Vietnamese support plus additional owner-requested app settings (Phase 5.8).
-- [x] Complete Phase 5.9 Production PWA Shell Implementation, using production-baseline Black Apple Ledger structure with TypeScript-first shell modules.
-- [x] Start pre-Phase 5.10 document status hygiene cleanup.
-- [x] Complete Phase 1, Phase 3, Phase 4, app/package, and ops docs hygiene slices.
-- [x] Complete owner-approved Phase 5.10 Add Bet Draft/Form State + Persistence Planning.
-- [x] Create Phase 5.11 Local-First Add Bet Draft Persistence Implementation Plan.
-- [x] Owner review Phase 5.11 implementation plan before `phase:code-slice`.
-- [x] Complete Phase 5.11 Local-First Add Bet Draft Persistence code slices.
-- [x] Run `phase:integration-test Phase 5.11` before staging.
-- [x] Run `phase:staging Phase 5.11` and record closeout evidence before the next phase.
-- [x] Create/link Cloudflare Pages project `miraichi-staging`, deployment token, Pages URL, and smoke-check evidence.
-- [x] Defer formal owner-feedback and production promotion until all planned release phases are complete.
-- [x] Complete `phase:quality-up ui-ux-improve Phase 5.12 Owner Requested Shell Cleanup` staging redeploy before Phase 5 closeout.
-- [x] After Phase 5.12 staging passes, decide whether Phase 5 can close or whether another explicit Phase 5 quality-up item exists.
-- [x] Close Phase 5 with staging smoke evidence and recommend Phase 6 planning.
-- [x] Start `phase:plan Phase 6 Testing/Deployment Hardening` only after Phase 5 closeout.
-- [x] Owner review Phase 6 Testing/Deployment Hardening Plan before implementation planning.
-- [x] Create `phase:implementation-plan Phase 6 CI/CD and Staging Smoke Automation`.
-- [x] Owner review Phase 6 CI/CD and Staging Smoke Automation implementation plan before `phase:code-slice`.
-- [x] Complete `phase:code-slice Phase 6 staging smoke-check script`.
-- [x] Complete `phase:code-slice Phase 6 CI check workflow`.
-- [x] Complete owner-requested `phase:code-slice Phase 6 repo-wide JavaScript-to-TypeScript migration`.
-- [x] Create `phase:implementation-plan Phase 6 TypeScript Strictness Hardening`.
-- [x] Start `phase:code-slice Phase 6 type-safety audit gate`.
-- [x] Run `phase:staging Phase 6 hardened staging process` only after TypeScript strictness hardening passes local and integration verification.
-- [x] Keep real AI training out of Phase 6; plan it only through future Phase 7 and Phase 8 ADRs.
-- [x] Open Phase 7 planning and draft candidate ADRs.
-- [x] Split Phase 7 ADR candidates into standalone draft ADR files and record draft review.
-- [x] Accept ADR-0036, ADR-0037, ADR-0038, and ADR-0039 as Phase 7 planning boundaries only.
-- [x] Complete owner review for ADR-0035 provider strategy, with owner-only free-tier provider confirmation before acceptance.
-- [x] Complete owner review for ADR-0040 model-readiness gates, with Phase 8 evidence or narrower owner-only R&D report authority before acceptance.
-- [x] Complete Phase 7 Real Data Provider, Dataset, and Evaluation Planning only after owner-approved ADRs exist.
-- [x] Create Phase 8 Owner-Only Model R&D plan and split Phase 8 into smaller gated subphases.
-- [x] Owner review Phase 8.0 R&D boundary split before Phase 8.1 implementation planning.
-  - **Result**: Owner confirmed the Phase 8 subphase drift and approved returning to the Phase 8.0 boundary check. Phase 8 remains owner-only R&D: no public prediction surface, no production model mode, no betting recommendation, no model artifact promotion, and national-team competitions remain before club expansion.
-- [x] Create `phase:implementation-plan Phase 8.1 Dataset Snapshot and Provenance`.
-- [x] Complete Phase 8.1 reproducible offline dataset snapshot and data quality report.
-- [x] Review and correct Phase 8.1 to make World Cup/national-team competitions the explicit first data target before Phase 8.2.
-- [x] Create `phase:implementation-plan Phase 8.2 Feature Spec and Leakage Audit`.
-- [x] Complete Phase 8.2 Feature Spec and Leakage Audit.
-- [x] Create `phase:implementation-plan Phase 8.3 Evaluation Harness and Baselines`.
-- [x] Complete Phase 8.3 Evaluation Harness and Baselines, using pure TypeScript metric functions in `apps/local-ai` for Brier, Calibration/ECE, and log loss, reporting sample count and bookmaker/simple baseline comparison without blocking harness construction on additional national-team competitions.
-- [x] Create `phase:implementation-plan Phase 8.3A National-Team Dataset Expansion`.
-- [x] Complete Phase 8.3A National-Team Dataset Expansion before Phase 8.4, with provider-confirmed national-team competitions and aggregate evaluation readiness evidence.
-- [x] Create `phase:implementation-plan Phase 8.4 Candidate Model Bake-Off`.
-- [x] Complete Phase 8.4 Candidate Model Bake-Off before selecting any real model.
-  - **Result**: Candidate comparison report generated for the aggregate World Cup + Euro national-team dataset. No model selected.
-  - **Blocker**: Lifted (Phase 8.3A completed with World Cup and Euro datasets, total test sample count = 107). Club/Premier League expansion remains blocked.
-  - **Constraints**: Do not treat high-variance Phase 8.4 outcomes as model-selection evidence due to sample size limits and missing bookmaker baseline. Do not create runtime prediction routes, model artifacts, betting recommendations, or club competition support.
-- [x] Create `phase:implementation-plan Phase 8.5 Owner-Only Experimental Report Surface`.
-- [x] Complete Phase 8.5 Owner-Only Experimental Report Surface before Phase 8.6 Model Selection ADR.
-  - **Result**: Owner-only experimental JSON/Markdown report surface generated from Phase 8.4 evidence. No model selected and no runtime prediction surface created.
-  - **Constraints**: The report surface remains owner-only and experimental. It does not expose public predictions, `engineMode: production`, recommendation labels, stake advice, bankroll advice, ROI, CLV, Kelly logic, or club competition expansion.
-- [x] Create Phase 8.6 Model Selection ADR only after dataset, leakage, baseline, and candidate comparison evidence exists.
-  - **Result**: Owner approved ADR-0041 on 2026-06-29, confirming the decision to select no model yet.
-- [x] Phase 8.6A: National-Team Dataset Expansion for Model Selection Evidence.
-  - **Goal**: Expand World Cup and Euro history to increase out-of-sample test count and check for bookmaker odds/implied probability baselines, then rerun the model R&D pipeline.
-  - **Result**: Narrow expansion completed for World Cup + Euro, increasing scored aggregate test count to 214. Candidate bake-off still selected no model.
-  - **Limitation**: Bookmaker baseline remains unavailable, and Phase 8.6A provider discovery was too narrow because it only proved AFCON/Copa America/AFC Asian Cup/CONCACAF Gold Cup unavailable through the current FBref path, not through Sofascore direct tournament ids.
-- [x] Create `phase:plan Phase 8.6B Sofascore National-Team Source Discovery and Odds Baseline Discovery`.
-  - **Result**: Draft design spec created to investigate Sofascore direct tournament-id discovery for AFCON, Copa America, AFC Asian Cup, CONCACAF Gold Cup, UEFA Nations League, World Cup, and Euro, plus a separate odds/bookmaker source discovery.
-  - **Constraints**: Do not merge Sofascore fixtures into the main training dataset, do not fake bookmaker baselines, do not add API keys/secrets/paid providers, do not add club competitions, and do not revisit model selection before Phase 8.6B evidence exists.
-- [x] Create `phase:implementation-plan Phase 8.6B Sofascore National-Team Source Discovery and Odds Baseline Discovery`.
-  - **Result**: Implementation plan created with TDD slices for the Sofascore discovery registry, quality gates, odds baseline source matrix, phase verifier, generated artifacts, and closeout evidence.
-  - **Next**: Start with `phase:code-slice Phase 8.6B Sofascore Discovery Registry And Validation`.
-- [x] Complete Phase 8.6B Sofascore National-Team Source Discovery and Odds Baseline Discovery.
-  - **Result**: Sofascore direct tournament-id discovery report generated for World Cup, Euro, AFCON, Copa America, AFC Asian Cup, CONCACAF Gold Cup, and UEFA Nations League.
-  - **Evidence**: See `apps/local-ai/reports/phase-8-6b-sofascore-national-team-source-discovery.json`, `apps/local-ai/reports/phase-8-6b-odds-baseline-source-discovery.json`, and `docs/data/PHASE-8-6B-SOFASCORE-NATIONAL-TEAM-SOURCE-DISCOVERY.md`.
-- [x] Create `phase:plan Phase 8.6C National-Team Sofascore Dataset Ingestion`.
-  - **Result**: Proposed design spec created to ingest historical match events and scores from Sofascore for 7 tournaments, updating `competition-registry.json` splits, and rebuilding offline training/validation splits without odds.
-- [x] Complete Phase 8.6C National-Team Sofascore Dataset Ingestion.
-  - **Result**: Historical fixture schedules and scores ingested from Sofascore for 7 tournaments, expanding offline dataset to 1,962 matches.
-  - **Evidence**: Combined split counts: 1,044 train, 570 validation, and 348 test fixtures. See updated processed JSONL splits under `apps/local-ai/data/processed/`.
-  - **Constraint**: Bookmaker baseline remains blocked/unavailable.
-- [x] Create `phase:implementation-plan Phase 8.6E API-Football Owner-Only App Live Data`.
-  - **Result**: Proposed design spec and implementation plan created to replace visible hardcoded app match feed data with backend-mediated API-Football fixture data, plus cache/quota guard and honest unavailable states.
-  - **Evidence**: See `docs/superpowers/specs/2026-06-29-phase-8-6e-api-football-owner-only-app-live-data-design.md` and `docs/superpowers/plans/2026-06-29-phase-8-6e-api-football-owner-only-app-live-data.md`.
-  - **Constraints**: No odds, no prediction runtime, no betting recommendation, no provider key in browser code, no public traffic, and no raw CSV ingestion changes in this phase.
-- [x] Complete Phase 8.6E API-Football Owner-Only App Live Data.
-  - **Result**: `/api/v1/matches` uses backend-mediated API-Football fixture normalization and the web shell renders provider-backed match feed states.
-  - **Evidence**: Focused API/web tests, typecheck, lifecycle verification, and `git diff --check` passed. Manual provider smoke requires a local `API_FOOTBALL_KEY` and must not record or expose the key.
-  - **Constraint**: Odds, prediction runtime, betting recommendation, public traffic, and raw CSV append-only merge remain out of scope.
-- [x] Create `phase:plan Phase 8.6F API-Football National-Team JSONL Snapshot Store`.
-  - **Result**: Proposed design spec created for a raw-first, SQL-shaped local JSONL snapshot store for API-Football national-team fixture payloads.
-  - **Scope**: National-team competitions only, in owner-approved priority order: World Cup, Euro, Copa America, AFCON, AFC Asian Cup, CONCACAF Gold Cup, and UEFA Nations League.
-  - **Constraint**: World Cup 2026 is included first, but only terminal/completed fixtures may be snapshotted while the tournament is active. No live polling, odds, prediction runtime, betting recommendation, club competitions, all-league crawl, or production database schema.
-- [x] Create `phase:implementation-plan Phase 8.6F API-Football National-Team JSONL Snapshot Store`.
-  - **Result**: Implementation plan created with TDD slices for snapshot schemas, national-team priority queue, provider mapping gates, JSONL storage, raw API-Football client, snapshot runner, CLI/verifier, and closeout evidence.
-  - **Plan**: See `docs/superpowers/plans/2026-06-30-phase-8-6f-api-football-national-team-jsonl-snapshot-store.md`.
-  - **Next**: Start with `phase:code-slice Phase 8.6F Snapshot Schema And ID Utilities`.
-- [x] Pause Phase 8 AI/model-training work as the active roadmap priority on 2026-07-01.
-  - **Reason**: The non-AI app is not complete enough to justify spending the next phase on training/runtime work.
-  - **Constraint**: Phase 8 R&D artifacts remain historical evidence only. They do not authorize production predictions, the `Miraichi AI` tab, stake advice, bankroll advice, or model runtime routes.
-- [x] Supersede the Phase 8.6F API-Football National-Team JSONL Snapshot Store before code-slice execution.
-  - **Reason**: Owner explicitly rejected the API-Football free-tier path on 2026-07-01.
-  - **Replacement**: Use Phase 9 local/manual data ingestion and a replaceable source registry.
-- [x] Create ADR-0042 to remove API-Football free-tier usage and select a local/manual snapshot API strategy.
-- [x] Create `phase:plan Phase 9 Non-AI App Completion, Local Data API, Cloud Persistence, and Release Readiness`.
-  - **Plan**: See `docs/product/PHASE-9-NON-AI-APP-COMPLETION-LOCAL-DATA-API-PLAN.md`.
-- [x] Create `phase:implementation-plan Phase 9 API-Football Removal and Local Data API`.
-  - **Plan**: See `docs/superpowers/plans/2026-07-01-phase-9-api-football-removal-local-data-api.md`.
-- [x] Complete `phase:code-slice Phase 9 API-Football removal from API routes, web tests, environment assumptions, and endpoint smoke checks`.
-- [x] Complete `phase:code-slice Phase 9 local/manual national-team match snapshot store`.
-- [x] Complete `phase:code-slice Phase 9 local data API for finished and scheduled fixtures`.
-- [x] Complete `phase:code-slice Phase 9 manual daily update command for World Cup 2026 first, then Euro latest/past backfill`.
-- [x] Complete `phase:code-slice Phase 9 Local Data API Closeout Fixes - integration verifier, idempotent verification, UI copy, and snapshot status contract`.
-  - **Evidence**: Focused closeout tests, `pnpm run phase9:local-data-api-verify`, `pnpm run verify:local`, and `pnpm run test:integration` passed on 2026-07-02.
-- [x] Run `phase:integration-test Phase 9 API-Football Removal and Local Data API`.
-  - **Result**: The local data API boundary passed integration. This does not close Phase 9 Non-AI App Completion, because cloud persistence and the four non-AI tab workflows remain pending.
-- [x] Create owner-approved cloud database provider ADR before implementing production cloud persistence.
-  - **Decision**: ADR-0043 accepted on 2026-07-02. Supabase hosted Postgres is the Phase 9 cloud persistence provider.
-  - **Boundary**: `apps/web -> apps/api -> Supabase Postgres`; no direct browser Supabase client, no browser secrets, owner-only persistence, no public auth in this phase.
-  - **ADR**: See `docs/decisions/ADR-0043-phase-9-cloud-database-provider.md`.
-- [x] Create `phase:implementation-plan Phase 9 Cloud Persistence for four non-AI tabs`.
-  - **Plan**: See `docs/superpowers/plans/2026-07-02-phase-9-cloud-persistence-four-non-ai-tabs.md`.
-  - **Scope**: Server-only Supabase Postgres adapter, private schema, manual snapshot cloud sync/fallback, durable Bets and Bankroll workflows, backup/import/export, and non-AI closeout verification.
-  - **Result**: Local code-slice implementation completed on 2026-07-02 and merged to local `main`.
-- [x] Complete `Today` and `Matches` tab flows against the local/cloud match API with loading, empty, stale-data, and unavailable states.
-  - **Evidence**: `pnpm run verify:local`, `pnpm run phase9:non-ai-app-verify`, and `pnpm run test:integration` passed on 2026-07-02.
-- [x] Complete `Bets` tab real draft/history workflows without automated betting, ROI, CLV, Kelly, or stake recommendation logic.
-  - **Evidence**: Phase 9 cloud persistence verifier and endpoint boundary integration covered draft create/list/delete and bet create/update flows in memory integration mode on 2026-07-02.
-- [x] Complete `Bankroll` capital-management workflows as owner-entered ledger/account records only, with no automated risk or stake allocation formulas.
-  - **Evidence**: Phase 9 cloud persistence verifier and endpoint boundary integration covered account creation and signed manual ledger entries in memory integration mode on 2026-07-02.
-- [x] Run `phase:integration-test Phase 9 Non-AI App Completion` only after the four non-AI tabs and persistence boundary are feature-complete.
-  - **Evidence**: `pnpm run test:integration` passed on 2026-07-02, including API/local-AI boundary checks, Phase 9 cloud-persistence endpoints in memory integration mode, and PWA verification.
-- [x] Complete `phase:code-slice Phase 9 Local Supabase Developer Workflow Hardening`.
-  - **Evidence**: `pnpm run supabase:local:status`, `pnpm run supabase:local:sync`, and `pnpm run supabase:local:verify` passed against the local Docker Supabase Postgres DB on 2026-07-02.
-  - **Scope**: Local developer scripts and docs only; no staging deploy, no cloud Supabase promotion, no Phase 10 AI/runtime work.
-- [x] Create `phase:implementation-plan Phase 9 Sportmonks Trial Data Capture Sprint`.
-  - **Plan**: See `docs/superpowers/plans/2026-07-02-phase-9-sportmonks-trial-data-capture-sprint.md`.
-  - **Scope**: Provider-neutral raw cache/warehouse first, Sportmonks as removable trial adapter, manifest/resume, fixture enrichment, normalized local match snapshot, no live polling, no AI training, no betting formulas.
-- [x] Complete `phase:code-slice Phase 9 Provider-Neutral Ingestion Contracts`.
-  - **Evidence**: `packages/shared/src/contracts/provider-ingestion-contracts.ts` and `.test.ts` created; `sportmonks` added to `LocalDataSourceId`; 14 unit tests pass; `pnpm run typecheck` clean on 2026-07-02.
-  - **Files**: `provider-ingestion-contracts.ts`, `provider-ingestion-contracts.test.ts`, `local-match-contracts.ts` (added `sportmonks`), `index.ts`.
-- [x] Complete `phase:code-slice Phase 9 Provider-Neutral Raw Cache, Manifest, And Warehouse Writers`.
-  - **Evidence**: `scripts/providers/shared/raw-cache.ts`, `manifest.ts`, `canonical-warehouse.ts` and tests created; `.gitignore` updated; `apps/api/data/providers/sportmonks/{raw,manifests,reports}/.gitkeep` and `apps/api/data/warehouse/.gitkeep` scaffolded; 5 unit tests pass; `pnpm run typecheck` clean on 2026-07-02.
-- [x] Complete `phase:code-slice Phase 9 Entity Resolution And Provenance Utilities`.
-  - **Evidence**: `scripts/providers/shared/entity-resolution.ts` (canonical match ID builder, team-name normalizer, candidate scorer) and `provenance.ts` (SHA-256 value-hashed FieldProvenance factory) created with tests; 4 unit tests pass; `pnpm run typecheck` clean on 2026-07-02.
-- [x] Complete `phase:code-slice Phase 9 Sportmonks Config, Endpoint Catalog, And Token Boundary`.
-  - **Evidence**: `scripts/providers/sportmonks/config.ts` (token-required, provider-neutral defaults) and `endpoint-catalog.ts` (allowed families + 5 gated groups) created; `.env.example` updated; `data:capture:sportmonks`, `data:verify:sportmonks`, `data:export:warehouse:matches` added to `package.json`; 3 unit tests pass; `pnpm run typecheck` clean on 2026-07-02.
-- [x] Complete `phase:code-slice Phase 9 Sportmonks Season Scoped Capture Runner`.
-  - **Scope**: Added a season-scoped raw capture runner for `/schedules/seasons/{id}`, `/teams/seasons/{id}`, `/standings/seasons/{id}`, and standing corrections, driven by known fixture `season_id` values. The app contract remains light fixture/score context for bet selection; rich match detail, standings, xG, odds, and squads stay raw/warehouse-only until a later approved normalization/training phase.
-  - **Command**: `pnpm run data:capture:sportmonks:season-scope -- --league-id=<leagueId>`.
-- [ ] Complete Sportmonks trial data capture before the trial window expires.
-  - **Priority**: Provider-neutral contracts/cache/warehouse first, then Sportmonks raw capture, fixture enrichment, and warehouse-to-local-snapshot export. Provider expansion remains deferred until Sportmonks capture is stable.
-- [ ] Run `phase:staging Phase 9 Non-AI App Completion` and record smoke evidence.
-  - **Blocker**: Requires a real Supabase project/database URL, applying `supabase/migrations/20260702052851_phase9_cloud_persistence.sql`, running Supabase advisors, and setting staging server secrets before smoke evidence can be recorded.
-- [x] Keep `Miraichi AI` disabled or honest-unavailable until Phase 10.
-  - **Constraint**: Continue to treat this as a guardrail until Phase 10 is explicitly approved; Phase 9 does not authorize production prediction runtime or betting recommendations.
-- [ ] Start Phase 10 AI training/runtime only after Phase 9 staging passes and the owner explicitly approves returning to AI.
+The application/auth/live implementation remains current, but ADR-0052 supersedes its Koyeb and
+GitHub Actions hosting topology. The Koyeb instructions below are historical evidence, not an active
+deployment path.
+
+- **Owner decision**: use Koyeb's generated HTTPS domain for the MVP; Cloudflare is not required.
+- **Persistence**: deploy no generated local snapshot. Apply migrations and sync canonical/current
+  data to Supabase before hosted smoke testing.
+- **Security**: add one-owner password login with signed secure HTTP-only sessions, no registration,
+  same-origin serving, exact local CORS only, and a refresh-only service token for hourly wake-up.
+- **Live boundary**: call only SportScore `/api/widget/*`, resolve only unique known canonical
+  current matches, publish score/status/minute only, and preserve last-good state on gaps/failure.
+- **Refresh boundary**: five minutes while visible, pull-down through the same cooldown, one-hour
+  GitHub Actions wake-up while closed, and one shared durable lease across all callers.
+- **Attribution**: one server-rendered crawler-visible exact SportScore link; no dynamic duplicates.
+- **Deferred work**: historical-season hydration and user-visible lazy full match detail remain
+  `PENDING`. No SportScore date hydration or `/api/v1` request is reintroduced.
+- **Decision**: `docs/decisions/ADR-0051-owner-hosted-api-and-live-overlay.md`.
+- **Design**: `docs/superpowers/specs/2026-09-02-owner-hosted-api-live-overlay-design.md`.
+- **Implementation plan**: `docs/superpowers/plans/2026-09-02-owner-hosted-api-live-overlay.md`.
+
+### TDD and commit evidence
+
+- Planning gate: `3283027 docs: approve owner hosted live flow`.
+- Slice 1, hosted single-origin runtime: `cd56e94 feat: add hosted single origin runtime`.
+- Slice 2, owner-only session boundary: `4494a49 feat: protect hosted app with owner session`.
+- Slice 3, durable provider-neutral live state and lease: `97dfcc5 feat: persist provider neutral live overlay`.
+- Slice 4, widget-only live client/adapter/coordinator/routes: `dc8f5d1 feat: add widget-only live refresh flow`.
+- Slice 5, hourly wake-up and deployment runbook: `053a555 feat: add hourly hosted live operation`.
+- Slice 6, visible polling, pull-down, and live UI: `ae6e66e feat: add visibility-driven live match UI`.
+- Slice 7, exact static attribution: `0185394 fix: make SportScore attribution static`.
+- Slice 8 closes the cross-module terminal projection and release evidence in the local closeout
+  commit after all release gates pass.
+
+### Local closeout evidence
+
+- The hosted integration chain proves password login, secure owner session enforcement, visible
+  live refresh, bounded terminal recheck after a tracked match disappears, confirmed FT score
+  projection into `GET /api/v1/matches`, provider-locator redaction, and logout.
+- A confirmed terminal overlay is applied only when canonical match ID, competition ID, kickoff,
+  and both canonical team IDs match exactly, and only when its evidence is not older than the
+  canonical record. Live, halftime, suspended, mismatched, and stale overlays cannot mutate the
+  terminal match projection.
+- `pnpm run verify:release` passed on 2026-09-02: product-boundary and lifecycle verification,
+  642 unit tests across 124 files, lint, TypeScript, architecture and type-safety audits, 12 focused
+  SportScore contract tests, 52 season integration tests, 35 FotMob terminal integration tests,
+  the hosted owner/live integration, endpoint E2E, and PWA verification.
+- The SportScore contract verifier used only the pinned offline widget contract and reported
+  `networkUsed: false`. No SportScore `/api/v1` request, provider data request, active-data deletion,
+  staging deployment, production schema application, push, or production promotion occurred.
+- The operational deployment sequence is documented in
+  `docs/operations/KOYEB-SUPABASE-OWNER-HOSTING.md`. Koyeb's generated HTTPS domain is sufficient;
+  Cloudflare remains unnecessary for this MVP.
+
+### Phase transition recommendation
+
+- The implementation and local integration phase is complete. The earliest safe next phase is
+  `phase:staging Owner-hosted API and visibility-driven live overlay`.
+- Staging is blocked until the owner creates/configures the external Supabase and Koyeb projects,
+  stores secrets in their dashboards, links a GitHub repository containing these local commits,
+  and explicitly authorizes the required push/deployment. Secrets must not be pasted into chat or
+  committed.
+- The staging exit gate will require `pnpm run verify:staging`, a real Koyeb deployment, migration
+  and current-serving-snapshot sync to Supabase, authenticated owner-flow smoke, hourly refresh
+  smoke, and fresh recorded evidence. Local verification is not staging approval.
+- Historical-season hydration and lazy full match detail remain explicitly `PENDING` and are not
+  prerequisites for this staging phase.
+
+### Staging preflight maintenance — 2026-09-02
+
+- The first owner-run cloud snapshot sync reached the Supabase session pooler but failed before
+  opening its transaction with `self-signed certificate in certificate chain`; no match row was
+  written by that attempt.
+- RED tests reproduced the configuration hole: URI `sslmode` parameters could override the
+  Node/Postgres SSL object, while the runtime had no project CA input.
+- The client now requires `SUPABASE_DATABASE_CA_BASE64` for every remote Supabase connection,
+  decodes the project PEM CA, verifies certificate and hostname, and strips conflicting URI SSL
+  parameters before constructing the pool. It does not use `rejectUnauthorized: false`.
+- Focused config/client/sync tests passed 14 tests across four files; `pnpm run verify:local` passed
+  645 tests across 124 files plus all lifecycle, product-boundary, lint, TypeScript, architecture,
+  and type-safety gates. A new owner upload attempt still requires the downloaded project CA and
+  is staging evidence, not local approval.
+- Pre-upload review then found the snapshot adapter issued one remote INSERT per match. A second
+  RED -> GREEN maintenance slice replaced 10,899 sequential match requests with 22 bounded
+  500-row JSONB batches inside the same atomic transaction. The CA is kept in gitignored
+  `.secrets/`, never under application source.
+
+### Supabase staging bootstrap evidence — 2026-09-03
+
+- The owner applied all six tracked migrations after a clean dry run. `supabase migration list`
+  reported identical local/remote versions from `20260702052851` through `20260902120000`.
+- The current canonical snapshot was synced through the CA-verified session pooler connection.
+  A separate read-only query confirmed 10,899 match rows, 45 distinct competitions, one snapshot,
+  and latest snapshot ID `season-hydration-20260831024605687-a7c3b841`, exactly matching local data.
+- This proves only the staging database bootstrap. Koyeb configuration/deployment, authenticated
+  application smoke, live widget smoke, hourly workflow smoke, and rollback evidence remain open.
+
+## Supabase Edge Function And Cloudflare Worker Owner Hosting — 2026-09-03
+
+- **Owner decision**: replace the blocked Koyeb path with one Cloudflare Worker using Static Assets
+  and an exact `/api` proxy to one Supabase Edge Function. Use the free `*.workers.dev` URL for
+  staging; do not create a custom domain or paid service.
+- **Runtime boundary**: Web-standard `Request`/`Response` becomes the API core boundary. The current
+  Node HTTP process remains a local adapter, while the Edge Function uses a Deno entrypoint and must
+  not import filesystem-backed serving/detail stores.
+- **Persistence boundary**: keep the hosted Data API disabled. Prefer the Edge runtime's built-in
+  `SUPABASE_DB_URL` with the Supabase-documented `postgres` driver, prepared statements disabled,
+  and explicit transaction handling. The database URL/password never enters Cloudflare or browser
+  configuration.
+- **Security boundary**: configure the Edge Function with platform JWT verification disabled only
+  because Miraichi uses its own owner session cookie, then require a separate constant-time gateway
+  token before routing, body parsing, database work, or provider work. Cloudflare overwrites this
+  header; direct Edge URL calls without it fail closed. Owner session auth and the refresh-only token
+  remain separate controls.
+- **Same-origin boundary**: Cloudflare serves the existing PWA assets and proxies only `/api` plus
+  `/api/*`. It preserves the owner cookie and `Set-Cookie`, streams bodies, follows no upstream
+  redirect, and marks API responses non-cacheable. No database or provider secret is stored there.
+- **Historical region strategy**: staging proxy and cron invocations force `eu-central-1` so the Edge
+  Function runs with the Frankfurt database. ADR-0055 supersedes this section's proposed Tokyo
+  production target with a separate Singapore `ap-southeast-1` project. Frankfurt remains the
+  staging environment; no production project or promotion is authorized by this historical phase.
+- **Background refresh**: replace the GitHub Actions wake-up with one hourly `pg_cron` + `pg_net`
+  call. The function URL, gateway token, and existing refresh-only token are resolved from Supabase
+  Vault at execution time. Full-season hydration never runs in the Edge Function.
+- **Measured static artifact**: `pnpm run build:web-static` produced 63 files totaling 385,801 bytes
+  on 2026-09-03. This is far below Cloudflare Workers Free limits of 20,000 files per version and
+  25 MiB per file.
+- **Quota boundary**: Cloudflare static asset requests are free and unlimited; only `/api` proxy
+  executions consume the 100,000 Worker requests/day quota. Supabase Free includes 500,000 Edge
+  Function invocations/month, while its hosted runtime limits each request to 2 seconds CPU, 256 MB
+  memory, and a 150-second Free wall-clock lifetime. These are ceilings, not availability promises.
+- **Unproven hard gates**: official Deno documentation exposes `node:crypto.scrypt`, and Supabase
+  documents `postgres` plus `SUPABASE_DB_URL`, but Miraichi has not yet run its exact scrypt cost,
+  HMAC/session flow, parameterized query adapter, commit/rollback transaction, cookie round trip, or
+  cron request in the actual Supabase Edge Runtime. Each must be observed locally in the Supabase
+  runtime and then smoked on Frankfurt staging; failure stops the phase rather than weakening auth,
+  enabling the Data API, or silently changing drivers.
+- **Decision**: `docs/decisions/ADR-0052-supabase-edge-cloudflare-owner-hosting.md`.
+- **Design**: `docs/superpowers/specs/2026-09-03-supabase-edge-cloudflare-owner-hosting-design.md`.
+- **Runbook**: `docs/operations/SUPABASE-EDGE-CLOUDFLARE-OWNER-HOSTING.md`.
+- **Implementation plan**:
+  `docs/superpowers/plans/2026-09-03-supabase-edge-cloudflare-owner-hosting.md`.
+
+### Phase-plan closeout and transition
+
+- The `phase:plan` exit gate is satisfied by the owner's explicit topology, security, scheduling,
+  and Frankfurt-to-Tokyo decisions in the 2026-09-03 handoff. No new data source, public auth,
+  multi-tenancy, paid service, or production change is approved.
+- The earliest safe next phase is `phase:implementation-plan Supabase Edge Function and Cloudflare
+  Worker owner hosting`. It must name exact files, the RED observation, minimal implementation,
+  focused verification, and a separate local commit for every slice.
+- No owner decision is currently missing for that implementation-plan phase. Implementation itself
+  remains blocked until the exact TDD slice document exists.
+
+### Implementation-plan closeout and transition
+
+- The `phase:implementation-plan` exit gate is satisfied. The plan fixes ten sequential slices;
+  every slice requires an observed RED, minimal GREEN, focused verification, and one local commit.
+- Direct pnpm-workspace imports are not accepted as the deployment contract. Supabase documents a
+  function-local dependency configuration and shared code below `supabase/functions`, while current
+  CLI evidence leaves external monorepo imports unsafe. The plan therefore requires a deterministic
+  self-contained Edge bundle plus an import-graph audit before the first runtime smoke.
+- The earliest safe next phase is `phase:code-slice Supabase Edge Function and Cloudflare Worker
+  owner hosting — Slice 1 Web HTTP primitives`.
+- No owner decision is missing for Slice 1. Deployment, push, Frankfurt remote migration/secret
+  changes, Tokyo project creation, production promotion, and Frankfurt deletion remain outside the
+  code-slice authority.
+
+### Local implementation evidence
+
+- Slice 1 introduced bounded Web HTTP/JSON primitives in local commit `0820a9c`.
+- Slice 2 moved the canonical API boundary to Web `Request`/`Response` while retaining Node as an
+  adapter in local commit `8a27c17`.
+- Slice 3 added the fail-closed gateway, deterministic Edge bundle, forbidden-import audit, and one
+  `miraichi-api` function in local commit `4f4c426`. The actual Supabase CLI Edge Runtime returned
+  the same generic `401` for missing/wrong gateway tokens and `200` for the authorized health
+  request.
+- Slice 4 added the version-pinned `postgres` Edge driver with `prepare: false`, one bounded
+  connection, parameter binding, and transaction adaptation in local commit `ea47641`. The actual
+  local Edge Runtime proved a bound-value query, forced rollback, committed transaction, cleanup,
+  and a cloud status of `ready`; the probe route is unavailable outside explicit local smoke mode.
+- Slice 5 exposed a real Deno compatibility defect: the Edge Runtime does not provide Node's
+  `Buffer` global. Runtime modules now import `node:buffer` explicitly without changing scrypt cost,
+  hash format, HMAC format, cookie policy, or TTL in local commit `243355d`. The actual runtime then
+  proved scrypt `N=16384, r=8, p=1`, random salt generation, HMAC session verification, generic
+  invalid login, hardened owner cookie, authenticated cloud route, refresh-token isolation, and
+  logout expiry.
+- Slice 6 added one Cloudflare Worker that delegates non-API requests to Static Assets and sends
+  exact `/api` traffic to the single Edge Function with one upstream subrequest in local commit
+  `d4402b3`. It overwrites the
+  gateway/Frankfurt headers, preserves cookie/origin/body/query/`Set-Cookie`, removes hop-by-hop
+  headers, disables API caching and redirects, and sanitizes upstream failures. Cloudflare accepts
+  no database, provider, owner-password, session, or refresh credential binding.
+- Slice 7 configured `apps/web/dist` as SPA Static Assets with Worker-first routing only for `/api`
+  and `/api/*` in local commit `52623e2`. The build contains exactly 63 files, 385,780 total bytes,
+  and a 54,672-byte largest file; same-origin API inspection and Wrangler 4.128.0 dry-run passed
+  without deploying.
+- Slice 8 added a locked-down Vault/pg_cron/pg_net migration that creates no job until the owner
+  explicitly configures it in local commit `545f106`. Local SQL smoke proved missing-secret
+  rejection, one idempotent minute-17 job, one sanitized rollback-only pg_net queue entry,
+  idempotent unschedule, and removal of all disposable Vault values. The current GitHub hourly
+  trigger remains as rollback until a Frankfurt cron smoke exists. On this Windows host, Supabase
+  CLI 2.109.0 `db reset --local`
+  recreated the database twice without applying migrations; explicit `migration up --local
+  --include-all` applied all seven versions, after which the 10,899-match local snapshot was
+  restored and verified.
+- Windows had reserved the original `54320-54419` local port range. The checked-in local Supabase
+  ports now use `15420-15429`; the local database, migration, schema, snapshot, lint, and security
+  verification all passed on the replacement ports. This changes no hosted endpoint or database.
+- Slice 9 added two cross-runtime integrations around the real Edge composition, PostgreSQL
+  adapter contract, canonical Web API router, and Cloudflare proxy in local commit `b010e15`. Eight
+  focused tests proved fail-closed direct Edge access, owner login/session/logout, refresh-token
+  isolation, provider locator redaction, no hosted filesystem-detail fallback, transaction
+  rollback, cookie/body/query preservation, one upstream request, persisted bankroll/bet flow,
+  visible refresh, and terminal projection. The actual local Edge Runtime `all` smoke also passed
+  every PostgreSQL and auth assertion; Edge bundle/graph verification and the 63-file Cloudflare
+  dry-run artifact passed.
+- Slice 10 corrected the staging runbook and documentation index, recorded every Slice 1–9 commit,
+  and ran the complete closeout gate. An exact staging dry-run exposed the missing `env.staging`
+  Wrangler declaration; a RED/GREEN configuration check now enforces it and the same command passes
+  without that warning. Repeated full-gate runs also exposed four filesystem-heavy tests whose
+  five-second limit caused nondeterministic timeout/cleanup failures under suite load; only those
+  four cases now have a bounded 15-second timeout and pass together. `verify:local` passed 140 test
+  files/703 unit tests plus syntax, type, architecture, and type-safety audits. `test:integration`,
+  `verify:release`, and the local-only `verify:staging` command passed; the latter rebuilt the
+  same-origin PWA. The final Edge `all` smoke again passed parameter binding, rollback, commit,
+  cleanup, crypto, cookie, protected route, refresh isolation, and logout. Cloudflare verification
+  again measured 63 files/385,780 bytes with a 54,672-byte largest file, and `git diff --check`
+  passed.
+
+### Local closeout transition — 2026-09-07
+
+- **Fact**: the code/integration exit gate is satisfied locally. No push, deployment, remote
+  migration, remote secret mutation, Vault scheduling, Tokyo project creation, production
+  promotion, or Frankfurt deletion occurred.
+- **Blocked staging actions**: the owner must explicitly authorize the push/deploy workflow and
+  remote application of `20260903120000`; identify the exact staging `*.workers.dev` origin; and
+  enter the documented secrets/configuration directly into Supabase, Vault, and Cloudflare.
+- **Staging exit evidence still missing**: deployed Function/Worker IDs, direct gateway denial,
+  Frankfurt region, hosted authenticated owner flow, real hosted transaction behavior, one
+  pg_cron/pg_net delivery, and a rollback drill.
+- **Recommendation**: start `phase:staging Supabase Edge Function and Cloudflare Worker owner
+  hosting` only after those owner actions are explicitly approved. Production and Tokyo remain out
+  of scope.
+
+### Frankfurt staging evidence — 2026-09-08
+
+- The owner explicitly authorized the Frankfurt staging push, remote migration, and Edge/Cloudflare
+  deployment workflow.
+- Local commits through `caa853f` were pushed to `origin/feat/api-football-rapid-ingestion`.
+- Supabase project `qpexxwmrnreooxftfucv` was linked and `ACTIVE_HEALTHY` in `eu-central-1`.
+  Migration dry-run named only `20260903120000_edge_hourly_live_refresh.sql`; it was applied and a
+  fresh remote migration list matched all seven local versions. Supabase CLI 2.109.0 warned that it
+  could not cache the post-push pg-delta catalog because its temporary CA file was absent, but the
+  push exited successfully and the independent remote list verified the applied version.
+- The owner entered the staging values only in gitignored local files. Supabase accepted exactly the
+  nine reviewed Edge secret/config names. Direct missing/wrong gateway requests both returned the
+  same `401 gateway_auth_required`; authorized health returned `200` from `eu-central-1`.
+- Supabase Edge Function `miraichi-api` deployment ID
+  `0e192eca-fc8e-4fe3-be44-748ef9a68609`, version 5, is `ACTIVE` with platform JWT verification
+  disabled behind Miraichi's independent gateway and owner-session controls.
+- Cloudflare Worker `miraichi-owner-gateway-staging` is live at
+  `https://miraichi-owner-gateway-staging.quylang88.workers.dev`. Active version
+  `1c71033f-f97f-42b9-9884-1862d64ad870` serves the 63-file/385,780-byte artifact and proxies API
+  responses with `Cache-Control: no-store` while stripping all observed Supabase runtime headers.
+- The first real cron delivery exposed a cross-driver JSONB bug: JSON serialized for Node `pg` was
+  encoded as a JSON scalar by Edge `postgres.js`, violating the live-snapshot object constraint.
+  Commit `caa853f` introduced explicit driver-specific JSON parameters. The RED test was observed;
+  30 focused tests, typecheck, Edge build/graph verification, and repeated remote calls then passed
+  with HTTP 200 (`refreshed` then `fresh`).
+- Vault contains exactly the three reviewed scheduler names. The active job is unique, runs
+  `17 * * * *`, and uses the exact invocation function. Natural runs at 09:17, 10:17, and 11:17 UTC
+  were recorded as `succeeded`. The unschedule drill produced zero jobs while retaining all three
+  Vault names; reconfiguration restored one active exact job as job ID 2.
+- The GitHub Actions hourly schedule was removed only after the cron proof; `workflow_dispatch`
+  remains as the manual rollback path.
+- Static smoke, authenticated same-origin owner smoke, cloud persistence, 10,899-match snapshot,
+  bankroll setup/read, draft-to-settlement, backup/export log, live read/manual refresh, redaction,
+  hardened cookie, and logout all passed. Disposable owner data was removed and counts returned to
+  zero. The inspected 200-row Edge log window matched zero configured secret values.
+- Cloudflare was rolled back to prior working version
+  `4824619d-6a8e-4857-a1c5-7d79de289108`, returned healthy, then restored to the remediated version
+  at 100% traffic; restored health was `200` with zero observed internal headers.
+- `pnpm run verify:staging` passed after remediation: 141 unit files/705 tests, every integration
+  suite, endpoint E2E, PWA verification, audits, typecheck, and the final static build all passed.
+  This is staging evidence only; production remains unapproved.
+
+### Staging closeout and transition
+
+- **Fact**: the `phase:staging` exit gate is satisfied by the full staging command, active
+  deployments, fresh hosted owner/cron smoke, cleanup proof, and rollback drill.
+- **Owner decision still required**: accept or reject this staging candidate in the final
+  `phase:owner-feedback` review. No production action follows automatically.
+- **Recommendation**: review the four-tab PWA at the recorded Worker origin, then explicitly approve
+  or reject production preparation. If approved, the earliest safe next phase is a separate
+  `phase:production` that creates a Tokyo project while retaining Frankfurt for rollback.
+
+## Product Boundary
+
+Miraichi has exactly four primary tabs: `Today`, `Matches`, `Bets`, and `Bankroll`.
+
+The application may store and display factual fixtures, schedules, terminal results, statuses, teams, competitions, events, lineups, and factual statistics. Bet records, odds, stake points, settlements, notes, and bankroll ledger entries are entered or managed by the owner. The product does not generate picks, confidence scores, expected goals, stake recommendations, or automated betting calculations.
+
+Competitions are configured through an allowlist and may be either `club` or `national-team`. Neither type has priority in core code. The 50 target competitions are equal; competition 51+ must be a registry-only addition.
+
+## Historical SportScore Implementation Record — Network Operation Superseded
+
+The checklist below records prior work; it is not current permission to call SportScore
+`/api/v1`. Existing SportScore-sourced records retain required attribution.
+
+- [x] Accept ADR-0048 and supersede ADR-0047 plus the external-source portion of ADR-0045.
+- [x] Accept visible crawlable dofollow `Powered by SportScore` attribution on Today, Matches, and match detail when SportScore data is rendered.
+- [x] Accept anonymous API operation with an optional free server-side key. The owner obtains and stores any key locally; secrets are never sent in chat or committed.
+- [x] Accept best-effort terminal result freshness within 15–30 minutes, with no SLA and no live persistence/publication.
+- [x] Accept approximately 50 daily per-competition fixture requests, then bounded competition-level terminal checks at +15 and +30 minutes.
+- [x] Accept lazy terminal match detail and nullable/unavailable corners, cards, shots, possession, fouls, offsides, lineups, and event participants when upstream coverage is missing.
+- [x] Reject HTML scraping, private endpoints, raw feed mirroring, browser-to-provider calls, and automated betting advice.
+- [x] Write the design at `docs/superpowers/specs/2026-08-26-sportscore-public-api-source-design.md`.
+- [x] Write the implementation plan at `docs/superpowers/plans/2026-08-26-sportscore-public-api-source.md`.
+- [x] Complete Slice 0: remove API-Football executable code, config, tests, scripts, generated state, and current operational documentation while preserving superseded ADR history.
+- [x] Complete Slice 1: add the validated 50-competition SportScore registry, 51st+ `national-team` extension proof, and provider-neutral SportScore source metadata without enabling network access.
+- [x] Complete Slice 2: add the server-only anonymous/optional-key HTTP client, exact-origin containment, bounded cache/evidence, timeout, concurrency, retry, and sanitized request observations without wiring the worker.
+- [x] Complete Slice 3: normalize registry-bound SportScore fixtures into provider-neutral canonical records, exclude in-play records before persistence, merge against last-good state, and atomically publish immutable warehouse/serving snapshots without writing match detail.
+- [x] Complete Slice 4: fetch only competition-scoped fixture days, rotate work fairly with durable checkpoints, share +15/+30 terminal checks per competition window, use bounded recovery/backoff, and keep real network execution disabled by default.
+- [x] Complete Slice 5: consume the existing lazy detail queue only for canonical completed matches, normalize terminal events/lineups/basic statistics, preserve nullable coverage, bound requests/retries, and negative-cache confirmed unavailable detail.
+- [x] Complete Slice 6: expose sanitized source/freshness metadata, render conditional crawlable SportScore attribution on Today, Matches, and match detail, and show nullable detail statistics/lineups honestly in EN/VI.
+- [x] Complete Slice 7 local integration: exercise all 50 equal competitions through restart checkpoints, 503 recovery, terminal-only publication, sanitized API serving, lazy terminal detail, and attribution; pin an offline contract fixture checksum and add guarded local operations. Real-network staging is not included.
+
+## Historical SportScore TDD Slices
+
+1. SportScore 50-competition registry and provider-neutral source contract.
+2. HTTP client with anonymous/optional-key modes, exact-host containment, coalescing, timeout, and 429/503 backoff.
+3. Terminal-only adapter, complete snapshot merge, and last-good atomic publication.
+4. Daily per-competition sync plus bounded +15/+30 result checks and durable checkpoints.
+5. Lazy terminal match detail with events, lineups, and optional team statistics.
+6. Required attribution plus owner-facing freshness/unavailable states in EN/VI.
+7. Large-boundary integration and separately approved contained staging validation.
+
+## Evidence and hard limits
+
+- Official developer documentation reviewed on 2026-08-26 advertises a free public JSON API, optional free key, approximately 10,000 requests per 24 hours per IP, 60-second edge caching, and no SLA.
+- Official API terms require visible SportScore attribution and forbid raw-feed mirroring/bulk redistribution.
+- Official OpenAPI documents day fixtures filtered by competition with a maximum of 200 records and match detail endpoints.
+- The developer terms name free endpoints under `/api/widget/`, while OpenAPI marks `/api/v1/fixtures/` anonymous. This scope mismatch must be clarified before a real `/api/v1` staging call.
+- Source validation observed all 50 target competitions and current/future fixtures plus finished results, but also intermittent anonymous HTTP 503 and inconsistent team-stat coverage.
+- Therefore neither the 15–30 minute objective nor corners/shots/possession coverage is guaranteed. The UI must expose stale and unavailable states.
+- No SportScore local mock or anonymous smoke counts as production approval.
+
+## Slice 0 Local Evidence — 2026-08-26
+
+- The boundary test was observed RED before implementation, then passed after removal.
+- Focused verification passed 15 test files / 107 tests across product boundary, shared contracts, worker idle state, provider-neutral storage helpers, API routes, and web feed normalization.
+- `pnpm run verify:local` passed 76 unit-test files / 428 tests, lifecycle, syntax, TypeScript, architecture audit, and type-safety audit.
+- `pnpm run test:integration` passed Phase 3 verification, API endpoint E2E, and PWA verification with no external provider call.
+- Executable-source search found no retired API-Football marker outside the boundary verifier itself.
+- Generated API-Football ledger data and stale OpenFootball raw/warehouse artifacts were removed from `apps/api/data`; tracked provider-neutral README and warehouse structure remain.
+
+## Slice 1 Local Evidence — 2026-08-26
+
+- RED observed: the registry module was missing and shared validators rejected `sportscore` before implementation.
+- All 50 configured mappings were matched by exact visible competition name to unique official SportScore directory URLs on 2026-08-26; no fixture or match API request was made.
+- Focused verification passed 6 test files / 63 tests across the registry and shared contracts.
+- Registry checks prove exactly 50 enabled entries, group counts 12/17/13/8, unique canonical IDs/slugs/provider IDs, HTTPS exact-host URLs, no priority/rank fields, and a valid 51st national-team entry.
+- `pnpm run verify:local` passed 77 unit-test files / 436 tests, product boundary, lifecycle, syntax, TypeScript, architecture audit, and type-safety audit.
+- Worker remains explicitly idle; no SportScore client, key, scheduler, persistence job, or real provider request exists in Slice 1.
+
+## Slice 2 Local Evidence — 2026-08-26
+
+- RED observed: the focused client suite failed because the SportScore client module did not exist before implementation.
+- Focused verification passed 1 test file / 10 tests for anonymous and optional-key calls, exact-origin secret containment, documented fixture and match paths, full-response timeout, 429/503 bounded backoff, identical-request coalescing, concurrency cap, invalid JSON/envelope rejection, and bounded raw evidence with secret redaction.
+- The complete worker unit suite passed 5 test files / 17 tests; the worker remains explicitly idle and no scheduler, ingestion, live publication, or external provider request is enabled.
+- `pnpm run typecheck`, `pnpm run audit`, and `pnpm run verify:product-boundary` passed.
+- Mock fixture fields were aligned to the current published OpenAPI `MatchSummary` schema using invented teams; no live SportScore payload is committed.
+- Only public developer documentation/OpenAPI was read. No SportScore data endpoint was called, so this is local evidence only and does not resolve the `/api/v1/fixtures/` terms-scope blocker.
+
+## Slice 3 Local Evidence — 2026-08-26
+
+- RED observed: the adapter and publication job suites failed because their production modules did not exist before implementation.
+- Focused verification passed 3 test files / 20 tests across the hardened client, the terminal-only adapter, and the publication job.
+- Adapter tests cover scheduled, finished, postponed, cancelled, malformed, club, and national-team fixtures; canonical IDs contain no provider identity and in-play scores/events produce no canonical records, links, or provenance.
+- Publication tests prove mixed live/scheduled responses cannot put live scores/events into canonical, serving, or detail stores; completed matches cannot regress even when kickoff changes; empty, partial, malformed, and all-live responses preserve the last-good manifest.
+- The provider-neutral snapshot merge reuses an existing canonical match ID through private source links after a reschedule and refuses to replace an existing serving snapshot that lacks a resolvable warehouse run.
+- Raw-evidence sanitization returns live records to the in-memory planner path but removes the entire live record, score, and events before bounded evidence is persisted.
+- The complete worker suite passed 7 test files / 27 tests. `pnpm run phase3:verify`, `pnpm run typecheck`, `pnpm run audit`, `pnpm run verify:product-boundary`, and `pnpm run verify:lifecycle` passed.
+- Worker scheduling remains explicitly idle. Slice 3 made no SportScore network request and did not enable daily sync or terminal rechecks.
+
+## Slice 4 Local Evidence — 2026-08-26
+
+- RED observed: the focused schedule/job suites failed because the source ledger, planner, lease, and daily sync job modules did not exist before implementation.
+- Focused verification passed 2 test files / 14 tests for one competition/date per request, no global query, fair rotation, restart resume, shared simultaneous-match checks, +15/+30 timing, finite recovery/failure backoff, late-start live redaction, provider-query date reuse across timezone offsets, 429/503 deferral, last-good preservation, request cap, concurrency cap, lease exclusion, and non-overlapping timer ticks.
+- SportScore plus the explicit worker-boundary verification passed 6 test files / 37 tests, including per-call retry suppression; the full worker suite passed 9 test files / 43 tests; `pnpm run typecheck` passed.
+- Successful checkpoints advance only after a complete accepted response and publication decision. Failed provider/publication actions retain last-good data, keep the success checkpoint incomplete, and persist a future attempt time.
+- Daily/result actions disable immediate client retries so `maxRequestsPerRun` caps actual HTTP attempts, not merely logical actions; 429/503 recovery occurs through the durable future checkpoint.
+- A terminal window stops after four consecutive provider/coverage failures or two non-terminal recovery checks after +30, preserving an honest stale/exhausted state instead of retrying forever.
+- The job requires an explicit owner-local `targetDate` and a competition-aware current-season resolver. It cannot silently substitute UTC day or invent a season label.
+- The worker entrypoint remains idle by default. SportScore scheduling starts only when an already-configured job is explicitly injected; no real SportScore endpoint was called and the `/api/v1/fixtures/` terms-scope staging blocker remains unresolved.
+
+## Slice 5 Local Evidence — 2026-08-27
+
+- RED observed: the focused worker suite could not import the missing SportScore detail adapter/job, while the route suite proved cached lineups were being discarded.
+- Focused verification passed 2 files / 19 tests; the complete local gate passed 83 test files / 477 tests plus product-boundary, lifecycle, syntax, TypeScript, architecture, and type-safety checks.
+- The existing API route returns scheduled/unknown summaries without enqueueing and coalesces repeated completed cache misses. The new worker independently rejects scheduled and in-play queue records before a provider request.
+- Each accepted detail item performs at most one HTTP attempt per run (`maxRetries: 0`), respects a run-level request ceiling, caches terminal normalized output, retries non-terminal/invalid responses with a durable future timestamp, and negative-caches missing source links or confirmed unavailable coverage.
+- The provider-neutral detail contract now supports goals/cards/substitutions, FT/HT/ET/penalty breakdown, formations/lineups, corners, cards, shots, possession, fouls, and offsides. Missing optional values remain null/unavailable; no odds, picks, expected goals, live telemetry, raw provider IDs, or provider URLs enter the public detail payload.
+- SportScore's published OpenAPI still does not provide a field-level response schema for match events, statistics, or lineups. Adapter tests therefore use invented defensive response shapes; real payload compatibility remains a staging-validation item and no SportScore data endpoint was called in this slice.
+
+## Slice 6 Local Evidence — 2026-08-27
+
+- RED observed: the web suite could not import the missing reusable attribution component, while API route tests proved private `sourceMatchId` and `sourceUrl` values escaped through the matches and snapshot-status boundaries.
+- Focused verification passed 16 test files / 119 tests. `pnpm run verify:local` passed 84 unit-test files / 482 tests plus product-boundary, lifecycle, syntax, TypeScript, architecture, and type-safety checks. `pnpm run pwa:verify` also passed.
+- The Miraichi matches and snapshot-status routes now retain only public `sourceId` plus `importedAt`; private provider match IDs and URLs remain inside persistence/source-link boundaries.
+- Today, Matches, and ready/pending/unavailable match detail render one visible crawlable dofollow `Powered by SportScore` link only when the displayed feed or match contains SportScore provenance.
+- EN/VI catalogs remain key-identical for attribution, fresh/stale/unavailable, pending detail, fouls, offsides, and lineup copy. Null or absent metrics render as unavailable while explicit zero remains zero; an empty lineup collection renders as unavailable.
+- A browser smoke against an isolated mock API visually verified Today freshness, Matches attribution, terminal score/timeline/statistics/lineups, and unavailable values. It made no SportScore request, changed no active data root, and is not staging approval.
+
+## Slice 7 Local Integration Evidence — 2026-08-27
+
+- RED observed: the new integration suites could not import the missing contract/operations modules, and the 50-competition boundary exposed 50 duplicate public source entries after private provider IDs were removed.
+- `pnpm run sportscore:integration` passed 4 test files / 12 tests. The boundary runs all 50 registry entries across capped restart runs, proves durable checkpoint completion, excludes an injected live score/event, defers and recovers from HTTP 503, serves 50 sanitized API matches, fulfills lazy terminal detail, and renders required attribution on Today, Matches, and detail.
+- Public snapshot metadata now collapses private per-match source references to the newest safe `{ sourceId, importedAt }` entry per source instead of leaking IDs or returning dozens of indistinguishable duplicates.
+- The approved offline OpenAPI fixture SHA-256 is `ab6564b124c1a907e3413d559618ebaea6313d6e143fad6189db0e2a584b6363`. Verification checks required fixture/detail paths and performs no network download.
+- Guarded commands now exist for source/terms review, contract verification, sanitized checkpoint/status inspection, isolated empty-root preparation, and non-overwriting active-root bootstrap. Root overlap, invalid source ledgers, existing manifest/version/ledger conflicts, and concurrent file creation fail closed.
+- `pnpm run verify:local` passed 87 test files / 488 tests. `pnpm run test:integration` passed SportScore integration, Phase 3 ingestion, endpoint E2E, and PWA checks. `pnpm run verify:staging` passed the same release gates plus a local static build; it did not deploy or call SportScore.
+- At Slice 7 closeout, `pnpm run sportscore:status` reported the active root as `freshness: missing`, `matchCount: 0`, and zero checkpoints. The later owner-approved isolated evidence was explicitly bootstrapped only after validation.
+
+## Season-Oriented Hydration Review And Remediation Evidence — 2026-08-28
+
+- Review rejected the uncommitted claim of 25 supported free competitions. At verified
+  OpenFootball tree `4e4146c901b62bcafa1b6deabb7e4a3fccdc9b1f`, current JSON exists for 9/50,
+  past-1 for 24/50, and past-2 for 17/50.
+- Only Premier League has exact kickoff times on every current row. The strict coverage result is
+  1 supported, 24 partial, and 25 unsupported. football-data.org covers 10/50 on its free tier but
+  needs a token; it is mapped as `pending-owner` and has no executable client in this phase.
+- The provider-neutral registry at `packages/config/src/season-source-registry.ts` owns
+  `fixtureSource`, `resultSource`, `detailSource`, `externalCompetitionId`, `endpointKind`,
+  `seasonCycle`, exact source URLs, source IDs, available seasons, and verification metadata.
+- The planner enforces a hard current-before-past barrier. A deferred current target blocks older
+  seasons, and a newly enabled competition current target is selected before past work resumes.
+- The provider-neutral checkpoint is isolated at
+  `providers/season-hydration/state/ledger.json` and stores provider + competition + season plus
+  optional ETag/cursor. It does not reinterpret the legacy SportScore date ledger.
+- OpenFootball responses are bounded, full-response timed, ETag-aware, strict about partial
+  envelopes, and stored as raw public-domain evidence. Date-only rows are retained raw but not
+  published with an invented timestamp; exact local kickoff times are converted through the
+  registry IANA timezone.
+- One batch performs at most one merged warehouse/serving publication, regardless of fetched
+  season count. This removes repeated full-snapshot I/O from the rejected implementation.
+- SportScore local sync/schedule commands and worker schedule injection were removed. Product
+  boundary verification prevents the retired date-hydration files and commands from returning.
+- Focused evidence: 7 season integration files / 26 tests passed; worker idle-boundary tests,
+  product-boundary verification, and TypeScript checks passed. No provider data request was made
+  by tests.
+- `pnpm run verify:release` passed on 2026-08-29: 94 unit files / 516 tests, 4 SportScore
+  integration files / 12 tests, 7 season integration files / 26 tests, Phase 3 verification,
+  endpoint E2E, PWA verification, lint, TypeScript, architecture, lifecycle, and type-safety gates.
+- Active `apps/api/data` remained at 41 matches during review. Local checks are not staging or
+  production approval.
+
+## Prior FotMob Phase Closeout
+
+The owner-approved FotMob current-season hydration code slice is complete locally. ADR-0049 remains
+the controlling risk boundary: FotMob is primary, ESPN is disabled, and anti-bot circumvention is
+forbidden. The guarded owner-local run completed all 45 executable current editions and classified
+five editions as non-current/unpublished instead of fabricating data. The active serving store grew
+from 41 preserved matches to 10,899 valid matches. Two live rows were excluded.
+
+The real run used 48 requests: 45 final successes, six transient adapter failures recovered after a
+TDD fix for structured status reasons, and three selected-season mismatches for unpublished cups.
+Three failure records remain as forensic ledger evidence but are no longer executable current
+targets. No SportScore `/api/v1` endpoint was called.
+
+Final local evidence on 2026-08-31: `pnpm run verify:release` passed 97 unit files / 536 tests,
+4 SportScore integration files / 12 tests, 9 season integration files / 44 tests, Phase 3, endpoint
+E2E, PWA, lint, TypeScript, architecture, lifecycle, and type-safety gates. Local verification and
+owner-local data are not staging or production approval.
+
+Historical-season hydration is **PENDING by explicit owner decision on 2026-08-31**. The owner-local
+CLI defaults to `pastSeasons: 0` and rejects every `--past-seasons` value above zero, so the five
+evidence-backed historical targets cannot be executed accidentally. The earliest safe active work
+is therefore `phase:maintenance` for bounded current-season validation and execution only.
+
+The documented current-only command was replayed against the completed active ledger on 2026-08-31
+and returned `status: idle`, zero requests, zero publications, 45 completed targets, 10,899 matches,
+and `fresh` serving state. Serving validation, lifecycle verification, and product-boundary
+verification passed without a provider request.
+
+Maintenance verification on 2026-08-31 corrected the release gate so unit tests exclude the
+separately orchestrated integration directory and filesystem-heavy tests use at most two workers on
+Windows. The first unconstrained run reproduced I/O timeouts; every failed file passed sequentially.
+After the gate correction, `pnpm run verify:release` passed 96 unit files / 536 tests, 4 SportScore
+integration files / 12 tests, 9 season integration files / 45 tests, Phase 3, endpoint E2E, PWA,
+lint, TypeScript, architecture, lifecycle, and type-safety gates.
+
+If the owner later reopens historical work, the earliest safe next phase will be `phase:plan` for
+exact provider-season mapping verification. Only five historical targets currently have explicit
+provider-season evidence; the other 45 remain disabled to prevent guessed requests. Lazy FT detail
+remains a separate, unapproved implementation plan. Cloud staging and production remain blocked.
+
+## Daily Terminal Result And Current Revalidation Phase — 2026-08-31
+
+- **Owner decision**: approved implementation of fast best-effort terminal-result updates and
+  current-edition revalidation. Historical-season execution remains pending.
+- **Verified daily contract**: direct anonymous `GET /api/data/matches` returned HTTP 200, ETag,
+  `Cache-Control: max-age=10`, a 242,249-byte JSON body, 123 leagues, and 379 matches. Thirty-five
+  matches across 12 currently active registry leagues were selected by pinned external league ID.
+- **Terminal boundary**: only finished, cancelled, or postponed rows may update canonical data.
+  In-play scores may influence the next in-memory check time but are never written to raw evidence,
+  canonical warehouse, serving store, public API, or match detail.
+- **Freshness objective**: first terminal check at scheduled kickoff +105 minutes, then no more than
+  one coalesced global-date request every two minutes while a known match remains non-terminal.
+  This targets a best-effort 0–2 minute delay after FotMob marks FT once the terminal window opens;
+  it is not an SLA.
+- **Request boundary**: no request when no match is due; all due matches on one provider date share
+  one request; 403/429 opens the run circuit breaker; no retry storm or anti-bot workaround.
+- **Current-edition revalidation**: recheck the 45 executable current season endpoints after a
+  24-hour TTL, preserving registry order, ETag/304, current-only scope, and one publication per
+  batch. This discovers newly published rounds without reopening historical hydration.
+- **Design**: `docs/superpowers/specs/2026-08-31-fotmob-terminal-results-design.md`.
+- **Implementation plan**: `docs/superpowers/plans/2026-08-31-fotmob-terminal-results.md`.
+
+### Local implementation and integration evidence
+
+- All eight planned slices followed RED -> GREEN -> focused verification -> local commit. Terminal
+  checks use the global daily endpoint, coalesce due matches by provider date, persist a restart-safe
+  provider/match/date ledger, and publish at most one merged canonical/serving snapshot per run.
+- The once/watch runtime requires explicit network confirmation, targets only the validated active
+  data root, allows at most two provider dates per tick, wakes serially every 30 seconds, and makes
+  zero requests until the ledger says a known match is due.
+- Current-edition revalidation uses a 24-hour TTL, saved ETag/304, registry order, and a hard
+  nine-request batch limit. Both the CLI and worker job reject every historical-season execution
+  while historical work is pending.
+- Large-boundary integration proves terminal-only publication through Miraichi
+  `GET /api/v1/matches`, live-score exclusion, restart timing, last-good preservation on 429, and
+  nine-at-a-time current revalidation without historical eligibility.
+- Season revalidation and terminal-result jobs share one canonical-publication lease. Concurrent
+  runs return `lease_busy` before reading/publishing, preventing a stale-base last-writer-wins data
+  loss between the two otherwise separate pipelines.
+- Active-root revalidation was replayed on 2026-08-31 only after read-only ledger inspection proved
+  all 45 checkpoints were younger than 24 hours. It returned `idle`, zero requests, zero
+  publications, 10,899 matches, and fresh serving data.
+- During the RED test for the new job-level historical hard stop, the missing test double allowed
+  one unintended **current-season** FotMob request against a temporary data root. No historical
+  endpoint was requested; the test was immediately isolated and the job boundary now rejects before
+  provider execution. This does not change ADR-0049 risk or authorize further test network calls.
+- Final local gate on 2026-08-31: `pnpm run verify:release` passed 103 unit files / 576 tests,
+  4 SportScore integration files / 12 tests, 9 season integration files / 52 tests, and 8 FotMob
+  terminal integration files / 35 tests, plus Phase 3, endpoint E2E, PWA, lint, TypeScript,
+  architecture, lifecycle, product-boundary, and type-safety verification.
+- No SportScore `/api/v1` request, staging deployment, production promotion, or push occurred.
+  FotMob terms/robots risk remains owner-accepted and the implementation contains no bypass.
+
+### Maintenance boundary and next phase
+
+- Strict registry coverage remains **41 supported, 9 partial, 0 unmapped**. Executable current
+  editions remain **45/50**. The currently unavailable/non-current editions are Club World Cup,
+  FA Cup, Copa del Rey, Coupe de France, and KNVB Beker.
+- Historical-season hydration remains **PENDING**. Reopening it requires a new `phase:plan` and
+  exact provider-season evidence; 45 historical mappings still cannot be guessed.
+- Lazy FotMob match detail is not implemented. If the owner wants events, lineups, or statistics,
+  the earliest safe next development phase is `phase:plan FotMob lazy terminal match detail`.
+- Local release evidence is not staging or production approval. Those gates remain blocked until a
+  separate owner decision explicitly accepts promotion under the unofficial-source risk.
+
+All work follows `.agent/skills/miraichi-delivery-lifecycle/SKILL.md`.
+
+## Single-Bankroll Usable Owner Flow — 2026-09-01
+
+- **Owner decision**: replace visible multi-account UX with one visible bankroll while preserving an
+  internal account identity for settlement, ledger, backup, and legacy compatibility.
+- **Approved remediation**: close the reviewed settlement/PATCH invariant hole, reject invalid
+  bankroll signs and balances, make first-run setup actionable, complete the draft-to-ongoing path,
+  warn on overexposure, add explicit friction for chasing/FOMO/impulse motivations, decouple factual
+  reports from configured discipline thresholds, and never render unavailable P&L as zero.
+- **Compatibility boundary**: no account or owner data may be deleted or silently merged. Existing
+  multi-account data remains readable; the normal V1 UI must not create new secondary accounts or
+  require an account choice for each bet.
+- **Product boundary**: the phase adds no picks, stake recommendation, Kelly, ROI, CLV, drawdown,
+  expected-return, or automated risk formula. All thresholds remain owner-entered warning inputs.
+- **Deferred work**: historical-season hydration and lazy match detail are both `PENDING` and outside
+  this phase. No provider request, staging promotion, production schema application, or push is
+  approved.
+- **Decision**: `docs/decisions/ADR-0050-single-bankroll-usable-owner-flow.md`.
+- **Design**: `docs/superpowers/specs/2026-09-01-single-bankroll-usable-owner-flow-design.md`.
+- **Implementation plan**: `docs/superpowers/plans/2026-09-01-single-bankroll-usable-owner-flow.md`.
+
+### TDD and commit evidence
+
+- Planning gate: `1b6814d docs: approve single bankroll owner flow`.
+- Slice 1, bankroll and settlement invariants: `9448592 fix: protect bankroll accounting invariants`.
+- Slice 2, deterministic primary-bankroll setup: `b08f614 feat: add single bankroll owner setup`.
+- Slice 3, owner UI and draft conversion: `aacf7f0 feat: simplify single bankroll owner flow`.
+- Slice 4, pre-bet discipline checks: `2b35830 feat: enforce pre-bet discipline checks`.
+- Slice 5, factual bankroll and psychology reports: `e402d58 fix: keep bankroll reports factual`.
+- Slice 6 closes the normal integration chain and endpoint smoke contract in the local closeout
+  commit after the complete release gate passes.
+
+### Local closeout evidence
+
+- The normal integration chain now covers primary-bankroll setup, overexposure and risky-motivation
+  warnings, the 15-second challenge, server-side primary-account binding, immutable pre-bet plan
+  adherence, settlement correction, psychology reporting, and V2 backup round-trip.
+- `pnpm run verify:release` passed on 2026-09-01: product-boundary and lifecycle checks, 615 unit
+  tests across 108 files, lint, typecheck, audit, type-safety checks, phase verification, 12 focused
+  SportScore contract tests, 52 season integration tests, 35 FotMob terminal integration tests,
+  endpoint E2E, and PWA verification.
+- SportScore contract verification reported `networkUsed: false`. This phase made no provider call,
+  did not modify or delete the active `apps/api/data` snapshot, and did not run staging, production
+  schema application, deployment, or push.
+
+### Phase transition recommendation
+
+- This phase is complete locally. The earliest safe next phase is
+  `phase:maintenance Single-bankroll owner-local database migration and smoke`: apply the two tracked
+  schema migrations to a configured owner-local Supabase instance, exercise first-run setup and the
+  draft-to-settlement UI flow, and record evidence without treating it as staging approval.
+- Historical-season hydration and lazy match detail remain explicitly `PENDING`; neither belongs in
+  that maintenance phase.

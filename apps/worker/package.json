@@ -11,6 +11,8 @@
     "lint": "tsx ../../scripts/check-js-syntax.ts ."
   },
   "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
+    "@miraichi/config": "workspace:*",
     "@miraichi/shared": "workspace:*"
   }
 }

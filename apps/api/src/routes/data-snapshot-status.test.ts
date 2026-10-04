@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { handleDataSnapshotStatus } from './data-snapshot-status.js';
-import { LocalMatchSnapshotRepository } from '../repositories/local-match-snapshot-repository.js';
-import { LocalDataSnapshotStatus, validateLocalDataSnapshotStatus } from '@miraichi/shared';
+import type { MatchSnapshotRepository } from '../repositories/match-snapshot-repository.js';
+import type { LocalDataSnapshotStatus } from '@miraichi/shared';
+import { validateLocalDataSnapshotStatus } from '@miraichi/shared';
 
 function responseMock() {
   return {
@@ -28,7 +29,12 @@ const mockStatus: LocalDataSnapshotStatus = {
     { id: 'world-cup-2026', name: 'FIFA World Cup', seasons: ['2026'], matchCount: 1 },
     { id: 'euro-2024', name: 'UEFA Euro', seasons: ['2024'], matchCount: 1 }
   ],
-  sources: [],
+  sources: [{
+    sourceId: 'sportscore',
+    sourceMatchId: 'private-provider-slug',
+    sourceUrl: 'https://sportscore.com/private-provider-slug',
+    importedAt: '2026-07-01T00:00:00.000Z'
+  }],
   freshness: 'fresh',
   warnings: []
 };
@@ -38,7 +44,7 @@ describe('data snapshot status route', () => {
     const response = responseMock();
     const mockRepo = {
       getStatus: async () => mockStatus
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleDataSnapshotStatus(
       { url: '/api/v1/data-snapshot/status', method: 'GET' } as import('http').IncomingMessage,
@@ -51,23 +57,28 @@ describe('data snapshot status route', () => {
     expect(body.snapshotId).toBe('test-snapshot');
     expect(body.matchCount).toBe(2);
     expect(body.competitions).toHaveLength(2);
+    expect(body.sources).toEqual([
+      { sourceId: 'sportscore', importedAt: '2026-07-01T00:00:00.000Z' }
+    ]);
+    expect(response.body).not.toContain('private-provider-slug');
+    expect(response.body).not.toContain('sourceUrl');
   });
 
-  it('returns 503 if snapshot file is missing', async () => {
+  it('returns 503 if serving match store is missing', async () => {
     const response = responseMock();
     const missingStatus: LocalDataSnapshotStatus = {
-      snapshotId: 'missing-local-snapshot',
+      snapshotId: 'missing-serving-match-store',
       generatedAt: '2026-07-02T00:00:00.000Z',
       importedAt: '2026-07-02T00:00:00.000Z',
       matchCount: 0,
       competitions: [],
       sources: [],
       freshness: 'missing',
-      warnings: ['Local snapshot file is missing']
+      warnings: ['Serving match store is missing']
     };
     const mockRepo = {
       getStatus: async () => missingStatus
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleDataSnapshotStatus(
       { url: '/api/v1/data-snapshot/status', method: 'GET' } as import('http').IncomingMessage,
@@ -77,22 +88,22 @@ describe('data snapshot status route', () => {
 
     expect(response.statusCode).toBe(503);
     const body = JSON.parse(response.body);
-    expect(body.error.code).toBe('local_snapshot_missing');
+    expect(body.error.code).toBe('serving_match_store_missing');
     expect(body.snapshot).toEqual(missingStatus);
     expect(validateLocalDataSnapshotStatus(body.snapshot).ok).toBe(true);
   });
 
-  it('returns 500 if snapshot parsing throws an error', async () => {
+  it('returns 500 if serving match store parsing throws an error', async () => {
     const response = responseMock();
     const mockRepo = {
       getStatus: async () => {
-        const error = new Error('Malformed snapshot');
+        const error = new Error('Malformed serving match store');
         const errObj = error as unknown as { code: string; statusCode: number };
-        errObj.code = 'local_snapshot_invalid';
+        errObj.code = 'serving_match_store_invalid';
         errObj.statusCode = 500;
         throw error;
       }
-    } as unknown as LocalMatchSnapshotRepository;
+    } as unknown as MatchSnapshotRepository;
 
     await handleDataSnapshotStatus(
       { url: '/api/v1/data-snapshot/status', method: 'GET' } as import('http').IncomingMessage,
@@ -102,6 +113,6 @@ describe('data snapshot status route', () => {
 
     expect(response.statusCode).toBe(500);
     const body = JSON.parse(response.body);
-    expect(body.error.code).toBe('local_snapshot_invalid');
+    expect(body.error.code).toBe('serving_match_store_invalid');
   });
 });

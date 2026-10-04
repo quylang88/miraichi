@@ -25,7 +25,7 @@ Miraichi is growing toward complex domain objects and replaceable boundaries, in
 * `AiRecommendationBoundary`
 * `RiskRuleStrategy`
 
-These objects are expected to move across `apps/web`, `apps/api`, `apps/local-ai`, `apps/worker`, and `packages/shared`. Keeping them as loose JavaScript objects for too long increases the risk of field drift, mismatched optional fields, incompatible envelope versions, and inconsistent assumptions between app boundaries.
+These objects are expected to move across `apps/web`, `apps/api`, `apps/worker`, and `packages/shared`. Keeping them as loose JavaScript objects for too long increases the risk of field drift, mismatched optional fields, incompatible envelope versions, and inconsistent assumptions between app boundaries.
 
 TypeScript can reduce contract mismatch by making shared domain shapes explicit at compile time. It is a technical architecture direction only. It does not approve betting logic, prediction algorithms, storage engines, frameworks, providers, or formulas.
 

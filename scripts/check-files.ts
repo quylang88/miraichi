@@ -12,22 +12,15 @@ const REQUIRED_FILES = [
   
   'apps/web/package.json',
   'apps/web/src/index.ts',
-  'apps/web/src/mock-client.ts',
-  'apps/web/src/views/predictions-view.ts',
-  'apps/web/src/views/explanation-view.ts',
-  'apps/web/src/views/bet-history-placeholder-view.ts',
+  'apps/web/src/config/navigation-tabs.ts',
+  'apps/web/src/components/app-shell.ts',
 
   'apps/api/package.json',
   'apps/api/src/index.ts',
   'apps/api/src/routes/health.ts',
-  'apps/api/src/routes/predictions.mock.ts',
-  'apps/api/src/routes/explanations.mock.ts',
-  'apps/api/src/routes/bet-history.mock.ts',
-
-  'apps/local-ai/package.json',
-  'apps/local-ai/src/index.ts',
-  'apps/local-ai/src/routes/health.ts',
-  'apps/local-ai/src/routes/prediction-candidates.mock.ts',
+  'apps/api/src/routes/matches.ts',
+  'apps/api/src/routes/bets.ts',
+  'apps/api/src/routes/bankroll.ts',
 
   'apps/worker/package.json',
   'apps/worker/src/index.ts',
@@ -36,7 +29,7 @@ const REQUIRED_FILES = [
 
   'packages/shared/package.json',
   'packages/shared/src/index.ts',
-  'packages/shared/src/mock-contracts.ts',
+  'packages/shared/src/contracts/local-match-contracts.ts',
 
   'packages/config/package.json',
   'packages/config/src/index.ts',

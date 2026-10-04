@@ -1,9 +1,46 @@
 import { describe, expect, it } from 'vitest';
 import { createMemoryCloudPersistenceAdapter } from './memory-cloud-persistence-adapter.js';
+import type { CloudMatchSnapshot } from '@miraichi/shared/src/contracts/index.js';
+import { liveSnapshotFixture } from '../../../../tests/fixtures/live-match-snapshot.js';
 
 const fixedNow = () => '2026-07-02T00:00:00.000Z';
+const snapshot: CloudMatchSnapshot = {
+  snapshotId: 'snapshot-001',
+  generatedAt: '2026-07-01T00:00:00.000Z',
+  importedAt: '2026-07-01T00:01:00.000Z',
+  sources: [],
+  matches: []
+};
 
 describe('memory cloud persistence adapter', () => {
+  it('round-trips V3 profile settings and durable owner collections without rebuildable state', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({
+      now: fixedNow,
+      ownerProfile: {
+        ownerProfileId: 'owner-primary', label: 'Quy', settings: { locale: 'vi' },
+        createdAt: fixedNow(), updatedAt: fixedNow()
+      }
+    });
+    await adapter.upsertMatchSnapshot('owner-primary', snapshot);
+    await adapter.createBankrollAccount({
+      accountId: 'main', ownerProfileId: 'owner-primary', label: 'Main', openingBalancePoints: 100
+    });
+    const envelope = await adapter.exportOwnerData('owner-primary', fixedNow());
+    expect(envelope).toMatchObject({
+      schemaVersion: 'miraichi.cloud-backup.v3',
+      ownerProfile: { label: 'Quy', settings: { locale: 'vi' } },
+      recordCounts: { ownerProfiles: 1, bankrollAccounts: 1 },
+      payloadSha256: expect.stringMatching(/^[a-f0-9]{64}$/u)
+    });
+    expect(envelope).not.toHaveProperty('matchSnapshots');
+
+    const restored = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await restored.importOwnerData('owner-primary', envelope);
+    expect(await restored.exportOwnerData('owner-primary', fixedNow())).toMatchObject({
+      ownerProfile: { label: 'Quy', settings: { locale: 'vi' } },
+      bankrollAccounts: [{ accountId: 'main' }]
+    });
+  });
   it('saves, lists, clones, and deletes drafts', async () => {
     const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
     const tags = ['owner'];
@@ -32,6 +69,52 @@ describe('memory cloud persistence adapter', () => {
     expect(await adapter.listBetRecords('owner-primary')).toMatchObject([{ status: 'settled', manualResultPoints: 9 }]);
   });
 
+  it('preserves normalized selection and live context in memory and backup export', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    const structured = {
+      marketType: 'running' as const,
+      selectionCode: 'under' as const,
+      selectionLabel: 'Running 60-75 Under 0.75',
+      lineValue: 0.75,
+      runningWindow: 'fixed_15' as const,
+      windowStartMinute: 60,
+      windowEndMinute: 75,
+      liveScoreHome: 1,
+      liveScoreAway: 1,
+      liveMinute: 62,
+      liveContextSource: 'manual' as const
+    };
+    await adapter.saveBetDraft('owner-primary', {
+      draftId: 'draft-running', matchGroupId: 'match-live', oddsFormat: 'HK', oddsValue: 0.86,
+      stakePoints: 8, createdAt: fixedNow(), updatedAt: fixedNow(), ...structured
+    } as never);
+    await adapter.createBetRecord({
+      betId: 'bet-running', ownerProfileId: 'owner-primary', matchGroupId: 'match-live',
+      homeTeamName: 'A', awayTeamName: 'B', oddsFormat: 'HK', oddsValue: 0.86,
+      stakePoints: 8, status: 'pending', createdAt: fixedNow(), updatedAt: fixedNow(), ...structured
+    } as never);
+
+    expect(await adapter.listBetDrafts('owner-primary')).toMatchObject([structured]);
+    expect(await adapter.listBetRecords('owner-primary')).toMatchObject([structured]);
+    const backup = await adapter.exportOwnerData('owner-primary', fixedNow());
+    expect(backup.drafts).toMatchObject([structured]);
+    expect(backup.bets).toMatchObject([structured]);
+  });
+
+  it('imports and exports the derived Running threshold with absent placement minute',async()=>{
+    const adapter=createMemoryCloudPersistenceAdapter({now:fixedNow});
+    const fields={marketType:'running' as const,selectionCode:'over' as const,runningGoalThreshold:0.75 as const,lineValue:2.75,runningWindow:'to_full_time' as const,liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual' as const};
+    const draft={draftId:'threshold-draft',matchGroupId:'m',oddsFormat:'HK' as const,oddsValue:0.9,stakePoints:10,createdAt:fixedNow(),updatedAt:fixedNow(),...fields};
+    const bet={betId:'threshold-bet',ownerProfileId:'owner-primary',matchGroupId:'m',homeTeamName:'A',awayTeamName:'B',selectionLabel:'Over 2.75 · Running FT · 1-1',oddsFormat:'HK' as const,oddsValue:0.9,stakePoints:10,status:'pending' as const,createdAt:fixedNow(),updatedAt:fixedNow(),...fields};
+    await adapter.saveBetDraft('owner-primary',draft);await adapter.createBetRecord(bet);
+    const backup=await adapter.exportOwnerData('owner-primary',fixedNow());
+    const restored=createMemoryCloudPersistenceAdapter({now:fixedNow});
+    await restored.importOwnerData('owner-primary',backup);
+    expect((await restored.listBetDrafts('owner-primary'))[0]).toMatchObject(fields);
+    expect((await restored.listBetRecords('owner-primary'))[0]).toMatchObject(fields);
+    expect((await restored.listBetRecords('owner-primary'))[0]).not.toHaveProperty('liveMinute');
+  });
+
   it('reconciles signed manual ledger entries without betting advice', async () => {
     const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
     await adapter.createBankrollAccount({ accountId: 'account-001', ownerProfileId: 'owner-primary', label: 'Main', openingBalancePoints: 1000 });
@@ -40,6 +123,98 @@ describe('memory cloud persistence adapter', () => {
       entryType: 'withdrawal', amountPoints: -100, occurredAt: fixedNow()
     });
     expect(await adapter.listBankrollAccounts('owner-primary')).toMatchObject([{ accountId: 'account-001', currentBalancePoints: 900 }]);
+  });
+
+  it('rejects invalid capital signs and insufficient manual balance mutations', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await expect(adapter.createBankrollAccount({ accountId: 'zero', ownerProfileId: 'owner-primary', label: 'Main', openingBalancePoints: 0 })).rejects.toThrow('positive');
+    await adapter.createBankrollAccount({ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', openingBalancePoints: 100 });
+    await expect(adapter.createBankrollLedgerEntry({ entryId: 'bad-deposit', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'deposit', amountPoints: -1, occurredAt: fixedNow() })).rejects.toThrow('sign');
+    await expect(adapter.createBankrollLedgerEntry({ entryId: 'too-much', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'withdrawal', amountPoints: -101, occurredAt: fixedNow() })).rejects.toThrow('Insufficient');
+    expect(await adapter.listBankrollLedgerEntries('owner-primary', 'a')).toEqual([]);
+  });
+
+  it('stores versioned discipline config and consumes a challenge once', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    const config = { ownerProfileId: 'owner-primary', dailyStopLossPoints: 100, weeklyStopLossPoints: null, bigBetThresholdPoints: 50, timeZone: 'Asia/Tokyo', weekStartDay: 'sunday' as const, cooldownSeconds: 15 as const, version: 1, updatedAt: fixedNow() };
+    expect(await adapter.upsertDisciplineConfig(config)).toEqual(config);
+    expect(await adapter.getDisciplineConfig('owner-primary')).toEqual(config);
+    const defaultConfig = { ownerProfileId: 'owner-primary', dailyStopLossPoints: 100, weeklyStopLossPoints: null, bigBetThresholdPoints: 50, timeZone: 'Asia/Tokyo', cooldownSeconds: 15 as const, version: 2, updatedAt: fixedNow() };
+    expect(await adapter.upsertDisciplineConfig(defaultConfig)).toEqual({ ...defaultConfig, weekStartDay: 'monday' });
+    const challenge = { challengeId: 'c1', ownerProfileId: 'owner-primary', payloadHash: 'hash', ruleVersion: 1, triggeredRules: ['big_bet'] as const, dailyProfitLossPoints: 0, weeklyProfitLossPoints: 0, createdAt: fixedNow(), availableAt: fixedNow() };
+    await adapter.createDisciplineChallenge(challenge);
+    expect((await adapter.consumeDisciplineChallenge('owner-primary', 'c1', fixedNow()))?.consumedAt).toBe(fixedNow());
+    expect(await adapter.consumeDisciplineChallenge('owner-primary', 'c1', fixedNow())).toBeNull();
+  });
+
+  it('applies settlement projection, event, ledger and balance idempotently', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await adapter.createBankrollAccount({ accountId: 'a', ownerProfileId: 'owner-primary', label: 'Main', openingBalancePoints: 100 });
+    const bet = { betId: 'b', ownerProfileId: 'owner-primary', matchGroupId: 'm', bankrollAccountId: 'a', homeTeamName: 'Japan', awayTeamName: 'Vietnam', marketType: '1X2' as const, selectionLabel: 'Japan', oddsFormat: 'HK' as const, oddsValue: 0.9, stakePoints: 10, status: 'pending' as const, preBetEmotion: 'calm' as const, preBetMotivation: 'planned_analysis' as const, createdAt: fixedNow(), updatedAt: fixedNow() };
+    await adapter.createBetRecord(bet);
+    const settled = { ...bet, status: 'settled' as const, settlementType: 'full_win' as const, profitLossPoints: 9, settledAt: fixedNow(), postBetPlanAdherence: 'yes' as const };
+    const event = { settlementEventId: 's', ownerProfileId: 'owner-primary', betId: 'b', bankrollAccountId: 'a', settlementType: 'full_win' as const, planAdherence: 'yes' as const, effectiveAt: fixedNow(), occurredAt: fixedNow(), calculatedProfitLossPoints: 9, ledgerDeltaPoints: 9 };
+    const ledger = { entryId: 'settlement:s', ownerProfileId: 'owner-primary', accountId: 'a', entryType: 'bet_settlement' as const, amountPoints: 9, occurredAt: fixedNow(), betId: 'b', settlementEventId: 's' };
+    const first = await adapter.applyBetSettlement({ record: settled, event, ledgerEntry: ledger });
+    const second = await adapter.applyBetSettlement({ record: settled, event, ledgerEntry: ledger });
+    expect(first.account.currentBalancePoints).toBe(109);
+    expect(second.account.currentBalancePoints).toBe(109);
+    expect(await adapter.listBetSettlementEvents('owner-primary', 'b')).toHaveLength(1);
+    const conflicting = {
+      record: { ...settled, settlementType: 'full_loss' as const, profitLossPoints: -10 },
+      event: { ...event, settlementEventId: 's-conflict', settlementType: 'full_loss' as const, calculatedProfitLossPoints: -10, ledgerDeltaPoints: -10 },
+      ledgerEntry: { ...ledger, entryId: 'settlement:s-conflict', settlementEventId: 's-conflict', amountPoints: -10 }
+    };
+    await expect(adapter.applyBetSettlement(conflicting)).rejects.toThrow('already settled');
+    expect((await adapter.listBankrollAccounts('owner-primary'))[0]?.currentBalancePoints).toBe(109);
+    expect(await adapter.listBetSettlementEvents('owner-primary', 'b')).toHaveLength(1);
+  });
+
+  it('persists manual-review state in backups without overwriting a settled owner result', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    const bet = {
+      betId: 'review-bet', ownerProfileId: 'owner-primary', matchGroupId: 'm', matchId: 'match-1',
+      homeTeamName: 'A', awayTeamName: 'B', marketType: '1X2' as const, selectionLabel: 'A · FT',
+      selectionCode: 'home' as const, marketPeriod: 'full_time' as const, oddsFormat: 'HK' as const,
+      oddsValue: 0.9, stakePoints: 10, status: 'pending' as const, createdAt: fixedNow(), updatedAt: fixedNow()
+    };
+    await adapter.createBetRecord(bet);
+    const reviewed = await adapter.markBetSettlementManualReview({
+      ownerProfileId: 'owner-primary', betId: 'review-bet', reason: 'missing_detail',
+      evidenceAt: '2026-09-16T01:00:00.000Z', updatedAt: '2026-09-16T01:00:00.000Z'
+    });
+    expect(reviewed).toMatchObject({
+      status: 'pending', settlementReviewStatus: 'manual_required',
+      settlementReviewReason: 'missing_detail', settlementEvidenceAt: '2026-09-16T01:00:00.000Z'
+    });
+    const restored = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await restored.importOwnerData('owner-primary', await adapter.exportOwnerData('owner-primary', fixedNow()));
+    expect((await restored.listBetRecords('owner-primary'))[0]).toMatchObject({ settlementReviewReason: 'missing_detail' });
+    const { settlementReviewStatus: _reviewStatus, settlementReviewReason: _reviewReason,
+      settlementEvidenceAt: _evidenceAt, ...resolved } = reviewed!;
+    await adapter.updateBetRecord({ ...resolved, status: 'settled', settlementType: 'full_win', profitLossPoints: 9 });
+    await expect(adapter.markBetSettlementManualReview({
+      ownerProfileId: 'owner-primary', betId: 'review-bet', reason: 'stale_detail',
+      evidenceAt: '2026-09-16T02:00:00.000Z', updatedAt: '2026-09-16T02:00:00.000Z'
+    })).resolves.toBeNull();
+    expect((await adapter.listBetRecords('owner-primary'))[0]).toMatchObject({ settlementType: 'full_win', profitLossPoints: 9 });
+  });
+
+  it('transfers points with linked entries in one operation', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await adapter.createBankrollAccount({ accountId: 'a', ownerProfileId: 'owner-primary', label: 'A', openingBalancePoints: 100 });
+    await adapter.createBankrollAccount({ accountId: 'b', ownerProfileId: 'owner-primary', label: 'B', openingBalancePoints: 20 });
+    await adapter.createBankrollTransfer({ ownerProfileId: 'owner-primary', transferId: 't', fromAccountId: 'a', toAccountId: 'b', amountPoints: 30, occurredAt: fixedNow() });
+    expect(await adapter.listBankrollAccounts('owner-primary')).toMatchObject([{ accountId: 'a', currentBalancePoints: 70 }, { accountId: 'b', currentBalancePoints: 50 }]);
+  });
+
+  it('rejects a transfer above realized balance without partial entries', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await adapter.createBankrollAccount({ accountId: 'a', ownerProfileId: 'owner-primary', label: 'A', openingBalancePoints: 10 });
+    await adapter.createBankrollAccount({ accountId: 'b', ownerProfileId: 'owner-primary', label: 'B', openingBalancePoints: 20 });
+    await expect(adapter.createBankrollTransfer({ ownerProfileId: 'owner-primary', transferId: 'too-much', fromAccountId: 'a', toAccountId: 'b', amountPoints: 11, occurredAt: fixedNow() })).rejects.toThrow('Insufficient');
+    expect(await adapter.listBankrollLedgerEntries('owner-primary', 'a')).toEqual([]);
+    expect(await adapter.listBankrollLedgerEntries('owner-primary', 'b')).toEqual([]);
   });
 
   it('updates only the target account and rejects duplicate ledger identities', async () => {
@@ -52,5 +227,59 @@ describe('memory cloud persistence adapter', () => {
     expect(await adapter.listBankrollAccounts('owner-primary')).toMatchObject([
       { accountId: 'a', currentBalancePoints: 150 }, { accountId: 'b', currentBalancePoints: 200 }
     ]);
+  });
+
+  it('keeps cloud snapshot status fresh through exactly twelve hours and stale after', async () => {
+    const atBoundary = createMemoryCloudPersistenceAdapter({ now: () => '2026-07-01T12:00:00.000Z' });
+    const afterBoundary = createMemoryCloudPersistenceAdapter({ now: () => '2026-07-01T12:00:00.001Z' });
+    await atBoundary.upsertMatchSnapshot('owner-primary', snapshot);
+    await afterBoundary.upsertMatchSnapshot('owner-primary', snapshot);
+
+    expect((await atBoundary.getCloudMatchSnapshotStatus('owner-primary')).freshness).toBe('fresh');
+    expect((await afterBoundary.getCloudMatchSnapshotStatus('owner-primary')).freshness).toBe('stale');
+  });
+
+  it('round-trips last-good live data and enforces one unexpired owner refresh lease', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    expect(await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'lease-1', reason: 'visible', acquiredAt: '2026-07-02T00:00:00.000Z', expiresAt: '2026-07-02T00:02:00.000Z'
+    })).toBe(true);
+    expect(await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'lease-2', reason: 'hourly', acquiredAt: '2026-07-02T00:01:00.000Z', expiresAt: '2026-07-02T00:03:00.000Z'
+    })).toBe(false);
+    await adapter.finishLiveRefresh('owner-primary', {
+      leaseId: 'lease-1', outcome: 'succeeded', completedAt: '2026-07-02T00:01:30.000Z', snapshot: liveSnapshotFixture
+    });
+    const stored = await adapter.getLiveMatchSnapshot('owner-primary');
+    expect(stored).toEqual(liveSnapshotFixture);
+    stored!.matches[0]!.homeTeam.name = 'mutated';
+    expect((await adapter.getLiveMatchSnapshot('owner-primary'))?.matches[0]?.homeTeam.name).toBe('Arsenal');
+  });
+
+  it('recovers an expired lease and records a sanitized failure without erasing last-good live data', async () => {
+    const adapter = createMemoryCloudPersistenceAdapter({ now: fixedNow });
+    await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'initial', reason: 'visible', acquiredAt: '2026-07-02T00:00:00.000Z', expiresAt: '2026-07-02T00:01:00.000Z'
+    });
+    await adapter.finishLiveRefresh('owner-primary', {
+      leaseId: 'initial', outcome: 'succeeded', completedAt: '2026-07-02T00:00:30.000Z', snapshot: liveSnapshotFixture
+    });
+    await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'expired', reason: 'hourly', acquiredAt: '2026-07-02T00:02:00.000Z', expiresAt: '2026-07-02T00:03:00.000Z'
+    });
+    await expect(adapter.finishLiveRefresh('owner-primary', {
+      leaseId: 'expired', outcome: 'failed', completedAt: '2026-07-02T00:03:00.000Z', errorCode: 'upstream_timeout'
+    })).rejects.toThrow(/expired/i);
+    expect(await adapter.acquireLiveRefreshLease('owner-primary', {
+      leaseId: 'replacement', reason: 'manual', acquiredAt: '2026-07-02T00:03:00.000Z', expiresAt: '2026-07-02T00:04:00.000Z'
+    })).toBe(true);
+    await adapter.finishLiveRefresh('owner-primary', {
+      leaseId: 'replacement', outcome: 'failed', completedAt: '2026-07-02T00:03:10.000Z', errorCode: 'postgresql://secret@db.example' as never
+    });
+
+    expect(await adapter.getLiveMatchSnapshot('owner-primary')).toEqual(liveSnapshotFixture);
+    expect(await adapter.getLiveRefreshState('owner-primary')).toMatchObject({
+      status: 'failed', reason: 'manual', lastSuccessAt: '2026-07-02T00:00:30.000Z', lastErrorCode: 'internal_error', lease: null
+    });
   });
 });

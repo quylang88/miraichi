@@ -30,7 +30,7 @@ This document reviews the Architectural Decision Record (ADR) candidates for Pha
 
 ### ADR-0014: Data Provider Abstraction and Source Selection Criteria
 * **Classification**: `READY_WITH_MINOR_REVISIONS`
-* **Findings**: Acceptable. All specific sports data provider vendor names (e.g. Sportmonks, API-Football) have been replaced or qualified as hypothetical vendor examples (`Provider Alpha`, `Provider Beta`, `ProviderAlphaAdapter`) to avoid committing to a particular vendor. The dynamic provider adapter parser pattern remains the core abstraction.
+* **Findings**: Acceptable. Provider names are hypothetical examples (`Provider Alpha`, `Provider Beta`, `ProviderAlphaAdapter`) so the document does not commit to a particular source. The dynamic provider adapter parser pattern remains the core abstraction.
 
 ### ADR-0015: Generic Football Data Contract
 * **Classification**: `NEEDS_REVISION_BEFORE_ACCEPTANCE`

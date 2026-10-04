@@ -8,7 +8,10 @@ export function createCloudPersistenceAdapter(config: CloudPersistenceConfig): C
   if (config.mode === 'memory') return createMemoryCloudPersistenceAdapter();
   if (config.mode === 'supabase') {
     if (!config.databaseUrl) throw new Error('SUPABASE_DATABASE_URL is required');
-    return createSupabaseCloudPersistenceAdapter({ client: createPostgresQueryClient(config.databaseUrl), ownerProfileId: config.ownerProfileId });
+    return createSupabaseCloudPersistenceAdapter({
+      client: createPostgresQueryClient(config.databaseUrl, config.databaseCa),
+      ownerProfileId: config.ownerProfileId
+    });
   }
   const unavailable = async (): Promise<never> => { throw new CloudPersistenceUnconfiguredError(); };
   return {
@@ -17,12 +20,20 @@ export function createCloudPersistenceAdapter(config: CloudPersistenceConfig): C
       checkedAt: new Date().toISOString(), message: 'Cloud persistence is not configured.'
     }),
     saveBetDraft: unavailable, listBetDrafts: unavailable, deleteBetDraft: unavailable,
-    createBetRecord: unavailable, listBetRecords: unavailable, updateBetRecord: unavailable,
+    createBetRecord: unavailable, listBetRecords: unavailable, listPendingBetRecordsByMatchIds: unavailable, updateBetRecord: unavailable,
+    markBetSettlementManualReview: unavailable,
+    getDisciplineConfig: unavailable, upsertDisciplineConfig: unavailable,
+    createDisciplineChallenge: unavailable, findDisciplineChallenge: unavailable,
+    consumeDisciplineChallenge: unavailable, applyBetSettlement: unavailable,
+    listBetSettlementEvents: unavailable,
     createBankrollAccount: unavailable, listBankrollAccounts: unavailable,
     updateBankrollAccount: unavailable, createBankrollLedgerEntry: unavailable,
-    listBankrollLedgerEntries: unavailable, upsertMatchSnapshot: unavailable,
+    listBankrollLedgerEntries: unavailable, createBankrollTransfer: unavailable, upsertMatchSnapshot: unavailable,
     listCloudMatches: unavailable, findCloudMatchById: unavailable,
-    getCloudMatchSnapshotStatus: unavailable, exportOwnerData: unavailable,
+    getCloudMatchSnapshotStatus: unavailable,
+    getLiveMatchSnapshot: unavailable, getLiveRefreshState: unavailable,
+    acquireLiveRefreshLease: unavailable, finishLiveRefresh: unavailable,
+    exportOwnerData: unavailable,
     importOwnerData: unavailable, recordBackupExport: unavailable, listBackupExports: unavailable
   };
 }

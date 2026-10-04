@@ -1,0 +1,16 @@
+{
+  "name": "@miraichi/cloudflare-gateway",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy:dry-run": "wrangler deploy --dry-run"
+  },
+  "dependencies": {
+    "@miraichi/config": "workspace:*",
+    "@miraichi/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "wrangler": "4.128.0"
+  }
+}

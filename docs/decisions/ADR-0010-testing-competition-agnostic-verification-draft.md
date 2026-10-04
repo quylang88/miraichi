@@ -8,7 +8,7 @@
 - **Date**: 2026-06-23
 
 ## Context
-Miraichi needs verification practices that prevent architecture, data, local AI, LLM, and betting concepts from becoming competition-specific or untraceable. Phase 1 can define verification expectations without implementing test suites yet.
+Miraichi needs verification practices that prevent architecture, data, and betting concepts from becoming competition-specific or untraceable. Phase 1 can define verification expectations without implementing test suites yet.
 
 ## Decision to Be Made
 Decide what verification strategy should govern competition-agnostic architecture, boundary contracts, traceability, and refusal behavior before implementation begins.
@@ -16,7 +16,7 @@ Decide what verification strategy should govern competition-agnostic architectur
 ## Options Considered
 - Use manual documentation review only during Phase 1.
 - Add automated checks for competition-specific naming and final-decision language.
-- Plan future boundary contract tests for API, ingestion, local AI, and LLM refusal behavior.
+- Plan boundary contract tests for API, ingestion, source provenance, and owner persistence behavior.
 - Use a combined manual and automated verification strategy.
 
 ## Draft Recommendation

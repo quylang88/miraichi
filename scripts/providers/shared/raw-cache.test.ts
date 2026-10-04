@@ -1,21 +1,56 @@
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
-import { createPayloadHash, writeRawProviderPayload } from './raw-cache.js';
+import type { RawProviderPayloadEnvelope } from '../../../packages/shared/src/contracts/provider-ingestion-contracts.js';
+import {
+  createPayloadHash,
+  createTextPayloadHash,
+  readLatestRawProviderPayload,
+  writeRawProviderPayload
+} from './raw-cache.js';
 import { appendProviderManifestEntry } from './manifest.js';
 import { appendCanonicalWarehouseRecord } from './canonical-warehouse.js';
+
+const TEST_ENDPOINT = 'manual-snapshot-fixtures';
+const TEST_URL_PATH = '/manual/fixtures';
+
+function createManualEnvelope(
+  fetchedAt: string,
+  payload: string,
+  payloadHash = createTextPayloadHash(payload)
+): RawProviderPayloadEnvelope {
+  return {
+    schemaVersion: 'miraichi.provider.raw.v1',
+    provider: 'manual-snapshot',
+    endpointKey: TEST_ENDPOINT,
+    urlPath: TEST_URL_PATH,
+    query: {},
+    fetchedAt,
+    payloadHash,
+    rateLimit: { remaining: 80, resetsInSeconds: 3600 },
+    response: {
+      contentType: 'application/json; charset=utf-8',
+      byteCount: Buffer.byteLength(payload, 'utf8')
+    },
+    payload
+  };
+}
 
 describe('provider-neutral raw cache and warehouse', () => {
   it('hashes semantically identical payloads the same way', () => {
     expect(createPayloadHash({ b: 2, a: 1 })).toBe(createPayloadHash({ a: 1, b: 2 }));
   });
 
+  it('hashes source text byte-exactly', () => {
+    expect(createTextPayloadHash('a\r\nb\n')).not.toBe(createTextPayloadHash('a\nb\n'));
+  });
+
   it('writes provider raw payloads under provider and endpoint paths', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
     const path = await writeRawProviderPayload(root, {
       schemaVersion: 'miraichi.provider.raw.v1',
-      provider: 'sportmonks',
+      provider: 'manual-snapshot',
       endpointKey: 'fixtures.all',
       urlPath: '/v3/football/fixtures',
       query: { page: '1' },
@@ -25,14 +60,57 @@ describe('provider-neutral raw cache and warehouse', () => {
       payload: { data: [{ id: 1 }] }
     });
 
-    expect(path).toContain(join('providers', 'sportmonks', 'raw', 'fixtures.all'));
-    expect(JSON.parse(await readFile(path, 'utf8')).provider).toBe('sportmonks');
+    expect(path).toContain(join('providers', 'manual-snapshot', 'raw', 'fixtures.all'));
+    expect(JSON.parse(await readFile(path, 'utf8')).provider).toBe('manual-snapshot');
+  });
+
+  it('archives provider payload and selects the envelope with the newest fetchedAt', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
+    await writeRawProviderPayload(root, createManualEnvelope(
+      '2026-08-25T12:00:00.000Z',
+      '{"response":[{"id":1001}]}',
+      'f'.repeat(64)
+    ));
+    const latestPath = await writeRawProviderPayload(root, createManualEnvelope(
+      '2026-08-25T13:00:00.000Z',
+      '{"response":[{"id":1001,"status":"FT"}]}',
+      'a'.repeat(64)
+    ));
+
+    const latest = await readLatestRawProviderPayload(root, 'manual-snapshot', TEST_ENDPOINT);
+
+    expect(latest).toMatchObject({
+      provider: 'manual-snapshot',
+      payload: '{"response":[{"id":1001,"status":"FT"}]}',
+      fetchedAt: '2026-08-25T13:00:00.000Z'
+    });
+    expect(await readFile(latestPath, 'utf8')).toMatch(/\n$/);
+  });
+
+  it('rejects an invalid raw envelope before it creates an evidence file', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
+    const invalid = createManualEnvelope('not-a-date', '{}');
+
+    await expect(writeRawProviderPayload(root, invalid)).rejects.toThrow('fetchedAt');
+    await expect(access(join(root, 'providers'))).rejects.toThrow();
+  });
+
+  it('rejects a 64-character traversal payload hash before any filesystem I/O', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
+    const traversalHash = '../outside'.padEnd(64, 'a');
+
+    await expect(writeRawProviderPayload(root, createManualEnvelope(
+      '2026-08-25T12:00:00.000Z',
+      '{}',
+      traversalHash
+    ))).rejects.toThrow('payloadHash');
+    await expect(access(join(root, 'providers'))).rejects.toThrow();
   });
 
   it('appends provider manifests and canonical warehouse jsonl records', async () => {
     const root = await mkdtemp(join(tmpdir(), 'miraichi-provider-'));
-    await appendProviderManifestEntry(root, 'sportmonks', {
-      provider: 'sportmonks',
+    await appendProviderManifestEntry(root, 'manual-snapshot', {
+      provider: 'manual-snapshot',
       endpointKey: 'fixtures.all',
       urlPath: '/v3/football/fixtures',
       query: { page: '1' },
@@ -54,7 +132,7 @@ describe('provider-neutral raw cache and warehouse', () => {
       updatedAt: '2026-07-02T00:00:00.000Z'
     });
 
-    expect(await readFile(join(root, 'providers', 'sportmonks', 'manifests', 'capture-manifest.jsonl'), 'utf8')).toContain('"status":"captured"');
+    expect(await readFile(join(root, 'providers', 'manual-snapshot', 'manifests', 'capture-manifest.jsonl'), 'utf8')).toContain('"status":"captured"');
     expect(await readFile(join(root, 'warehouse', 'canonical-matches.jsonl'), 'utf8')).toContain('"matchId":"match-1"');
   });
 });

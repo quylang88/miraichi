@@ -1,4 +1,4 @@
-import { resolveLocale, type SupportedLocale } from './i18n-service.js';
+import type { SupportedLocale } from './i18n-service.js';
 
 const SETTINGS_STORAGE_KEY = 'miraichi:shell-settings:v1';
 
@@ -65,15 +65,11 @@ function parseStoredSettings(storage: Storage | null): Partial<Record<ShellSetti
 
 function normalizeSettings(
   rawSettings: Partial<Record<ShellSettingKey, string>>,
-  navigatorLanguages: readonly string[]
+  _navigatorLanguages: readonly string[]
 ): ShellSettings {
   return {
     ...DEFAULT_SETTINGS,
-    locale: resolveLocale(
-      rawSettings.locale
-        ? { storedLocale: rawSettings.locale, navigatorLanguages }
-        : { navigatorLanguages }
-    ),
+    locale: rawSettings.locale === 'vi' ? 'vi' : DEFAULT_SETTINGS.locale,
     theme: rawSettings.theme === 'dark' ? rawSettings.theme : DEFAULT_SETTINGS.theme,
     displayDensity: rawSettings.displayDensity === 'compact' ? 'compact' : DEFAULT_SETTINGS.displayDensity,
     timezone: (rawSettings.timezone === 'UTC' || rawSettings.timezone === 'Asia/Ho_Chi_Minh' || rawSettings.timezone === 'local')
