@@ -146,8 +146,24 @@
   separate safe codes for shell headers, release file, same-origin health body/headers and direct
   Edge health body, preserving every rejection and rollback condition. Five diagnostic tests
   observed RED then GREEN; focused 39 tests and full local 201 files / 1,365 tests pass.
-  Independent review reports no actionable findings. CI and exact staging diagnostic deployment
-  remain pending; no release identity gate is weakened.
+  Independent review reports no actionable findings. PR #23 passed all ten CI checks on
+  `37174887394` and merged at `7b7cc14bb847f4dd473c94f06e41a5668fd519a6`. Exact staging
+  run `37175052866` passes the complete deployment transaction and identity smoke. A finite
+  read-only public probe records Edge identity changing before Worker, followed by matching new
+  shell/release/health identities. The earlier e79 mismatch did not recur in this window; its
+  original failing component is still unproven. No identity gate was weakened. Hosted verification
+  then fails deliberately because the researched upcoming detail sample (October 1) has expired.
+  Candidate remains deployed; no successful GitHub deployment status or promotion exists yet.
+  Bounded test-data maintenance follows the fixture's existing instruction to replace expired
+  samples deliberately: select the staging-verified Everton/Chelsea scheduled match on October 17,
+  retain exact ID/kickoff/status and every upcoming/detail assertion, then run the same real hosted
+  browser gate, full local verification, independent review, green CI and exact staging deployment.
+  The real hosted gate provides RED for the expired sample; the unchanged full hosted browser
+  gate passes GREEN with the new sample, real provider refresh reporting scheduled, rich completed
+  detail, race/cooldown, redaction, logout and synthetic cleanup. Readback retains one existing draft,
+  zero drafts in the gate window and three active jobs. Full local 201 files / 1,365 tests,
+  lint/types and audits pass. Independent review reports no actionable findings; exact-SHA
+  CI/deployment remain pending.
   The owner retained the new Cloudflare Account token and updated GitHub/protected local files.
   It verifies active, permits Editor only on the production Worker plus Workers Metadata Read-Only,
   expires January 3, 2027, and passes actual Wrangler versions readback. The temporary Admin
