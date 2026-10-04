@@ -185,12 +185,31 @@
   Independent final operational preflight reports no material actionable findings. Latest production
   baseline read-only smoke passes ten checks on e1; its default profile remains one and all six
   bet/bankroll/configuration tables remain empty. No production records were deleted.
-- **Active final release gate**: `phase:owner-feedback Production promotion PR #21` — exact head
-  `4af969f396f801d8776c28689a32bf096421b0a8` is reviewable and all release gates are green.
-  Main remains `c6d3a99495d77e71b833218bc4fe2770e5afe9f5`; production remains the approved e1
-  baseline. Fresh owner confirmation of this exact PR/head is required immediately before merge,
-  which triggers automatic backup-first Singapore production delivery. Supabase PAT renewal is due
-  before October 11, 2026; the scoped replacement Cloudflare token expires January 3, 2027.
+- **Completed production phase (2026-10-04)**: the owner explicitly confirmed PR #21 exact head
+  `4af969f396f801d8776c28689a32bf096421b0a8` immediately before merge. Head/checks were read
+  back green, and SHA-locked merge produced main `1eb5ebbd838233c1b71c3e88b223a3b13544b9a7`.
+  Production run `37176396793` succeeds: exact candidate provenance, encrypted backup-first/R2
+  readback, forward/idempotent migrations, Edge/Worker/scheduler, committed read-only smoke,
+  immutable artifact and successful deployment status. Source identity remains the approved 4af
+  candidate; deployment identity is main 1eb. Canonical artifact/hash/evidence/status verification
+  and a fresh independent production smoke pass all ten checks at Singapore `ap-southeast-1`.
+  Worker `42aa3b3c-1714-4735-8e77-6e866cf6d2ac` and Edge provider version 4 are active.
+  Artifact `11293327904` (`miraichi-production-1eb5ebbd838233c1b71c3e88b223a3b13544b9a7`)
+  has digest `sha256:a597a1588349e7d1da5e72f3bed6dc29d079d441d559f424be44656bfeb35767`;
+  production deployment `6836704832` is successful. Backup receipt
+  `backup-eda6b90effd2f42edba7aea0` contains one default profile and zero bet/bankroll/configuration
+  records. Independent R2 readback/decryption matches its ciphertext hash/size; disposable local
+  restore matches payload hash `f61cb18de8809723eac4682df2ccc9de2a9ab09444fef96c063ee4bed92e8b82`,
+  counts and relationships, with match/live/cache collections excluded. The disposable database
+  was destroyed. Final readback retains one profile, zero owner business records and three active
+  production refresh jobs. No production data was reset/deleted. The production artifact now
+  provides the successful rollback evidence for the next release; bootstrap e1 evidence is retained.
+- **Active phase**: `phase:maintenance Production operations` — production delivery is complete.
+  Daily encrypted backup and weekly disposable restore workflows are present on main; this release's
+  backup/readback and local restore have been verified, but no future scheduled run is claimed.
+  Renew Supabase PAT before October 11, 2026 for future provider/CLI delivery operations; scoped
+  Cloudflare token expires January 3, 2027. Subsequent runtime or schema changes follow the normal
+  lifecycle and require a new exact production approval.
 - **Completed implementation track**: repository delivery foundations through automatic staging,
   exact-candidate production, encrypted backup/restore verification, migration safety, readiness,
   and operations documentation are being completed on the isolated implementation branch. Remote
