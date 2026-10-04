@@ -171,7 +171,27 @@
   smoke passes ten checks. Scheduler hydration created one default profile and factual match data;
   the six owner bet/bankroll/configuration tables remain empty. The recorded baseline creation
   zero-row/empty-backup/restore evidence remains historical; no production records were deleted.
-- **Active implementation track**: repository delivery foundations through automatic staging,
+- **Final staging/promotion closeout (2026-10-04)**: PR #24 passed all ten CI checks on
+  `37175576480` and merged at `4af969f396f801d8776c28689a32bf096421b0a8`.
+  Exact Deploy Staging `37175777380` succeeds with the unchanged hosted upcoming/detail assertions,
+  owner/auth/redaction, synthetic cleanup, artifact and successful deployment status. Independent
+  canonical verification proves source SHA, tree `7efcc8be4b3b8e956f70149fb85fb11c4ad87ffd`,
+  manifest hash and downloaded artifact/runtime hashes. Artifact `11293107016` has digest
+  `sha256:d28d5d4613e8f65995ca10155003948bbe662a517391f6290baafa46afcbe50d`;
+  exact deployment `6836607131` is successful. Database readback: one existing draft, zero
+  test-window drafts, three active jobs. Promotion CI `37175780124` passes ten checks.
+  Release Candidate `37175780117` attempt 2 passes after the exact successful deployment/artifact
+  became available; no blind rerun occurred. Remote readiness reports ready/missing=[].
+  Independent final operational preflight reports no material actionable findings. Latest production
+  baseline read-only smoke passes ten checks on e1; its default profile remains one and all six
+  bet/bankroll/configuration tables remain empty. No production records were deleted.
+- **Active final release gate**: `phase:owner-feedback Production promotion PR #21` — exact head
+  `4af969f396f801d8776c28689a32bf096421b0a8` is reviewable and all release gates are green.
+  Main remains `c6d3a99495d77e71b833218bc4fe2770e5afe9f5`; production remains the approved e1
+  baseline. Fresh owner confirmation of this exact PR/head is required immediately before merge,
+  which triggers automatic backup-first Singapore production delivery. Supabase PAT renewal is due
+  before October 11, 2026; the scoped replacement Cloudflare token expires January 3, 2027.
+- **Completed implementation track**: repository delivery foundations through automatic staging,
   exact-candidate production, encrypted backup/restore verification, migration safety, readiness,
   and operations documentation are being completed on the isolated implementation branch. Remote
   branch/rule changes, provider creation, secret entry, and deployment occur only in the explicit
