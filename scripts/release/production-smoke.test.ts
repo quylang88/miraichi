@@ -62,6 +62,40 @@ function input(fetcher: typeof fetch) {
 }
 
 describe('production smoke', () => {
+  it.each([
+    ['shell_headers', '/', false, false],
+    ['release_file', '/release.json', false, true],
+    ['same_origin_health_body', '/api/v1/health', false, true],
+    ['same_origin_health_headers', '/api/v1/health', false, false],
+    ['direct_edge_health_body', '/api/v1/health', true, true]
+  ] as const)('identifies %s mismatch without exposing response or credentials', async (stage, pathname, direct, body) => {
+    const ctx = fixture();
+    const canary = 'private-response-password-token-canary';
+    const fetcher: typeof fetch = async (request, init) => {
+      const response = await ctx.fetcher(request, init);
+      const url = new URL(request instanceof Request ? request.url : request);
+      if (url.pathname.endsWith(pathname)
+        && (url.origin === new URL(edge).origin) === direct
+        && (!direct || new Headers(init?.headers).has('x-miraichi-gateway-token'))) {
+        if (body) {
+          const value = await response.json();
+          const wrongRelease = { ...release, gitSha: 'b'.repeat(40) };
+          return Response.json(pathname === '/release.json'
+            ? { ...wrongRelease, privateValue: canary }
+            : { ...value, release: wrongRelease, privateValue: canary }, { headers: response.headers });
+        }
+        const headers = new Headers(response.headers);
+        headers.set('x-miraichi-release-sha', canary);
+        return new Response(await response.text(), { headers });
+      }
+      return response;
+    };
+    const error = await runProductionSmoke(input(fetcher)).catch((failure: unknown) => failure);
+    expect(error).toMatchObject({ code: `release_identity_${stage}_mismatch` });
+    expect(JSON.stringify(error)).not.toContain(canary);
+    expect(String(error)).not.toContain(canary);
+  });
+
   it('uses the exact password-free pooler preflight for standalone production SQL probes', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'miraichi-smoke-pooler-'));
     const ctx = fixture();
