@@ -126,8 +126,8 @@ export async function runProductionSmoke(input: ProductionSmokeInput): Promise<P
     fail('shell_contract_mismatch');
   }
   try {
-    if (!releaseEquals(releaseFromHeaders(shell.headers), input.expectedRelease)) fail('release_identity_mismatch');
-  } catch { fail('release_identity_mismatch'); }
+    if (!releaseEquals(releaseFromHeaders(shell.headers), input.expectedRelease)) fail('release_identity_shell_headers_mismatch');
+  } catch { fail('release_identity_shell_headers_mismatch'); }
 
   const webManifestResponse = await get(join(publicOrigin, '/manifest.webmanifest'));
   const webManifest = JSON.parse(await bodyText(webManifestResponse, 'web_manifest_unavailable')) as Record<string, unknown>;
@@ -149,7 +149,7 @@ export async function runProductionSmoke(input: ProductionSmokeInput): Promise<P
     MIRAICHI_RELEASE_ARTIFACT: releaseFile.artifactVersion,
     MIRAICHI_SCHEMA_COMPAT_VERSION: releaseFile.compatibilityVersion
   });
-  if (!releaseEquals(publicRelease, input.expectedRelease)) fail('release_identity_mismatch');
+  if (!releaseEquals(publicRelease, input.expectedRelease)) fail('release_identity_release_file_mismatch');
 
   const healthResponse = await get(join(publicOrigin, '/api/v1/health'));
   const health = JSON.parse(await bodyText(healthResponse, 'same_origin_health_failed')) as {
@@ -157,11 +157,11 @@ export async function runProductionSmoke(input: ProductionSmokeInput): Promise<P
     release?: ReleaseMetadata;
   };
   if (health.status !== 'ok' || !health.release || !releaseEquals(health.release, input.expectedRelease)) {
-    fail('release_identity_mismatch');
+    fail('release_identity_same_origin_health_body_mismatch');
   }
   try {
-    if (!releaseEquals(releaseFromHeaders(healthResponse.headers), input.expectedRelease)) fail('release_identity_mismatch');
-  } catch { fail('release_identity_mismatch'); }
+    if (!releaseEquals(releaseFromHeaders(healthResponse.headers), input.expectedRelease)) fail('release_identity_same_origin_health_headers_mismatch');
+  } catch { fail('release_identity_same_origin_health_headers_mismatch'); }
 
   const unauthenticated = await get(join(publicOrigin, '/api/v1/bet-drafts'));
   if (unauthenticated.status !== 401) fail('same_origin_auth_not_denied');
@@ -178,7 +178,7 @@ export async function runProductionSmoke(input: ProductionSmokeInput): Promise<P
     release?: ReleaseMetadata;
   };
   if (directHealthBody.status !== 'ok' || !directHealthBody.release
-    || !releaseEquals(directHealthBody.release, input.expectedRelease)) fail('release_identity_mismatch');
+    || !releaseEquals(directHealthBody.release, input.expectedRelease)) fail('release_identity_direct_edge_health_body_mismatch');
   if (directHealth.headers.get('x-sb-edge-region') !== input.expectedRegion) fail('edge_region_mismatch');
 
   const [scheduler, schema] = await Promise.all([input.schedulerProbe(), input.schemaProbe()]);

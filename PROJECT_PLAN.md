@@ -134,9 +134,27 @@
   focused tests and full local 201 files / 1,360 tests pass, and independent review reports no
   actionable findings. No provenance/parser rule changes. The fix must pass CI and an exact staging
   deployment before PR #21 can become green. Production stays on the approved baseline; main is
-  unchanged. A replacement Cloudflare token draft limits Editor to the production Worker and adds
-  Workers Metadata Read-Only; owner credential handoff/readback remains pending before replacing
-  the temporary Admin bootstrap token.
+  unchanged. PR #22 passed all ten CI checks on `37173796270` and merged at
+  `e79bc464ff3842541a275f83fdeaed181ce8d17a`. Exact staging run `37174015395` passed
+  migration/Edge/Worker/scheduler but failed smoke with `release_identity_mismatch`; rollback
+  reported no errors. Public shell/release/health read back the prior e1 identity, and failure
+  compensation leaves zero active staging refresh jobs. Artifact `11292742305` contains failed
+  evidence and cannot be promoted. Promotion CI `37174017578` passes; Release Candidate
+  `37174017580` stopped because the exact staging deployment was not successful. No blind rerun.
+  Candidate Worker bindings independently match the expected e79 identity; the generic smoke
+  error does not identify the failing boundary. Owner approved the bounded diagnostic slice:
+  separate safe codes for shell headers, release file, same-origin health body/headers and direct
+  Edge health body, preserving every rejection and rollback condition. Five diagnostic tests
+  observed RED then GREEN; focused 39 tests and full local 201 files / 1,365 tests pass.
+  Independent review reports no actionable findings. CI and exact staging diagnostic deployment
+  remain pending; no release identity gate is weakened.
+  The owner retained the new Cloudflare Account token and updated GitHub/protected local files.
+  It verifies active, permits Editor only on the production Worker plus Workers Metadata Read-Only,
+  expires January 3, 2027, and passes actual Wrangler versions readback. The temporary Admin
+  bootstrap token was revoked after fresh explicit owner confirmation. Latest production read-only
+  smoke passes ten checks. Scheduler hydration created one default profile and factual match data;
+  the six owner bet/bankroll/configuration tables remain empty. The recorded baseline creation
+  zero-row/empty-backup/restore evidence remains historical; no production records were deleted.
 - **Active implementation track**: repository delivery foundations through automatic staging,
   exact-candidate production, encrypted backup/restore verification, migration safety, readiness,
   and operations documentation are being completed on the isolated implementation branch. Remote
