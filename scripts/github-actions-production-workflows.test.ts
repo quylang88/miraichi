@@ -31,10 +31,10 @@ describe('GitHub Actions production deployment workflow', () => {
       'miraichi-release-${candidateSha}',
       'actions/download-artifact@v8',
       'digest-mismatch: error',
-      'verify:release-candidate -- --github-production'
+      'verify:release-candidate --github-production'
     ]) expect(deploy).toContain(marker);
     expect(deploy).toMatch(/permissions:\s*\n\s*actions: read\s*\n\s*contents: read\s*\n\s*deployments: write\s*\n\s*pull-requests: read/u);
-    const proof = deploy.indexOf('verify:release-candidate -- --github-production');
+    const proof = deploy.indexOf('verify:release-candidate --github-production');
     const firstSecret = deploy.indexOf('secrets.');
     expect(proof).toBeGreaterThan(0);
     expect(firstSecret).toBeGreaterThan(proof);

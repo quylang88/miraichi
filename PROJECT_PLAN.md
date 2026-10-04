@@ -109,9 +109,34 @@
   Database readback: one pre-existing draft, zero synthetic manual drafts, zero drafts in the gate
   window, three active scheduler jobs. Logs in the gate window contain zero remaining-slot errors
   and zero function HTTP 5xx. Staging exit gate is satisfied for this exact candidate.
-  Earliest next work is remote production readiness/preparation, blocked on missing production
-  Supabase/Cloudflare deployment tokens and independent backup-key confirmation. Clean production
-  baseline and staging-to-main promotion still require fresh exact owner approval before action.
+  Remote readiness and the clean production baseline subsequently passed as recorded below.
+  Staging-to-main promotion still requires fresh exact owner approval before merge.
+- **Production baseline and promotion continuation (2026-10-04)**: the owner explicitly approved
+  baseline SHA `e1a3638ffb46fbe1e3cdef145d7eb37aa9ce6d5b` at action time. Singapore project
+  `xmjvvizihdrklakrmsav` received all 20 committed forward migrations; exact history matches and
+  all seven durable owner tables read back zero. Session pooler 5432 and Dashboard-confirmed
+  Transaction pooler 6543 both authenticate through verified TLS. Candidate artifact
+  `11145832558` remains unexpired; migration, Edge, Worker and web hashes match its manifest.
+  Edge provider version 1 and Worker `f890dad7-1e6e-4892-a983-b3123c4bc4f7` are deployed separately
+  from staging at `https://miraichi-owner-gateway-production.quylang88.workers.dev`.
+  Production GET/read-only smoke passes all ten checks in `ap-southeast-1` with the exact release
+  identity. Encrypted empty backup receipt `backup-c003e12806e16f279c902778` passes R2 readback;
+  disposable local restore verifies matching payload SHA-256
+  `a6e642557af04688c282f92c520b9e3eeec8fd00cc041bb1a829917fee99ff03`, zero record counts and
+  relationships. The isolated restore database was destroyed. A bootstrap helper initially omitted
+  process-level `PGPASSWORD`; a read-only RED/GREEN connection probe proved the cause, the helper
+  was corrected, backup/restore then passed, and the paused scheduler was re-enabled. Final smoke,
+  zero owner readback, GitHub exact baseline variable readback and remote readiness all pass.
+  PR #21 is the sole staging-to-main promotion PR. Its CI passes, but release-candidate run
+  `37171761222` fails before provenance at `candidate_cli_arguments_invalid`: pinned pnpm forwards
+  the extra `--` from the workflow. Owner approved the bounded fix to both candidate/prod workflow
+  invocations. Two actual-pnpm workflow tests observed RED then GREEN at event validation; 28
+  focused tests and full local 201 files / 1,360 tests pass, and independent review reports no
+  actionable findings. No provenance/parser rule changes. The fix must pass CI and an exact staging
+  deployment before PR #21 can become green. Production stays on the approved baseline; main is
+  unchanged. A replacement Cloudflare token draft limits Editor to the production Worker and adds
+  Workers Metadata Read-Only; owner credential handoff/readback remains pending before replacing
+  the temporary Admin bootstrap token.
 - **Active implementation track**: repository delivery foundations through automatic staging,
   exact-candidate production, encrypted backup/restore verification, migration safety, readiness,
   and operations documentation are being completed on the isolated implementation branch. Remote
