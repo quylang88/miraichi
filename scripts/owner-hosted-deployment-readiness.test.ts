@@ -67,7 +67,7 @@ describe('owner-hosted Edge and Cloudflare deployment readiness', () => {
     const production = readFileSync(PRODUCTION_WORKFLOW, 'utf8');
     const backup = readFileSync(BACKUP_WORKFLOW, 'utf8');
     for (const marker of [
-      'verify:release-candidate -- --github-production',
+      'verify:release-candidate --github-production',
       'pnpm run release:deploy',
       'pnpm run verify:production:hosted',
       'MIRAICHI_RELEASE_ENVIRONMENT: production',

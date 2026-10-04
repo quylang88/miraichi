@@ -156,7 +156,7 @@ jobs:
       - name: Verify merged candidate provenance and tree equality
         id: provenance
         run: >-
-          pnpm run verify:release-candidate -- --github-production
+          pnpm run verify:release-candidate --github-production
           .release-production/github-evidence.json
           .release-production/candidate
 
