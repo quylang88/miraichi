@@ -15,6 +15,17 @@ async function createMemoryCloudPersistenceAdapter(){
   return adapter;
 }
 describe('bet routes',()=>{
+  it('round-trips a corner handicap with a server-generated signed team label', async () => {
+    const adapter = await createMemoryCloudPersistenceAdapter();
+    await adapter.createBankrollAccount({accountId:'account-1',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});
+    const out = response();
+    await handleBets(request('POST', '/api/v1/bets', { ...record, marketType: 'corners', marketPeriod: 'first_half', selectionCode: 'away', lineValue: 2.25, selectionLabel: 'WRONG' }) as never, out as never, { adapter, ownerProfileId: 'owner-primary' });
+    expect(out.statusCode).toBe(201);
+    expect(JSON.parse(out.body)).toMatchObject({ marketType: 'corners', selectionCode: 'away', lineValue: 2.25, selectionLabel: 'Vietnam +2.25 corners · HT' });
+    const listed = response();
+    await handleBets(request('GET', '/api/v1/bets') as never, listed as never, { adapter, ownerProfileId: 'owner-primary' });
+    expect(JSON.parse(listed.body)[0]).toMatchObject({ marketType: 'corners', selectionCode: 'away', lineValue: 2.25 });
+  });
   it('derives the Running Over selection and line on the server and rejects contradictory client fields',async()=>{
     const adapter=await createMemoryCloudPersistenceAdapter();await adapter.createBankrollAccount({accountId:'account-1',ownerProfileId:'owner-primary',label:'Main',openingBalancePoints:100});
     const {selectionCode:_selection,marketPeriod:_period,...base}=record;
