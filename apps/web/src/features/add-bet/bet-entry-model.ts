@@ -62,6 +62,13 @@ export function getSelectionCodes(state: BetEntryState): readonly SelectionCode[
 
 export function selectBetSelection(state: BetEntryState, selectionCode: SelectionCode): BetEntryState {
   if (!getSelectionCodes(state).includes(selectionCode)) return state;
+  if (state.marketType === 'corners') {
+    const wasHandicap = state.selectionCode === 'home' || state.selectionCode === 'away';
+    const isHandicap = selectionCode === 'home' || selectionCode === 'away';
+    if (wasHandicap !== isHandicap) return {
+      ...state, selectionCode, lineValue: null, manualLineActive: false, manualLineInput: ''
+    };
+  }
   return { ...state, selectionCode };
 }
 
@@ -74,6 +81,9 @@ export function getLinePresets(state: BetEntryState): readonly number[] {
       : structuredBetMarketCatalog.linePresets.goalsFullTime;
   }
   if (state.marketType === 'handicap') return structuredBetMarketCatalog.linePresets.handicap;
+  if (state.marketType === 'corners' && (state.selectionCode === 'home' || state.selectionCode === 'away')) {
+    return structuredBetMarketCatalog.linePresets.cornersHandicap;
+  }
   if (state.marketType === 'corners') return state.marketPeriod === 'first_half'
     ? structuredBetMarketCatalog.linePresets.cornersFirstHalf
     : structuredBetMarketCatalog.linePresets.corners;

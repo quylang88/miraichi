@@ -609,19 +609,32 @@ function renderBetEntryControls(): void {
 
   const periodControl = document.getElementById('bet-period-control');
   if (periodControl) periodControl.hidden = !betEntryState.marketType || isRunning;
-  const selections = getSelectionCodes(betEntryState);
+  const isCorners = betEntryState.marketType === 'corners';
+  const isCornerHandicap = isCorners && (betEntryState.selectionCode === 'home' || betEntryState.selectionCode === 'away');
+  const selections = getSelectionCodes(betEntryState).filter((code) => !isCorners || code !== 'away');
   const selectionControl = document.getElementById('bet-selection-control');
   if (selectionControl) selectionControl.hidden = isRunning || selections.length === 0;
   const selectionChoices = document.getElementById('bet-selection-choices');
   selectionChoices?.replaceChildren(...selections.map((code) => createBetChoice(
-    translate(`selection.${code}`), 'data-bet-selection', code, betEntryState.selectionCode === code
+    translate(isCorners && code === 'home' ? 'market.handicap' : `selection.${code}`),
+    'data-bet-selection', code, isCorners && code === 'home' ? isCornerHandicap : betEntryState.selectionCode === code
   )));
+  const cornerTeamControl = document.getElementById('corner-handicap-team-control');
+  if (cornerTeamControl) cornerTeamControl.hidden = !isCornerHandicap;
+  const cornerTeam = document.getElementById('corner-handicap-team');
+  const teamSide = betEntryState.selectionCode === 'away' ? 'away' : 'home';
+  const teamName = (document.getElementById(`${teamSide}-team`) as HTMLInputElement | null)?.value.trim();
+  if (cornerTeam) cornerTeam.textContent = `${translate(`selection.${teamSide}`)}${teamName ? ` · ${teamName}` : ''}`;
+  const switchCornerTeam = appRoot.querySelector<HTMLButtonElement>('[data-switch-corner-team]');
+  if (switchCornerTeam) {
+    switchCornerTeam.textContent = translate(teamSide === 'home' ? 'bets.switchToAway' : 'bets.switchToHome');
+  }
 
   const lineControl = document.getElementById('bet-line-control');
   if (lineControl) lineControl.hidden = isRunning || !betEntryState.selectionCode || betEntryState.marketType === '1X2';
   const linePresets = document.getElementById('bet-line-presets');
   linePresets?.replaceChildren(...getLinePresets(betEntryState).map((line) => createBetChoice(
-    `${line > 0 && betEntryState.marketType === 'handicap' ? '+' : ''}${line}`,
+    `${line > 0 && (betEntryState.marketType === 'handicap' || isCornerHandicap) ? '+' : ''}${line}`,
     'data-bet-line', String(line), !betEntryState.manualLineActive && betEntryState.lineValue === line
   )));
   const otherLine = appRoot.querySelector<HTMLButtonElement>('[data-manual-bet-line]');
@@ -919,9 +932,19 @@ appRoot.addEventListener('click', (event) => {
     renderBetEntryControls();
     return;
   }
+  if (eventTarget.closest('[data-switch-corner-team]') && betEntryState.marketType === 'corners'
+    && (betEntryState.selectionCode === 'home' || betEntryState.selectionCode === 'away')) {
+    betEntryState = selectBetSelection(betEntryState, betEntryState.selectionCode === 'home' ? 'away' : 'home');
+    renderBetEntryControls();
+    return;
+  }
   const selectionChoice = eventTarget.closest<HTMLButtonElement>('[data-bet-selection]');
   if (selectionChoice?.dataset.betSelection) {
-    betEntryState = selectBetSelection(betEntryState, selectionChoice.dataset.betSelection as SelectionCode);
+    const code = selectionChoice.dataset.betSelection as SelectionCode;
+    if (!(betEntryState.marketType === 'corners' && code === 'home'
+      && (betEntryState.selectionCode === 'home' || betEntryState.selectionCode === 'away'))) {
+      betEntryState = selectBetSelection(betEntryState, code);
+    }
     renderBetEntryControls();
     return;
   }
@@ -1324,6 +1347,11 @@ appRoot.addEventListener('input', (event) => {
 
   if (['live-score-home-field', 'live-score-away-field', 'live-minute-field'].includes(target.id)) {
     readManualRunningContext();
+    renderBetEntryControls();
+    return;
+  }
+
+  if (target.id === 'home-team' || target.id === 'away-team') {
     renderBetEntryControls();
     return;
   }

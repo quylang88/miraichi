@@ -2,6 +2,36 @@
 
 ## Current State
 
+- **Owner-approved continuation (2026-10-05)**: bounded Corner Handicap within
+  `phase:quality-up ui-ux-improve Structured Add Bet`. Owner selected Corner's
+  Over / Under / Handicap choices, default Home with a compact switch to Away,
+  signed quarter lines, and delivery through a feature PR merged into staging
+  for owner testing before any main promotion. Existing `corners` + `home`/`away`
+  selections reuse current persistence fields; no migration or new provider.
+  Exact TDD slices:
+  1. `packages/shared/src/contracts/structured-bet-selection{,.test}.ts`,
+     `packages/shared/src/calculator/structured-bet-outcome{,.test}.ts`,
+     `apps/api/src/routes/{bet-drafts,bets}.test.ts`: observe rejected signed
+     corner sides / incorrect outcomes, validate side lines and labels, settle
+     against complete period-specific corner evidence; run focused Vitest.
+  2. `apps/web/src/features/add-bet/bet-entry-model{,.test}.ts`, shared market
+     catalog, `apps/web/src/{shell-entry.ts,components/app-shell.ts,locales/*.json}`,
+     `packages/ui/src/index.css`, `tests/e2e/structured-add-bet.ts`: observe missing
+     Handicap choice, default Home, switch/restore and mode-reset failures;
+     implement compact team control, signed presets and draft round-trip;
+     run model tests and structured browser gate.
+  3. Run `verify:staging`, Edge graph and artifact checks, review, push and create
+     a staging PR; merge only after green CI. Record exact deployment and hosted
+     smoke evidence before owner review. Main promotion remains gated on fresh
+     owner approval. Local exit gate: contract/API/evaluator RED observed (15
+     expected failures), model RED observed (2 failures), and browser RED observed
+     (missing Handicap choice). GREEN focused tests and the full `verify:staging`
+     gate pass, including 201 unit files / 1,382 tests, migration preservation,
+     integration, endpoint/browser/PWA and static build. Edge module graph and
+     the 77-file Worker artifact pass. Independent review reports no actionable
+     findings. Remote CI, exact staging deployment and hosted evidence are the
+     remaining delivery gates at the feature commit.
+
 - **Completed planning track**: `phase:plan Production delivery automation and owner-data safety` — the
   owner selected protected `staging -> main`, automatic Frankfurt staging deployment, automatic
   Singapore `ap-southeast-1` production deployment after a green release merge, encrypted private

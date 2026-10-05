@@ -90,7 +90,7 @@ export const structuredBetMarketCatalog = Object.freeze({
     { marketType: '1X2', periods: ['full_time', 'first_half'], selections: ['home', 'draw', 'away'] },
     { marketType: 'over_under', periods: ['full_time', 'first_half'], selections: ['over', 'under'] },
     { marketType: 'handicap', periods: ['full_time', 'first_half'], selections: ['home', 'away'] },
-    { marketType: 'corners', periods: ['full_time', 'first_half'], selections: ['over', 'under'] },
+    { marketType: 'corners', periods: ['full_time', 'first_half'], selections: ['over', 'under', 'home', 'away'] },
     { marketType: 'running', windows: ['to_half_time', 'to_full_time', 'fixed_15'], selections: ['over'] }
   ] as const),
   linePresets: Object.freeze({
@@ -98,6 +98,7 @@ export const structuredBetMarketCatalog = Object.freeze({
     halfTimeAndRunning: Object.freeze([0.5, 0.75, 1, 1.25, 1.5]),
     handicap: Object.freeze([-1.5, -1.25, -1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]),
     corners: Object.freeze([7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11]),
+    cornersHandicap: Object.freeze([-3.5, -2.5, -1.5, -0.5, 0, 0.5, 1.5, 2.5, 3.5]),
     cornersFirstHalf: Object.freeze([2.5, 3.5, 4.5, 5.5, 6.5])
   }),
   runningWindows: Object.freeze([

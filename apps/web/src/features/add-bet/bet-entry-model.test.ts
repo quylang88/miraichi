@@ -43,6 +43,28 @@ describe('guided Add Bet entry model', () => {
     expect(setManualBetLine(state, '5.6').lineValue).toBeNull();
   });
 
+  it('switches corner totals to a signed side line and clears the incompatible total', () => {
+    let state = selectBetPeriod(selectBetMarket(createBetEntryState(), 'corners'), 'full_time');
+    state = selectBetLinePreset(selectBetSelection(state, 'over'), 9.5);
+    state = selectBetSelection(state, 'home');
+    expect(state).toMatchObject({ selectionCode: 'home', lineValue: null });
+    expect(getLinePresets(state)).toContain(-1.5);
+    state = selectBetLinePreset(state, -1.5);
+    expect(toStructuredBetSelection(state)).toEqual({ marketType: 'corners', marketPeriod: 'full_time', selectionCode: 'home', lineValue: -1.5 });
+    state = selectBetSelection(state, 'away');
+    expect(state).toMatchObject({ selectionCode: 'away', lineValue: -1.5 });
+    state = selectBetSelection(state, 'under');
+    expect(state).toMatchObject({ selectionCode: 'under', lineValue: null, manualLineActive: false });
+    expect(getLinePresets(state)).toContain(9.5);
+  });
+
+  it('restores corner handicap side and signed manual quarter lines', () => {
+    const state = restoreBetEntryState({ marketType: 'corners', marketPeriod: 'first_half', selectionCode: 'away', lineValue: 2.25 });
+    expect(toStructuredBetSelection(state)).toEqual({ marketType: 'corners', marketPeriod: 'first_half', selectionCode: 'away', lineValue: 2.25 });
+    expect(setManualBetLine(state, '-2,25').lineValue).toBe(-2.25);
+    expect(selectBetPeriod(state, 'full_time')).toMatchObject({ selectionCode: '', lineValue: null });
+  });
+
   it('clears dependent choices whenever market or period changes', () => {
     let state = selectBetPeriod(selectBetMarket(createBetEntryState(), 'handicap'), 'full_time');
     state = selectBetSelection(state, 'home');
