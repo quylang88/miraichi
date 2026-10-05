@@ -2,6 +2,36 @@
 
 ## Current State
 
+- **Owner-approved continuation (2026-10-05)**: bounded Corner Handicap within
+  `phase:quality-up ui-ux-improve Structured Add Bet`. Owner selected Corner's
+  Over / Under / Handicap choices, default Home with a compact switch to Away,
+  signed quarter lines, and delivery through a feature PR merged into staging
+  for owner testing before any main promotion. Existing `corners` + `home`/`away`
+  selections reuse current persistence fields; no migration or new provider.
+  Exact TDD slices:
+  1. `packages/shared/src/contracts/structured-bet-selection{,.test}.ts`,
+     `packages/shared/src/calculator/structured-bet-outcome{,.test}.ts`,
+     `apps/api/src/routes/{bet-drafts,bets}.test.ts`: observe rejected signed
+     corner sides / incorrect outcomes, validate side lines and labels, settle
+     against complete period-specific corner evidence; run focused Vitest.
+  2. `apps/web/src/features/add-bet/bet-entry-model{,.test}.ts`, shared market
+     catalog, `apps/web/src/{shell-entry.ts,components/app-shell.ts,locales/*.json}`,
+     `packages/ui/src/index.css`, `tests/e2e/structured-add-bet.ts`: observe missing
+     Handicap choice, default Home, switch/restore and mode-reset failures;
+     implement compact team control, signed presets and draft round-trip;
+     run model tests and structured browser gate.
+  3. Run `verify:staging`, Edge graph and artifact checks, review, push and create
+     a staging PR; merge only after green CI. Record exact deployment and hosted
+     smoke evidence before owner review. Main promotion remains gated on fresh
+     owner approval. Local exit gate: contract/API/evaluator RED observed (15
+     expected failures), model RED observed (2 failures), and browser RED observed
+     (missing Handicap choice). GREEN focused tests and the full `verify:staging`
+     gate pass, including 201 unit files / 1,382 tests, migration preservation,
+     integration, endpoint/browser/PWA and static build. Edge module graph and
+     the 77-file Worker artifact pass. Independent review reports no actionable
+     findings. Remote CI, exact staging deployment and hosted evidence are the
+     remaining delivery gates at the feature commit.
+
 - **Completed planning track**: `phase:plan Production delivery automation and owner-data safety` — the
   owner selected protected `staging -> main`, automatic Frankfurt staging deployment, automatic
   Singapore `ap-southeast-1` production deployment after a green release merge, encrypted private
@@ -171,7 +201,46 @@
   smoke passes ten checks. Scheduler hydration created one default profile and factual match data;
   the six owner bet/bankroll/configuration tables remain empty. The recorded baseline creation
   zero-row/empty-backup/restore evidence remains historical; no production records were deleted.
-- **Active implementation track**: repository delivery foundations through automatic staging,
+- **Final staging/promotion closeout (2026-10-04)**: PR #24 passed all ten CI checks on
+  `37175576480` and merged at `4af969f396f801d8776c28689a32bf096421b0a8`.
+  Exact Deploy Staging `37175777380` succeeds with the unchanged hosted upcoming/detail assertions,
+  owner/auth/redaction, synthetic cleanup, artifact and successful deployment status. Independent
+  canonical verification proves source SHA, tree `7efcc8be4b3b8e956f70149fb85fb11c4ad87ffd`,
+  manifest hash and downloaded artifact/runtime hashes. Artifact `11293107016` has digest
+  `sha256:d28d5d4613e8f65995ca10155003948bbe662a517391f6290baafa46afcbe50d`;
+  exact deployment `6836607131` is successful. Database readback: one existing draft, zero
+  test-window drafts, three active jobs. Promotion CI `37175780124` passes ten checks.
+  Release Candidate `37175780117` attempt 2 passes after the exact successful deployment/artifact
+  became available; no blind rerun occurred. Remote readiness reports ready/missing=[].
+  Independent final operational preflight reports no material actionable findings. Latest production
+  baseline read-only smoke passes ten checks on e1; its default profile remains one and all six
+  bet/bankroll/configuration tables remain empty. No production records were deleted.
+- **Completed production phase (2026-10-04)**: the owner explicitly confirmed PR #21 exact head
+  `4af969f396f801d8776c28689a32bf096421b0a8` immediately before merge. Head/checks were read
+  back green, and SHA-locked merge produced main `1eb5ebbd838233c1b71c3e88b223a3b13544b9a7`.
+  Production run `37176396793` succeeds: exact candidate provenance, encrypted backup-first/R2
+  readback, forward/idempotent migrations, Edge/Worker/scheduler, committed read-only smoke,
+  immutable artifact and successful deployment status. Source identity remains the approved 4af
+  candidate; deployment identity is main 1eb. Canonical artifact/hash/evidence/status verification
+  and a fresh independent production smoke pass all ten checks at Singapore `ap-southeast-1`.
+  Worker `42aa3b3c-1714-4735-8e77-6e866cf6d2ac` and Edge provider version 4 are active.
+  Artifact `11293327904` (`miraichi-production-1eb5ebbd838233c1b71c3e88b223a3b13544b9a7`)
+  has digest `sha256:a597a1588349e7d1da5e72f3bed6dc29d079d441d559f424be44656bfeb35767`;
+  production deployment `6836704832` is successful. Backup receipt
+  `backup-eda6b90effd2f42edba7aea0` contains one default profile and zero bet/bankroll/configuration
+  records. Independent R2 readback/decryption matches its ciphertext hash/size; disposable local
+  restore matches payload hash `f61cb18de8809723eac4682df2ccc9de2a9ab09444fef96c063ee4bed92e8b82`,
+  counts and relationships, with match/live/cache collections excluded. The disposable database
+  was destroyed. Final readback retains one profile, zero owner business records and three active
+  production refresh jobs. No production data was reset/deleted. The production artifact now
+  provides the successful rollback evidence for the next release; bootstrap e1 evidence is retained.
+- **Active phase**: `phase:maintenance Production operations` — production delivery is complete.
+  Daily encrypted backup and weekly disposable restore workflows are present on main; this release's
+  backup/readback and local restore have been verified, but no future scheduled run is claimed.
+  Renew Supabase PAT before October 11, 2026 for future provider/CLI delivery operations; scoped
+  Cloudflare token expires January 3, 2027. Subsequent runtime or schema changes follow the normal
+  lifecycle and require a new exact production approval.
+- **Completed implementation track**: repository delivery foundations through automatic staging,
   exact-candidate production, encrypted backup/restore verification, migration safety, readiness,
   and operations documentation are being completed on the isolated implementation branch. Remote
   branch/rule changes, provider creation, secret entry, and deployment occur only in the explicit

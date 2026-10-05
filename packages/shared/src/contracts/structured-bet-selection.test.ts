@@ -37,6 +37,18 @@ describe('structured bet selection contract', () => {
     invalid({ marketType: 'corners', marketPeriod: 'full_time', selectionCode: 'over', lineValue: 40.25 }, 'range');
   });
 
+  it.each(['full_time', 'first_half'] as const)('accepts signed corner handicaps for %s', (marketPeriod) => {
+    valid({ marketType: 'corners', marketPeriod, selectionCode: 'home', lineValue: -2.25 });
+    valid({ marketType: 'corners', marketPeriod, selectionCode: 'away', lineValue: 2.25 });
+    valid({ marketType: 'corners', marketPeriod, selectionCode: 'home', lineValue: 0 });
+    invalid({ marketType: 'corners', marketPeriod, selectionCode: 'draw', lineValue: 0 }, 'selectionCode');
+    invalid({ marketType: 'corners', marketPeriod, selectionCode: 'home', lineValue: -40.25 }, 'range');
+    invalid({ marketType: 'corners', marketPeriod, selectionCode: 'away', lineValue: 1.1 }, 'quarter-step');
+    invalid({ marketType: 'corners', marketPeriod, selectionCode: 'over', lineValue: -1 }, 'range');
+    expect(formatStructuredSelectionLabel({ marketType: 'corners', marketPeriod, selectionCode: 'away', lineValue: 2.25 }, teams))
+      .toBe(`Vietnam +2.25 corners · ${marketPeriod === 'full_time' ? 'FT' : 'HT'}`);
+  });
+
   it('requires a side and signed quarter line for handicap', () => {
     valid({ marketType: 'handicap', marketPeriod: 'first_half', selectionCode: 'away', lineValue: -0.75 });
     valid({ marketType: 'handicap', marketPeriod: 'full_time', selectionCode: 'home', lineValue: 0 });

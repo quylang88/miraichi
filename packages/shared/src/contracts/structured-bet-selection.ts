@@ -170,8 +170,8 @@ export function validateStructuredBetSelection(input: unknown): StructuredBetSel
       break;
     case 'corners':
       validatePeriod(input.marketPeriod, errors);
-      if (!['over', 'under'].includes(String(input.selectionCode))) errors.push('selectionCode is invalid for corners');
-      validateLine(input.lineValue, 0.25, 40, errors);
+      if (!['over', 'under', 'home', 'away'].includes(String(input.selectionCode))) errors.push('selectionCode is invalid for corners');
+      validateLine(input.lineValue, input.selectionCode === 'home' || input.selectionCode === 'away' ? -40 : 0.25, 40, errors);
       validateNoRunningFields(input, errors);
       break;
     case 'running':
@@ -216,7 +216,9 @@ export function formatStructuredSelectionLabel(
     return `${side} ${lineText(selection.lineValue!)} · ${periodText(selection.marketPeriod!)}`;
   }
   if (selection.marketType === 'corners') {
-    return `${side} ${lineText(selection.lineValue!)} corners · ${periodText(selection.marketPeriod!)}`;
+    const line = selection.lineValue!;
+    const signed = (selection.selectionCode === 'home' || selection.selectionCode === 'away') && line > 0;
+    return `${side} ${signed ? '+' : ''}${lineText(line)} corners · ${periodText(selection.marketPeriod!)}`;
   }
   const window = selection.runningWindow === 'to_half_time'
     ? 'HT'

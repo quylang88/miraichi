@@ -284,7 +284,8 @@ export function evaluateStructuredBetOutcome(input: EvaluateStructuredBetOutcome
     const winner = result.score.home === result.score.away ? 'draw' : result.score.home > result.score.away ? 'home' : 'away';
     return settled(bet.selectionCode === winner ? 'full_win' : 'full_loss', resultEvidence);
   }
-  if (bet.marketType === 'handicap') {
+  if (bet.marketType === 'handicap' || (bet.marketType === 'corners'
+    && (bet.selectionCode === 'home' || bet.selectionCode === 'away'))) {
     const selected = bet.selectionCode === 'home' ? result.score.home - result.score.away : result.score.away - result.score.home;
     return settled(settleAsian(selected, -Number(bet.lineValue), 'over'), resultEvidence);
   }

@@ -2820,3 +2820,15 @@ svg {
   color: var(--text-color-primary);
   font-size: 13px;
 }
+
+.corner-handicap-team-control {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.corner-handicap-team-control[hidden] { display: none; }
+.corner-handicap-team-control > div { flex: 1; min-width: 0; }
+.corner-handicap-team { margin: 0 0 4px; font-weight: 680; overflow-wrap: anywhere; }
+.corner-handicap-team-control > button { flex: 0 1 112px; }

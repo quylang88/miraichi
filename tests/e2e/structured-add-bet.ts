@@ -155,7 +155,7 @@ async function assertMarketControls(page: Page) {
 
   await page.locator('[data-bet-market="corners"]').click();
   await page.locator('[data-bet-period="first_half"]').click();
-  assert.deepEqual(await visible(page, '[data-bet-selection]').allTextContents(), ['Over', 'Under']);
+  assert.deepEqual(await visible(page, '[data-bet-selection]').allTextContents(), ['Over', 'Under', 'Handicap']);
   await page.locator('[data-bet-selection="over"]').click();
   assert.deepEqual(await visible(page, '[data-bet-line]').allTextContents(), ['2.5', '3.5', '4.5', '5.5', '6.5']);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'HT corner chips fit the mobile viewport');
@@ -165,6 +165,26 @@ async function assertMarketControls(page: Page) {
   assert.equal(await page.locator('#line-value-field').inputValue(), '', 'switching from HT clears dependent line');
   await page.locator('[data-bet-selection="over"]').click();
   assert.ok((await visible(page, '[data-bet-line]').allTextContents()).includes('9.5'));
+  await page.locator('[data-bet-line="9.5"]').click();
+  await page.locator('[data-bet-selection="home"]').click();
+  assert.equal(await page.locator('#selection-code-field').inputValue(), 'home', 'Corner Handicap defaults to Home');
+  assert.equal(await page.locator('#line-value-field').inputValue(), '', 'Handicap clears total line');
+  assert.deepEqual(await visible(page, '[data-bet-selection]').allTextContents(), ['Over', 'Under', 'Handicap']);
+  assert.match(await page.locator('#corner-handicap-team').textContent() ?? '', /Scheduled Home/);
+  assert.ok((await visible(page, '[data-bet-line]').allTextContents()).includes('+1.5'));
+  await page.locator('[data-bet-line="-1.5"]').click();
+  await page.locator('[data-switch-corner-team]').click();
+  assert.equal(await page.locator('#selection-code-field').inputValue(), 'away');
+  assert.match(await page.locator('#corner-handicap-team').textContent() ?? '', /Scheduled Away/);
+  assert.equal(await page.locator('#line-value-field').inputValue(), '-1.5', 'side switch preserves selected signed line');
+  assert.equal(await page.locator('[data-bet-selection="home"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'corner handicap fits 320px');
+  await page.locator('[data-bet-selection="under"]').click();
+  assert.equal(await page.locator('#corner-handicap-team-control').isHidden(), true);
+  assert.equal(await page.locator('#line-value-field').inputValue(), '');
+  await page.locator('[data-bet-selection="home"]').click();
+  assert.equal(await page.locator('#selection-code-field').inputValue(), 'home');
+
 }
 
 async function verifyZoomRuntime(page: Page) {
@@ -224,6 +244,28 @@ async function runBrowserFlow(page: Page) {
   assert.equal(teamRow.overflow, false);
   assert.equal(teamRow.columns.split(' ').length, 3);
   await assertMarketControls(page);
+  await page.locator('[data-switch-corner-team]').click();
+  await page.locator('[data-manual-bet-line]').click();
+  await page.locator('#manual-bet-line-field').fill('+2.25');
+  await page.locator('#odds-field').fill('0.9');
+  await page.locator('#stake-field').fill('5');
+  await page.locator('#save-draft-shell').click();
+  await assertHidden(page, '#add-sheet');
+  const cornerDraft = drafts.find((draft) => draft.marketType === 'corners');
+  assert.ok(cornerDraft);
+  assert.deepEqual({ marketPeriod: cornerDraft.marketPeriod, selectionCode: cornerDraft.selectionCode, lineValue: cornerDraft.lineValue },
+    { marketPeriod: 'full_time', selectionCode: 'away', lineValue: 2.25 });
+  await page.locator('[data-primary-tab="bets"]').click();
+  await page.locator('[data-bet-filter="drafts"]').click();
+  await page.locator(`[data-edit-draft="${cornerDraft.draftId}"]`).click();
+  assert.equal(await page.locator('#selection-code-field').inputValue(), 'away');
+  assert.equal(await page.locator('#line-value-field').inputValue(), '2.25');
+  assert.match(await page.locator('#corner-handicap-team').textContent() ?? '', /Scheduled Away/);
+  await closeAdd(page);
+  await page.locator('[data-primary-tab="matches"]').click();
+  await page.locator('[data-match-id="match-structured-scheduled"][data-open-match]').click();
+  await page.locator('[data-open-scoped-add]').click();
+
   await closeAdd(page);
 
   await page.setViewportSize({ width: 390, height: 844 });

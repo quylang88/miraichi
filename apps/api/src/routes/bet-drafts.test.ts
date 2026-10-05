@@ -16,6 +16,17 @@ async function createMemoryCloudPersistenceAdapter(){
   return adapter;
 }
 describe('bet draft routes',()=>{
+  it('round-trips a corner handicap with a server-generated signed team label', async () => {
+    const adapter = await createMemoryCloudPersistenceAdapter();
+
+    const out = response();
+    await handleBetDrafts(request('POST', '/api/v1/bet-drafts', { ...draft, marketType: 'corners', marketPeriod: 'first_half', selectionCode: 'away', lineValue: 2.25, selectionLabel: 'WRONG' }) as never, out as never, { adapter, ownerProfileId: 'owner-primary' });
+    expect(out.statusCode).toBe(201);
+    expect(JSON.parse(out.body)).toMatchObject({ marketType: 'corners', selectionCode: 'away', lineValue: 2.25, selectionLabel: 'Vietnam +2.25 corners · HT' });
+    const listed = response();
+    await handleBetDrafts(request('GET', '/api/v1/bet-drafts') as never, listed as never, { adapter, ownerProfileId: 'owner-primary' });
+    expect(JSON.parse(listed.body)[0]).toMatchObject({ marketType: 'corners', selectionCode: 'away', lineValue: 2.25 });
+  });
   it('derives fixed 15-minute Running Over 0.5 without a required minute',async()=>{
     const adapter=await createMemoryCloudPersistenceAdapter();const {selectionCode:_selection,marketPeriod:_period,...base}=draft;
     let out=response();await handleBetDrafts(request('POST','/api/v1/bet-drafts',{...base,marketType:'running',runningWindow:'fixed_15',windowStartMinute:60,windowEndMinute:75,liveScoreHome:1,liveScoreAway:1,liveContextSource:'manual'}) as never,out as never,{adapter,ownerProfileId:'owner-primary'});

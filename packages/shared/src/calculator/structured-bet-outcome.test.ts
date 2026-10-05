@@ -103,6 +103,34 @@ describe('structured bet outcome evaluator', () => {
       .toMatchObject({ status: 'settled', settlementType: 'half_loss' });
   });
 
+  it.each([
+    ['full_time', 'home', -3.5, 'full_win'],
+    ['full_time', 'home', -4, 'push'],
+    ['full_time', 'home', -4.25, 'half_loss'],
+    ['full_time', 'home', -3.75, 'half_win'],
+    ['full_time', 'home', -4.5, 'full_loss'],
+    ['full_time', 'away', 4.25, 'half_win'],
+    ['full_time', 'away', 3.75, 'half_loss'],
+    ['first_half', 'home', -1, 'push'],
+    ['first_half', 'away', 1.5, 'full_win'],
+    ['first_half', 'home', 0, 'full_win']
+  ] as const)('settles corner handicap %s %s %.2f as %s', (marketPeriod, selectionCode, lineValue, settlementType) => {
+    expect(evaluate({ marketType: 'corners', marketPeriod, selectionCode, lineValue }))
+      .toMatchObject({ status: 'settled', settlementType, evidence: {
+        basis: marketPeriod === 'full_time' ? 'full_time_corners' : 'first_half_corners',
+        actualHome: marketPeriod === 'full_time' ? 7 : 2,
+        actualAway: marketPeriod === 'full_time' ? 3 : 1,
+        lineValue
+      } });
+  });
+
+  it('requires complete corner evidence for handicaps even when the goal score exists', () => {
+    const bet = { marketType: 'corners', marketPeriod: 'first_half', selectionCode: 'home', lineValue: -1 } as const;
+    expect(evaluate(bet, { detail: null })).toEqual({ status: 'manual_required', reason: 'missing_detail' });
+    expect(evaluate(bet, { detail: completedDetail({ warnings: ['partial_detail'] }) }))
+      .toEqual({ status: 'manual_required', reason: 'incomplete_detail' });
+  });
+
   it('uses period-specific goals and corners', () => {
     expect(evaluate({ marketType: 'over_under', marketPeriod: 'first_half', selectionCode: 'under', lineValue: 2.25 }))
       .toMatchObject({ status: 'settled', settlementType: 'half_win', evidence: { actualTotal: 2 } });
