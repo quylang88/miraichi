@@ -2830,5 +2830,11 @@ svg {
 
 .corner-handicap-team-control[hidden] { display: none; }
 .corner-handicap-team-control > div { flex: 1; min-width: 0; }
-.corner-handicap-team { margin: 0 0 4px; font-weight: 680; overflow-wrap: anywhere; }
-.corner-handicap-team-control > button { flex: 0 1 112px; }
+.corner-handicap-team { margin: 0; font-weight: 680; overflow-wrap: anywhere; }
+.corner-handicap-switch {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg-color-pure);
+  flex: 0 0 auto;
+  min-height: 44px;
+}

@@ -627,7 +627,7 @@ function renderBetEntryControls(): void {
   if (cornerTeam) cornerTeam.textContent = `${translate(`selection.${teamSide}`)}${teamName ? ` · ${teamName}` : ''}`;
   const switchCornerTeam = appRoot.querySelector<HTMLButtonElement>('[data-switch-corner-team]');
   if (switchCornerTeam) {
-    switchCornerTeam.textContent = translate(teamSide === 'home' ? 'bets.switchToAway' : 'bets.switchToHome');
+    switchCornerTeam.setAttribute('aria-label', `${translate('bets.switchTeam')}: ${translate(teamSide === 'home' ? 'bets.switchToAway' : 'bets.switchToHome')}`);
   }
 
   const lineControl = document.getElementById('bet-line-control');

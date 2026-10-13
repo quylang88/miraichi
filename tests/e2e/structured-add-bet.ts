@@ -171,11 +171,32 @@ async function assertMarketControls(page: Page) {
   assert.equal(await page.locator('#line-value-field').inputValue(), '', 'Handicap clears total line');
   assert.deepEqual(await visible(page, '[data-bet-selection]').allTextContents(), ['Over', 'Under', 'Handicap']);
   assert.match(await page.locator('#corner-handicap-team').textContent() ?? '', /Scheduled Home/);
+  assert.equal(await page.locator('#corner-handicap-team-control .field-hint').count(), 0, 'corner control omits the redundant sign explanation');
+  const switchTeam = page.locator('[data-switch-corner-team]');
+  const switchAppearance = await switchTeam.evaluate((button) => {
+    const style = getComputedStyle(button);
+    return { height: button.getBoundingClientRect().height, width: button.getBoundingClientRect().width,
+      color: style.color, backgroundColor: style.backgroundColor };
+  });
+  const luminance = (color: string) => {
+    const channels = color.match(/[\d.]+/g)!.slice(0, 3).map(Number).map((value) => {
+      const channel = value / 255;
+      return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * channels[0]! + 0.7152 * channels[1]! + 0.0722 * channels[2]!;
+  };
+  const foreground = luminance(switchAppearance.color), background = luminance(switchAppearance.backgroundColor);
+  const switchContrast = (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+  assert.ok(switchAppearance.height >= 44 && switchAppearance.width >= 44, 'team switch has a comfortable touch target');
+  assert.ok(switchContrast >= 7, 'team switch text is visibly distinct from its background');
+  assert.equal(await switchTeam.getAttribute('aria-label'), 'Change team: Switch to Away');
+
   assert.ok((await visible(page, '[data-bet-line]').allTextContents()).includes('+1.5'));
   await page.locator('[data-bet-line="-1.5"]').click();
   await page.locator('[data-switch-corner-team]').click();
   assert.equal(await page.locator('#selection-code-field').inputValue(), 'away');
   assert.match(await page.locator('#corner-handicap-team').textContent() ?? '', /Scheduled Away/);
+  assert.equal(await switchTeam.getAttribute('aria-label'), 'Change team: Switch to Home');
   assert.equal(await page.locator('#line-value-field').inputValue(), '-1.5', 'side switch preserves selected signed line');
   assert.equal(await page.locator('[data-bet-selection="home"]').getAttribute('aria-pressed'), 'true');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'corner handicap fits 320px');
