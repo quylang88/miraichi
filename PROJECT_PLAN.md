@@ -2,6 +2,33 @@
 
 ## Current State
 
+- **Owner UI correction (2026-10-13)**: reopen `phase:quality-up ui-ux-improve`
+  for Corner Handicap after staging review. Remove the redundant +/− explanation
+  and make the compact team switch easy to see and tap. Default Home, selected
+  team name, signed line, Away switching and draft restore remain unchanged.
+  Exact slice: browser RED in `tests/e2e/structured-add-bet.ts` for redundant
+  copy / insufficient switch contrast; adjust `apps/web/src/components/app-shell.ts`,
+  `apps/web/src/shell-entry.ts`, EN/VI locale keys and `packages/ui/src/index.css`;
+  verify browser control contrast, 44px target and 320px fit, then `verify:local`.
+  Existing staging delivery authorization continues: green PR CI, merge into
+  staging, exact deployment and hosted smoke. No main promotion is authorized.
+  Local exit gate: browser RED observed for redundant copy, dim text and
+  accessible label mismatch; GREEN controls, draft round-trip and 320px layout
+  pass. EN/VI visual checks pass. `verify:local` passes 201 unit files / 1,382
+  tests, boundaries, lifecycle, lint/types and audits. Independent review is
+  clear after aligning the accessible name with the visible localized label.
+  Remote CI and exact staged deployment/hosted evidence remain pending at this
+  feature commit.
+
+- **Prior Corner Handicap staging exit gate**: PR #25 merged at
+  `4561967177f033bb82e1476c5ebf07369e9cca7a`; Deploy Staging `37288311772`
+  succeeded with hosted owner/auth/detail/scheduler checks, synthetic cleanup,
+  deployment status and immutable artifact. A separate browser probe against
+  the exact staging shell passed the Corner controls/draft flow using fixture
+  API data. Canonical artifact hashes and fresh shell/release/health identity
+  matched. Main remained unchanged; the owner now requests the UI correction
+  recorded above before any production approval.
+
 - **Owner-approved continuation (2026-10-05)**: bounded Corner Handicap within
   `phase:quality-up ui-ux-improve Structured Add Bet`. Owner selected Corner's
   Over / Under / Handicap choices, default Home with a compact switch to Away,
